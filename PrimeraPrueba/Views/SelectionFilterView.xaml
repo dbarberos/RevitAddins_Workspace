@@ -1,0 +1,63 @@
+<Window x:Class="PrimeraPrueba.Views.SelectionFilterView"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:viewmodels="clr-namespace:PrimeraPrueba.ViewModels"
+        mc:Ignorable="d"
+        Title="Filtro de Selección" Height="450" Width="350"
+        WindowStartupLocation="CenterScreen"
+        Topmost="True">
+    <Window.Resources>
+        <Style TargetType="TextBlock">
+            <Setter Property="Margin" Value="0,10,0,2"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+        </Style>
+        <Style TargetType="ComboBox">
+            <Setter Property="Margin" Value="0,0,0,10"/>
+            <Setter Property="Padding" Value="4"/>
+        </Style>
+        <Style TargetType="Button">
+            <Setter Property="Margin" Value="5,15,0,0"/>
+            <Setter Property="Padding" Value="10,5"/>
+        </Style>
+    </Window.Resources>
+
+    <Grid Margin="15">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <TextBlock Grid.Row="0" Text="Categoría:" Margin="0,0,0,2"/>
+        <ComboBox Grid.Row="1" ItemsSource="{Binding Categories}" SelectedItem="{Binding SelectedCategory}" />
+
+        <TextBlock Grid.Row="2" Text="Familia:"/>
+        <ComboBox Grid.Row="3" ItemsSource="{Binding Families}" SelectedItem="{Binding SelectedFamily}" />
+
+        <TextBlock Grid.Row="4" Text="Tipo:"/>
+        <ComboBox Grid.Row="5" ItemsSource="{Binding Types}" SelectedItem="{Binding SelectedType}" />
+
+        <TextBlock Grid.Row="6" Text="Nivel:"/>
+        <ComboBox Grid.Row="7" ItemsSource="{Binding Levels}" SelectedItem="{Binding SelectedLevel}"/>
+        
+        <TextBlock Grid.Row="8" Text="Subproyecto:"/>
+        <ComboBox Grid.Row="9" ItemsSource="{Binding Worksets}" SelectedItem="{Binding SelectedWorkset}" />
+
+        <StackPanel Grid.Row="11" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,10,0,0">
+            <TextBlock Text="{Binding StatusMessage}" VerticalAlignment="Center" Margin="0,0,15,0" Foreground="Gray" FontStyle="Italic" FontWeight="Normal"/>
+            <Button Content="Limpiar" Command="{Binding ClearFiltersCommand}" />
+            <Button Content="Aplicar" Command="{Binding ApplyFilterCommand}" Background="#007ACC" Foreground="White" />
+        </StackPanel>
+    </Grid>
+</Window>

@@ -1,0 +1,14 @@
+<RevitAddIns>
+    <AddIn Type="Application">
+        <Name>PrimeraPrueba</Name>
+        <Assembly>PrimeraPrueba\PrimeraPrueba.dll</Assembly>
+        <AddInId>A5265BB9-214C-4109-8DDC-DF1F6E4305B9</AddInId>
+        <FullClassName>PrimeraPrueba.Application</FullClassName>
+        <VendorId>Development</VendorId>
+        <VendorDescription></VendorDescription>
+    </AddIn>
+    <ManifestSettings>
+        <UseRevitContext>False</UseRevitContext>
+        <ContextName>PrimeraPrueba</ContextName>
+    </ManifestSettings>
+</RevitAddIns>
