@@ -60,6 +60,14 @@ Ventajas de usar este flujo:
 - Soporte multiversión integrado 
 - Estructura profesional desde el minuto cero  
 
+## **3.2 Configuración Crítica del Archivo `.csproj`**
+
+Al usar plantillas modernas (como Nice3point), el compilador inyecta muchos espacios de nombres globales de forma automática (Revit API, Nice3point Extensions, colecciones genéricas de .NET, JetBrains.Annotations, etc.).  
+
+**Regla de Oro:**
+- Asegúrate **SIEMPRE** de que **`<ImplicitUsings>enable</ImplicitUsings>`** esté configurado en tu archivo `.csproj`. 
+- **Nunca establezcas** `<ImplicitUsings>disable</ImplicitUsings>`. Si lo desactivas, los métodos de extensión esenciales (como `Application.CreatePanel()`), las colecciones genéricas y otras dependencias fallarán al compilar y requerirán importaciones de namespaces manuales en todo el código.
+
 ---
 
 # **4. Anatomía de un Add-in de Revit**

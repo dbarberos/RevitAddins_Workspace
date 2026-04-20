@@ -3,7 +3,8 @@ using CommunityToolkit.Mvvm.Input;
 using PrimeraPrueba.Models;
 using PrimeraPrueba.Services;
 using System.Collections.ObjectModel;
-
+using System.Collections.Generic;
+using System.Linq;
 namespace PrimeraPrueba.ViewModels;
 
 public partial class SelectionFilterViewModel : ObservableObject
