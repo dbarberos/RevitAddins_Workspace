@@ -1,8 +1,8 @@
 using Nice3point.Revit.Toolkit.External;
-using KreanRender.Commands;
+using KreanRenderLocal.Commands;
 using JetBrains.Annotations;
 using Nice3point.Revit.Extensions;
-namespace KreanRender;
+namespace KreanRenderLocal;
 
 /// <summary>
 ///     Application entry point
@@ -18,10 +18,10 @@ public class Application : ExternalApplication
 
     private void CreateRibbon()
     {
-        var panel = Application.CreatePanel("Commands", "KreanRender");
+        var panel = Application.CreatePanel("Render Local", "DabaDev");
 
         panel.AddPushButton<StartupCommand>("Execute")
-            .SetImage("/KreanRender;component/Resources/Icons/RibbonIcon16.png")
-            .SetLargeImage("/KreanRender;component/Resources/Icons/RibbonIcon32.png");
+            .SetImage("/KreanRenderLocal;component/Resources/Icons/RibbonIcon16.png")
+            .SetLargeImage("/KreanRenderLocal;component/Resources/Icons/RibbonIcon32.png");
     }
 }

@@ -18,7 +18,7 @@ public class Application : ExternalApplication
 
     private void CreateRibbon()
     {
-        var panel = Application.CreatePanel("Commands", "KreanRender");
+        var panel = Application.CreatePanel("Render Cloud", "DabaDev");
 
         panel.AddPushButton<StartupCommand>("Execute")
             .SetImage("/KreanRender;component/Resources/Icons/RibbonIcon16.png")

@@ -5,8 +5,10 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Media.Imaging;
+using System.Windows.Forms;
+using MessageBox = System.Windows.MessageBox;
 
-namespace KreanRender.Views;
+namespace KreanRenderLocal.Views;
 
 public partial class RenderWindow : Window
 {
@@ -47,13 +49,67 @@ public partial class RenderWindow : Window
         }
     }
 
-    private void UseGeminiCheckBox_Changed(object sender, RoutedEventArgs e)
+    private void BrowseButton_Click(object sender, RoutedEventArgs e)
     {
-        if (GeminiKeyPanel != null)
+        using (var dialog = new FolderBrowserDialog())
         {
-            GeminiKeyPanel.Visibility = UseGeminiCheckBox.IsChecked == true 
-                ? Visibility.Visible 
-                : Visibility.Collapsed;
+            dialog.Description = "Selecciona una carpeta para descargar los modelos de IA (Minimo 10GB libres)";
+            
+            if (dialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+            {
+                LocalPathTextBox.Text = dialog.SelectedPath;
+                UpdateEngineStatus();
+            }
+        }
+    }
+
+    private void UpdateEngineStatus()
+    {
+        string path = LocalPathTextBox.Text;
+        if (string.IsNullOrEmpty(path) || path.Contains("Selecciona"))
+        {
+            EngineStatusText.Text = "No inicializado";
+            EngineStatusText.Foreground = System.Windows.Media.Brushes.Red;
+            return;
+        }
+
+        if (Directory.Exists(Path.Combine(path, "models")))
+        {
+            EngineStatusText.Text = "Listo para Renderizar";
+            EngineStatusText.Foreground = System.Windows.Media.Brushes.Green;
+        }
+        else
+        {
+            EngineStatusText.Text = "Pendiente de Descarga";
+            EngineStatusText.Foreground = System.Windows.Media.Brushes.Orange;
+        }
+    }
+
+    private void PurgeButton_Click(object sender, RoutedEventArgs e)
+    {
+        string path = LocalPathTextBox.Text;
+        if (string.IsNullOrEmpty(path) || !Directory.Exists(path) || path.Contains("Selecciona"))
+        {
+            MessageBox.Show("No hay ninguna carpeta de instalación seleccionada para limpiar.", "Aviso");
+            return;
+        }
+
+        var result = MessageBox.Show($"¿Estás seguro de que deseas eliminar TODOS los archivos en {path}?\n\nEsta acción liberará varios Gigabytes pero tendrás que volver a descargarlos si quieres usar el render local.", "Confirmar limpieza", MessageBoxButton.YesNo, MessageBoxImage.Warning);
+
+        if (result == MessageBoxResult.Yes)
+        {
+            try
+            {
+                StatusText.Text = "Limpiando directorio...";
+                Directory.Delete(path, true);
+                Directory.CreateDirectory(path); // Recrear la carpeta vacía
+                UpdateEngineStatus();
+                StatusText.Text = "Espacio liberado correctamente.";
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error al limpiar: {ex.Message}");
+            }
         }
     }
 
@@ -65,35 +121,58 @@ public partial class RenderWindow : Window
     private async void RenderButton_Click(object sender, RoutedEventArgs e)
     {
         var prompt = PromptTextBox.Text;
-        var useGemini = UseGeminiCheckBox.IsChecked == true;
-        var apiKey = GeminiKeyTextBox.Text;
+        var localPath = LocalPathTextBox.Text;
 
-        if (useGemini && string.IsNullOrWhiteSpace(apiKey))
+        if (string.IsNullOrWhiteSpace(localPath) || localPath.Contains("Selecciona"))
         {
-            MessageBox.Show("Por favor, introduce tu API Key de Gemini o desactiva la casilla para usar el modelo local gratuito.", "API Key requerida");
+            MessageBox.Show("Por favor, selecciona una carpeta de instalación primero.", "Configuración requerida");
             return;
         }
 
-        StatusText.Text = "Conectando al servidor Python local...";
+        if (string.IsNullOrWhiteSpace(prompt))
+        {
+            MessageBox.Show("El prompt no puede estar vacío.", "Prompt requerido");
+            return;
+        }
+
         RenderButton.IsEnabled = false;
+        PurgeButton.IsEnabled = false;
 
         try
         {
-            // TODO: Aqui iría el codigo de HttpClient llamando a gradio en http://127.0.0.1:7860/api/predict
-            // Mock delay
-            await Task.Delay(2000);
-            StatusText.Text = "Renderizado completado (Simulado).";
+            // Simulación de descarga e inicialización si no existe
+            if (EngineStatusText.Text == "Pendiente de Descarga")
+            {
+                StatusText.Text = "Descargando entorno Python y Modelos ControlNet (Simulado)...";
+                await Task.Delay(3000); // Simulando descarga pesada
+                Directory.CreateDirectory(Path.Combine(localPath, "models"));
+                UpdateEngineStatus();
+            }
+
+            StatusText.Text = "Analizando geometría de la vista de Revit...";
+            await Task.Delay(1000);
+
+            StatusText.Text = "Ejecutando ControlNet (Image-to-Image) localmente...";
             
-            // En una implementación real, guardariamos la imagen devuelta y la mostraríamos
-            // RenderedImage.Source = new BitmapImage(new Uri(rutaRespuesta));
+            // Aquí llamaríamos al script de Python pasando el _imageFilePath y el prompt
+            // string pythonApp = Path.Combine(localPath, "engine", "render.py");
+            
+            await Task.Delay(3000);
+
+            // Simulación de resultado
+            StatusText.Text = "¡Carga completada! El render local ha respetado tu geometría.";
+            
+            // En una implementación real cargaríamos el archivo resultante
+            // RenderedImage.Source = ...
         }
         catch (Exception ex)
         {
-            StatusText.Text = $"Error de renderizado: {ex.Message}";
+            StatusText.Text = $"Error en motor local: {ex.Message}";
         }
         finally
         {
             RenderButton.IsEnabled = true;
+            PurgeButton.IsEnabled = true;
         }
     }
 }

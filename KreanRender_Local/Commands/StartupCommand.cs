@@ -5,10 +5,10 @@ using System.Linq;
 using Autodesk.Revit.Attributes;
 using Autodesk.Revit.DB;
 using Nice3point.Revit.Toolkit.External;
-using KreanRender.Views;
+using KreanRenderLocal.Views;
 using JetBrains.Annotations;
 
-namespace KreanRender.Commands;
+namespace KreanRenderLocal.Commands;
 
 /// <summary>
 ///     External command entry point for KreanRender
@@ -48,8 +48,7 @@ public class StartupCommand : ExternalCommand
             ShadowViewsFileType = ImageFileType.JPEGLossless,
             ImageResolution = ImageResolution.DPI_300,
             ZoomType = ZoomFitType.FitToPage,
-            PixelSize = 1024,
-            Format = ImageFormat.JPEG
+            PixelSize = 1024
         };
 
         try

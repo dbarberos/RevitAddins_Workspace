@@ -18,7 +18,7 @@ public class Application : ExternalApplication
 
     private void CreateRibbon()
     {
-        var panel = Application.CreatePanel("Commands", "PrimeraPrueba");
+        var panel = Application.CreatePanel("Primera Prueba", "DabaDev");
 
         panel.AddPushButton<StartupCommand>("Execute")
             .SetImage("/PrimeraPrueba;component/Resources/Icons/RibbonIcon16.png")

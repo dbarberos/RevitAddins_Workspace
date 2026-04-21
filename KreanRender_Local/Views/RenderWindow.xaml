@@ -1,4 +1,4 @@
-<Window x:Class="KreanRender.Views.RenderWindow"
+<Window x:Class="KreanRenderLocal.Views.RenderWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="KreanRender - Vista" 
@@ -14,11 +14,22 @@
         <StackPanel Grid.Row="0" Margin="0,0,0,10">
             <TextBlock Text="Generación de Render Fotorrealista" FontSize="18" FontWeight="Bold" Margin="0,0,0,10" />
             
-            <CheckBox x:Name="UseGeminiCheckBox" Content="Usar API de Gemini (saltar modelo local)" Margin="0,5" Checked="UseGeminiCheckBox_Changed" Unchecked="UseGeminiCheckBox_Changed" />
-            
-            <StackPanel x:Name="GeminiKeyPanel" Orientation="Horizontal" Margin="0,5" Visibility="Collapsed">
-                <TextBlock Text="API Key de Gemini:" VerticalAlignment="Center" Margin="0,0,10,0"/>
-                <TextBox x:Name="GeminiKeyTextBox" Width="300"/>
+            <Grid Margin="0,0,0,10">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <StackPanel Grid.Column="0">
+                    <TextBlock Text="Carpeta de Instalación de Modelos (Gigabytes!):" FontWeight="SemiBold" Foreground="#333" Margin="0,0,0,5"/>
+                    <TextBox x:Name="LocalPathTextBox" Height="30" Padding="5" VerticalContentAlignment="Center" IsReadOnly="True" Text="Selecciona una carpeta con espacio suficiente..." />
+                </StackPanel>
+                <Button Grid.Column="1" x:Name="BrowseButton" Content="📁 Buscar" Width="80" Height="30" Margin="10,20,0,0" Click="BrowseButton_Click" Background="#2196F3" Foreground="White"/>
+            </Grid>
+
+            <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+                <TextBlock Text="Estado del Motor:" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                <TextBlock x:Name="EngineStatusText" Text="No inicializado" Foreground="Red" FontWeight="Bold" VerticalAlignment="Center"/>
+                <Button x:Name="PurgeButton" Content="🗑️ Desinstalar y Limpiar Espacio" Margin="20,0,0,0" Padding="10,2" Click="PurgeButton_Click" Background="#F44336" Foreground="White" ToolTip="Borra todos los Gigabytes descargados de la carpeta seleccionada."/>
             </StackPanel>
 
             <TextBlock Text="Prompt del renderizado:" Margin="0,5,0,0" FontWeight="SemiBold"/>
