@@ -1,0 +1,14 @@
+<RevitAddIns>
+    <AddIn Type="Application">
+        <Name>KreanRender</Name>
+        <Assembly>KreanRender\KreanRender.dll</Assembly>
+        <AddInId>A5265DD9-214B-410A-8DDC-FF2A6E4305D9</AddInId>
+        <FullClassName>KreanRender.Application</FullClassName>
+        <VendorId>Development</VendorId>
+        <VendorDescription></VendorDescription>
+    </AddIn>
+    <ManifestSettings>
+        <UseRevitContext>False</UseRevitContext>
+        <ContextName>KreanRender</ContextName>
+    </ManifestSettings>
+</RevitAddIns>
