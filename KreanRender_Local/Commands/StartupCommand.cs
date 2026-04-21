@@ -19,14 +19,28 @@ public class StartupCommand : ExternalCommand
 {
     public override void Execute()
     {
-        var doc = UiDocument.Document;
-        var activeView = doc.ActiveView;
-
-        if (activeView is not View3D && activeView.ViewType != ViewType.Elevation && activeView.ViewType != ViewType.Section)
+        try 
         {
-            Autodesk.Revit.UI.TaskDialog.Show("KreanRender", "Por favor, sitúate en una vista 3D, de Alzado o Sección para renderizar.");
-            return;
-        }
+            if (UiDocument == null)
+            {
+                Autodesk.Revit.UI.TaskDialog.Show("KreanRender", "No hay ningún documento activo en Revit.");
+                return;
+            }
+
+            var doc = UiDocument.Document;
+            var activeView = UiDocument.ActiveView; // Usar el del UIDocument es más fiable
+
+            if (doc == null || activeView == null)
+            {
+                Autodesk.Revit.UI.TaskDialog.Show("KreanRender", "No se ha podido acceder a la vista activa.");
+                return;
+            }
+
+            if (activeView is not View3D && activeView.ViewType != ViewType.Elevation && activeView.ViewType != ViewType.Section)
+            {
+                Autodesk.Revit.UI.TaskDialog.Show("KreanRender", "Por favor, sitúate en una vista 3D, de Alzado o Sección para renderizar.");
+                return;
+            }
 
         // 1. Export Active View to Image
         string exportDirectory = Path.Combine(Path.GetTempPath(), "KreanRenderTemp");
@@ -102,5 +116,10 @@ public class StartupCommand : ExternalCommand
         // 3. Launch UI
         var window = new RenderWindow(activeView.Name, materialsText, actualFilePath);
         window.ShowDialog();
+        }
+        catch (Exception ex)
+        {
+            Autodesk.Revit.UI.TaskDialog.Show("Error Fatal", $"Se ha producido un error inesperado:\n\n{ex.Message}\n\n{ex.StackTrace}");
+        }
     }
 }

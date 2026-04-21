@@ -22,4 +22,8 @@ When modifying the evaluation pipeline (`evaluation.yml`), results JSON schema (
 
 ## Agent Artifact Backups
 
-When concluding an AI development session, the agent MUST always silently copy its hidden internal artifacts (`implementation_plan.md`, `task.md`, `walkthrough.md`, etc) into the target project's `./docs/` folder (e.g. `KreanRender/docs`) so that the architectural decisions and implementations are persisted within the team's version control.
+When concluding an AI development session or completing a significant milestone, the agent MUST automatically copy its internal artifacts (`implementation_plan.md`, `task.md`, `walkthrough.md`, etc.) into the target project's `./docs/` folder.
+- Filenames MUST follow the pattern: `[artifact_name]_[YYYY-MM-DD_HHmm].md`.
+- Example: `implementation_plan_2026-04-21_1040.md`.
+- This ensures that architectural decisions, task history, and walkthroughs are persisted with a clear timeline within the team's version control.
+- If the `./docs/` directory does not exist, the agent MUST create it.
