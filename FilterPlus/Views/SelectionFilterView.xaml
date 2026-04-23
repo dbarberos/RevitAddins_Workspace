@@ -1,0 +1,190 @@
+<Window x:Class="FilterPlus.Views.SelectionFilterView"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:sys="clr-namespace:System;assembly=mscorlib"
+        xmlns:viewmodels="clr-namespace:FilterPlus.ViewModels"
+        mc:Ignorable="d"
+        Title="FilterPlus - Filtro de Selección" Height="450" Width="400"
+        WindowStartupLocation="CenterScreen"
+        Topmost="True" Background="#f5f5f5">
+    <Window.Resources>
+        <sys:Double x:Key="{x:Static SystemParameters.VerticalScrollBarWidthKey}">10</sys:Double>
+        <Style TargetType="TextBlock">
+            <Setter Property="Margin" Value="0,10,0,2"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+        </Style>
+        <Style TargetType="ComboBox">
+            <Setter Property="Margin" Value="0,0,0,10"/>
+            <Setter Property="Padding" Value="4"/>
+        </Style>
+        <Style TargetType="Button">
+            <Setter Property="Margin" Value="5,15,0,0"/>
+            <Setter Property="Padding" Value="10,5"/>
+        </Style>
+
+        <HierarchicalDataTemplate x:Key="CheckboxTreeTemplate" DataType="{x:Type viewmodels:TreeItemViewModel}" ItemsSource="{Binding Children}">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="60"/>
+                </Grid.ColumnDefinitions>
+                <StackPanel Orientation="Horizontal" Grid.Column="0" Margin="2,4">
+                    <CheckBox IsChecked="{Binding IsChecked}" IsThreeState="True" VerticalAlignment="Center" Margin="0,0,5,0"/>
+                    <TextBlock Text="{Binding Name}" FontWeight="Normal" Margin="0" VerticalAlignment="Center"/>
+                </StackPanel>
+                <TextBlock Grid.Column="1" Text="{Binding Count}" Foreground="LightGray" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,5,0"/>
+            </Grid>
+        </HierarchicalDataTemplate>
+    </Window.Resources>
+
+    <Grid Margin="15">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="2*"/> <!-- Árbol -->
+            <ColumnDefinition Width="Auto"/> <!-- Separador -->
+            <ColumnDefinition Width="1.5*"/> <!-- Filtros -->
+        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- COLUMNA IZQUIERDA: EXPLORADOR JERÁRQUICO -->
+        <Grid Grid.Column="0" Grid.Row="0" Margin="0,0,10,0">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+            <Border Grid.Row="0" Background="#f9f9f9" BorderBrush="#d0d0d0" BorderThickness="0,0,0,1" Margin="0,0,10,0" Padding="0,5">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="60"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Grid.Column="0" Text="Elements" FontWeight="Bold" Margin="25,0,0,0" VerticalAlignment="Center"/>
+                    <TextBlock Grid.Column="1" Text="Count" FontWeight="Bold" HorizontalAlignment="Right" Margin="0,0,5,0" VerticalAlignment="Center"/>
+                </Grid>
+            </Border>
+            <TreeView Grid.Row="1" ItemsSource="{Binding RootNodes}" 
+                      ItemTemplate="{StaticResource CheckboxTreeTemplate}"
+                      ScrollViewer.VerticalScrollBarVisibility="Visible"
+                      HorizontalContentAlignment="Stretch"
+                      VirtualizingStackPanel.IsVirtualizing="True"
+                      VirtualizingStackPanel.VirtualizationMode="Recycling"
+                      BorderThickness="0" Background="Transparent">
+                <TreeView.ItemContainerStyle>
+                    <Style TargetType="TreeViewItem">
+                        <Setter Property="Background" Value="#f9f9f9"/>
+                        <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                        <Setter Property="IsExpanded" Value="{Binding IsExpanded, Mode=TwoWay}" />
+                        <Setter Property="Padding" Value="0"/>
+                        <Setter Property="Margin" Value="0"/>
+                        <Setter Property="BorderThickness" Value="0"/>
+                        <Setter Property="Template">
+                            <Setter.Value>
+                                <ControlTemplate TargetType="TreeViewItem">
+                                    <Grid>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition/>
+                                        </Grid.RowDefinitions>
+                                        <!-- Header row acts as background for whole line. Border is White for gap -->
+                                        <Border Name="Bd" Background="{TemplateBinding Background}" BorderBrush="White" BorderThickness="0,0,0,1" SnapsToDevicePixels="true">
+                                            <!-- The content is indented by IndentMargin from ViewModel -->
+                                            <Grid Margin="{Binding IndentMargin}">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="20"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                </Grid.ColumnDefinitions>
+                                                <!-- Expander Toggle -->
+                                                <ToggleButton x:Name="Expander" IsChecked="{Binding IsExpanded, RelativeSource={RelativeSource TemplatedParent}}" ClickMode="Press">
+                                                    <ToggleButton.Template>
+                                                        <ControlTemplate TargetType="ToggleButton">
+                                                            <Border Width="20" Height="20" Background="Transparent" Cursor="Hand">
+                                                                <TextBlock x:Name="ExpanderText" Text="▶" VerticalAlignment="Center" HorizontalAlignment="Center" FontSize="10" Foreground="Gray"/>
+                                                            </Border>
+                                                            <ControlTemplate.Triggers>
+                                                                <Trigger Property="IsChecked" Value="True">
+                                                                    <Setter TargetName="ExpanderText" Property="Text" Value="▼"/>
+                                                                </Trigger>
+                                                            </ControlTemplate.Triggers>
+                                                        </ControlTemplate>
+                                                    </ToggleButton.Template>
+                                                </ToggleButton>
+                                                <!-- Content Row -->
+                                                <ContentPresenter x:Name="PART_Header" Grid.Column="1" ContentSource="Header" HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"/>
+                                            </Grid>
+                                        </Border>
+                                        <!-- No margin on ItemsHost to avoid WPF default indentation cutting off Backgrounds -->
+                                        <ItemsPresenter x:Name="ItemsHost" Grid.Row="1" />
+                                    </Grid>
+                                    <ControlTemplate.Triggers>
+                                        <Trigger Property="IsExpanded" Value="false">
+                                            <Setter TargetName="ItemsHost" Property="Visibility" Value="Collapsed"/>
+                                        </Trigger>
+                                        <Trigger Property="HasItems" Value="false">
+                                            <Setter TargetName="Expander" Property="Visibility" Value="Hidden"/>
+                                        </Trigger>
+                                    </ControlTemplate.Triggers>
+                                </ControlTemplate>
+                            </Setter.Value>
+                        </Setter>
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding IsChecked}" Value="True">
+                                <Setter Property="Background" Value="#e8f5e9"/>
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding IsChecked}" Value="{x:Null}">
+                                <Setter Property="Background" Value="#fff8e1"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </TreeView.ItemContainerStyle>
+            </TreeView>
+        </Grid>
+
+        <GridSplitter Grid.Column="1" Grid.Row="0" Width="5" HorizontalAlignment="Stretch" Background="#EEE" Margin="0,0,5,0"/>
+
+        <!-- COLUMNA DERECHA: FILTROS DINÁMICOS -->
+        <ScrollViewer Grid.Column="2" Grid.Row="0" VerticalScrollBarVisibility="Auto">
+            <StackPanel Margin="5,0,0,0">
+                <TextBlock Text="Categoría:" Margin="0,0,0,2"/>
+                <ComboBox ItemsSource="{Binding Categories}" SelectedItem="{Binding SelectedCategory}" />
+
+                <TextBlock Text="Familia:"/>
+                <ComboBox ItemsSource="{Binding Families}" SelectedItem="{Binding SelectedFamily}" />
+
+                <TextBlock Text="Tipo:"/>
+                <ComboBox ItemsSource="{Binding Types}" SelectedItem="{Binding SelectedType}" />
+
+                <TextBlock Text="Nivel:"/>
+                <ComboBox ItemsSource="{Binding Levels}" SelectedItem="{Binding SelectedLevel}"/>
+                
+                <TextBlock Text="Subproyecto:"/>
+                <ComboBox ItemsSource="{Binding Worksets}" SelectedItem="{Binding SelectedWorkset}" />
+                
+                <Border BorderBrush="#DDD" BorderThickness="0,1,0,0" Margin="0,10,0,0" Padding="0,10,0,0">
+                    <TextBlock Text="Instrucciones:" FontSize="10" Foreground="Gray"/>
+                </Border>
+                <TextBlock Text="1. Usa el árbol para selecciones precisas por ID o Tipo." FontSize="9" FontWeight="Normal" TextWrapping="Wrap" Foreground="#666"/>
+                <TextBlock Text="2. Usa los desplegables para filtrado masivo." FontSize="9" FontWeight="Normal" TextWrapping="Wrap" Foreground="#666"/>
+            </StackPanel>
+        </ScrollViewer>
+
+        <!-- Pestaña Inferior de Estado/Aplicar -->
+        <Border Grid.ColumnSpan="3" Grid.Row="1" Background="#f1f1f1" Padding="15" Margin="-15,10,-15,-15">
+            <Grid>
+                <Border Background="#ffffff" CornerRadius="8" Padding="15,5" HorizontalAlignment="Left" VerticalAlignment="Center" BorderBrush="#e0e0e0" BorderThickness="1">
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                        <TextBlock Text="{Binding CheckedElementsCount}" FontSize="24" FontWeight="Medium" VerticalAlignment="Center" Margin="0,0,10,0" Foreground="#333"/>
+                        <TextBlock Text="Elements Checked" VerticalAlignment="Center" Foreground="#666" FontWeight="SemiBold"/>
+                    </StackPanel>
+                </Border>
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                    <Button Content="Limpiar" Command="{Binding ClearFiltersCommand}" Width="80"/>
+                    <Button Content="Aplicar Selección" Command="{Binding ApplyFilterCommand}" Width="120" Background="#007ACC" Foreground="White" FontWeight="Bold"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+    </Grid>
+</Window>

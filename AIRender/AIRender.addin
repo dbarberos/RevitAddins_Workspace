@@ -1,0 +1,15 @@
+<RevitAddIns>
+    <AddIn Type="Application">
+        <Name>AIRender</Name>
+        <Assembly>AIRender\AIRender.dll</Assembly>
+        <AddInId>A5265CC9-214B-410A-8DDC-FF2A6E4305C8</AddInId>
+        <FullClassName>AIRender.Application</FullClassName>
+        <VendorId>AI_CORP</VendorId>
+        <VendorDescription>AI Rendering Solutions</VendorDescription>
+        <VendorEmail>support@airender.ai</VendorEmail>
+    </AddIn>
+    <ManifestSettings>
+        <UseRevitContext>False</UseRevitContext>
+        <ContextName>AIRender</ContextName>
+    </ManifestSettings>
+</RevitAddIns>

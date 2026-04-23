@@ -1,0 +1,12 @@
+<RevitAddIns>
+    <AddIn Type="Application">
+        <Name>FilterPlus</Name>
+        <Assembly>FilterPlus\FilterPlus.dll</Assembly>
+        <AddInId>A5265BB9-214C-4109-8DDC-DF1F6E4305B9</AddInId>
+        <FullClassName>FilterPlus.Application</FullClassName>
+        <VendorId>AI_CORP</VendorId>
+        <VendorDescription>AI Solutions</VendorDescription>
+        <VendorEmail>support@filterplus.ai</VendorEmail>
+        <ContextName>FilterPlus</ContextName>
+    </AddIn>
+</RevitAddIns>

@@ -284,12 +284,12 @@ catch (Exception ex)
 
 Para asegurar la trazabilidad, depuración y aprendizaje continuo, **se debe mantener un registro de cada creación, iteración o modificación** de un add-in.
 
-- El Agente (IA) copiará automáticamente los artefactos generados (Implementation Plan, Task y Walkthrough) en una carpeta en la raíz del workspace llamada `_Development_Logs/`.
-- Dentro de esta carpeta, creará un subdirectorio con la convención: `[YYYY-MM-DD]_[NombreDelAddin]_[Accion]`.
-- Allí se guardarán las versiones finales de:
-  - `Implementation_Plan.md`
-  - `Task.md`
-  - `Walkthrough.md`
+- **Regla estricta para el Agente (IA):** Siempre que el usuario indique que la tarea actual ha finalizado o **que los cambios ya funcionan correctamente**, el Agente copiará obligatoriamente los artefactos generados en la carpeta `docs/` dentro del proyecto correspondiente.
+- Los archivos deben nombrarse obligatoriamente con el patrón que incluye una o dos palabras clave descriptivas sobre los cambios además de la fecha y hora: `[nombre_artefacto]_[keywords]_[YYYY-MM-DD_HHmm].md`.
+- Allí se guardarán las versiones finales de cada iteración:
+  - `implementation_plan_[keywords]_[YYYY-MM-DD_HHmm].md`
+  - `task_[keywords]_[YYYY-MM-DD_HHmm].md`
+  - `walkthrough_[keywords]_[YYYY-MM-DD_HHmm].md`
 
 Esto garantiza que siempre haya una fuente de consulta en el futuro para entender cómo se estructuró el código o por qué se tomaron ciertas decisiones de diseño.
 
