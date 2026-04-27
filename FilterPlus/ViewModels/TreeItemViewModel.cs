@@ -48,6 +48,7 @@ public partial class TreeItemViewModel : ObservableObject
 
     [ObservableProperty] private bool _isExpanded;
     [ObservableProperty] private int _count;
+    [ObservableProperty] private bool _isVisible = true;
 
     public int Level { get; set; }
     public System.Windows.Thickness IndentMargin => new System.Windows.Thickness(Level * 15, 0, 0, 0);

@@ -27,6 +27,10 @@ public partial class SelectionFilterViewModel : ObservableObject
     [ObservableProperty] private string _selectedWorkset;
     [ObservableProperty] private string _statusMessage;
     [ObservableProperty] private int _checkedElementsCount;
+    [ObservableProperty] private string _filterText;
+
+    private Dictionary<TreeItemViewModel, bool?> _preFilterSelectionState;
+    private bool _isRestoringState = false;
 
     private bool _isInitializing = false;
 
@@ -238,5 +242,110 @@ public partial class SelectionFilterViewModel : ObservableObject
         SelectedWorkset = "Todos";
         foreach(var node in RootNodes) node.IsChecked = false;
         ApplyFilter();
+    }
+
+    partial void OnFilterTextChanged(string value)
+    {
+        if (string.IsNullOrEmpty(value))
+        {
+            ApplySearchFilter("");
+            RestoreSelectionState();
+            return;
+        }
+
+        // Si es la primera vez que se filtra en esta sesión, guardamos el estado
+        if (_preFilterSelectionState == null && !_isRestoringState)
+        {
+            _preFilterSelectionState = new Dictionary<TreeItemViewModel, bool?>();
+            SaveSelectionState(RootNodes, _preFilterSelectionState);
+        }
+
+        ApplySearchFilter(value);
+    }
+
+    private void SaveSelectionState(IEnumerable<TreeItemViewModel> nodes, Dictionary<TreeItemViewModel, bool?> state)
+    {
+        foreach (var node in nodes)
+        {
+            state[node] = node.IsChecked;
+            SaveSelectionState(node.Children, state);
+        }
+    }
+
+    private void RestoreSelectionState()
+    {
+        if (_preFilterSelectionState == null) return;
+        
+        _isRestoringState = true;
+        // Restaurar estado sin disparar eventos innecesarios si es posible, pero IsChecked ya se encarga
+        foreach (var kvp in _preFilterSelectionState)
+        {
+            kvp.Key.IsChecked = kvp.Value;
+        }
+        _preFilterSelectionState = null;
+        _isRestoringState = false;
+    }
+
+    private void ApplySearchFilter(string searchText)
+    {
+        bool isEmpty = string.IsNullOrWhiteSpace(searchText);
+        if (!isEmpty)
+        {
+            searchText = searchText.ToLowerInvariant();
+            
+            // Desmarcar todo antes de aplicar la nueva selección basada en el filtro
+            foreach (var node in RootNodes)
+            {
+                node.IsChecked = false;
+            }
+        }
+
+        foreach (var node in RootNodes)
+        {
+            FilterNode(node, searchText, isEmpty);
+        }
+    }
+
+    private bool FilterNode(TreeItemViewModel node, string searchText, bool isEmpty)
+    {
+        if (isEmpty)
+        {
+            node.IsVisible = true;
+            foreach (var child in node.Children) FilterNode(child, searchText, isEmpty);
+            return true;
+        }
+
+        bool match = node.Name.ToLowerInvariant().Contains(searchText);
+        bool childMatch = false;
+
+        foreach (var child in node.Children)
+        {
+            if (FilterNode(child, searchText, isEmpty))
+            {
+                childMatch = true;
+            }
+        }
+
+        node.IsVisible = match || childMatch;
+        
+        if (childMatch && !node.IsExpanded)
+        {
+            node.IsExpanded = true;
+        }
+
+        if (match && !isEmpty)
+        {
+            node.IsChecked = true;
+        }
+
+        return node.IsVisible;
+    }
+
+    [RelayCommand]
+    private void ClearSearch()
+    {
+        // Esto desencadenará OnFilterTextChanged("") que limpiará el filtro de visibilidad
+        FilterText = string.Empty;
+        RestoreSelectionState();
     }
 }
