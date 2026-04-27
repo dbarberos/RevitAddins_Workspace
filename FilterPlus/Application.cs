@@ -30,8 +30,8 @@ public class Application : ExternalApplication
         {
             if (settings.SelectedTabOption == TabOption.RevitDefault)
             {
-                // Tab.Modify
-                panel = Application.CreatePanel("FilterPlus", Autodesk.Revit.UI.Tab.Modify);
+                // Tab.AddIns (Revit Default Tab for plugins)
+                panel = Application.CreatePanel("FilterPlus");
             }
             else if (settings.SelectedTabOption == TabOption.Custom && !string.IsNullOrWhiteSpace(settings.CustomTabName))
             {
@@ -62,8 +62,7 @@ public class Application : ExternalApplication
             // Register context menu creator for Revit 2025+
             try
             {
-                // UIControlledApplication is accessible via Application property in Nice3point ExternalApplication
-                Application.RegisterContextMenu(new FilterContextMenuCreator());
+                this.Application.RegisterContextMenu(new FilterContextMenuCreator());
             }
             catch (Exception ex)
             {
