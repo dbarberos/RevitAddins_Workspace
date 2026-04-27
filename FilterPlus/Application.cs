@@ -1,7 +1,12 @@
+using Autodesk.Revit.UI;
 using Nice3point.Revit.Toolkit.External;
 using FilterPlus.Commands;
+using FilterPlus.Services;
+using FilterPlus.Models;
 using JetBrains.Annotations;
 using Nice3point.Revit.Extensions;
+using System;
+
 namespace FilterPlus;
 
 /// <summary>
@@ -15,13 +20,56 @@ public class Application : ExternalApplication
         CreateRibbon();
     }
 
-
     private void CreateRibbon()
     {
-        var panel = Application.CreatePanel("FilterPlus", "DabaDev");
+        var settings = SettingsService.Load();
+        
+        Autodesk.Revit.UI.RibbonPanel panel = null;
 
-        panel.AddPushButton<StartupCommand>("FilterPlus")
-            .SetImage("/FilterPlus;component/Resources/Icons/RibbonIcon16.png")
-            .SetLargeImage("/FilterPlus;component/Resources/Icons/RibbonIcon32.png");
+        try
+        {
+            if (settings.SelectedTabOption == TabOption.RevitDefault)
+            {
+                // Tab.Modify
+                panel = Application.CreatePanel("FilterPlus", Autodesk.Revit.UI.Tab.Modify);
+            }
+            else if (settings.SelectedTabOption == TabOption.Custom && !string.IsNullOrWhiteSpace(settings.CustomTabName))
+            {
+                panel = Application.CreatePanel("FilterPlus", settings.CustomTabName);
+            }
+            else
+            {
+                // DBDevDefault
+                panel = Application.CreatePanel("FilterPlus", "DBDev");
+            }
+        }
+        catch
+        {
+            // Fallback just in case
+            panel = Application.CreatePanel("FilterPlus", "DBDev");
+        }
+
+        if (panel != null)
+        {
+            panel.AddPushButton<StartupCommand>("FilterPlus")
+                .SetImage("/FilterPlus;component/Resources/Icons/RibbonIcon16.png")
+                .SetLargeImage("/FilterPlus;component/Resources/Icons/RibbonIcon32.png");
+        }
+
+#if REVIT2025_OR_GREATER
+        if (settings.UseAsContextualFilter)
+        {
+            // Register context menu creator for Revit 2025+
+            try
+            {
+                // UIControlledApplication is accessible via Application property in Nice3point ExternalApplication
+                Application.RegisterContextMenu(new FilterContextMenuCreator());
+            }
+            catch (Exception ex)
+            {
+                // Log or handle error if registration fails
+            }
+        }
+#endif
     }
-}
+}

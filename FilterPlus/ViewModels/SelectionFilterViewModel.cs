@@ -27,7 +27,15 @@ public partial class SelectionFilterViewModel : ObservableObject
     [ObservableProperty] private string _selectedWorkset;
     [ObservableProperty] private string _statusMessage;
     [ObservableProperty] private int _checkedElementsCount;
-    [ObservableProperty] private string _filterText;
+    [ObservableProperty]
+    private string _filterText = string.Empty;
+
+    [RelayCommand]
+    private void OpenConfiguration()
+    {
+        var configView = new Views.ConfigurationView();
+        configView.ShowDialog();
+    }
 
     private Dictionary<TreeItemViewModel, bool?> _preFilterSelectionState;
     private bool _isRestoringState = false;
