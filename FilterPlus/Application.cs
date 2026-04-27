@@ -30,13 +30,9 @@ public class Application : ExternalApplication
         {
             if (settings.SelectedTabOption == TabOption.RevitDefault)
             {
-<<<<<<< HEAD
-                // Tab.AddIns (Revit Default Tab for plugins)
-                panel = Application.CreatePanel("FilterPlus");
-=======
-                // Tab.Modify
-                panel = Application.CreatePanel("FilterPlus", Autodesk.Revit.UI.Tab.Modify);
->>>>>>> c52b3d4 (Instalación de Visual Studio)
+                // Attempt to place in the native "Modify" tab (Modificar in Spanish)
+                // In Revit API, native tabs can sometimes be accessed by their internal string name
+                panel = Application.CreatePanel("FilterPlus", "Modify");
             }
             else if (settings.SelectedTabOption == TabOption.Custom && !string.IsNullOrWhiteSpace(settings.CustomTabName))
             {
@@ -50,8 +46,8 @@ public class Application : ExternalApplication
         }
         catch
         {
-            // Fallback just in case
-            panel = Application.CreatePanel("FilterPlus", "DBDev");
+            // Fallback to Add-Ins tab if anything fails
+            panel = Application.CreatePanel("FilterPlus");
         }
 
         if (panel != null)
@@ -64,21 +60,15 @@ public class Application : ExternalApplication
 #if REVIT2025_OR_GREATER
         if (settings.UseAsContextualFilter)
         {
-            // Register context menu creator for Revit 2025+
             try
             {
-<<<<<<< HEAD
                 this.Application.RegisterContextMenu(new FilterContextMenuCreator());
-=======
-                // UIControlledApplication is accessible via Application property in Nice3point ExternalApplication
-                Application.RegisterContextMenu(new FilterContextMenuCreator());
->>>>>>> c52b3d4 (Instalación de Visual Studio)
             }
-            catch (Exception ex)
+            catch
             {
-                // Log or handle error if registration fails
+                // Registration failed
             }
         }
 #endif
     }
-}
+}

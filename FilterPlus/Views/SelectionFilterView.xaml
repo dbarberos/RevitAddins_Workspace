@@ -86,19 +86,23 @@
                         </ControlTemplate>
                     </Button.Template>
                 </Button>
-                <!-- Gear Icon Button -->
-                <Button Grid.Column="3" Command="{Binding OpenConfigurationCommand}" Margin="5,0,0,0" VerticalAlignment="Center" Foreground="#333" Cursor="Hand" ToolTip="Configuration">
+                <!-- Gear Icon Button (Premium Style) -->
+                <Button Grid.Column="3" Command="{Binding OpenConfigurationCommand}" Margin="8,0,0,0" VerticalAlignment="Center" Cursor="Hand" ToolTip="Configuration">
                     <Button.Template>
                         <ControlTemplate TargetType="Button">
-                            <Border x:Name="border" Background="#ffffff" BorderBrush="#e0e0e0" BorderThickness="1" CornerRadius="8" Padding="6,2">
-                                <TextBlock Text="⚙️" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="14"/>
+                            <Border x:Name="border" Background="Transparent" CornerRadius="12" Padding="4">
+                                <Viewbox Width="18" Height="18">
+                                    <Path Data="M12,15.5A3.5,3.5 0 0,1 8.5,12A3.5,3.5 0 0,1 12,8.5A3.5,3.5 0 0,1 15.5,12A3.5,3.5 0 0,1 12,15.5M19.43,12.97C19.47,12.65 19.5,12.33 19.5,12C19.5,11.67 19.47,11.34 19.43,11L21.54,9.37C21.73,9.22 21.78,8.95 21.66,8.73L19.66,5.27C19.54,5.05 19.27,4.97 19.05,5.05L16.56,6.05C16.04,5.66 15.47,5.34 14.86,5.12L14.47,2.5C14.43,2.25 14.22,2.07 13.97,2.07H9.97C9.72,2.07 9.5,2.25 9.47,2.5L9.09,5.12C8.47,5.34 7.9,5.66 7.38,6.05L4.89,5.05C4.67,4.97 4.4,5.05 4.27,5.27L2.27,8.73C2.15,8.95 2.2,9.22 2.39,9.37L4.5,11C4.47,11.34 4.45,11.67 4.45,12C4.45,12.33 4.47,12.65 4.5,12.97L2.39,14.63C2.2,14.78 2.15,15.05 2.27,15.27L4.27,18.73C4.4,18.95 4.67,19.03 4.89,18.95L7.38,17.95C7.9,18.34 8.47,18.66 9.09,18.88L9.47,21.5C9.5,21.75 9.72,21.93 9.97,21.93H13.97C14.22,21.93 14.43,21.75 14.47,21.5L14.86,18.88C15.47,18.66 16.04,18.34 16.56,17.95L19.05,18.95C19.27,19.03 19.54,18.95 19.66,18.73L21.66,15.27C21.78,15.05 21.73,14.78 21.54,14.63L19.43,12.97Z"
+                                          Fill="#777" x:Name="iconPath"/>
+                                </Viewbox>
                             </Border>
                             <ControlTemplate.Triggers>
                                 <Trigger Property="IsMouseOver" Value="True">
-                                    <Setter TargetName="border" Property="Background" Value="#f0f0f0"/>
+                                    <Setter TargetName="border" Property="Background" Value="#eeeeee"/>
+                                    <Setter TargetName="iconPath" Property="Fill" Value="#333"/>
                                 </Trigger>
                                 <Trigger Property="IsPressed" Value="True">
-                                    <Setter TargetName="border" Property="Background" Value="#e0e0e0"/>
+                                    <Setter TargetName="border" Property="Background" Value="#dddddd"/>
                                 </Trigger>
                             </ControlTemplate.Triggers>
                         </ControlTemplate>
