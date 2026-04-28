@@ -50,22 +50,35 @@ El Agente generará un `ComponentGroup` por cada versión de Revit, vinculando e
 
 ---
 
-## 🚀 3. Personalización de la Pantalla de Instalación
-Para dotar al instalador de una apariencia premium, el Agente debe:
-1.  **Banners**: Buscar o solicitar imágenes `Banner.bmp` (493x58) y `Dialog.bmp` (493x312).
-2.  **Licencia**: Si no existe `License.rtf`, crear uno genérico con el nombre del Add-in y la fecha actual.
+## 🛡 3. Reglas de Oro para un WXS Robusto (Anti-Errores)
+Para evitar errores de compilación comunes en WiX (ICE64, ICE38, Duplicate Symbols), el Agente debe seguir estas reglas estrictas al generar el código:
+
+### A. Gestión de IDs y Símbolos Únicos
+*   **Nunca** dejes que WiX asigne IDs automáticos a los archivos en instaladores multiversión.
+*   **Regla**: Cada archivo debe tener un `Id` único que incluya la versión (ej: `Id="F_Dll24"`, `Id="F_Dll25"`). Esto evita el error *"Duplicate symbol 'File:Nombre.dll' found"*.
+
+### B. GUIDs Estáticos vs Automáticos
+*   **Regla**: Usa siempre **GUIDs fijos y estáticos** para los componentes (`Guid="XXXX-..."`). 
+*   **Por qué**: El uso de `Guid="*"` (automático) falla si el componente contiene más de un elemento (ej: un Archivo + una Clave de Registro). Al ser instalaciones multiversión complejas, el GUID fijo garantiza estabilidad.
+
+### C. Validación de Seguridad Windows (ICE)
+Para instalaciones en `AppData` (Per-User):
+1.  **ICE38 (KeyPath de Registro)**: Cada componente **debe** tener una `RegistryValue` en `HKCU` como `KeyPath="yes"`. No uses el archivo como KeyPath.
+2.  **ICE64 (Borrado de Carpetas)**: Cada nivel de la jerarquía de directorios (`Autodesk`, `Revit`, `Addins`, `2024`, etc.) debe tener una instrucción `<RemoveFolder Id="..." On="uninstall"/>` vinculada a un componente.
+3.  **Componente de Limpieza**: Se recomienda crear un `ComponentGroup` llamado `CleanupComponents` que se encargue exclusivamente de las instrucciones `RemoveFolder` de las carpetas superiores.
 
 ---
 
 ## 🤖 4. Instrucciones de Comportamiento para el Agente
 - **Referencia Automática**: El Agente debe instruir al usuario para que añada la referencia a `WixUIExtension.dll` en Visual Studio si se detecta que el proyecto es nuevo.
-- **GUIDs Permanentes**: El `UpgradeCode` debe ser persistente en futuras actualizaciones para permitir que el instalador desinstale versiones antiguas automáticamente.
-- **Validación de Archivos**: Antes de generar el WXS, el Agente debe listar los archivos detectados para que el usuario confirme si falta alguna DLL de terceros.
+- **UpgradeCode**: Debe ser persistente para permitir actualizaciones (`MajorUpgrade`).
+- **Validación de Rutas**: Verificar siempre que las rutas relativas (ej: `..\..\..\`) coincidan con la profundidad de la carpeta del instalador respecto a los binarios.
+- **Estructura de Componentes**: Cada archivo importante (DLL, .addin) debe ir en su propio `<Component>`.
 
 ---
 
 ## 📋 5. Flujo de Trabajo del Agente
 1.  **Preparación**: Crear carpeta `Installer/` y subcarpeta `Resources/` dentro del proyecto.
 2.  **Recursos**: Generar `License.rtf` básico.
-3.  **Escritura**: Generar el archivo `Product.wxs` completo con soporte para todas las versiones detectadas.
-4.  **Finalización**: Entregar los comandos para compilar vía consola (`candle.exe` y `light.exe`) o guiar en el uso de la interfaz de Visual Studio.
+3.  **Escritura**: Generar el archivo `Product.wxs` completo aplicando las **Reglas de Oro** de la Sección 3.
+4.  **Finalización**: Entregar los comandos para compilar vía consola o guiar en el uso de la interfaz de Visual Studio.
