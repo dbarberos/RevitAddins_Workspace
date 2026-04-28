@@ -44,9 +44,10 @@ public class Application : ExternalApplication
                 panel = Application.CreatePanel("FilterPlus", "DBDev");
             }
         }
-        catch
+        catch (Exception ex)
         {
-            // Fallback to Add-Ins tab if anything fails
+            // Log the error but continue with fallback
+            LoggerService.LogError("Ribbon Panel Creation", ex);
             panel = Application.CreatePanel("FilterPlus");
         }
 
@@ -65,9 +66,9 @@ public class Application : ExternalApplication
                 // In Revit 2025, RegisterContextMenu requires a name and the creator
                 this.Application.RegisterContextMenu("FilterPlus", new FilterContextMenuCreator());
             }
-            catch
+            catch (Exception ex)
             {
-                // Registration failed
+                LoggerService.LogError("Context Menu Registration", ex);
             }
         }
 #endif

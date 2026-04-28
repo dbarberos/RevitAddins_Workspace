@@ -43,10 +43,13 @@ public partial class ConfigurationViewModel : ObservableObject
         if (IsRevitDefaultSelected) selectedOption = TabOption.RevitDefault;
         else if (IsCustomSelected) selectedOption = TabOption.Custom;
 
+        // Security Hardening: Sanitize custom tab name
+        string sanitizedTabName = SecurityUtils.SanitizeInput(CustomTabName);
+
         var newSettings = new FilterPlusSettings
         {
             SelectedTabOption = selectedOption,
-            CustomTabName = CustomTabName,
+            CustomTabName = sanitizedTabName,
             UseAsContextualFilter = UseAsContextualFilter
         };
 

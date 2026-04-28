@@ -16,10 +16,17 @@ public class StartupCommand : ExternalCommand
 {
     public override void Execute()
     {
-        var selectionService = new RevitSelectionService(UiDocument);
-        var viewModel = new SelectionFilterViewModel(selectionService);
-        var view = new SelectionFilterView(viewModel);
-        
-        view.Show();
+        try
+        {
+            var selectionService = new RevitSelectionService(UiDocument);
+            var viewModel = new SelectionFilterViewModel(selectionService);
+            var view = new SelectionFilterView(viewModel);
+            
+            view.Show();
+        }
+        catch (Exception ex)
+        {
+            LoggerService.LogError("Startup Command", ex);
+        }
     }
 }

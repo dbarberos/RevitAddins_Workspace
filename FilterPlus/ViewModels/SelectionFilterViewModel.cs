@@ -218,31 +218,38 @@ public partial class SelectionFilterViewModel : ObservableObject
     [RelayCommand]
     private void ApplyFilter()
     {
-        var selectedIds = new List<Autodesk.Revit.DB.ElementId>();
-        foreach (var node in RootNodes) node.GetAllSelectedIds(selectedIds);
-
-        if (selectedIds.Count > 0)
+        try
         {
-            _selectionService.SetSelection(selectedIds);
-            StatusMessage = $"Seleccionados (Árbol): {selectedIds.Count}";
+            var selectedIds = new List<Autodesk.Revit.DB.ElementId>();
+            foreach (var node in RootNodes) node.GetAllSelectedIds(selectedIds);
+
+            if (selectedIds.Count > 0)
+            {
+                _selectionService.SetSelection(selectedIds);
+                StatusMessage = $"Seleccionados (Árbol): {selectedIds.Count}";
+            }
+            else
+            {
+                var filtered = _allAvailableElements.AsEnumerable();
+                if (SelectedCategory != "Todos" && !string.IsNullOrEmpty(SelectedCategory))
+                    filtered = filtered.Where(e => e.CategoryName == SelectedCategory);
+                if (SelectedFamily != "Todos" && !string.IsNullOrEmpty(SelectedFamily))
+                    filtered = filtered.Where(e => e.FamilyName == SelectedFamily);
+                if (SelectedType != "Todos" && !string.IsNullOrEmpty(SelectedType))
+                    filtered = filtered.Where(e => e.TypeName == SelectedType);
+                if (SelectedLevel != "Todos" && !string.IsNullOrEmpty(SelectedLevel))
+                    filtered = filtered.Where(e => e.LevelName == SelectedLevel);
+                if (SelectedWorkset != "Todos" && !string.IsNullOrEmpty(SelectedWorkset))
+                    filtered = filtered.Where(e => e.WorksetName == SelectedWorkset);
+
+                var filteredList = filtered.ToList();
+                _selectionService.SetSelection(filteredList.Select(e => e.Id));
+                StatusMessage = $"Seleccionados (Filtros): {filteredList.Count}";
+            }
         }
-        else
+        catch (Exception ex)
         {
-            var filtered = _allAvailableElements.AsEnumerable();
-            if (SelectedCategory != "Todos" && !string.IsNullOrEmpty(SelectedCategory))
-                filtered = filtered.Where(e => e.CategoryName == SelectedCategory);
-            if (SelectedFamily != "Todos" && !string.IsNullOrEmpty(SelectedFamily))
-                filtered = filtered.Where(e => e.FamilyName == SelectedFamily);
-            if (SelectedType != "Todos" && !string.IsNullOrEmpty(SelectedType))
-                filtered = filtered.Where(e => e.TypeName == SelectedType);
-            if (SelectedLevel != "Todos" && !string.IsNullOrEmpty(SelectedLevel))
-                filtered = filtered.Where(e => e.LevelName == SelectedLevel);
-            if (SelectedWorkset != "Todos" && !string.IsNullOrEmpty(SelectedWorkset))
-                filtered = filtered.Where(e => e.WorksetName == SelectedWorkset);
-
-            var filteredList = filtered.ToList();
-            _selectionService.SetSelection(filteredList.Select(e => e.Id));
-            StatusMessage = $"Seleccionados (Filtros): {filteredList.Count}";
+            LoggerService.LogError("Applying Filter", ex);
         }
     }
 
@@ -274,7 +281,9 @@ public partial class SelectionFilterViewModel : ObservableObject
             SaveSelectionState(RootNodes, _preFilterSelectionState);
         }
 
-        ApplySearchFilter(value);
+        // Security Hardening: Sanitize filter text
+        string sanitizedValue = SecurityUtils.SanitizeInput(value);
+        ApplySearchFilter(sanitizedValue);
     }
 
     private void SaveSelectionState(IEnumerable<TreeItemViewModel> nodes, Dictionary<TreeItemViewModel, bool?> state)
