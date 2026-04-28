@@ -149,9 +149,15 @@ public partial class SelectionFilterViewModel : ObservableObject
                     famNode.Children.Add(typeNode);
                     int strCount = 0;
 
+#if REVIT2024_OR_GREATER
                     foreach (var element in typeGroup.OrderBy(e => e.Id.Value))
                     {
                         var elNode = new TreeItemViewModel($"ID: {element.Id.Value}", typeNode, 4, OnTreeSelectionChanged)
+#else
+                    foreach (var element in typeGroup.OrderBy(e => e.Id.IntegerValue))
+                    {
+                        var elNode = new TreeItemViewModel($"ID: {element.Id.IntegerValue}", typeNode, 4, OnTreeSelectionChanged)
+#endif
                         {
                             ElementId = element.Id,
                             Count = 1

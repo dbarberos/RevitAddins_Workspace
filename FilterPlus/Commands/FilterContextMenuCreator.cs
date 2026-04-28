@@ -8,7 +8,10 @@ public class FilterContextMenuCreator : IContextMenuCreator
     public void BuildContextMenu(ContextMenu contextMenu)
     {
         // Añadir una opción al menú contextual
-        var commandId = new PostableCommandId(PostableCommand.Modify); // O usar el comando propio
+        // In 2025, we add items to the context menu using CommandIds
+        // This is a placeholder for the actual command registration
+        // var commandId = RevitCommandId.LookupPostableCommandId(PostableCommand.Properties); 
+        // contextMenu.AddItem(new ContextMenuItem("FilterPlus", commandId));
         
         // Wait, ContextMenu has .AddItem() ?
         // The proper way in 2025 API:

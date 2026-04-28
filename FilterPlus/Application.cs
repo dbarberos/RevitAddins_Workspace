@@ -62,7 +62,8 @@ public class Application : ExternalApplication
         {
             try
             {
-                this.Application.RegisterContextMenu(new FilterContextMenuCreator());
+                // In Revit 2025, RegisterContextMenu requires a name and the creator
+                this.Application.RegisterContextMenu("FilterPlus", new FilterContextMenuCreator());
             }
             catch
             {
