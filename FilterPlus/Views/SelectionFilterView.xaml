@@ -5,12 +5,15 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:sys="clr-namespace:System;assembly=mscorlib"
         xmlns:viewmodels="clr-namespace:FilterPlus.ViewModels"
+        xmlns:services="clr-namespace:FilterPlus.Services"
+        xmlns:converters="clr-namespace:FilterPlus.Converters"
         mc:Ignorable="d"
-        Title="FilterPlus" Height="450" Width="450"
+        Title="FilterPlus" Height="500" Width="700"
         WindowStartupLocation="CenterScreen"
         Topmost="True" Background="#f5f5f5">
     <Window.Resources>
         <BooleanToVisibilityConverter x:Key="BoolToVis"/>
+        <converters:EnumToBoolConverter x:Key="EnumToBool"/>
         <sys:Double x:Key="{x:Static SystemParameters.VerticalScrollBarWidthKey}">10</sys:Double>
         <Style TargetType="TextBlock">
             <Setter Property="Margin" Value="0,10,0,2"/>
@@ -43,8 +46,8 @@
     <Grid Margin="15">
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="*"/> <!-- Árbol -->
-            <ColumnDefinition Width="0"/> <!-- Separador -->
-            <ColumnDefinition Width="0"/> <!-- Filtros -->
+            <ColumnDefinition Width="Auto"/> <!-- Separador -->
+            <ColumnDefinition Width="250"/> <!-- Filtros y Selección -->
         </Grid.ColumnDefinitions>
         <Grid.RowDefinitions>
             <RowDefinition Height="*"/>
@@ -198,33 +201,58 @@
             </TreeView>
         </Grid>
 
-        <GridSplitter Grid.Column="1" Grid.Row="0" Width="5" HorizontalAlignment="Stretch" Background="#EEE" Margin="0,0,5,0" Visibility="Collapsed"/>
+        <GridSplitter Grid.Column="1" Grid.Row="0" Width="5" HorizontalAlignment="Stretch" Background="#EEE" Margin="0,0,5,0" />
 
-        <!-- COLUMNA DERECHA: FILTROS DINÁMICOS -->
-        <ScrollViewer Grid.Column="2" Grid.Row="0" VerticalScrollBarVisibility="Auto" Visibility="Collapsed">
-            <StackPanel Margin="5,0,0,0">
-                <TextBlock Text="Category:" Margin="0,0,0,2"/>
-                <ComboBox ItemsSource="{Binding Categories}" SelectedItem="{Binding SelectedCategory}" />
+        <!-- COLUMNA DERECHA: SELECCIÓN Y FILTROS -->
+        <Grid Grid.Column="2" Grid.Row="0">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
 
-                <TextBlock Text="Family:"/>
-                <ComboBox ItemsSource="{Binding Families}" SelectedItem="{Binding SelectedFamily}" />
+            <!-- Card de Selección -->
+            <Border Grid.Row="0" Background="White" CornerRadius="8" Padding="10" Margin="0,0,0,10" BorderBrush="#e8e8e8" BorderThickness="1">
+                <StackPanel>
+                    <TextBlock Text="Select" FontWeight="500" Margin="0,0,0,8" Foreground="#333"/>
+                    
+                    <RadioButton Content="Current Selection" 
+                                 IsChecked="{Binding CurrentScope, Converter={StaticResource EnumToBool}, ConverterParameter={x:Static services:SelectionScope.CurrentSelection}}" 
+                                 Margin="0,0,0,6"/>
+                    <RadioButton Content="Elements in View" 
+                                 IsChecked="{Binding CurrentScope, Converter={StaticResource EnumToBool}, ConverterParameter={x:Static services:SelectionScope.ElementsInView}}" 
+                                 Margin="0,0,0,6"/>
+                    <RadioButton Content="All Model Elements" 
+                                 IsChecked="{Binding CurrentScope, Converter={StaticResource EnumToBool}, ConverterParameter={x:Static services:SelectionScope.AllModelElements}}" 
+                                 Margin="0,0,0,0"/>
+                </StackPanel>
+            </Border>
 
-                <TextBlock Text="Type:"/>
-                <ComboBox ItemsSource="{Binding Types}" SelectedItem="{Binding SelectedType}" />
+            <!-- Filtros Dinámicos -->
+            <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+                <StackPanel Margin="0,0,0,0">
+                    <TextBlock Text="Category:" Margin="0,0,0,2"/>
+                    <ComboBox ItemsSource="{Binding Categories}" SelectedItem="{Binding SelectedCategory}" />
 
-                <TextBlock Text="Level:"/>
-                <ComboBox ItemsSource="{Binding Levels}" SelectedItem="{Binding SelectedLevel}"/>
-                
-                <TextBlock Text="Workset:"/>
-                <ComboBox ItemsSource="{Binding Worksets}" SelectedItem="{Binding SelectedWorkset}" />
-                
-                <Border BorderBrush="#DDD" BorderThickness="0,1,0,0" Margin="0,10,0,0" Padding="0,10,0,0">
-                    <TextBlock Text="Instructions:" FontSize="10" Foreground="Gray"/>
-                </Border>
-                <TextBlock Text="1. Use the tree for precise selection by ID or Type." FontSize="9" FontWeight="Normal" TextWrapping="Wrap" Foreground="#666"/>
-                <TextBlock Text="2. Use dropdowns for bulk filtering." FontSize="9" FontWeight="Normal" TextWrapping="Wrap" Foreground="#666"/>
-            </StackPanel>
-        </ScrollViewer>
+                    <TextBlock Text="Family:"/>
+                    <ComboBox ItemsSource="{Binding Families}" SelectedItem="{Binding SelectedFamily}" />
+
+                    <TextBlock Text="Type:"/>
+                    <ComboBox ItemsSource="{Binding Types}" SelectedItem="{Binding SelectedType}" />
+
+                    <TextBlock Text="Level:"/>
+                    <ComboBox ItemsSource="{Binding Levels}" SelectedItem="{Binding SelectedLevel}"/>
+                    
+                    <TextBlock Text="Workset:"/>
+                    <ComboBox ItemsSource="{Binding Worksets}" SelectedItem="{Binding SelectedWorkset}" />
+                    
+                    <Border BorderBrush="#DDD" BorderThickness="0,1,0,0" Margin="0,10,0,0" Padding="0,10,0,0">
+                        <TextBlock Text="Instructions:" FontSize="10" Foreground="Gray"/>
+                    </Border>
+                    <TextBlock Text="1. Use the tree for precise selection by ID or Type." FontSize="9" FontWeight="Normal" TextWrapping="Wrap" Foreground="#666"/>
+                    <TextBlock Text="2. Use dropdowns for bulk filtering." FontSize="9" FontWeight="Normal" TextWrapping="Wrap" Foreground="#666"/>
+                </StackPanel>
+            </ScrollViewer>
+        </Grid>
 
         <!-- Pestaña Inferior de Estado/Aplicar -->
         <Border Grid.ColumnSpan="3" Grid.Row="1" Background="#f1f1f1" Padding="15" Margin="-15,10,-15,-15">

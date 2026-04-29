@@ -5,6 +5,13 @@ using System.Collections.Generic;
 using System.Linq;
 
 namespace FilterPlus.Services;
+ 
+public enum SelectionScope
+{
+    CurrentSelection,
+    ElementsInView,
+    AllModelElements
+}
 
 public class RevitSelectionService
 {
@@ -22,10 +29,29 @@ public class RevitSelectionService
         return _uiDoc.Selection.GetElementIds().ToHashSet();
     }
 
-    public List<ElementModel> GetAvailableElements()
+    public List<ElementModel> GetAvailableElements(SelectionScope scope)
     {
-        // Get all elements in active view that can be selected
-        var elements = new FilteredElementCollector(_doc, _doc.ActiveView.Id)
+        FilteredElementCollector collector;
+        
+        switch (scope)
+        {
+            case SelectionScope.CurrentSelection:
+                var selectedIds = _uiDoc.Selection.GetElementIds();
+                if (!selectedIds.Any()) return new List<ElementModel>();
+                collector = new FilteredElementCollector(_doc, selectedIds);
+                break;
+            case SelectionScope.ElementsInView:
+                collector = new FilteredElementCollector(_doc, _doc.ActiveView.Id);
+                break;
+            case SelectionScope.AllModelElements:
+                collector = new FilteredElementCollector(_doc);
+                break;
+            default:
+                collector = new FilteredElementCollector(_doc, _doc.ActiveView.Id);
+                break;
+        }
+
+        var elements = collector
             .WhereElementIsNotElementType()
             .ToElements();
 

@@ -27,8 +27,10 @@ public partial class SelectionFilterViewModel : ObservableObject
     [ObservableProperty] private string _selectedWorkset;
     [ObservableProperty] private string _statusMessage;
     [ObservableProperty] private int _checkedElementsCount;
-    [ObservableProperty]
-    private string _filterText = string.Empty;
+    [ObservableProperty] private string _filterText = string.Empty;
+
+    [ObservableProperty] private SelectionScope _currentScope = SelectionScope.CurrentSelection;
+    private HashSet<Autodesk.Revit.DB.ElementId> _persistentCheckedIds = new();
 
     [RelayCommand]
     private void OpenConfiguration()
@@ -37,7 +39,7 @@ public partial class SelectionFilterViewModel : ObservableObject
         configView.ShowDialog();
     }
 
-    private Dictionary<TreeItemViewModel, bool?> _preFilterSelectionState;
+    private HashSet<Autodesk.Revit.DB.ElementId> _savedCurrentSelectionState = new();
     private bool _isRestoringState = false;
 
     private bool _isInitializing = false;
@@ -53,13 +55,49 @@ public partial class SelectionFilterViewModel : ObservableObject
     public SelectionFilterViewModel(RevitSelectionService selectionService)
     {
         _selectionService = selectionService;
-        _allAvailableElements = _selectionService.GetAvailableElements();
+        _persistentCheckedIds = _selectionService.GetInitialSelectionIds();
+        
+        LoadElements();
+    }
+
+    private void LoadElements()
+    {
+        _allAvailableElements.Clear();
+        _allAvailableElements.AddRange(_selectionService.GetAvailableElements(CurrentScope));
         
         StatusMessage = $"Elementos encontrados: {_allAvailableElements.Count}";
         
         UpdateDropdowns();
         InitializeTree();
         OnTreeSelectionChanged();
+    }
+
+    partial void OnCurrentScopeChanged(SelectionScope value)
+    {
+        if (_isInitializing) return;
+
+        // Si salimos de CurrentSelection, guardamos lo que el usuario ha marcado manualmente
+        if (value != SelectionScope.CurrentSelection && _persistentCheckedIds != null)
+        {
+            var currentChecked = new List<Autodesk.Revit.DB.ElementId>();
+            foreach (var node in RootNodes) node.GetAllSelectedIds(currentChecked);
+            _savedCurrentSelectionState = currentChecked.ToHashSet();
+        }
+
+        // Según el requerimiento: "al cambiar a View o All se marquen solo los seleccionados en Revit"
+        // Y "al desactivar el switch (volver a Current Selection) volverá al inicial"
+        if (value == SelectionScope.CurrentSelection)
+        {
+            _persistentCheckedIds = _savedCurrentSelectionState.Count > 0 
+                ? _savedCurrentSelectionState 
+                : _selectionService.GetInitialSelectionIds();
+        }
+        else
+        {
+            _persistentCheckedIds = _selectionService.GetInitialSelectionIds();
+        }
+        
+        LoadElements();
     }
 
     private void UpdateDropdowns()
@@ -178,10 +216,11 @@ public partial class SelectionFilterViewModel : ObservableObject
 
         _isInitializing = true;
         
-        var selectedIds = _selectionService.GetInitialSelectionIds();
-        if (selectedIds.Count > 0)
+        _isInitializing = true;
+        
+        if (_persistentCheckedIds.Count > 0)
         {
-            ApplyInitialSelection(rootAll, selectedIds);
+            ApplyInitialSelection(rootAll, _persistentCheckedIds);
         }
 
         rootAll.IsExpanded = true;
@@ -265,48 +304,33 @@ public partial class SelectionFilterViewModel : ObservableObject
         ApplyFilter();
     }
 
+    private HashSet<Autodesk.Revit.DB.ElementId> _preSearchCheckedIds = null;
+
     partial void OnFilterTextChanged(string value)
     {
         if (string.IsNullOrEmpty(value))
         {
             ApplySearchFilter("");
-            RestoreSelectionState();
+            if (_preSearchCheckedIds != null)
+            {
+                _isInitializing = true;
+                foreach (var node in RootNodes) ApplyInitialSelection(node, _preSearchCheckedIds);
+                _preSearchCheckedIds = null;
+                _isInitializing = false;
+                OnTreeSelectionChanged();
+            }
             return;
         }
 
-        // Si es la primera vez que se filtra en esta sesión, guardamos el estado
-        if (_preFilterSelectionState == null && !_isRestoringState)
+        if (_preSearchCheckedIds == null && !_isRestoringState)
         {
-            _preFilterSelectionState = new Dictionary<TreeItemViewModel, bool?>();
-            SaveSelectionState(RootNodes, _preFilterSelectionState);
+            var currentChecked = new List<Autodesk.Revit.DB.ElementId>();
+            foreach (var node in RootNodes) node.GetAllSelectedIds(currentChecked);
+            _preSearchCheckedIds = currentChecked.ToHashSet();
         }
 
-        // Security Hardening: Sanitize filter text
         string sanitizedValue = SecurityUtils.SanitizeInput(value);
         ApplySearchFilter(sanitizedValue);
-    }
-
-    private void SaveSelectionState(IEnumerable<TreeItemViewModel> nodes, Dictionary<TreeItemViewModel, bool?> state)
-    {
-        foreach (var node in nodes)
-        {
-            state[node] = node.IsChecked;
-            SaveSelectionState(node.Children, state);
-        }
-    }
-
-    private void RestoreSelectionState()
-    {
-        if (_preFilterSelectionState == null) return;
-        
-        _isRestoringState = true;
-        // Restaurar estado sin disparar eventos innecesarios si es posible, pero IsChecked ya se encarga
-        foreach (var kvp in _preFilterSelectionState)
-        {
-            kvp.Key.IsChecked = kvp.Value;
-        }
-        _preFilterSelectionState = null;
-        _isRestoringState = false;
     }
 
     private void ApplySearchFilter(string searchText)
@@ -367,8 +391,8 @@ public partial class SelectionFilterViewModel : ObservableObject
     [RelayCommand]
     private void ClearSearch()
     {
-        // Esto desencadenará OnFilterTextChanged("") que limpiará el filtro de visibilidad
         FilterText = string.Empty;
-        RestoreSelectionState();
+        // No restauramos el estado aquí porque ya se maneja en OnFilterTextChanged si es necesario
+        // pero podemos forzar una actualización
     }
 }
