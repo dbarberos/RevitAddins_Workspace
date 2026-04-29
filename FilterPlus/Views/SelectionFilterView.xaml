@@ -6,7 +6,7 @@
         xmlns:sys="clr-namespace:System;assembly=mscorlib"
         xmlns:viewmodels="clr-namespace:FilterPlus.ViewModels"
         mc:Ignorable="d"
-        Title="FilterPlus - Filtro de Selección" Height="450" Width="450"
+        Title="FilterPlus" Height="450" Width="450"
         WindowStartupLocation="CenterScreen"
         Topmost="True" Background="#f5f5f5">
     <Window.Resources>
@@ -203,26 +203,26 @@
         <!-- COLUMNA DERECHA: FILTROS DINÁMICOS -->
         <ScrollViewer Grid.Column="2" Grid.Row="0" VerticalScrollBarVisibility="Auto" Visibility="Collapsed">
             <StackPanel Margin="5,0,0,0">
-                <TextBlock Text="Categoría:" Margin="0,0,0,2"/>
+                <TextBlock Text="Category:" Margin="0,0,0,2"/>
                 <ComboBox ItemsSource="{Binding Categories}" SelectedItem="{Binding SelectedCategory}" />
 
-                <TextBlock Text="Familia:"/>
+                <TextBlock Text="Family:"/>
                 <ComboBox ItemsSource="{Binding Families}" SelectedItem="{Binding SelectedFamily}" />
 
-                <TextBlock Text="Tipo:"/>
+                <TextBlock Text="Type:"/>
                 <ComboBox ItemsSource="{Binding Types}" SelectedItem="{Binding SelectedType}" />
 
-                <TextBlock Text="Nivel:"/>
+                <TextBlock Text="Level:"/>
                 <ComboBox ItemsSource="{Binding Levels}" SelectedItem="{Binding SelectedLevel}"/>
                 
-                <TextBlock Text="Subproyecto:"/>
+                <TextBlock Text="Workset:"/>
                 <ComboBox ItemsSource="{Binding Worksets}" SelectedItem="{Binding SelectedWorkset}" />
                 
                 <Border BorderBrush="#DDD" BorderThickness="0,1,0,0" Margin="0,10,0,0" Padding="0,10,0,0">
-                    <TextBlock Text="Instrucciones:" FontSize="10" Foreground="Gray"/>
+                    <TextBlock Text="Instructions:" FontSize="10" Foreground="Gray"/>
                 </Border>
-                <TextBlock Text="1. Usa el árbol para selecciones precisas por ID o Tipo." FontSize="9" FontWeight="Normal" TextWrapping="Wrap" Foreground="#666"/>
-                <TextBlock Text="2. Usa los desplegables para filtrado masivo." FontSize="9" FontWeight="Normal" TextWrapping="Wrap" Foreground="#666"/>
+                <TextBlock Text="1. Use the tree for precise selection by ID or Type." FontSize="9" FontWeight="Normal" TextWrapping="Wrap" Foreground="#666"/>
+                <TextBlock Text="2. Use dropdowns for bulk filtering." FontSize="9" FontWeight="Normal" TextWrapping="Wrap" Foreground="#666"/>
             </StackPanel>
         </ScrollViewer>
 
@@ -236,8 +236,8 @@
                     </StackPanel>
                 </Border>
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                    <Button Content="Limpiar" Command="{Binding ClearFiltersCommand}" Width="80"/>
-                    <Button Content="Aplicar Selección" Command="{Binding ApplyFilterCommand}" Width="120" Background="#007ACC" Foreground="White" FontWeight="Bold"/>
+                    <Button Content="Clear" Command="{Binding ClearFiltersCommand}" Width="80"/>
+                    <Button Content="Apply Selection" Command="{Binding ApplyFilterCommand}" Width="120" Background="#007ACC" Foreground="White" FontWeight="Bold"/>
                 </StackPanel>
             </Grid>
         </Border>
