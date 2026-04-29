@@ -5,12 +5,14 @@
 
 ---
 
-## 🟢 1. Fase de Configuración Inicial (Entrada de Usuario)
+## 🟢 1. Fase de Configuración Inicial (Entrada de Usuario y Git)
 Al activar este skill, el Agente debe recopilar:
-1.  **Versiones de Revit Objetivo:** (Ej. 2023, 2024, 2025, 2026, 2027).
-2.  **Nombre Comercial:** Nombre del Add-in para el Panel de Control.
-3.  **Fabricante:** Nombre del desarrollador o empresa.
-4.  **UI Deseada:** ¿Mínima (Minimal) o con selección de ruta (InstallDir)?
+1.  **Versión del Add-in (Git):** Ejecutar `git describe --tags --abbrev=0` para obtener la última versión.
+    *   **Acción Proactiva:** Si el tag existe (ej. `v1.0.0`), el Agente debe actualizar automáticamente la etiqueta `<Version>` en el archivo `.csproj` del proyecto.
+2.  **Versiones de Revit Objetivo:** (Ej. 2023, 2024, 2025, 2026, 2027).
+3.  **Nombre Comercial:** Nombre del Add-in para el Panel de Control.
+4.  **Fabricante:** Nombre del desarrollador o empresa.
+5.  **UI Deseada:** ¿Mínima (Minimal) o con selección de ruta (InstallDir)?
 
 ---
 
@@ -78,7 +80,8 @@ Para instalaciones en `AppData` (Per-User):
 ---
 
 ## 📋 5. Flujo de Trabajo del Agente
-1.  **Preparación**: Crear carpeta `Installer/` y subcarpeta `Resources/` dentro del proyecto.
-2.  **Recursos**: Generar `License.rtf` básico.
-3.  **Escritura**: Generar el archivo `Product.wxs` completo aplicando las **Reglas de Oro** de la Sección 3.
-4.  **Finalización**: Entregar los comandos para compilar vía consola o guiar en el uso de la interfaz de Visual Studio.
+1.  **Versión:** Obtener tag de Git y sincronizar con `.csproj`.
+2.  **Preparación:** Crear carpeta `Installer/` y subcarpeta `Resources/` dentro del proyecto.
+3.  **Recursos:** Generar `License.rtf` básico.
+4.  **Escritura:** Generar el archivo `Product.wxs` completo aplicando las **Reglas de Oro** de la Sección 3, asegurando que `Product/@Version` coincida con la versión de Git.
+5.  **Finalización:** Entregar los comandos para compilar vía consola o guiar en el uso de la interfaz de Visual Studio.
