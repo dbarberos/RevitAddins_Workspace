@@ -206,7 +206,120 @@ foreach (var item in allItems)
 
 ---
 
+## ✅ Templates de Proyecto `.csproj`
+
+### .NET Framework 4.8 (Revit ≤ 2024)
+
+```xml
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net48</TargetFramework>
+    <LangVersion>12</LangVersion>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UseWPF>true</UseWPF>
+    <Configurations>Debug;Release</Configurations>
+    <Version>1.0.0</Version>
+    <AssemblyName>{{Nombre}}</AssemblyName>
+    <RootNamespace>{{Nombre}}</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Revit API References - ajustar la ruta según la instalación local -->
+    <Reference Include="RevitAPI">
+      <HintPath>$(ProgramW6432)\Autodesk\Revit 2024\RevitAPI.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="RevitAPIUI">
+      <HintPath>$(ProgramW6432)\Autodesk\Revit 2024\RevitAPIUI.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+
+  <!-- Nice3point Toolkit (recomendado) -->
+  <ItemGroup>
+    <PackageReference Include="Nice3point.Revit.Toolkit" Version="2024.*" />
+    <PackageReference Include="Nice3point.Revit.Extensions" Version="2024.*" />
+    <PackageReference Include="Nice3point.Revit.Api.RevitAPI" Version="2024.*" />
+    <PackageReference Include="Nice3point.Revit.Api.RevitAPIUI" Version="2024.*" />
+  </ItemGroup>
+</Project>
+```
+
+> **⚠️ Nota:** Si se usan los paquetes NuGet de Nice3point (`Nice3point.Revit.Api.RevitAPI`), las referencias manuales a `RevitAPI.dll` **no son necesarias**. Usa uno u otro, nunca ambos.
+
+### .NET 8 (Revit 2025+)
+
+```xml
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <LangVersion>12</LangVersion>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UseWPF>true</UseWPF>
+    <EnableDynamicLoading>true</EnableDynamicLoading>
+    <Version>1.0.0</Version>
+    <AssemblyName>{{Nombre}}</AssemblyName>
+    <RootNamespace>{{Nombre}}</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Nice3point.Revit.Toolkit" Version="2025.*" />
+    <PackageReference Include="Nice3point.Revit.Extensions" Version="2025.*" />
+    <PackageReference Include="Nice3point.Revit.Api.RevitAPI" Version="2025.*" />
+    <PackageReference Include="Nice3point.Revit.Api.RevitAPIUI" Version="2025.*" />
+  </ItemGroup>
+</Project>
+```
+
+### Propiedades críticas del `.csproj`
+
+| Propiedad | Valor obligatorio | Motivo |
+|-----------|------------------|--------|
+| `ImplicitUsings` | `enable` | Inyecta namespaces globales de Revit/Nice3point |
+| `LangVersion` | `12` | Habilita Primary Constructors, records, etc. |
+| `UseWPF` | `true` | Necesario para `pack://application` y controles WPF |
+| `Private` (en References) | `false` | Evita copiar DLLs de Revit al output (ya están en el GAC) |
+| `EnableDynamicLoading` | `true` (solo .NET 8) | Requerido para que Revit cargue el assembly correctamente |
+
+---
+
+## ✅ ForgeTypeId — Unidades Modernas (Revit 2022+)
+
+Desde Revit 2022, los tipos de unidades basados en enteros (`DisplayUnitType`, `UnitType`) están **obsoletos**. Usa siempre `ForgeTypeId`:
+
+### Conversión de unidades
+
+```csharp
+// ✅ CORRECTO (Revit 2022+): ForgeTypeId
+double meters = UnitUtils.ConvertFromInternalUnits(feetValue, UnitTypeId.Meters);
+double feet = UnitUtils.ConvertToInternalUnits(metersValue, UnitTypeId.Meters);
+
+// ❌ OBSOLETO (pre-2022): DisplayUnitType
+double meters = UnitUtils.ConvertFromInternalUnits(feetValue, DisplayUnitType.DUT_METERS); // CS0618
+```
+
+### Lectura de parámetros con tipo de especificación
+
+```csharp
+// ✅ CORRECTO: Verificar tipo de parámetro con SpecTypeId
+Parameter param = element.get_Parameter(BuiltInParameter.CURVE_ELEM_LENGTH);
+if (param != null && param.Definition.GetDataType() == SpecTypeId.Length)
+{
+    double lengthInMeters = UnitUtils.ConvertFromInternalUnits(param.AsDouble(), UnitTypeId.Meters);
+}
+```
+
+### Tabla de ForgeTypeId más comunes
+
+| Concepto | Clase | Ejemplos |
+|----------|-------|----------|
+| **Qué se mide** (especificación) | `SpecTypeId` | `.Length`, `.Area`, `.Volume`, `.Angle`, `.Mass` |
+| **En qué unidad** (unidad) | `UnitTypeId` | `.Meters`, `.Millimeters`, `.Feet`, `.Degrees`, `.SquareMeters` |
+| **Tipo de dato del parámetro** | `ParameterTypeId` | `.Text`, `.Integer`, `.YesNo`, `.Material` |
+
+---
+
 # Flujo de Ejecución para el Agente
 1. Cuando el usuario te pida crear un nuevo Add-in, tu primer paso DEBE ser ejecutar `dotnet new revit -n [Nombre]`.
 2. Tu segundo paso DEBE ser reestructurar las carpetas `/UI` a `/Views` y `/ViewModels` según los estándares de MVVM.
-3. Cada vez que crees, iteres o modifiques un add-in, DEBES copiar los artefactos generados (Implementation Plan, Task y Walkthrough) a una carpeta llamada `_Development_Logs/[YYYY-MM-DD]_[NombreDelAddin]_[Accion]` en la raíz del workspace. Esto servirá como historial de consulta futura para debugging y entendimiento del código.
+3. Cada vez que crees, iteres o modifiques un add-in, DEBES copiar los artefactos generados (Implementation Plan, Task y Walkthrough) a la carpeta `docs/` del proyecto actual, siguiendo el patrón `[artifact]_[keywords]_[YYYY-MM-DD_HHmm].md`.
