@@ -8,7 +8,7 @@
         xmlns:services="clr-namespace:FilterPlus.Services"
         xmlns:converters="clr-namespace:FilterPlus.Converters"
         mc:Ignorable="d"
-        Title="FilterPlus" Height="500" Width="700"
+        Title="FilterPlus" Height="500" Width="675"
         WindowStartupLocation="CenterScreen"
         Topmost="True" Background="#f5f5f5">
     <Window.Resources>
@@ -41,13 +41,51 @@
                 <TextBlock Grid.Column="1" Text="{Binding Count}" Foreground="LightGray" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,5,0"/>
             </Grid>
         </HierarchicalDataTemplate>
+
+        <Style x:Key="SwitchStyle" TargetType="{x:Type CheckBox}">
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type CheckBox}">
+                        <StackPanel Orientation="Horizontal" Cursor="Hand">
+                            <Border x:Name="Background" Width="28" Height="14" Background="#ddd" CornerRadius="7" Padding="2" Margin="0,0,8,0" VerticalAlignment="Center">
+                                <Ellipse x:Name="Dot" Width="10" Height="10" Fill="White" HorizontalAlignment="Left">
+                                    <Ellipse.RenderTransform>
+                                        <TranslateTransform X="0"/>
+                                    </Ellipse.RenderTransform>
+                                </Ellipse>
+                            </Border>
+                            <ContentPresenter VerticalAlignment="Center" Content="{TemplateBinding Content}"/>
+                        </StackPanel>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="Background" Property="Background" Value="#777"/>
+                                <Trigger.EnterActions>
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <DoubleAnimation Storyboard.TargetName="Dot" Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.X)" To="14" Duration="0:0:0.15"/>
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </Trigger.EnterActions>
+                                <Trigger.ExitActions>
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <DoubleAnimation Storyboard.TargetName="Dot" Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.X)" To="0" Duration="0:0:0.15"/>
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </Trigger.ExitActions>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
     </Window.Resources>
 
     <Grid Margin="15">
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="*"/> <!-- Árbol -->
             <ColumnDefinition Width="Auto"/> <!-- Separador -->
-            <ColumnDefinition Width="250"/> <!-- Filtros y Selección -->
+            <ColumnDefinition Width="295"/> <!-- Filtros y Selección (Ajustado para mantener balance) -->
         </Grid.ColumnDefinitions>
         <Grid.RowDefinitions>
             <RowDefinition Height="*"/>
@@ -211,23 +249,47 @@
             </Grid.RowDefinitions>
 
             <!-- Card de Selección -->
-            <Border Grid.Row="0" Background="White" CornerRadius="8" Padding="10" Margin="0,0,0,10" BorderBrush="#e8e8e8" BorderThickness="1">
-                <StackPanel>
-                    <TextBlock Text="Select" FontWeight="500" Margin="0,0,0,8" Foreground="#333"/>
+            <Border Grid.Row="0" Background="White" CornerRadius="8" Padding="12,10" Margin="0,0,0,10" BorderBrush="#e8e8e8" BorderThickness="1">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    <TextBlock Grid.Row="0" Text="Select" FontWeight="500" Margin="0,0,0,10" Foreground="#333" FontSize="13"/>
                     
-                    <RadioButton Content="Current Selection" 
-                                 IsChecked="{Binding CurrentScope, Converter={StaticResource EnumToBool}, ConverterParameter={x:Static services:SelectionScope.CurrentSelection}}" 
-                                 Margin="0,0,0,6"/>
-                    <RadioButton Content="Elements Visible in View" 
-                                 IsChecked="{Binding CurrentScope, Converter={StaticResource EnumToBool}, ConverterParameter={x:Static services:SelectionScope.ElementsVisibleInView}}" 
-                                 Margin="0,0,0,6"/>
-                    <RadioButton Content="Elements belonging to View" 
-                                 IsChecked="{Binding CurrentScope, Converter={StaticResource EnumToBool}, ConverterParameter={x:Static services:SelectionScope.ElementsBelongingToView}}" 
-                                 Margin="0,0,0,6"/>
-                    <RadioButton Content="All Model Elements" 
-                                 IsChecked="{Binding CurrentScope, Converter={StaticResource EnumToBool}, ConverterParameter={x:Static services:SelectionScope.AllModelElements}}" 
-                                 Margin="0,0,0,0"/>
-                </StackPanel>
+                    <Grid Grid.Row="1" HorizontalAlignment="Center">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="20"/> <!-- Separación reducida -->
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        
+                        <!-- Columna Izquierda: Scopes -->
+                        <StackPanel Grid.Column="0">
+                            <RadioButton Content="Current Selection" 
+                                         IsChecked="{Binding CurrentScope, Converter={StaticResource EnumToBool}, ConverterParameter={x:Static services:SelectionScope.CurrentSelection}}" 
+                                         Margin="0,0,0,6" FontSize="11"/>
+                            <RadioButton Content="Elements Visible" 
+                                         IsChecked="{Binding CurrentScope, Converter={StaticResource EnumToBool}, ConverterParameter={x:Static services:SelectionScope.ElementsVisibleInView}}" 
+                                         Margin="0,0,0,6" FontSize="11" ToolTip="Elements Visible in View"/>
+                            <RadioButton Content="Elements in View" 
+                                         IsChecked="{Binding CurrentScope, Converter={StaticResource EnumToBool}, ConverterParameter={x:Static services:SelectionScope.ElementsBelongingToView}}" 
+                                         Margin="0,0,0,6" FontSize="11" ToolTip="Elements belonging to View"/>
+                            <RadioButton Content="All Model Elements" 
+                                         IsChecked="{Binding CurrentScope, Converter={StaticResource EnumToBool}, ConverterParameter={x:Static services:SelectionScope.AllModelElements}}" 
+                                         Margin="0,0,0,0" FontSize="11"/>
+                        </StackPanel>
+                        
+                        <!-- Columna Derecha: Toggles -->
+                        <StackPanel Grid.Column="2">
+                            <CheckBox Content="Only 3D Models" IsChecked="{Binding IsOnly3DModels}" Style="{StaticResource SwitchStyle}" Margin="0,0,0,6" FontSize="11"/>
+                            <CheckBox Content="Only Annotations" IsChecked="{Binding IsOnlyAnnotation}" Style="{StaticResource SwitchStyle}" Margin="0,0,0,6" FontSize="11"/>
+                            <CheckBox Content="Has Bounding Box" IsChecked="{Binding HasBoundingBox}" Style="{StaticResource SwitchStyle}" Margin="0,0,0,6" FontSize="11"/>
+                            <CheckBox Content="Unselect All" IsChecked="{Binding UnselectAllOnRun}" Style="{StaticResource SwitchStyle}" Margin="0,0,0,6" FontSize="11" ToolTip="Unselected All on Run"/>
+                            <CheckBox Content="Sort by Phase" IsChecked="{Binding SortByPhase}" Style="{StaticResource SwitchStyle}" Margin="0,0,0,0" FontSize="11"/>
+                        </StackPanel>
+                    </Grid>
+                </Grid>
             </Border>
 
             <!-- Filtros Dinámicos -->

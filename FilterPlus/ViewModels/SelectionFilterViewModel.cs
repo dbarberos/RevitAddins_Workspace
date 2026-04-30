@@ -38,6 +38,11 @@ public partial class SelectionFilterViewModel : ObservableObject
     [ObservableProperty] private int _checkedElementsCount;
     [ObservableProperty] private string _filterText = string.Empty;
     [ObservableProperty] private bool _isBusy;
+    [ObservableProperty] private bool _isOnly3DModels;
+    [ObservableProperty] private bool _isOnlyAnnotation;
+    [ObservableProperty] private bool _hasBoundingBox;
+    [ObservableProperty] private bool _unselectAllOnRun;
+    [ObservableProperty] private bool _sortByPhase;
 
     [ObservableProperty] private SelectionScope _currentScope = SelectionScope.CurrentSelection;
     private HashSet<Autodesk.Revit.DB.ElementId> _persistentCheckedIds = new();
