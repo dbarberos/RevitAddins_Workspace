@@ -64,6 +64,11 @@ public class RevitSelectionService
         var result = new List<ElementModel>();
         var worksetTable = _doc.GetWorksetTable();
 
+        // Pre-fetch phases once for ordering
+        var phaseMap = _doc.Phases.Cast<Phase>()
+            .Select((p, i) => new { p.Id, p.Name, Order = i })
+            .ToDictionary(x => x.Id, x => x);
+
         foreach (var el in elements)
         {
             // For ElementsBelongingToView, we include:
@@ -117,6 +122,16 @@ public class RevitSelectionService
                 if (workset != null) worksetName = workset.Name;
             }
 
+            // Phase detection
+            string phaseName = "N/A";
+            int phaseOrder = 999;
+            var phaseId = el.CreatedPhaseId;
+            if (phaseId != ElementId.InvalidElementId && phaseMap.TryGetValue(phaseId, out var phaseInfo))
+            {
+                phaseName = phaseInfo.Name;
+                phaseOrder = phaseInfo.Order;
+            }
+
             result.Add(new ElementModel
             {
                 Id = el.Id,
@@ -124,7 +139,12 @@ public class RevitSelectionService
                 FamilyName = familyName,
                 TypeName = typeName,
                 LevelName = levelName,
-                WorksetName = worksetName
+                WorksetName = worksetName,
+                IsModelElement = el.Category?.CategoryType == CategoryType.Model,
+                IsAnnotation = el.Category?.CategoryType == CategoryType.Annotation,
+                HasBoundingBox = el.get_BoundingBox(null) != null,
+                PhaseName = phaseName,
+                PhaseOrder = phaseOrder
             });
         }
 

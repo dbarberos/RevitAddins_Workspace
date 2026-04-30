@@ -41,7 +41,7 @@ public partial class SelectionFilterViewModel : ObservableObject
     [ObservableProperty] private bool _isOnly3DModels;
     [ObservableProperty] private bool _isOnlyAnnotation;
     [ObservableProperty] private bool _hasBoundingBox;
-    [ObservableProperty] private bool _unselectAllOnRun;
+    [ObservableProperty] private bool _isLiveSelection;
     [ObservableProperty] private bool _sortByPhase;
 
     [ObservableProperty] private SelectionScope _currentScope = SelectionScope.CurrentSelection;
@@ -68,6 +68,11 @@ public partial class SelectionFilterViewModel : ObservableObject
 
         // Keep persistent state in sync so checked elements carry over between scope switches
         _persistentCheckedIds = new HashSet<Autodesk.Revit.DB.ElementId>(selectedIds);
+
+        if (IsLiveSelection)
+        {
+            ApplyFilter();
+        }
     }
 
     /// <summary>
@@ -141,6 +146,82 @@ public partial class SelectionFilterViewModel : ObservableObject
         }
     }
 
+    partial void OnIsOnly3DModelsChanged(bool value)
+    {
+        if (value)
+        {
+            IsOnlyAnnotation = false;
+            HasBoundingBox = false;
+            UncheckHiddenElements(e => !e.IsModelElement);
+        }
+        BuildTree();
+    }
+
+    partial void OnIsOnlyAnnotationChanged(bool value)
+    {
+        if (value)
+        {
+            IsOnly3DModels = false;
+            HasBoundingBox = false;
+            UncheckHiddenElements(e => !e.IsAnnotation);
+        }
+        BuildTree();
+    }
+
+    partial void OnHasBoundingBoxChanged(bool value)
+    {
+        if (value)
+        {
+            IsOnly3DModels = false;
+            IsOnlyAnnotation = false;
+            UncheckHiddenElements(e => !e.HasBoundingBox);
+        }
+        BuildTree();
+    }
+
+    private void UncheckHiddenElements(Func<ElementModel, bool> isHiddenPredicate)
+    {
+        if (_activeElements == null) return;
+        
+        var hiddenIds = _activeElements.Where(isHiddenPredicate).Select(e => e.Id).ToList();
+        bool changed = false;
+        foreach (var id in hiddenIds)
+        {
+            if (_persistentCheckedIds.Contains(id))
+            {
+                _persistentCheckedIds.Remove(id);
+                changed = true;
+            }
+        }
+        if (changed) CheckedElementsCount = _persistentCheckedIds.Count;
+    }
+
+    partial void OnIsLiveSelectionChanged(bool value)
+    {
+        if (value)
+        {
+            ApplyFilter();
+        }
+    }
+
+    partial void OnSortByPhaseChanged(bool value)
+    {
+        BuildTree();
+    }
+
+    private IEnumerable<ElementModel> GetFilteredElements()
+    {
+        if (_activeElements == null) return Enumerable.Empty<ElementModel>();
+        
+        var filtered = _activeElements.AsEnumerable();
+        
+        if (IsOnly3DModels) filtered = filtered.Where(e => e.IsModelElement);
+        if (IsOnlyAnnotation) filtered = filtered.Where(e => e.IsAnnotation);
+        if (HasBoundingBox) filtered = filtered.Where(e => e.HasBoundingBox);
+        
+        return filtered;
+    }
+
     /// <summary>Rebuilds dropdowns and the tree from _activeElements. Safe to call from UI thread.</summary>
     private void BuildTree()
     {
@@ -150,9 +231,10 @@ public partial class SelectionFilterViewModel : ObservableObject
 
         try
         {
-            StatusMessage = $"Elementos encontrados: {_activeElements.Count}";
-            UpdateDropdowns();
-            InitializeTree();
+            var filtered = GetFilteredElements().ToList();
+            StatusMessage = $"Elementos encontrados: {filtered.Count}";
+            UpdateDropdowns(filtered);
+            InitializeTree(filtered);
         }
         catch (Exception ex)
         {
@@ -168,9 +250,10 @@ public partial class SelectionFilterViewModel : ObservableObject
         }
     }
 
-    private void UpdateDropdowns()
+    private void UpdateDropdowns(IEnumerable<ElementModel> filteredElements)
     {
         LoggerService.LogInfo("Updating filter dropdowns...");
+        var elements = filteredElements.ToList();
         // Guardar selecciones actuales
         var prevCat = SelectedCategory;
         var prevFam = SelectedFamily;
@@ -188,15 +271,15 @@ public partial class SelectionFilterViewModel : ObservableObject
         Levels.Add("Todos");
         Worksets.Add("Todos");
 
-        foreach (var cat in _activeElements.Select(e => e.CategoryName).Distinct().OrderBy(x => x))
+        foreach (var cat in elements.Select(e => e.CategoryName).Distinct().OrderBy(x => x))
             Categories.Add(cat);
-        foreach (var fam in _activeElements.Select(e => e.FamilyName).Distinct().OrderBy(x => x))
+        foreach (var fam in elements.Select(e => e.FamilyName).Distinct().OrderBy(x => x))
             Families.Add(fam);
-        foreach (var type in _activeElements.Select(e => e.TypeName).Distinct().OrderBy(x => x))
+        foreach (var type in elements.Select(e => e.TypeName).Distinct().OrderBy(x => x))
             Types.Add(type);
-        foreach (var lev in _activeElements.Select(e => e.LevelName).Distinct().OrderBy(x => x))
+        foreach (var lev in elements.Select(e => e.LevelName).Distinct().OrderBy(x => x))
             Levels.Add(lev);
-        foreach (var ws in _activeElements.Select(e => e.WorksetName).Distinct().OrderBy(x => x))
+        foreach (var ws in elements.Select(e => e.WorksetName).Distinct().OrderBy(x => x))
             Worksets.Add(ws);
 
         // Restore previous selection if still valid
@@ -205,68 +288,90 @@ public partial class SelectionFilterViewModel : ObservableObject
         SelectedType     = Types.Contains(prevType)     ? prevType : "Todos";
     }
 
-    private void InitializeTree()
+    private void BuildCategorySubTree(IEnumerable<ElementModel> elementsInCategory, TreeItemViewModel catNode)
+    {
+        int catCount = 0;
+        var families = elementsInCategory.GroupBy(e => e.FamilyName).OrderBy(g => g.Key);
+
+        foreach (var famGroup in families)
+        {
+            var famNode = new TreeItemViewModel(famGroup.Key, catNode, catNode.Level + 1, OnTreeSelectionChanged);
+            catNode.Children.Add(famNode);
+            int famCount = 0;
+
+            var types = famGroup.GroupBy(e => e.TypeName).OrderBy(g => g.Key);
+
+            foreach (var typeGroup in types)
+            {
+                var typeNode = new TreeItemViewModel(typeGroup.Key, famNode, famNode.Level + 1, OnTreeSelectionChanged);
+                famNode.Children.Add(typeNode);
+                int strCount = 0;
+
+                foreach (var element in typeGroup.OrderBy(e => e.Id.ToString()))
+                {
+                    var elNode = new TreeItemViewModel(element.Id.ToString(), typeNode, typeNode.Level + 1, OnTreeSelectionChanged)
+                    {
+                        ElementId = element.Id
+                    };
+                    typeNode.Children.Add(elNode);
+                    strCount++;
+                }
+                typeNode.Count = strCount;
+                famCount += strCount;
+            }
+            famNode.Count = famCount;
+            catCount += famCount;
+        }
+        catNode.Count = catCount;
+    }
+
+    private void InitializeTree(IEnumerable<ElementModel> filteredElements)
     {
         try 
         {
-            LoggerService.LogInfo($"Building tree structure offline for {_activeElements.Count} elements...");
+            var elements = filteredElements.ToList();
+            LoggerService.LogInfo($"Building tree structure offline for {elements.Count} elements...");
             var rootAll = new TreeItemViewModel("All", null, 0, OnTreeSelectionChanged);
-            int totalCount = 0;
-
-            var categories = _activeElements
-                .GroupBy(e => e.CategoryName)
-                .OrderBy(g => g.Key);
-
-            int catIndex = 0;
-            foreach (var catGroup in categories)
+            
+            if (SortByPhase)
             {
-                catIndex++;
-                if (catIndex % 5 == 0) LoggerService.LogInfo($"Processing category {catIndex}: {catGroup.Key}");
-                
-                var catNode = new TreeItemViewModel(catGroup.Key, rootAll, 1, OnTreeSelectionChanged);
-                rootAll.Children.Add(catNode);
-                int catCount = 0;
+                var phases = elements
+                    .GroupBy(e => new { e.PhaseName, e.PhaseOrder })
+                    .OrderBy(g => g.Key.PhaseOrder);
 
-                var families = catGroup
-                    .GroupBy(e => e.FamilyName)
-                    .OrderBy(g => g.Key);
-
-                foreach (var famGroup in families)
+                foreach (var phaseGroup in phases)
                 {
-                    var famNode = new TreeItemViewModel(famGroup.Key, catNode, 2, OnTreeSelectionChanged);
-                    catNode.Children.Add(famNode);
-                    int famCount = 0;
+                    var phaseNode = new TreeItemViewModel(phaseGroup.Key.PhaseName, rootAll, 1, OnTreeSelectionChanged);
+                    rootAll.Children.Add(phaseNode);
 
-                    var types = famGroup
-                        .GroupBy(e => e.TypeName)
+                    var catGroups = phaseGroup
+                        .GroupBy(e => e.CategoryName)
                         .OrderBy(g => g.Key);
 
-                    foreach (var typeGroup in types)
+                    foreach (var catGroup in catGroups)
                     {
-                        var typeNode = new TreeItemViewModel(typeGroup.Key, famNode, 3, OnTreeSelectionChanged);
-                        famNode.Children.Add(typeNode);
-                        int strCount = 0;
-
-                        foreach (var element in typeGroup.OrderBy(e => e.Id.ToString()))
-                        {
-                            var elNode = new TreeItemViewModel($"ID: {element.Id}", typeNode, 4, OnTreeSelectionChanged)
-                            {
-                                ElementId = element.Id,
-                                Count = 1
-                            };
-                            typeNode.Children.Add(elNode);
-                            strCount++;
-                        }
-                        typeNode.Count = strCount;
-                        famCount += strCount;
+                        var catNode = new TreeItemViewModel(catGroup.Key, phaseNode, 2, OnTreeSelectionChanged);
+                        phaseNode.Children.Add(catNode);
+                        BuildCategorySubTree(catGroup, catNode);
                     }
-                    famNode.Count = famCount;
-                    catCount += famCount;
+                    phaseNode.Count = phaseNode.Children.Sum(c => c.Count);
                 }
-                catNode.Count = catCount;
-                totalCount += catCount;
             }
-            rootAll.Count = totalCount;
+            else
+            {
+                var categories = elements
+                    .GroupBy(e => e.CategoryName)
+                    .OrderBy(g => g.Key);
+
+                foreach (var catGroup in categories)
+                {
+                    var catNode = new TreeItemViewModel(catGroup.Key, rootAll, 1, OnTreeSelectionChanged);
+                    rootAll.Children.Add(catNode);
+                    BuildCategorySubTree(catGroup, catNode);
+                }
+            }
+
+            rootAll.Count = rootAll.Children.Sum(c => c.Count);
 
             if (_persistentCheckedIds.Count > 0)
             {
@@ -280,7 +385,7 @@ public partial class SelectionFilterViewModel : ObservableObject
             var uiDispatcher = System.Windows.Threading.Dispatcher.CurrentDispatcher;
             if (uiDispatcher.CheckAccess())
             {
-                LoggerService.LogInfo($"Swapping tree root directly. New total: {totalCount}");
+                LoggerService.LogInfo($"Swapping tree root directly. New total: {rootAll.Count}");
                 RootNodes.Clear();
                 RootNodes.Add(rootAll);
             }
@@ -292,7 +397,7 @@ public partial class SelectionFilterViewModel : ObservableObject
                 });
             }
             
-            LoggerService.LogInfo($"Tree built and swapped. {totalCount} visible elements.");
+            LoggerService.LogInfo($"Tree built and swapped. {rootAll.Count} visible elements.");
         }
         catch (Exception ex)
         {
@@ -332,31 +437,8 @@ public partial class SelectionFilterViewModel : ObservableObject
             var selectedIds = new List<Autodesk.Revit.DB.ElementId>();
             foreach (var node in RootNodes) node.GetAllSelectedIds(selectedIds);
 
-            IEnumerable<Autodesk.Revit.DB.ElementId> finalIds;
-
-            if (selectedIds.Count > 0)
-            {
-                finalIds = selectedIds;
-                StatusMessage = $"Seleccionados (Árbol): {selectedIds.Count}";
-            }
-            else
-            {
-                // Aplicar filtros de dropdowns si no hay nada marcado en el árbol
-                var filtered = _activeElements.AsEnumerable();
-                if (SelectedCategory != "Todos" && !string.IsNullOrEmpty(SelectedCategory))
-                    filtered = filtered.Where(e => e.CategoryName == SelectedCategory);
-                if (SelectedFamily != "Todos" && !string.IsNullOrEmpty(SelectedFamily))
-                    filtered = filtered.Where(e => e.FamilyName == SelectedFamily);
-                if (SelectedType != "Todos" && !string.IsNullOrEmpty(SelectedType))
-                    filtered = filtered.Where(e => e.TypeName == SelectedType);
-                if (SelectedLevel != "Todos" && !string.IsNullOrEmpty(SelectedLevel))
-                    filtered = filtered.Where(e => e.LevelName == SelectedLevel);
-                if (SelectedWorkset != "Todos" && !string.IsNullOrEmpty(SelectedWorkset))
-                    filtered = filtered.Where(e => e.WorksetName == SelectedWorkset);
-
-                finalIds = filtered.Select(e => e.Id).ToList();
-                StatusMessage = $"Seleccionados (Filtros): {finalIds.Count()}";
-            }
+            var finalIds = selectedIds;
+            StatusMessage = $"Seleccionados: {selectedIds.Count}";
 
             // ── 2. Aplicar la selección en Revit ───────────────────────────────────
             _selectionService.SetSelection(finalIds);

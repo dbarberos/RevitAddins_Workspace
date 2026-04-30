@@ -8,7 +8,7 @@
         xmlns:services="clr-namespace:FilterPlus.Services"
         xmlns:converters="clr-namespace:FilterPlus.Converters"
         mc:Ignorable="d"
-        Title="FilterPlus" Height="500" Width="675"
+        Title="FilterPlus" Height="500" Width="710"
         WindowStartupLocation="CenterScreen"
         Topmost="True" Background="#f5f5f5">
     <Window.Resources>
@@ -85,7 +85,7 @@
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="*"/> <!-- Árbol -->
             <ColumnDefinition Width="Auto"/> <!-- Separador -->
-            <ColumnDefinition Width="295"/> <!-- Filtros y Selección (Ajustado para mantener balance) -->
+            <ColumnDefinition Width="330"/> <!-- Filtros y Selección (Ajustado para gap de 15px) -->
         </Grid.ColumnDefinitions>
         <Grid.RowDefinitions>
             <RowDefinition Height="*"/>
@@ -249,7 +249,7 @@
             </Grid.RowDefinitions>
 
             <!-- Card de Selección -->
-            <Border Grid.Row="0" Background="White" CornerRadius="8" Padding="12,10" Margin="0,0,0,10" BorderBrush="#e8e8e8" BorderThickness="1">
+            <Border Grid.Row="0" Background="White" CornerRadius="8" Padding="15,10" Margin="0,0,0,10" BorderBrush="#e8e8e8" BorderThickness="1">
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
@@ -282,11 +282,11 @@
                         
                         <!-- Columna Derecha: Toggles -->
                         <StackPanel Grid.Column="2">
-                            <CheckBox Content="Only 3D Models" IsChecked="{Binding IsOnly3DModels}" Style="{StaticResource SwitchStyle}" Margin="0,0,0,6" FontSize="11"/>
+                            <CheckBox Content="Only 3D model objects" IsChecked="{Binding IsOnly3DModels}" Style="{StaticResource SwitchStyle}" Margin="0,0,0,6" FontSize="11"/>
                             <CheckBox Content="Only Annotations" IsChecked="{Binding IsOnlyAnnotation}" Style="{StaticResource SwitchStyle}" Margin="0,0,0,6" FontSize="11"/>
                             <CheckBox Content="Has Bounding Box" IsChecked="{Binding HasBoundingBox}" Style="{StaticResource SwitchStyle}" Margin="0,0,0,6" FontSize="11"/>
-                            <CheckBox Content="Unselect All" IsChecked="{Binding UnselectAllOnRun}" Style="{StaticResource SwitchStyle}" Margin="0,0,0,6" FontSize="11" ToolTip="Unselected All on Run"/>
-                            <CheckBox Content="Sort by Phase" IsChecked="{Binding SortByPhase}" Style="{StaticResource SwitchStyle}" Margin="0,0,0,0" FontSize="11"/>
+                            <CheckBox Content="Sort by Phase" IsChecked="{Binding SortByPhase}" Style="{StaticResource SwitchStyle}" Margin="0,0,0,6" FontSize="11"/>
+                            <CheckBox Content="on Live Selection" IsChecked="{Binding IsLiveSelection}" Style="{StaticResource SwitchStyle}" Margin="0,0,0,0" FontSize="11"/>
                         </StackPanel>
                     </Grid>
                 </Grid>
