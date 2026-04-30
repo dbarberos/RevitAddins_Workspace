@@ -26,11 +26,14 @@ public class RevitSelectionService
 
     public HashSet<ElementId> GetInitialSelectionIds()
     {
-        return _uiDoc.Selection.GetElementIds().ToHashSet();
+        var ids = _uiDoc.Selection.GetElementIds().ToHashSet();
+        LoggerService.LogInfo($"Initial selection retrieved: {ids.Count} elements.");
+        return ids;
     }
 
     public List<ElementModel> GetAvailableElements(SelectionScope scope)
     {
+        LoggerService.LogInfo($"Querying Revit for scope: {scope}...");
         FilteredElementCollector collector;
         
         switch (scope)
@@ -111,6 +114,7 @@ public class RevitSelectionService
             });
         }
 
+        LoggerService.LogInfo($"Revit query finished. {result.Count} valid elements found.");
         return result;
     }
 

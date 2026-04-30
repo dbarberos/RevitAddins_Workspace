@@ -10,6 +10,8 @@ public partial class TreeItemViewModel : ObservableObject
 {
     private bool? _isChecked = false;
     private TreeItemViewModel _parent;
+    
+    public static bool IsBulkUpdating { get; set; }
 
     public string Name { get; set; }
     public ElementId ElementId { get; set; }
@@ -33,7 +35,7 @@ public partial class TreeItemViewModel : ObservableObject
                 _isChecked = value;
                 OnPropertyChanged(nameof(IsChecked));
 
-                if (!_isUpdatingState)
+                if (!_isUpdatingState && !IsBulkUpdating)
                 {
                     if (value.HasValue)
                     {
@@ -74,7 +76,7 @@ public partial class TreeItemViewModel : ObservableObject
         }
     }
 
-    private void ReevaluateState()
+    public void ReevaluateState()
     {
         if (Children.Count == 0) return;
 
@@ -105,6 +107,31 @@ public partial class TreeItemViewModel : ObservableObject
         foreach (var child in Children)
         {
             child.GetAllSelectedIds(ids);
+        }
+    }
+    public void RefreshState()
+    {
+        foreach (var child in Children)
+        {
+            child.RefreshState();
+        }
+        
+        if (Children.Count > 0)
+        {
+            bool allChecked = Children.All(c => c.IsChecked == true);
+            bool allUnchecked = Children.All(c => c.IsChecked == false);
+
+            bool? newState;
+            if (allChecked) newState = true;
+            else if (allUnchecked) newState = false;
+            else newState = null; 
+
+            if (_isChecked != newState)
+            {
+                _isUpdatingState = true;
+                IsChecked = newState;
+                _isUpdatingState = false;
+            }
         }
     }
 }

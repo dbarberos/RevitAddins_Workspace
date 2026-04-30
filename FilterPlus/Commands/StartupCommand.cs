@@ -18,6 +18,10 @@ public class StartupCommand : ExternalCommand
     {
         try
         {
+            // Register dispatcher for logging as early as possible
+            LoggerService.SetDispatcher(System.Windows.Threading.Dispatcher.CurrentDispatcher);
+            LoggerService.LogInfo("Addin Startup command started.");
+
             var selectionService = new RevitSelectionService(UiDocument);
             var viewModel = new SelectionFilterViewModel(selectionService);
             var view = new SelectionFilterView(viewModel);

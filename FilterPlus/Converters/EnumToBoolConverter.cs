@@ -15,7 +15,7 @@ namespace FilterPlus.Converters
 
         public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
         {
-            if (value == null || parameter == null || !(bool)value) return Binding.DoNothing;
+            if (value == null || parameter == null || !(bool)value) return System.Windows.Data.Binding.DoNothing;
             return Enum.Parse(targetType, parameter.ToString());
         }
     }

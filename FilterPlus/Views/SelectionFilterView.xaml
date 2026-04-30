@@ -269,5 +269,40 @@
                 </StackPanel>
             </Grid>
         </Border>
+
+        <!-- Loading Overlay -->
+        <Grid Grid.ColumnSpan="3" Grid.RowSpan="2" Background="#A0FFFFFF" 
+              Visibility="{Binding IsBusy, Converter={StaticResource BoolToVis}}" 
+              Margin="-15">
+            <Border Background="White" CornerRadius="12" Padding="30" HorizontalAlignment="Center" VerticalAlignment="Center" BorderBrush="#e8e8e8" BorderThickness="1">
+                <Border.Effect>
+                    <DropShadowEffect BlurRadius="15" Direction="-90" RenderingBias="Quality" ShadowDepth="2" Opacity="0.1"/>
+                </Border.Effect>
+                <StackPanel>
+                    <Viewbox Width="40" Height="40" HorizontalAlignment="Center">
+                        <Path Fill="#007ACC" Data="M12,4V2A10,10 0 0,0 2,12H4A8,8 0 0,1 12,4Z">
+                            <Path.RenderTransform>
+                                <RotateTransform x:Name="SpinnerTransform" CenterX="12" CenterY="12" Angle="0"/>
+                            </Path.RenderTransform>
+                            <Path.Triggers>
+                                <EventTrigger RoutedEvent="Loaded">
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <DoubleAnimation Storyboard.TargetName="SpinnerTransform" 
+                                                             Storyboard.TargetProperty="Angle" 
+                                                             From="0" To="360" 
+                                                             Duration="0:0:1" 
+                                                             RepeatBehavior="Forever"/>
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </EventTrigger>
+                            </Path.Triggers>
+                        </Path>
+                    </Viewbox>
+                    <TextBlock Text="Loading Elements..." FontWeight="SemiBold" Foreground="#333" HorizontalAlignment="Center" Margin="0,15,0,0"/>
+                    <TextBlock Text="This may take a moment for large projects" FontSize="10" FontWeight="Normal" Foreground="#999" HorizontalAlignment="Center" Margin="0,5,0,0"/>
+                </StackPanel>
+            </Border>
+        </Grid>
     </Grid>
 </Window>
