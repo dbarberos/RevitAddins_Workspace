@@ -14,7 +14,8 @@ public partial class SelectionFilterViewModel : ObservableObject
 
     // Pre-fetched data for each scope (loaded once at startup in API context)
     private List<ElementModel> _currentSelectionElements = new();
-    private List<ElementModel> _elementsInViewElements = new();
+    private List<ElementModel> _elementsVisibleInViewElements = new();
+    private List<ElementModel> _elementsBelongingToViewElements = new();
     private List<ElementModel> _allModelElements = new();
 
     // Active list displayed in the tree
@@ -83,9 +84,13 @@ public partial class SelectionFilterViewModel : ObservableObject
             _currentSelectionElements = _selectionService.GetAvailableElements(SelectionScope.CurrentSelection);
             LoggerService.LogInfo($"CurrentSelection: {_currentSelectionElements.Count} elements.");
 
-            LoggerService.LogInfo("Pre-fetching ElementsInView elements...");
-            _elementsInViewElements = _selectionService.GetAvailableElements(SelectionScope.ElementsInView);
-            LoggerService.LogInfo($"ElementsInView: {_elementsInViewElements.Count} elements.");
+            LoggerService.LogInfo("Pre-fetching ElementsVisibleInView elements...");
+            _elementsVisibleInViewElements = _selectionService.GetAvailableElements(SelectionScope.ElementsVisibleInView);
+            LoggerService.LogInfo($"ElementsVisibleInView: {_elementsVisibleInViewElements.Count} elements.");
+
+            LoggerService.LogInfo("Pre-fetching ElementsBelongingToView elements...");
+            _elementsBelongingToViewElements = _selectionService.GetAvailableElements(SelectionScope.ElementsBelongingToView);
+            LoggerService.LogInfo($"ElementsBelongingToView: {_elementsBelongingToViewElements.Count} elements.");
 
             LoggerService.LogInfo("Pre-fetching AllModelElements elements...");
             var allRaw = _selectionService.GetAvailableElements(SelectionScope.AllModelElements);
@@ -116,7 +121,8 @@ public partial class SelectionFilterViewModel : ObservableObject
             _activeElements = value switch
             {
                 SelectionScope.CurrentSelection => _currentSelectionElements,
-                SelectionScope.ElementsInView   => _elementsInViewElements,
+                SelectionScope.ElementsVisibleInView => _elementsVisibleInViewElements,
+                SelectionScope.ElementsBelongingToView => _elementsBelongingToViewElements,
                 SelectionScope.AllModelElements => _allModelElements,
                 _                               => _currentSelectionElements
             };
@@ -359,7 +365,8 @@ public partial class SelectionFilterViewModel : ObservableObject
             // Buscamos el ElementModel de cada ID seleccionado en el pool completo,
             // así no se pierden elementos que no estuvieran en el scope activo actual.
             var allKnownById = _currentSelectionElements
-                .Concat(_elementsInViewElements)
+                .Concat(_elementsVisibleInViewElements)
+                .Concat(_elementsBelongingToViewElements)
                 .Concat(_allModelElements)
                 .GroupBy(e => e.Id)
                 .Select(g => g.First())

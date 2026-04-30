@@ -196,4 +196,26 @@ Release.R27 → 0 errors, 50 warnings (nullable only)  ✅
 ```
 
 Deployed to: `%APPDATA%\Autodesk\Revit\Addins\2024\`  
-Verified working in Revit 2024 ✅
+---
+
+## 11. Update (2026-04-30 11:42): New View Scopes
+
+### Requirements
+1. Rename **"Elements in View"** to **"Elements Visible in View"**.
+2. Add **"Elements belonging to View"** (visible + hidden/view-specific).
+
+### Technical Implementation
+The `RevitSelectionService` was updated to handle a 4th scope:
+- **ElementsVisibleInView**: Uses `new FilteredElementCollector(doc, viewId)` (Revit native visible-only collector).
+- **ElementsBelongingToView**: Uses a whole-document collector filtered by:
+  - `el.OwnerViewId == activeView.Id` (catches annotations/detail elements hidden or not).
+  - `el.get_BoundingBox(activeView) != null` (catches model elements currently visible).
+
+### UI Results
+The Select card now has 4 options:
+- Current Selection
+- Elements Visible in View
+- Elements belonging to View
+- All Model Elements
+
+Build and deployment for Revit 2024 verified. ✅

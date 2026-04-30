@@ -53,6 +53,11 @@
 - [x] Build Release.R27 — 0 errors
 - [x] Deploy Release.R24 to %APPDATA%\Autodesk\Revit\Addins\2024\
 - [x] Verified working in Revit 2024 by user
+- [x] Renombrar 'Elements in View' a 'Elements Visible in View'
+- [x] Añadir nuevo scope 'Elements belonging to View'
+- [x] Actualizar RevitSelectionService para distinguir entre visibles y pertenecientes (anotaciones)
+- [x] Actualizar ViewModel para pre-cargar el 4º scope
+- [x] Actualizar UI con el nuevo RadioButton
 
 ### Documentation
 - [x] Update .agent/skills/revit-api/SKILL.md with all thread-safety rules

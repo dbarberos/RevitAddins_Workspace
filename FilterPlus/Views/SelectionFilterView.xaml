@@ -218,8 +218,11 @@
                     <RadioButton Content="Current Selection" 
                                  IsChecked="{Binding CurrentScope, Converter={StaticResource EnumToBool}, ConverterParameter={x:Static services:SelectionScope.CurrentSelection}}" 
                                  Margin="0,0,0,6"/>
-                    <RadioButton Content="Elements in View" 
-                                 IsChecked="{Binding CurrentScope, Converter={StaticResource EnumToBool}, ConverterParameter={x:Static services:SelectionScope.ElementsInView}}" 
+                    <RadioButton Content="Elements Visible in View" 
+                                 IsChecked="{Binding CurrentScope, Converter={StaticResource EnumToBool}, ConverterParameter={x:Static services:SelectionScope.ElementsVisibleInView}}" 
+                                 Margin="0,0,0,6"/>
+                    <RadioButton Content="Elements belonging to View" 
+                                 IsChecked="{Binding CurrentScope, Converter={StaticResource EnumToBool}, ConverterParameter={x:Static services:SelectionScope.ElementsBelongingToView}}" 
                                  Margin="0,0,0,6"/>
                     <RadioButton Content="All Model Elements" 
                                  IsChecked="{Binding CurrentScope, Converter={StaticResource EnumToBool}, ConverterParameter={x:Static services:SelectionScope.AllModelElements}}" 

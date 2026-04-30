@@ -3,13 +3,15 @@ using Autodesk.Revit.UI;
 using FilterPlus.Models;
 using System.Collections.Generic;
 using System.Linq;
+using Nice3point.Revit.Extensions;
 
 namespace FilterPlus.Services;
  
 public enum SelectionScope
 {
     CurrentSelection,
-    ElementsInView,
+    ElementsVisibleInView,
+    ElementsBelongingToView,
     AllModelElements
 }
 
@@ -43,9 +45,10 @@ public class RevitSelectionService
                 if (!selectedIds.Any()) return new List<ElementModel>();
                 collector = new FilteredElementCollector(_doc, selectedIds);
                 break;
-            case SelectionScope.ElementsInView:
+            case SelectionScope.ElementsVisibleInView:
                 collector = new FilteredElementCollector(_doc, _doc.ActiveView.Id);
                 break;
+            case SelectionScope.ElementsBelongingToView:
             case SelectionScope.AllModelElements:
                 collector = new FilteredElementCollector(_doc);
                 break;
@@ -63,6 +66,17 @@ public class RevitSelectionService
 
         foreach (var el in elements)
         {
+            // For ElementsBelongingToView, we include:
+            // 1. Elements owned by the view (view-specific like text, detail lines, etc.)
+            // 2. Elements visible in the view (have a bounding box)
+            if (scope == SelectionScope.ElementsBelongingToView)
+            {
+                bool isViewSpecific = el.OwnerViewId == _doc.ActiveView.Id;
+                bool isVisibleInView = el.get_BoundingBox(_doc.ActiveView) != null;
+                
+                if (!isViewSpecific && !isVisibleInView) continue;
+            }
+
             // Skip elements that don't have a valid category
             if (el.Category == null) continue;
 
