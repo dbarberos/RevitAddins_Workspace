@@ -5,12 +5,20 @@ using FilterPlus.Services;
 using System.Collections.ObjectModel;
 using System.Collections.Generic;
 using System.Linq;
+
 namespace FilterPlus.ViewModels;
 
 public partial class SelectionFilterViewModel : ObservableObject
 {
     private readonly RevitSelectionService _selectionService;
-    private readonly List<ElementModel> _allAvailableElements = new();
+
+    // Pre-fetched data for each scope (loaded once at startup in API context)
+    private List<ElementModel> _currentSelectionElements = new();
+    private List<ElementModel> _elementsInViewElements = new();
+    private List<ElementModel> _allModelElements = new();
+
+    // Active list displayed in the tree
+    private List<ElementModel> _activeElements = new();
 
     public ObservableCollection<TreeItemViewModel> RootNodes { get; } = new();
 
@@ -41,8 +49,8 @@ public partial class SelectionFilterViewModel : ObservableObject
     }
 
     private bool _isRestoringState = false;
-
     private bool _isInitializing = false;
+    private HashSet<Autodesk.Revit.DB.ElementId> _preSearchCheckedIds = null;
 
     private void OnTreeSelectionChanged()
     {
@@ -52,10 +60,13 @@ public partial class SelectionFilterViewModel : ObservableObject
         foreach (var node in RootNodes) node.GetAllSelectedIds(selectedIds);
         CheckedElementsCount = selectedIds.Count;
 
-        // Mantener sincronizado el estado persistente para que se herede entre alcances (scopes)
+        // Keep persistent state in sync so checked elements carry over between scope switches
         _persistentCheckedIds = new HashSet<Autodesk.Revit.DB.ElementId>(selectedIds);
     }
 
+    /// <summary>
+    /// Constructor: called in Revit API context. Pre-fetches all scope data safely here.
+    /// </summary>
     public SelectionFilterViewModel(RevitSelectionService selectionService)
     {
         LoggerService.LogInfo("SelectionFilterViewModel initializing...");
@@ -63,13 +74,27 @@ public partial class SelectionFilterViewModel : ObservableObject
         
         try 
         {
+            // 1. Get initial selection IDs from Revit (safe: API context)
             _persistentCheckedIds = _selectionService.GetInitialSelectionIds();
-            LoggerService.LogInfo($"Initial persistent IDs count: {_persistentCheckedIds.Count}");
-            if (_persistentCheckedIds.Count > 0)
-            {
-                LoggerService.LogInfo($"Initial Selection IDs: {string.Join(", ", _persistentCheckedIds.Take(20).Select(id => id.ToString()))}{( _persistentCheckedIds.Count > 20 ? "..." : "" )}");
-            }
-            LoadElements(CurrentScope);
+            LoggerService.LogInfo($"Initial selection IDs count: {_persistentCheckedIds.Count}");
+
+            // 2. Pre-fetch all scopes NOW (we are in Revit API thread)
+            LoggerService.LogInfo("Pre-fetching CurrentSelection elements...");
+            _currentSelectionElements = _selectionService.GetAvailableElements(SelectionScope.CurrentSelection);
+            LoggerService.LogInfo($"CurrentSelection: {_currentSelectionElements.Count} elements.");
+
+            LoggerService.LogInfo("Pre-fetching ElementsInView elements...");
+            _elementsInViewElements = _selectionService.GetAvailableElements(SelectionScope.ElementsInView);
+            LoggerService.LogInfo($"ElementsInView: {_elementsInViewElements.Count} elements.");
+
+            LoggerService.LogInfo("Pre-fetching AllModelElements elements...");
+            var allRaw = _selectionService.GetAvailableElements(SelectionScope.AllModelElements);
+            _allModelElements = allRaw.Count > 10000 ? allRaw.Take(10000).ToList() : allRaw;
+            LoggerService.LogInfo($"AllModelElements: {_allModelElements.Count} elements (raw: {allRaw.Count}).");
+
+            // 3. Build tree for the default scope (CurrentSelection)
+            _activeElements = _currentSelectionElements;
+            BuildTree();
         }
         catch (Exception ex)
         {
@@ -77,75 +102,58 @@ public partial class SelectionFilterViewModel : ObservableObject
         }
     }
 
-    private void LoadElements(SelectionScope scope)
+    /// <summary>
+    /// Called when scope radio button changes. NO Revit API calls here – uses pre-fetched data.
+    /// </summary>
+    partial void OnCurrentScopeChanged(SelectionScope value)
+    {
+        if (TreeItemViewModel.IsBulkUpdating) return;
+
+        try
+        {
+            LoggerService.LogInfo($"Scope switched to: {value}. Rebuilding tree from pre-fetched data...");
+
+            _activeElements = value switch
+            {
+                SelectionScope.CurrentSelection => _currentSelectionElements,
+                SelectionScope.ElementsInView   => _elementsInViewElements,
+                SelectionScope.AllModelElements => _allModelElements,
+                _                               => _currentSelectionElements
+            };
+
+            LoggerService.LogInfo($"Active elements for scope {value}: {_activeElements.Count}");
+            BuildTree();
+        }
+        catch (Exception ex)
+        {
+            LoggerService.LogError("OnCurrentScopeChanged", ex);
+        }
+    }
+
+    /// <summary>Rebuilds dropdowns and the tree from _activeElements. Safe to call from UI thread.</summary>
+    private void BuildTree()
     {
         IsBusy = true;
-        LoggerService.LogInfo($"Loading elements for scope: {scope}");
         TreeItemViewModel.IsBulkUpdating = true;
-        
-        try 
+        LoggerService.LogInfo($"BuildTree: {_activeElements.Count} elements for scope {CurrentScope}.");
+
+        try
         {
-            _allAvailableElements.Clear();
-            _allAvailableElements.AddRange(_selectionService.GetAvailableElements(scope));
-            LoggerService.LogInfo($"_allAvailableElements updated. Count: {_allAvailableElements.Count}");
-            
-            if (_allAvailableElements.Count > 0)
-            {
-                LoggerService.LogInfo($"Sample element IDs: {string.Join(", ", _allAvailableElements.Take(5).Select(e => e.Id.ToString()))}");
-            }
-            
-            if (_allAvailableElements.Count > 10000)
-            {
-                LoggerService.LogInfo($"WARNING: Too many elements ({_allAvailableElements.Count}). Limiting to 10000 for stability.");
-                var limited = _allAvailableElements.Take(10000).ToList();
-                _allAvailableElements.Clear();
-                _allAvailableElements.AddRange(limited);
-            }
-            
-            StatusMessage = $"Elementos encontrados: {_allAvailableElements.Count}";
-            
+            StatusMessage = $"Elementos encontrados: {_activeElements.Count}";
             UpdateDropdowns();
             InitializeTree();
         }
+        catch (Exception ex)
+        {
+            LoggerService.LogError("BuildTree", ex);
+        }
         finally
         {
-            LoggerService.LogInfo("Post-load cleanup starting...");
             foreach (var node in RootNodes) node.RefreshState();
             TreeItemViewModel.IsBulkUpdating = false;
             OnTreeSelectionChanged();
             IsBusy = false;
-            LoggerService.LogInfo("LoadElements completed successfully.");
-        }
-    }
-
-    partial void OnCurrentScopeChanged(SelectionScope value)
-    {
-        try 
-        {
-            if (TreeItemViewModel.IsBulkUpdating) return;
-
-            LoggerService.LogInfo($"Scope changed to: {value}. Requesting UI update...");
-            
-            // Mostrar indicador de carga inmediatamente
-            IsBusy = true;
-
-            // Usamos el dispatcher del hilo actual con prioridad Normal para asegurar ejecución inmediata tras el evento de UI
-            System.Windows.Threading.Dispatcher.CurrentDispatcher.BeginInvoke(new Action(() => {
-                try 
-                {
-                    LoggerService.LogInfo($"--- STARTING DEFERRED LOAD for {value} ---");
-                    LoadElements(value);
-                    LoggerService.LogInfo($"--- DEFERRED LOAD FINISHED for {value} ---");
-                }
-                catch (Exception ex)
-                {
-                    LoggerService.LogError("OnCurrentScopeChanged Deferred Action", ex);
-                }
-            }), System.Windows.Threading.DispatcherPriority.Normal);
-        }
-        catch (Exception ex)
-        {
-            LoggerService.LogError("OnCurrentScopeChanged Outer", ex);
+            LoggerService.LogInfo("BuildTree completed.");
         }
     }
 
@@ -158,56 +166,43 @@ public partial class SelectionFilterViewModel : ObservableObject
         var prevType = SelectedType;
 
         Categories.Clear();
-        Categories.Add("Todos");
-        foreach (var c in _allAvailableElements.Select(e => e.CategoryName).Distinct().OrderBy(x => x))
-            Categories.Add(c);
-        SelectedCategory = prevCat ?? "Todos";
-
-        UpdateFilteredSubLists();
-    }
-
-    private void UpdateFilteredSubLists()
-    {
-        var filtered = _allAvailableElements.AsEnumerable();
-        if (SelectedCategory != "Todos" && !string.IsNullOrEmpty(SelectedCategory))
-            filtered = filtered.Where(e => e.CategoryName == SelectedCategory);
-
-        var fams = filtered.Select(e => e.FamilyName).Distinct().OrderBy(x => x).ToList();
         Families.Clear();
-        Families.Add("Todos");
-        foreach (var f in fams) Families.Add(f);
-        if (!Families.Contains(SelectedFamily)) SelectedFamily = "Todos";
-
-        var types = filtered.Select(e => e.TypeName).Distinct().OrderBy(x => x).ToList();
         Types.Clear();
-        Types.Add("Todos");
-        foreach (var t in types) Types.Add(t);
-        if (!Types.Contains(SelectedType)) SelectedType = "Todos";
-
-        var levels = filtered.Select(e => e.LevelName).Distinct().OrderBy(x => x).ToList();
         Levels.Clear();
-        Levels.Add("Todos");
-        foreach (var l in levels) Levels.Add(l);
-
-        var worksets = filtered.Select(e => e.WorksetName).Distinct().OrderBy(x => x).ToList();
         Worksets.Clear();
-        Worksets.Add("Todos");
-        foreach (var w in worksets) Worksets.Add(w);
-    }
 
-    partial void OnSelectedCategoryChanged(string value) => UpdateFilteredSubLists();
-    partial void OnSelectedFamilyChanged(string value) => UpdateFilteredSubLists();
-    partial void OnSelectedTypeChanged(string value) => UpdateFilteredSubLists();
+        Categories.Add("Todos");
+        Families.Add("Todos");
+        Types.Add("Todos");
+        Levels.Add("Todos");
+        Worksets.Add("Todos");
+
+        foreach (var cat in _activeElements.Select(e => e.CategoryName).Distinct().OrderBy(x => x))
+            Categories.Add(cat);
+        foreach (var fam in _activeElements.Select(e => e.FamilyName).Distinct().OrderBy(x => x))
+            Families.Add(fam);
+        foreach (var type in _activeElements.Select(e => e.TypeName).Distinct().OrderBy(x => x))
+            Types.Add(type);
+        foreach (var lev in _activeElements.Select(e => e.LevelName).Distinct().OrderBy(x => x))
+            Levels.Add(lev);
+        foreach (var ws in _activeElements.Select(e => e.WorksetName).Distinct().OrderBy(x => x))
+            Worksets.Add(ws);
+
+        // Restore previous selection if still valid
+        SelectedCategory = Categories.Contains(prevCat) ? prevCat : "Todos";
+        SelectedFamily   = Families.Contains(prevFam)   ? prevFam : "Todos";
+        SelectedType     = Types.Contains(prevType)     ? prevType : "Todos";
+    }
 
     private void InitializeTree()
     {
         try 
         {
-            LoggerService.LogInfo($"Building tree structure offline for {_allAvailableElements.Count} elements...");
+            LoggerService.LogInfo($"Building tree structure offline for {_activeElements.Count} elements...");
             var rootAll = new TreeItemViewModel("All", null, 0, OnTreeSelectionChanged);
             int totalCount = 0;
 
-            var categories = _allAvailableElements
+            var categories = _activeElements
                 .GroupBy(e => e.CategoryName)
                 .OrderBy(g => g.Key);
 
@@ -215,7 +210,7 @@ public partial class SelectionFilterViewModel : ObservableObject
             foreach (var catGroup in categories)
             {
                 catIndex++;
-                if (catIndex % 5 == 0) LoggerService.LogInfo($"Processing category {catIndex}/{categories.Count()}: {catGroup.Key}");
+                if (catIndex % 5 == 0) LoggerService.LogInfo($"Processing category {catIndex}: {catGroup.Key}");
                 
                 var catNode = new TreeItemViewModel(catGroup.Key, rootAll, 1, OnTreeSelectionChanged);
                 rootAll.Children.Add(catNode);
@@ -261,34 +256,32 @@ public partial class SelectionFilterViewModel : ObservableObject
                 totalCount += catCount;
             }
             rootAll.Count = totalCount;
-            
+
             if (_persistentCheckedIds.Count > 0)
             {
-                LoggerService.LogInfo($"Applying initial selection state to the tree for {_persistentCheckedIds.Count} elements...");
+                LoggerService.LogInfo($"Applying selection state for {_persistentCheckedIds.Count} checked elements...");
                 ApplyInitialSelection(rootAll, _persistentCheckedIds);
             }
 
             rootAll.IsExpanded = true;
 
-            // Swapping RootNodes on UI thread
+            // Swap RootNodes on UI thread
             var uiDispatcher = System.Windows.Threading.Dispatcher.CurrentDispatcher;
             if (uiDispatcher.CheckAccess())
             {
-                LoggerService.LogInfo($"Swapping tree root directly. Previous count: {RootNodes.Count}");
+                LoggerService.LogInfo($"Swapping tree root directly. New total: {totalCount}");
                 RootNodes.Clear();
                 RootNodes.Add(rootAll);
             }
             else
             {
                 uiDispatcher.Invoke(() => {
-                    LoggerService.LogInfo($"Swapping tree root via Invoke. Previous count: {RootNodes.Count}");
                     RootNodes.Clear();
                     RootNodes.Add(rootAll);
                 });
             }
             
-            LoggerService.LogInfo($"Tree root swapped. New count: {RootNodes.Count}");
-            LoggerService.LogInfo("Tree built and swapped successfully.");
+            LoggerService.LogInfo($"Tree built and swapped. {totalCount} visible elements.");
         }
         catch (Exception ex)
         {
@@ -302,7 +295,6 @@ public partial class SelectionFilterViewModel : ObservableObject
         {
             if (node.ElementId != null && selectedIds.Contains(node.ElementId))
             {
-                // LoggerService.LogInfo($"Auto-checking element: {node.ElementId}"); // Too noisy for 1000s of items
                 node.IsChecked = true;
                 return true;
             }
@@ -313,9 +305,7 @@ public partial class SelectionFilterViewModel : ObservableObject
         foreach (var child in node.Children)
         {
             if (ApplyInitialSelection(child, selectedIds))
-            {
                 hasCheckedChildren = true;
-            }
         }
 
         if (hasCheckedChildren) node.IsExpanded = true;
@@ -327,17 +317,21 @@ public partial class SelectionFilterViewModel : ObservableObject
     {
         try
         {
+            // ── 1. Obtener los IDs marcados en el árbol activo ──────────────────────
             var selectedIds = new List<Autodesk.Revit.DB.ElementId>();
             foreach (var node in RootNodes) node.GetAllSelectedIds(selectedIds);
 
+            IEnumerable<Autodesk.Revit.DB.ElementId> finalIds;
+
             if (selectedIds.Count > 0)
             {
-                _selectionService.SetSelection(selectedIds);
+                finalIds = selectedIds;
                 StatusMessage = $"Seleccionados (Árbol): {selectedIds.Count}";
             }
             else
             {
-                var filtered = _allAvailableElements.AsEnumerable();
+                // Aplicar filtros de dropdowns si no hay nada marcado en el árbol
+                var filtered = _activeElements.AsEnumerable();
                 if (SelectedCategory != "Todos" && !string.IsNullOrEmpty(SelectedCategory))
                     filtered = filtered.Where(e => e.CategoryName == SelectedCategory);
                 if (SelectedFamily != "Todos" && !string.IsNullOrEmpty(SelectedFamily))
@@ -349,10 +343,36 @@ public partial class SelectionFilterViewModel : ObservableObject
                 if (SelectedWorkset != "Todos" && !string.IsNullOrEmpty(SelectedWorkset))
                     filtered = filtered.Where(e => e.WorksetName == SelectedWorkset);
 
-                var filteredList = filtered.ToList();
-                _selectionService.SetSelection(filteredList.Select(e => e.Id));
-                StatusMessage = $"Seleccionados (Filtros): {filteredList.Count}";
+                finalIds = filtered.Select(e => e.Id).ToList();
+                StatusMessage = $"Seleccionados (Filtros): {finalIds.Count()}";
             }
+
+            // ── 2. Aplicar la selección en Revit ───────────────────────────────────
+            _selectionService.SetSelection(finalIds);
+
+            // ── 3. Actualizar el estado persistente de IDs marcados ────────────────
+            // Unión de los IDs ya persistidos (de otros scopes) con los del scope actual
+            var finalIdSet = finalIds.ToHashSet();
+            _persistentCheckedIds = finalIdSet;
+
+            // ── 4. Reconstruir _currentSelectionElements desde TODOS los scopes ────
+            // Buscamos el ElementModel de cada ID seleccionado en el pool completo,
+            // así no se pierden elementos que no estuvieran en el scope activo actual.
+            var allKnownById = _currentSelectionElements
+                .Concat(_elementsInViewElements)
+                .Concat(_allModelElements)
+                .GroupBy(e => e.Id)
+                .Select(g => g.First())
+                .ToDictionary(e => e.Id);
+
+            _currentSelectionElements = _persistentCheckedIds
+                .Where(id => allKnownById.ContainsKey(id))
+                .Select(id => allKnownById[id])
+                .ToList();
+
+            LoggerService.LogInfo(
+                $"Apply Selection: {_persistentCheckedIds.Count} IDs applied. " +
+                $"CurrentSelection updated to {_currentSelectionElements.Count} elements.");
         }
         catch (Exception ex)
         {
@@ -371,8 +391,6 @@ public partial class SelectionFilterViewModel : ObservableObject
         foreach(var node in RootNodes) node.IsChecked = false;
         ApplyFilter();
     }
-
-    private HashSet<Autodesk.Revit.DB.ElementId> _preSearchCheckedIds = null;
 
     partial void OnFilterTextChanged(string value)
     {
@@ -408,17 +426,12 @@ public partial class SelectionFilterViewModel : ObservableObject
         {
             searchText = searchText.ToLowerInvariant();
             
-            // Desmarcar todo antes de aplicar la nueva selección basada en el filtro
             foreach (var node in RootNodes)
-            {
                 node.IsChecked = false;
-            }
         }
 
         foreach (var node in RootNodes)
-        {
             FilterNode(node, searchText, isEmpty);
-        }
     }
 
     private bool FilterNode(TreeItemViewModel node, string searchText, bool isEmpty)
@@ -436,22 +449,16 @@ public partial class SelectionFilterViewModel : ObservableObject
         foreach (var child in node.Children)
         {
             if (FilterNode(child, searchText, isEmpty))
-            {
                 childMatch = true;
-            }
         }
 
         node.IsVisible = match || childMatch;
         
         if (childMatch && !node.IsExpanded)
-        {
             node.IsExpanded = true;
-        }
 
         if (match && !isEmpty)
-        {
             node.IsChecked = true;
-        }
 
         return node.IsVisible;
     }
@@ -460,7 +467,5 @@ public partial class SelectionFilterViewModel : ObservableObject
     private void ClearSearch()
     {
         FilterText = string.Empty;
-        // No restauramos el estado aquí porque ya se maneja en OnFilterTextChanged si es necesario
-        // pero podemos forzar una actualización
     }
 }
