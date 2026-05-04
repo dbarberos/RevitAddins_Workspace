@@ -148,6 +148,7 @@ El agente dispone de los siguientes skills especializados para Revit:
 | `revit-addin-doc-manager` | `.agent/skills/revit-addin-doc-manager/` | Gestión automática de documentación y changelog basada en inspección de código |
 | `revit-addin-icon-manager` | `.agent/skills/revit-addin-icon-manager/` | Integración de iconos personalizados en el Ribbon (.csproj + C#) |
 | `revit-addin-installer-manager` | `.agent/skills/revit-addin-installer-manager/` | Generación de instaladores MSI con WiX Toolset multiversión |
+| `csharp-blueprints` | `.agents/skills/csharp-blueprints/` | Memoria técnica y Blueprints: guías específicas de componentes, lógica de negocio compleja, flujos de datos y arquitectura interna del proyecto |
 | `workspace-ops` | `.agent/skills/workspace-ops/` | Infraestructura del repositorio: build de skills, validación de frontmatter, plugins |
 
 ---
