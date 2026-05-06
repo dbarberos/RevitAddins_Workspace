@@ -132,6 +132,39 @@ public class RevitSelectionService
                 phaseOrder = phaseInfo.Order;
             }
 
+            // Parameter metadata extraction for advanced deep-search (Safe Mode to prevent AccessViolationException)
+            System.Text.StringBuilder metaBuilder = new System.Text.StringBuilder();
+            try
+            {
+                // Marcas y Comentarios de Ejemplar
+                var pMark = el.get_Parameter(BuiltInParameter.ALL_MODEL_MARK);
+                if (pMark != null && pMark.HasValue) metaBuilder.Append(pMark.AsString()?.ToLowerInvariant()).Append(" ");
+
+                var pComments = el.get_Parameter(BuiltInParameter.ALL_MODEL_INSTANCE_COMMENTS);
+                if (pComments != null && pComments.HasValue) metaBuilder.Append(pComments.AsString()?.ToLowerInvariant()).Append(" ");
+
+                // Marcas y Comentarios de Tipo
+                var type = _doc.GetElement(el.GetTypeId()) as ElementType;
+                if (type != null)
+                {
+                    var pTypeMark = type.get_Parameter(BuiltInParameter.ALL_MODEL_TYPE_MARK);
+                    if (pTypeMark != null && pTypeMark.HasValue) metaBuilder.Append(pTypeMark.AsString()?.ToLowerInvariant()).Append(" ");
+
+                    var pTypeComments = type.get_Parameter(BuiltInParameter.ALL_MODEL_TYPE_COMMENTS);
+                    if (pTypeComments != null && pTypeComments.HasValue) metaBuilder.Append(pTypeComments.AsString()?.ToLowerInvariant()).Append(" ");
+                }
+
+                // Añadir el Nivel como "Restricción" base
+                if (!string.IsNullOrEmpty(levelName) && levelName != "N/A")
+                {
+                    metaBuilder.Append(levelName.ToLowerInvariant()).Append(" ");
+                }
+            }
+            catch
+            {
+                // Ignorar errores de lectura puntuales
+            }
+
             result.Add(new ElementModel
             {
                 Id = el.Id,
@@ -144,7 +177,8 @@ public class RevitSelectionService
                 IsAnnotation = el.Category?.CategoryType == CategoryType.Annotation,
                 HasBoundingBox = el.get_BoundingBox(null) != null,
                 PhaseName = phaseName,
-                PhaseOrder = phaseOrder
+                PhaseOrder = phaseOrder,
+                SearchableMetadata = metaBuilder.ToString()
             });
         }
 

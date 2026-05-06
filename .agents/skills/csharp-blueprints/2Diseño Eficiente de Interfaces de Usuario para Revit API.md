@@ -127,6 +127,27 @@ IList<RibbonItem> stackedItems = miPanel.AddStackedItems(btnData1, btnData2, btn
 // Revit los colocará usando automáticamente sus iconos de 16x16 píxeles
 ```
 
+## 5. Interoperabilidad Revit + WPF (.NET)
+
+Cuando se desarrollan interfaces modernas usando WPF dentro de Revit, hay una regla de oro para la estabilidad del add-in:
+
+### El Problema del Dispatcher
+En una aplicación WPF estándar, se suele usar `System.Windows.Application.Current.Dispatcher` para actualizar la interfaz desde otros hilos. Sin embargo, en Revit (que es una aplicación nativa C++ que hospeda .NET), `Application.Current` suele ser **null**. Intentar usarlo provocará un error de referencia nula.
+
+### La Solución: Safe Dispatcher
+Para actualizaciones asíncronas de la UI o para asegurar que un código se ejecute en el hilo principal de la interfaz, utiliza siempre:
+
+```csharp
+// FORMA SEGURA (Recomendada en Revit)
+var dispatcher = System.Windows.Threading.Dispatcher.CurrentDispatcher;
+dispatcher.InvokeAsync(() => {
+    // Código que actualiza la UI (ej: limpiar un TextBox)
+    this.MyProperty = string.Empty;
+});
+```
+
+*Uso: Aplica esto en tus ViewModels o Commands cuando necesites limpiar campos de texto o actualizar colecciones tras una operación pesada de la API de Revit.*
+
 ***
 
 Al estructurar la interfaz con Métodos de Extensión y agrupar correctamente usando PullDowns y Stacks, la clase `Application.cs` (`OnStartup`) quedará extremadamente limpia y legible.

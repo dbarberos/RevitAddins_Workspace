@@ -43,6 +43,9 @@ public partial class SelectionFilterViewModel : ObservableObject
     [ObservableProperty] private bool _hasBoundingBox;
     [ObservableProperty] private bool _isLiveSelection;
     [ObservableProperty] private bool _sortByPhase;
+    [ObservableProperty] private bool _isUseOr;
+    [ObservableProperty] private bool _isOnlyByName;
+    [ObservableProperty] private bool _isMockup3;
 
     [ObservableProperty] private SelectionScope _currentScope = SelectionScope.CurrentSelection;
     private HashSet<Autodesk.Revit.DB.ElementId> _persistentCheckedIds = new();
@@ -56,7 +59,6 @@ public partial class SelectionFilterViewModel : ObservableObject
 
     private bool _isRestoringState = false;
     private bool _isInitializing = false;
-    private HashSet<Autodesk.Revit.DB.ElementId> _preSearchCheckedIds = null;
 
     private void OnTreeSelectionChanged()
     {
@@ -311,7 +313,8 @@ public partial class SelectionFilterViewModel : ObservableObject
                 {
                     var elNode = new TreeItemViewModel(element.Id.ToString(), typeNode, typeNode.Level + 1, OnTreeSelectionChanged)
                     {
-                        ElementId = element.Id
+                        ElementId = element.Id,
+                        SearchableMetadata = element.SearchableMetadata
                     };
                     typeNode.Children.Add(elNode);
                     strCount++;
@@ -467,6 +470,16 @@ public partial class SelectionFilterViewModel : ObservableObject
             LoggerService.LogInfo(
                 $"Apply Selection: {_persistentCheckedIds.Count} IDs applied. " +
                 $"CurrentSelection updated to {_currentSelectionElements.Count} elements.");
+
+            // Clear search text if it exists, without reverting the selection in the UI
+            if (!string.IsNullOrEmpty(FilterText))
+            {
+                var dispatcher = System.Windows.Threading.Dispatcher.CurrentDispatcher;
+                dispatcher.InvokeAsync(() =>
+                {
+                    FilterText = string.Empty;
+                });
+            }
         }
         catch (Exception ex)
         {
@@ -486,80 +499,69 @@ public partial class SelectionFilterViewModel : ObservableObject
         ApplyFilter();
     }
 
-    partial void OnFilterTextChanged(string value)
+    [RelayCommand]
+    private void ApplySearch()
     {
-        if (string.IsNullOrEmpty(value))
+        string searchText = FilterText;
+        if (string.IsNullOrWhiteSpace(searchText)) return;
+
+        searchText = SecurityUtils.SanitizeInput(searchText).ToLowerInvariant();
+
+        TreeItemViewModel.IsBulkUpdating = true;
+
+        // If Use OR is OFF, the new search replaces the current selection.
+        if (!IsUseOr)
         {
-            ApplySearchFilter("");
-            if (_preSearchCheckedIds != null)
-            {
-                _isInitializing = true;
-                foreach (var node in RootNodes) ApplyInitialSelection(node, _preSearchCheckedIds);
-                _preSearchCheckedIds = null;
-                _isInitializing = false;
-                OnTreeSelectionChanged();
-            }
-            return;
+            foreach (var node in RootNodes) node.SetCheckedState(false);
         }
 
-        if (_preSearchCheckedIds == null && !_isRestoringState)
-        {
-            var currentChecked = new List<Autodesk.Revit.DB.ElementId>();
-            foreach (var node in RootNodes) node.GetAllSelectedIds(currentChecked);
-            _preSearchCheckedIds = currentChecked.ToHashSet();
-        }
-
-        string sanitizedValue = SecurityUtils.SanitizeInput(value);
-        ApplySearchFilter(sanitizedValue);
-    }
-
-    private void ApplySearchFilter(string searchText)
-    {
-        bool isEmpty = string.IsNullOrWhiteSpace(searchText);
-        if (!isEmpty)
-        {
-            searchText = searchText.ToLowerInvariant();
-            
-            foreach (var node in RootNodes)
-                node.IsChecked = false;
-        }
-
+        // Apply the current search matches
         foreach (var node in RootNodes)
-            FilterNode(node, searchText, isEmpty);
+            FilterNode(node, searchText, false);
+
+        // Ensure parent nodes reflect child states properly
+        foreach (var node in RootNodes) node.RefreshState();
+
+        TreeItemViewModel.IsBulkUpdating = false;
+        OnTreeSelectionChanged();
+
+        // Clear the text box after applying
+        FilterText = string.Empty;
     }
 
-    private bool FilterNode(TreeItemViewModel node, string searchText, bool isEmpty)
+    private void FilterNode(TreeItemViewModel node, string searchText, bool isEmpty)
     {
-        if (isEmpty)
+        if (isEmpty) return;
+
+        bool match = false;
+        if (node.Level > 0)
         {
-            node.IsVisible = true;
-            foreach (var child in node.Children) FilterNode(child, searchText, isEmpty);
-            return true;
+            // Search by Name (Category, Family, Type, or Element Name)
+            match = node.Name.ToLowerInvariant().Contains(searchText);
+
+            // If "Only by name" is OFF, also allow searching by ElementId and Metadata
+            if (!match && !IsOnlyByName)
+            {
+                if (node.ElementId != null)
+                {
+                    match = node.ElementId.ToString().Contains(searchText);
+                }
+                
+                if (!match && !string.IsNullOrEmpty(node.SearchableMetadata))
+                {
+                    match = node.SearchableMetadata.Contains(searchText);
+                }
+            }
         }
 
-        bool match = node.Name.ToLowerInvariant().Contains(searchText);
-        bool childMatch = false;
+        if (match)
+        {
+            node.SetCheckedState(true);
+        }
 
         foreach (var child in node.Children)
         {
-            if (FilterNode(child, searchText, isEmpty))
-                childMatch = true;
+            FilterNode(child, searchText, isEmpty);
         }
-
-        node.IsVisible = match || childMatch;
-        
-        if (childMatch && !node.IsExpanded)
-            node.IsExpanded = true;
-
-        if (match && !isEmpty)
-            node.IsChecked = true;
-
-        return node.IsVisible;
-    }
-
-    [RelayCommand]
-    private void ClearSearch()
-    {
-        FilterText = string.Empty;
     }
 }

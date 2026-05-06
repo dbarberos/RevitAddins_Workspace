@@ -1,0 +1,12 @@
+- [x] Implement ViewModel changes for check-only search logic
+    - [x] Update `ApplySearchFilter` to not clear `IsVisible`
+    - [x] Update `FilterNode` to only handle `IsChecked` during search
+    - [x] Ensure `Clear` functionality restores previous selection state correctly
+- [x] Implement View changes
+    - [x] Split right-hand card into Filter Card and Select Card
+    - [x] Add gap and ensure rounded corners on both
+- [x] Verify functionality
+    - [x] Tree remains fully visible during search
+    - [x] Search correctly updates checks (additive with Use OR, replacement without)
+    - [x] Clear button restores original selection
+- [x] Re-compile for testing

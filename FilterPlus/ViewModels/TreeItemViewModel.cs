@@ -15,6 +15,7 @@ public partial class TreeItemViewModel : ObservableObject
 
     public string Name { get; set; }
     public ElementId ElementId { get; set; }
+    public string SearchableMetadata { get; set; } = string.Empty;
     public ObservableCollection<TreeItemViewModel> Children { get; } = new();
 
     private bool _isUpdatingState;
@@ -133,5 +134,16 @@ public partial class TreeItemViewModel : ObservableObject
                 _isUpdatingState = false;
             }
         }
+    }
+
+    public void SetCheckedState(bool value)
+    {
+        _isUpdatingState = true;
+        IsChecked = value;
+        foreach (var child in Children)
+        {
+            child.SetCheckedState(value);
+        }
+        _isUpdatingState = false;
     }
 }

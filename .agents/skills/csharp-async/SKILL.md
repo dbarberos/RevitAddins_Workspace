@@ -40,6 +40,11 @@ Your goal is to help me follow best practices for asynchronous programming in C#
 - Don't create async void methods (except for event handlers)
 - Always await Task-returning methods
 
+## Revit & WPF Specifics
+
+- **Safe UI Dispatcher**: In a Revit Add-in, `System.Windows.Application.Current` is often `null`. 
+- To update the UI from a different thread or ensure execution on the UI thread, use `System.Windows.Threading.Dispatcher.CurrentDispatcher.InvokeAsync()` instead of `Application.Current.Dispatcher`.
+
 ## Implementation Patterns
 
 - Implement the async command pattern for long-running operations

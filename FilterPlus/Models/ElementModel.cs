@@ -19,4 +19,7 @@ public class ElementModel
     // Phase information
     public string PhaseName { get; set; }
     public int PhaseOrder { get; set; }
+
+    // Parameter search data
+    public string SearchableMetadata { get; set; } = string.Empty;
 }
