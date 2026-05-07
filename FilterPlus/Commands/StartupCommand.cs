@@ -27,6 +27,11 @@ public class StartupCommand : ExternalCommand
             // ViewModel constructor pre-fetches ALL scope data here (safe: we are in Revit API thread)
             var viewModel = new SelectionFilterViewModel(selectionService);
             
+            // Register external event for interactive selection
+            var pickElementsHandler = new PickElementsHandler(viewModel);
+            var externalEvent = Autodesk.Revit.UI.ExternalEvent.Create(pickElementsHandler);
+            viewModel.SetExternalEvent(externalEvent);
+            
             LoggerService.LogInfo("ViewModel created. Showing window...");
 
             var view = new SelectionFilterView(viewModel);

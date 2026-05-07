@@ -15,6 +15,9 @@ public partial class SelectionFilterView : Window
         // Register dispatcher for logging
         FilterPlus.Services.LoggerService.SetDispatcher(this.Dispatcher);
 
+        viewModel.HideWindowRequested = this.Hide;
+        viewModel.ShowWindowRequested = this.Show;
+
         _logView = new LogView();
         _logView.Show();
         

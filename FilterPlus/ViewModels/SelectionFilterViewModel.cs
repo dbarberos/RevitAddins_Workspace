@@ -11,6 +11,10 @@ namespace FilterPlus.ViewModels;
 public partial class SelectionFilterViewModel : ObservableObject
 {
     private readonly RevitSelectionService _selectionService;
+    private Autodesk.Revit.UI.ExternalEvent _pickElementsEvent;
+
+    public System.Action HideWindowRequested { get; set; }
+    public System.Action ShowWindowRequested { get; set; }
 
     // Pre-fetched data for each scope (loaded once at startup in API context)
     private List<ElementModel> _currentSelectionElements = new();
@@ -64,13 +68,8 @@ public partial class SelectionFilterViewModel : ObservableObject
     {
         if (TreeItemViewModel.IsBulkUpdating) return;
         
-        var selectedIds = new List<Autodesk.Revit.DB.ElementId>();
-        foreach (var node in RootNodes) node.GetAllSelectedIds(selectedIds);
-        CheckedElementsCount = selectedIds.Count;
-
-        // Keep persistent state in sync so checked elements carry over between scope switches
-        _persistentCheckedIds = new HashSet<Autodesk.Revit.DB.ElementId>(selectedIds);
-
+        UpdatePersistentCheckedIdsFromTree();
+        
         if (IsLiveSelection)
         {
             ApplyFilter();
@@ -431,25 +430,86 @@ public partial class SelectionFilterViewModel : ObservableObject
         return hasCheckedChildren;
     }
 
+    public void SetExternalEvent(Autodesk.Revit.UI.ExternalEvent externalEvent)
+    {
+        _pickElementsEvent = externalEvent;
+    }
+
+    [RelayCommand]
+    private void PickElements()
+    {
+        // 1. Apply current selection so it's visible in Revit
+        ApplyFilter();
+
+        // 2. Hide the addin window
+        HideWindowRequested?.Invoke();
+
+        // 3. Trigger the external event for PickObjects
+        _pickElementsEvent?.Raise();
+    }
+
+    public void OnPickElementsFinished(List<Autodesk.Revit.DB.ElementId> newIds)
+    {
+        var dispatcher = System.Windows.Threading.Dispatcher.CurrentDispatcher;
+        dispatcher.InvokeAsync(() =>
+        {
+            if (newIds != null && newIds.Count > 0)
+            {
+                // Add new IDs to the persistent selection
+                foreach (var id in newIds)
+                {
+                    _persistentCheckedIds.Add(id);
+                }
+
+                // Ensure newly picked elements are injected into the active elements so they show up in the tree!
+                var allKnownById = _allModelElements.ToDictionary(e => e.Id);
+                foreach (var id in newIds)
+                {
+                    if (allKnownById.TryGetValue(id, out var model))
+                    {
+                        if (_activeElements != null && !_activeElements.Any(e => e.Id == id))
+                        {
+                            _activeElements.Add(model);
+                        }
+                    }
+                }
+
+                // Force a tree refresh so the newly selected items are checked
+                BuildTree();
+            }
+
+            // Restore the window
+            ShowWindowRequested?.Invoke();
+        });
+    }
+
+    private void UpdatePersistentCheckedIdsFromTree()
+    {
+        var selectedIdsInTree = new List<Autodesk.Revit.DB.ElementId>();
+        foreach (var node in RootNodes) node.GetAllSelectedIds(selectedIdsInTree);
+
+        var activeElementIds = _activeElements?.Select(e => e.Id).ToHashSet() ?? new HashSet<Autodesk.Revit.DB.ElementId>();
+        
+        // Mantener los IDs que estaban checkeados pero que no pertenecen al scope/filtro actual
+        var idsFromOtherScopes = _persistentCheckedIds.Where(id => !activeElementIds.Contains(id));
+        
+        _persistentCheckedIds = selectedIdsInTree.Concat(idsFromOtherScopes).ToHashSet();
+        CheckedElementsCount = _persistentCheckedIds.Count;
+    }
+
     [RelayCommand]
     private void ApplyFilter()
     {
         try
         {
-            // ── 1. Obtener los IDs marcados en el árbol activo ──────────────────────
-            var selectedIds = new List<Autodesk.Revit.DB.ElementId>();
-            foreach (var node in RootNodes) node.GetAllSelectedIds(selectedIds);
+            // ── 1. Actualizar el estado persistente de IDs marcados ────────────────
+            UpdatePersistentCheckedIdsFromTree();
 
-            var finalIds = selectedIds;
-            StatusMessage = $"Seleccionados: {selectedIds.Count}";
+            var finalIds = _persistentCheckedIds.ToList();
+            StatusMessage = $"Seleccionados: {finalIds.Count}";
 
             // ── 2. Aplicar la selección en Revit ───────────────────────────────────
             _selectionService.SetSelection(finalIds);
-
-            // ── 3. Actualizar el estado persistente de IDs marcados ────────────────
-            // Unión de los IDs ya persistidos (de otros scopes) con los del scope actual
-            var finalIdSet = finalIds.ToHashSet();
-            _persistentCheckedIds = finalIdSet;
 
             // ── 4. Reconstruir _currentSelectionElements desde TODOS los scopes ────
             // Buscamos el ElementModel de cada ID seleccionado en el pool completo,

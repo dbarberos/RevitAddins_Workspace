@@ -335,9 +335,10 @@
                         </StackPanel>
                     </Border>
                 </StackPanel>
-                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                    <Button Content="Clear" Command="{Binding ClearFiltersCommand}" Width="80"/>
-                    <Button Content="Apply Selection" Command="{Binding ApplyFilterCommand}" Width="120" Background="#007ACC" Foreground="White" FontWeight="Bold"/>
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Bottom">
+                    <Button Content="Select in Revit" Command="{Binding PickElementsCommand}" Margin="0,0,5,0" Height="30" Cursor="Hand"/>
+                    <Button Content="Clear" Command="{Binding ClearFiltersCommand}" Width="80" Margin="0,0,5,0" Height="30"/>
+                    <Button Content="Apply Selection" Command="{Binding ApplyFilterCommand}" Width="120" Height="30" Background="#007ACC" Foreground="White" FontWeight="Bold" Margin="0"/>
                 </StackPanel>
             </Grid>
         </Border>
