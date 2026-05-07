@@ -47,9 +47,13 @@ public partial class SelectionFilterViewModel : ObservableObject
     [ObservableProperty] private bool _hasBoundingBox;
     [ObservableProperty] private bool _isLiveSelection;
     [ObservableProperty] private bool _sortByPhase;
+    [ObservableProperty] private bool _sortByLevel;
+    [ObservableProperty] private bool _sortByWorkset;
     [ObservableProperty] private bool _isUseOr;
     [ObservableProperty] private bool _isOnlyByName;
     [ObservableProperty] private bool _isUseRegex;
+
+    private List<string> _activeGroupings = new List<string>();
 
     [ObservableProperty] private SelectionScope _currentScope = SelectionScope.CurrentSelection;
     private HashSet<Autodesk.Revit.DB.ElementId> _persistentCheckedIds = new();
@@ -207,6 +211,22 @@ public partial class SelectionFilterViewModel : ObservableObject
 
     partial void OnSortByPhaseChanged(bool value)
     {
+        if (value) { if (!_activeGroupings.Contains("Phase")) _activeGroupings.Add("Phase"); }
+        else _activeGroupings.Remove("Phase");
+        BuildTree();
+    }
+
+    partial void OnSortByLevelChanged(bool value)
+    {
+        if (value) { if (!_activeGroupings.Contains("Level")) _activeGroupings.Add("Level"); }
+        else _activeGroupings.Remove("Level");
+        BuildTree();
+    }
+
+    partial void OnSortByWorksetChanged(bool value)
+    {
+        if (value) { if (!_activeGroupings.Contains("Workset")) _activeGroupings.Add("Workset"); }
+        else _activeGroupings.Remove("Workset");
         BuildTree();
     }
 
@@ -327,6 +347,57 @@ public partial class SelectionFilterViewModel : ObservableObject
         catNode.Count = catCount;
     }
 
+    private void BuildGroupedTree(IEnumerable<ElementModel> elements, TreeItemViewModel parentNode, int groupingIndex)
+    {
+        if (groupingIndex >= _activeGroupings.Count)
+        {
+            var categories = elements.GroupBy(e => e.CategoryName).OrderBy(g => g.Key);
+            foreach (var catGroup in categories)
+            {
+                var catNode = new TreeItemViewModel(catGroup.Key, parentNode, parentNode.Level + 1, OnTreeSelectionChanged);
+                parentNode.Children.Add(catNode);
+                BuildCategorySubTree(catGroup, catNode);
+            }
+            parentNode.Count = parentNode.Children.Sum(c => c.Count);
+            return;
+        }
+
+        string groupingType = _activeGroupings[groupingIndex];
+        if (groupingType == "Phase")
+        {
+            var phases = elements.GroupBy(e => new { e.PhaseName, e.PhaseOrder }).OrderBy(g => g.Key.PhaseOrder);
+            foreach (var phaseGroup in phases)
+            {
+                var phaseNode = new TreeItemViewModel(phaseGroup.Key.PhaseName, parentNode, parentNode.Level + 1, OnTreeSelectionChanged);
+                parentNode.Children.Add(phaseNode);
+                BuildGroupedTree(phaseGroup, phaseNode, groupingIndex + 1);
+            }
+            parentNode.Count = parentNode.Children.Sum(c => c.Count);
+        }
+        else if (groupingType == "Level")
+        {
+            var levels = elements.GroupBy(e => string.IsNullOrEmpty(e.LevelName) ? "None" : e.LevelName).OrderBy(g => g.Key);
+            foreach (var levelGroup in levels)
+            {
+                var levelNode = new TreeItemViewModel(levelGroup.Key, parentNode, parentNode.Level + 1, OnTreeSelectionChanged);
+                parentNode.Children.Add(levelNode);
+                BuildGroupedTree(levelGroup, levelNode, groupingIndex + 1);
+            }
+            parentNode.Count = parentNode.Children.Sum(c => c.Count);
+        }
+        else if (groupingType == "Workset")
+        {
+            var worksets = elements.GroupBy(e => string.IsNullOrEmpty(e.WorksetName) ? "None" : e.WorksetName).OrderBy(g => g.Key);
+            foreach (var wsGroup in worksets)
+            {
+                var wsNode = new TreeItemViewModel(wsGroup.Key, parentNode, parentNode.Level + 1, OnTreeSelectionChanged);
+                parentNode.Children.Add(wsNode);
+                BuildGroupedTree(wsGroup, wsNode, groupingIndex + 1);
+            }
+            parentNode.Count = parentNode.Children.Sum(c => c.Count);
+        }
+    }
+
     private void InitializeTree(IEnumerable<ElementModel> filteredElements)
     {
         try 
@@ -335,43 +406,7 @@ public partial class SelectionFilterViewModel : ObservableObject
             LoggerService.LogInfo($"Building tree structure offline for {elements.Count} elements...");
             var rootAll = new TreeItemViewModel("All", null, 0, OnTreeSelectionChanged);
             
-            if (SortByPhase)
-            {
-                var phases = elements
-                    .GroupBy(e => new { e.PhaseName, e.PhaseOrder })
-                    .OrderBy(g => g.Key.PhaseOrder);
-
-                foreach (var phaseGroup in phases)
-                {
-                    var phaseNode = new TreeItemViewModel(phaseGroup.Key.PhaseName, rootAll, 1, OnTreeSelectionChanged);
-                    rootAll.Children.Add(phaseNode);
-
-                    var catGroups = phaseGroup
-                        .GroupBy(e => e.CategoryName)
-                        .OrderBy(g => g.Key);
-
-                    foreach (var catGroup in catGroups)
-                    {
-                        var catNode = new TreeItemViewModel(catGroup.Key, phaseNode, 2, OnTreeSelectionChanged);
-                        phaseNode.Children.Add(catNode);
-                        BuildCategorySubTree(catGroup, catNode);
-                    }
-                    phaseNode.Count = phaseNode.Children.Sum(c => c.Count);
-                }
-            }
-            else
-            {
-                var categories = elements
-                    .GroupBy(e => e.CategoryName)
-                    .OrderBy(g => g.Key);
-
-                foreach (var catGroup in categories)
-                {
-                    var catNode = new TreeItemViewModel(catGroup.Key, rootAll, 1, OnTreeSelectionChanged);
-                    rootAll.Children.Add(catNode);
-                    BuildCategorySubTree(catGroup, catNode);
-                }
-            }
+            BuildGroupedTree(elements, rootAll, 0);
 
             rootAll.Count = rootAll.Children.Sum(c => c.Count);
 

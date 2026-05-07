@@ -8,7 +8,7 @@
         xmlns:services="clr-namespace:FilterPlus.Services"
         xmlns:converters="clr-namespace:FilterPlus.Converters"
         mc:Ignorable="d"
-        Title="FilterPlus" Height="500" Width="710"
+        Title="FilterPlus" Height="937" Width="1100"
         WindowStartupLocation="CenterScreen"
         Topmost="True" Background="#f5f5f5">
     <Window.Resources>
@@ -83,9 +83,9 @@
 
     <Grid Margin="15">
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="*"/> <!-- Árbol -->
+            <ColumnDefinition Width="*"/> <!-- Árbol (Flexible, aprox 720px) -->
             <ColumnDefinition Width="Auto"/> <!-- Separador -->
-            <ColumnDefinition Width="330"/> <!-- Filtros y Selección (Ajustado para gap de 15px) -->
+            <ColumnDefinition Width="350"/> <!-- Filtros y Selección (Ampliado para evitar recorte) -->
         </Grid.ColumnDefinitions>
         <Grid.RowDefinitions>
             <RowDefinition Height="*"/>
@@ -271,6 +271,8 @@
                             <CheckBox Content="Only Annotations" IsChecked="{Binding IsOnlyAnnotation}" Style="{StaticResource SwitchStyle}" Margin="0,0,0,6" FontSize="11"/>
                             <CheckBox Content="Has Bounding Box" IsChecked="{Binding HasBoundingBox}" Style="{StaticResource SwitchStyle}" Margin="0,0,0,6" FontSize="11"/>
                             <CheckBox Content="Sort by Phase" IsChecked="{Binding SortByPhase}" Style="{StaticResource SwitchStyle}" Margin="0,0,0,6" FontSize="11"/>
+                            <CheckBox Content="Sort by Level" IsChecked="{Binding SortByLevel}" Style="{StaticResource SwitchStyle}" Margin="0,0,0,6" FontSize="11"/>
+                            <CheckBox Content="Sort by Workset" IsChecked="{Binding SortByWorkset}" Style="{StaticResource SwitchStyle}" Margin="0,0,0,6" FontSize="11"/>
                             <CheckBox Content="on Live Selection" IsChecked="{Binding IsLiveSelection}" Style="{StaticResource SwitchStyle}" Margin="0,0,0,0" FontSize="11"/>
                         </StackPanel>
                     </Grid>
