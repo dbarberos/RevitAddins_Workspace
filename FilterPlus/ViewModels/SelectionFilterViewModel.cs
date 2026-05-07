@@ -45,7 +45,7 @@ public partial class SelectionFilterViewModel : ObservableObject
     [ObservableProperty] private bool _sortByPhase;
     [ObservableProperty] private bool _isUseOr;
     [ObservableProperty] private bool _isOnlyByName;
-    [ObservableProperty] private bool _isMockup3;
+    [ObservableProperty] private bool _isUseRegex;
 
     [ObservableProperty] private SelectionScope _currentScope = SelectionScope.CurrentSelection;
     private HashSet<Autodesk.Revit.DB.ElementId> _persistentCheckedIds = new();
@@ -505,7 +505,31 @@ public partial class SelectionFilterViewModel : ObservableObject
         string searchText = FilterText;
         if (string.IsNullOrWhiteSpace(searchText)) return;
 
-        searchText = SecurityUtils.SanitizeInput(searchText).ToLowerInvariant();
+        System.Text.RegularExpressions.Regex searchRegex = null;
+
+        if (IsUseRegex)
+        {
+            try
+            {
+                // Compile regex with a 2-second timeout to prevent ReDoS (Regular Expression Denial of Service) attacks
+                searchRegex = new System.Text.RegularExpressions.Regex(
+                    searchText, 
+                    System.Text.RegularExpressions.RegexOptions.IgnoreCase | System.Text.RegularExpressions.RegexOptions.Compiled,
+                    TimeSpan.FromSeconds(2));
+            }
+            catch (Exception ex)
+            {
+                // Invalid regex syntax or other parsing error
+                LoggerService.LogInfo("Invalid regex pattern: " + ex.Message);
+                StatusMessage = "Invalid Regex Pattern";
+                return; // Stop the search safely
+            }
+        }
+        else
+        {
+            // Only sanitize input if we are NOT using Regex, otherwise we strip valid regex tokens
+            searchText = SecurityUtils.SanitizeInput(searchText).ToLowerInvariant();
+        }
 
         TreeItemViewModel.IsBulkUpdating = true;
 
@@ -517,7 +541,7 @@ public partial class SelectionFilterViewModel : ObservableObject
 
         // Apply the current search matches
         foreach (var node in RootNodes)
-            FilterNode(node, searchText, false);
+            FilterNode(node, searchText, searchRegex, false);
 
         // Ensure parent nodes reflect child states properly
         foreach (var node in RootNodes) node.RefreshState();
@@ -529,28 +553,59 @@ public partial class SelectionFilterViewModel : ObservableObject
         FilterText = string.Empty;
     }
 
-    private void FilterNode(TreeItemViewModel node, string searchText, bool isEmpty)
+    private void FilterNode(TreeItemViewModel node, string searchText, System.Text.RegularExpressions.Regex searchRegex, bool isEmpty)
     {
         if (isEmpty) return;
 
         bool match = false;
         if (node.Level > 0)
         {
-            // Search by Name (Category, Family, Type, or Element Name)
-            match = node.Name.ToLowerInvariant().Contains(searchText);
-
-            // If "Only by name" is OFF, also allow searching by ElementId and Metadata
-            if (!match && !IsOnlyByName)
+            try
             {
-                if (node.ElementId != null)
+                if (searchRegex != null)
                 {
-                    match = node.ElementId.ToString().Contains(searchText);
+                    // Regex Mode
+                    match = searchRegex.IsMatch(node.Name);
+
+                    // If "Only by name" is OFF, also allow searching by ElementId and Metadata
+                    if (!match && !IsOnlyByName)
+                    {
+                        if (node.ElementId != null)
+                        {
+                            match = searchRegex.IsMatch(node.ElementId.ToString());
+                        }
+                        
+                        if (!match && !string.IsNullOrEmpty(node.SearchableMetadata))
+                        {
+                            match = searchRegex.IsMatch(node.SearchableMetadata);
+                        }
+                    }
                 }
-                
-                if (!match && !string.IsNullOrEmpty(node.SearchableMetadata))
+                else
                 {
-                    match = node.SearchableMetadata.Contains(searchText);
+                    // Standard Text Mode
+                    // Search by Name (Category, Family, Type, or Element Name)
+                    match = node.Name.ToLowerInvariant().Contains(searchText);
+
+                    // If "Only by name" is OFF, also allow searching by ElementId and Metadata
+                    if (!match && !IsOnlyByName)
+                    {
+                        if (node.ElementId != null)
+                        {
+                            match = node.ElementId.ToString().Contains(searchText);
+                        }
+                        
+                        if (!match && !string.IsNullOrEmpty(node.SearchableMetadata))
+                        {
+                            match = node.SearchableMetadata.Contains(searchText);
+                        }
+                    }
                 }
+            }
+            catch (System.Text.RegularExpressions.RegexMatchTimeoutException)
+            {
+                LoggerService.LogInfo("Regex match timed out. Possible ReDoS pattern.");
+                StatusMessage = "Regex Timeout Error";
             }
         }
 
@@ -561,7 +616,7 @@ public partial class SelectionFilterViewModel : ObservableObject
 
         foreach (var child in node.Children)
         {
-            FilterNode(child, searchText, isEmpty);
+            FilterNode(child, searchText, searchRegex, isEmpty);
         }
     }
 }

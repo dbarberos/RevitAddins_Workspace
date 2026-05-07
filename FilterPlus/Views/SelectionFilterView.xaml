@@ -228,7 +228,7 @@
                     <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Left">
                         <CheckBox Content="Use OR" IsChecked="{Binding IsUseOr}" Style="{StaticResource SwitchStyle}" FontSize="11" Margin="0,0,10,0"/>
                         <CheckBox Content="Only by name" IsChecked="{Binding IsOnlyByName}" Style="{StaticResource SwitchStyle}" FontSize="11" Margin="0,0,10,0"/>
-                        <CheckBox Content="Mockup 2" IsChecked="{Binding IsMockup3}" Style="{StaticResource SwitchStyle}" FontSize="11" Margin="0,0,10,0"/>
+                        <CheckBox Content="Use Regex" IsChecked="{Binding IsUseRegex}" Style="{StaticResource SwitchStyle}" FontSize="11" Margin="0,0,10,0"/>
                     </StackPanel>
                 </Grid>
             </Border>

@@ -57,6 +57,7 @@ El filtro actúa puramente sobre la selección y utiliza un sistema **Manual (St
 - **Grouped Toggles (Left Alignment)**: Para evitar superposiciones al redimensionar la ventana, agrupar switches en `StackPanel` horizontales con `HorizontalAlignment="Left"` en lugar de repartirlos en columnas de rejilla con `*`.
 - **Safe Parameter Extraction**: Evitar iterar por `el.Parameters` en colecciones masivas de elementos desconocidos. Esto puede causar `AccessViolationException`. Es preferible usar `get_Parameter(BuiltInParameter...)` para capturar campos específicos (Mark, Comments, etc.) y envolver la extracción en un bloque `try-catch`.
 - **Safe UI Dispatcher**: En un entorno de Add-in, `System.Windows.Application.Current` suele ser `null` ya que Revit no es una aplicación nativa WPF pura. Para actualizaciones asíncronas de la UI, usar siempre `System.Windows.Threading.Dispatcher.CurrentDispatcher.InvokeAsync` en lugar de `Application.Current.Dispatcher`.
+- **ReDoS Protection (Regex)**: Al permitir búsquedas por Expresiones Regulares, usar siempre un `TimeSpan` de timeout (ej: 2 seg) en el constructor de `Regex` para evitar ataques de denegación de servicio por retroceso exponencial. Capturar siempre `RegexMatchTimeoutException`.
 
 ---
 
