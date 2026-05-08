@@ -293,4 +293,28 @@ Para asegurar la trazabilidad, depuración y aprendizaje continuo, **se debe man
 
 Esto garantiza que siempre haya una fuente de consulta en el futuro para entender cómo se estructuró el código o por qué se tomaron ciertas decisiones de diseño.
 
+# **12. Mejores Prácticas y Solución de Problemas (WPF)**
+
+Al desarrollar interfaces complejas con WPF para Revit (especialmente exploradores jerárquicos), se deben tener en cuenta los siguientes problemas detectados y sus soluciones:
+
+## **12.1 Virtualización de TreeView y Reciclaje de Contenedores**
+**Problema:** Al usar `VirtualizingStackPanel.VirtualizationMode="Recycling"` en un `TreeView` con bindings bidireccionales (`TwoWay`) en la propiedad `IsExpanded`, se puede producir una corrupción del estado visual al reconstruir o filtrar el árbol. Los contenedores visuales antiguos pueden "empujar" su estado de expansión previo a los nuevos objetos de datos antes de resetearse, provocando expansiones espontáneas no deseadas.
+
+**Solución:** 
+- Cambiar el modo a **`VirtualizationMode="Standard"`** en el XAML del TreeView.
+- Esto asegura que los contenedores visuales se destruyan y recreen limpiamente, evitando la transferencia de estados "fantasma" entre nodos antiguos y nuevos.
+
+```xml
+<TreeView VirtualizingStackPanel.IsVirtualizing="True"
+          VirtualizingStackPanel.VirtualizationMode="Standard">
+```
+
+## **12.2 Conflictos de Expansión por Restauración de Selección**
+**Problema:** Al reconstruir un árbol y restaurar automáticamente los "checks" (selección) de elementos, es común tener una lógica recursiva que expande los padres para que el elemento seleccionado sea visible. Sin embargo, si el usuario ha organizado o contraído el árbol manualmente, esta lógica sobrescribirá su estado visual, forzando la apertura de ramas que deberían estar cerradas.
+
+**Solución:**
+- Implementar un parámetro de control (ej. `bool forceExpand`) en la lógica de restauración de selección.
+- **`forceExpand = true`**: Solo durante el primer lanzamiento del add-in (para mostrar qué hay seleccionado en Revit).
+- **`forceExpand = false`**: Durante reconstrucciones por cambios de filtros o switches de organización, permitiendo que la "Memoria Semántica de Profundidad" mantenga el control visual.
+
 ---
