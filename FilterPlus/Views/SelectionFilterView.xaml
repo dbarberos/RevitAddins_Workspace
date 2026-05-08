@@ -235,6 +235,7 @@
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/> <!-- Filter Card -->
                 <RowDefinition Height="Auto"/> <!-- Select Card -->
+                <RowDefinition Height="Auto"/> <!-- Add Checked Card -->
             </Grid.RowDefinitions>
 
             <!-- Card de Filtro -->
@@ -313,6 +314,43 @@
                             <CheckBox Content="Sort by Level" IsChecked="{Binding SortByLevel}" Style="{StaticResource SwitchStyle}" Margin="0,0,0,6" FontSize="11"/>
                             <CheckBox Content="Sort by Workset" IsChecked="{Binding SortByWorkset}" Style="{StaticResource SwitchStyle}" Margin="0,0,0,6" FontSize="11"/>
                             <CheckBox Content="on Live Selection" IsChecked="{Binding IsLiveSelection}" Style="{StaticResource SwitchStyle}" Margin="0,0,0,0" FontSize="11"/>
+                        </StackPanel>
+                    </Grid>
+                </Grid>
+            </Border>
+
+            <!-- Card de Add Checked -->
+            <Border Grid.Row="2" Background="White" CornerRadius="8" Padding="15,10" Margin="0,0,0,10" BorderBrush="#e8e8e8" BorderThickness="1">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    <TextBlock Grid.Row="0" Text="Add Checked" FontWeight="500" Margin="0,0,0,10" Foreground="#333" FontSize="13"/>
+                    
+                    <Grid Grid.Row="1" HorizontalAlignment="Center">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="20"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        
+                        <!-- Columna Izquierda -->
+                        <StackPanel Grid.Column="0">
+                            <CheckBox Content="Option 1" IsChecked="{Binding AddChecked1}" Style="{StaticResource SwitchStyle}" Margin="0,0,0,6" FontSize="11"/>
+                            <CheckBox Content="Option 2" IsChecked="{Binding AddChecked2}" Style="{StaticResource SwitchStyle}" Margin="0,0,0,6" FontSize="11"/>
+                            <CheckBox Content="Option 3" IsChecked="{Binding AddChecked3}" Style="{StaticResource SwitchStyle}" Margin="0,0,0,6" FontSize="11"/>
+                            <CheckBox Content="Option 4" IsChecked="{Binding AddChecked4}" Style="{StaticResource SwitchStyle}" Margin="0,0,0,6" FontSize="11"/>
+                            <CheckBox Content="Option 5" IsChecked="{Binding AddChecked5}" Style="{StaticResource SwitchStyle}" Margin="0,0,0,0" FontSize="11"/>
+                        </StackPanel>
+                        
+                        <!-- Columna Derecha -->
+                        <StackPanel Grid.Column="2">
+                            <CheckBox Content="Option 6" IsChecked="{Binding AddChecked6}" Style="{StaticResource SwitchStyle}" Margin="0,0,0,6" FontSize="11"/>
+                            <CheckBox Content="Option 7" IsChecked="{Binding AddChecked7}" Style="{StaticResource SwitchStyle}" Margin="0,0,0,6" FontSize="11"/>
+                            <CheckBox Content="Option 8" IsChecked="{Binding AddChecked8}" Style="{StaticResource SwitchStyle}" Margin="0,0,0,6" FontSize="11"/>
+                            <CheckBox Content="Option 9" IsChecked="{Binding AddChecked9}" Style="{StaticResource SwitchStyle}" Margin="0,0,0,6" FontSize="11"/>
+                            <CheckBox Content="Option 10" IsChecked="{Binding AddChecked10}" Style="{StaticResource SwitchStyle}" Margin="0,0,0,0" FontSize="11"/>
                         </StackPanel>
                     </Grid>
                 </Grid>

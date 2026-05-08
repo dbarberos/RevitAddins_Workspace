@@ -53,6 +53,18 @@ public partial class SelectionFilterViewModel : ObservableObject
     [ObservableProperty] private bool _isOnlyByName;
     [ObservableProperty] private bool _isUseRegex;
 
+    // Add Checked Options (Placeholders for UI)
+    [ObservableProperty] private bool _addChecked1;
+    [ObservableProperty] private bool _addChecked2;
+    [ObservableProperty] private bool _addChecked3;
+    [ObservableProperty] private bool _addChecked4;
+    [ObservableProperty] private bool _addChecked5;
+    [ObservableProperty] private bool _addChecked6;
+    [ObservableProperty] private bool _addChecked7;
+    [ObservableProperty] private bool _addChecked8;
+    [ObservableProperty] private bool _addChecked9;
+    [ObservableProperty] private bool _addChecked10;
+
     private List<string> _activeGroupings = new List<string>();
 
     [ObservableProperty] private SelectionScope _currentScope = SelectionScope.CurrentSelection;
