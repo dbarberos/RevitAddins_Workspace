@@ -42,6 +42,34 @@
             </Grid>
         </HierarchicalDataTemplate>
 
+        <Style x:Key="HeaderIconButtonStyle" TargetType="Button">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Margin" Value="2,0"/>
+            <Setter Property="Width" Value="20"/>
+            <Setter Property="Height" Value="20"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="border" Background="Transparent" CornerRadius="10" Padding="4">
+                            <Viewbox Width="10" Height="10" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                <ContentPresenter />
+                            </Viewbox>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="#f0f0f0"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="#e0e0e0"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
         <Style x:Key="SwitchStyle" TargetType="{x:Type CheckBox}">
             <Setter Property="Template">
                 <Setter.Value>
@@ -103,11 +131,23 @@
             <Border Grid.Row="0" Background="#f9f9f9" BorderBrush="#d0d0d0" BorderThickness="0,0,0,1" Margin="0,0,10,0" Padding="0,5">
                 <Grid>
                     <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="60"/>
                     </Grid.ColumnDefinitions>
-                    <TextBlock Grid.Column="0" Text="Elements" FontWeight="Bold" Margin="25,0,0,0" VerticalAlignment="Center"/>
-                    <TextBlock Grid.Column="1" Text="Count" FontWeight="Bold" HorizontalAlignment="Right" Margin="0,0,5,0" VerticalAlignment="Center"/>
+                    <TextBlock Grid.Column="0" Text="Elements" FontWeight="Bold" Margin="25,0,8,0" VerticalAlignment="Center"/>
+                    
+                    <Button Grid.Column="1" Command="{Binding ExpandAllCommand}" Style="{StaticResource HeaderIconButtonStyle}" ToolTip="Expand All" VerticalAlignment="Center">
+                        <Path Data="M0,0 L10,0 L5,8 Z" Fill="#666" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Button>
+                    
+                    <Button Grid.Column="2" Command="{Binding CollapseAllCommand}" Style="{StaticResource HeaderIconButtonStyle}" ToolTip="Collapse All" VerticalAlignment="Center">
+                        <Path Data="M5,0 L10,8 L0,8 Z" Fill="#666" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Button>
+                    
+                    <TextBlock Grid.Column="4" Text="Count" FontWeight="Bold" HorizontalAlignment="Right" Margin="0,0,5,0" VerticalAlignment="Center"/>
                 </Grid>
             </Border>
             <TreeView Grid.Row="1" ItemsSource="{Binding RootNodes}" 
@@ -115,7 +155,7 @@
                       ScrollViewer.VerticalScrollBarVisibility="Visible"
                       HorizontalContentAlignment="Stretch"
                       VirtualizingStackPanel.IsVirtualizing="True"
-                      VirtualizingStackPanel.VirtualizationMode="Recycling"
+                      VirtualizingStackPanel.VirtualizationMode="Standard"
                       BorderThickness="0" Background="Transparent">
                 <TreeView.ItemContainerStyle>
                     <Style TargetType="TreeViewItem">

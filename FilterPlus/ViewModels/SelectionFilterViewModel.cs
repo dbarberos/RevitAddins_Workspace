@@ -59,6 +59,109 @@ public partial class SelectionFilterViewModel : ObservableObject
     private HashSet<Autodesk.Revit.DB.ElementId> _persistentCheckedIds = new();
 
     [RelayCommand]
+    private void ExpandAll()
+    {
+        if (RootNodes == null || !RootNodes.Any()) return;
+        
+        int targetLevel = FindLowestUnexpandedLevel(RootNodes);
+        if (targetLevel != int.MaxValue)
+        {
+            if (targetLevel == 0)
+            {
+                ForceCollapseAll(RootNodes.SelectMany(r => r.Children));
+            }
+            SetExpandedStateAtLevel(RootNodes, targetLevel, true);
+        }
+    }
+
+    [RelayCommand]
+    private void CollapseAll()
+    {
+        if (RootNodes == null || !RootNodes.Any()) return;
+
+        int targetLevel = FindHighestExpandedLevel(RootNodes);
+        if (targetLevel > 0) // Never collapse Level 0 (Root "All")
+        {
+            SetExpandedStateAtLevel(RootNodes, targetLevel, false);
+        }
+    }
+
+    private int FindLowestUnexpandedLevel(IEnumerable<TreeItemViewModel> nodes)
+    {
+        int lowest = int.MaxValue;
+        foreach (var node in nodes)
+        {
+            if (node.Children.Count > 0)
+            {
+                if (!node.IsExpanded)
+                {
+                    if (node.Level < lowest) lowest = node.Level;
+                }
+                else
+                {
+                    int childLowest = FindLowestUnexpandedLevel(node.Children);
+                    if (childLowest < lowest) lowest = childLowest;
+                }
+            }
+        }
+        return lowest;
+    }
+
+    private int FindHighestExpandedLevel(IEnumerable<TreeItemViewModel> nodes)
+    {
+        int highest = -1;
+        foreach (var node in nodes)
+        {
+            if (node.IsExpanded && node.Children.Count > 0)
+            {
+                if (node.Level > highest) highest = node.Level;
+                int childHighest = FindHighestExpandedLevel(node.Children);
+                if (childHighest > highest) highest = childHighest;
+            }
+        }
+        return highest;
+    }
+
+    private void SetExpandedStateAtLevel(IEnumerable<TreeItemViewModel> nodes, int targetLevel, bool state)
+    {
+        foreach (var node in nodes)
+        {
+            if (node.Level == targetLevel)
+            {
+                if (node.Children.Count > 0) node.IsExpanded = state;
+            }
+            else if (node.Level < targetLevel)
+            {
+                SetExpandedStateAtLevel(node.Children, targetLevel, state);
+            }
+        }
+    }
+
+    private void ForceCollapseAll(IEnumerable<TreeItemViewModel> nodes)
+    {
+        foreach (var node in nodes)
+        {
+            node.IsExpanded = false;
+            ForceCollapseAll(node.Children);
+        }
+    }
+
+    private int FindMaxTreeDepth(IEnumerable<TreeItemViewModel> nodes)
+    {
+        int max = 0;
+        foreach (var node in nodes)
+        {
+            if (node.Level > max) max = node.Level;
+            if (node.Children.Count > 0)
+            {
+                int childMax = FindMaxTreeDepth(node.Children);
+                if (childMax > max) max = childMax;
+            }
+        }
+        return max;
+    }
+
+    [RelayCommand]
     private void OpenConfiguration()
     {
         var configView = new Views.ConfigurationView();
@@ -67,6 +170,7 @@ public partial class SelectionFilterViewModel : ObservableObject
 
     private bool _isRestoringState = false;
     private bool _isInitializing = false;
+    private int _lastExpandedDepth = 0;
 
     private void OnTreeSelectionChanged()
     {
@@ -252,10 +356,38 @@ public partial class SelectionFilterViewModel : ObservableObject
 
         try
         {
+            int semanticExpansionLevel = 0; // Default semantic depth
+            bool hasPreviousState = false;
+
+            if (RootNodes != null && RootNodes.Any())
+            {
+                hasPreviousState = true;
+                int oldMaxDepth = FindMaxTreeDepth(RootNodes);
+                int oldG = oldMaxDepth - 4; // Base elements start at Level 4 with 0 groupings
+                if (oldG < 0) oldG = 0;
+
+                int lowestUnexpanded = FindLowestUnexpandedLevel(RootNodes);
+                int oldExpandedLevel = (lowestUnexpanded != int.MaxValue) ? lowestUnexpanded - 1 : FindHighestExpandedLevel(RootNodes);
+                
+                semanticExpansionLevel = oldExpandedLevel - oldG;
+            }
+
             var filtered = GetFilteredElements().ToList();
             StatusMessage = $"Elementos encontrados: {filtered.Count}";
             UpdateDropdowns(filtered);
-            InitializeTree(filtered);
+            InitializeTree(filtered, !hasPreviousState);
+
+            // Restore the semantic expansion depth
+            if (hasPreviousState && RootNodes != null)
+            {
+                int newG = _activeGroupings.Count;
+                int newExpandedLevel = newG + semanticExpansionLevel;
+
+                for (int i = 0; i <= newExpandedLevel; i++)
+                {
+                    SetExpandedStateAtLevel(RootNodes, i, true);
+                }
+            }
         }
         catch (Exception ex)
         {
@@ -398,7 +530,7 @@ public partial class SelectionFilterViewModel : ObservableObject
         }
     }
 
-    private void InitializeTree(IEnumerable<ElementModel> filteredElements)
+    private void InitializeTree(IEnumerable<ElementModel> filteredElements, bool forceExpand)
     {
         try 
         {
@@ -413,7 +545,7 @@ public partial class SelectionFilterViewModel : ObservableObject
             if (_persistentCheckedIds.Count > 0)
             {
                 LoggerService.LogInfo($"Applying selection state for {_persistentCheckedIds.Count} checked elements...");
-                ApplyInitialSelection(rootAll, _persistentCheckedIds);
+                ApplyInitialSelection(rootAll, _persistentCheckedIds, forceExpand);
             }
 
             rootAll.IsExpanded = true;
@@ -442,7 +574,7 @@ public partial class SelectionFilterViewModel : ObservableObject
         }
     }
 
-    private bool ApplyInitialSelection(TreeItemViewModel node, HashSet<Autodesk.Revit.DB.ElementId> selectedIds)
+    private bool ApplyInitialSelection(TreeItemViewModel node, HashSet<Autodesk.Revit.DB.ElementId> selectedIds, bool forceExpand)
     {
         if (node.Children.Count == 0)
         {
@@ -457,11 +589,11 @@ public partial class SelectionFilterViewModel : ObservableObject
         bool hasCheckedChildren = false;
         foreach (var child in node.Children)
         {
-            if (ApplyInitialSelection(child, selectedIds))
+            if (ApplyInitialSelection(child, selectedIds, forceExpand))
                 hasCheckedChildren = true;
         }
 
-        if (hasCheckedChildren) node.IsExpanded = true;
+        if (hasCheckedChildren && forceExpand) node.IsExpanded = true;
         return hasCheckedChildren;
     }
 
