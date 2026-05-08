@@ -1,4 +1,4 @@
-Comprendo perfectamente. En ese caso, aquí tienes la hoja de ruta detallada paso a paso para que puedas generar tanto el `.exe` como el `.msi` por tu cuenta cuando lo necesites.
+
 
 ### 📄 Guía de Empaquetado para AiRender Local
 
@@ -53,4 +53,3 @@ El formato MSI es preferible si el add-in se va a desplegar de forma masiva en u
 ### 💡 Recomendación Profesional
 Si buscas el equilibrio entre potencia y sencillez, utiliza **Inno Setup**. La mayoría de desarrolladores de Autodesk (incluyendo apps oficiales de la Exchange Store) utilizan este formato porque permite incluir lógica personalizada (como comprobar si Revit está abierto antes de instalar) de forma mucho más sencilla que el formato MSI.
 
-¿Hay algún paso específico de estas herramientas sobre el que necesites más detalle?

@@ -5,12 +5,25 @@ using FilterPlus.Services;
 using System.Collections.ObjectModel;
 using System.Collections.Generic;
 using System.Linq;
+
 namespace FilterPlus.ViewModels;
 
 public partial class SelectionFilterViewModel : ObservableObject
 {
     private readonly RevitSelectionService _selectionService;
-    private readonly List<ElementModel> _allAvailableElements;
+    private Autodesk.Revit.UI.ExternalEvent _pickElementsEvent;
+
+    public System.Action HideWindowRequested { get; set; }
+    public System.Action ShowWindowRequested { get; set; }
+
+    // Pre-fetched data for each scope (loaded once at startup in API context)
+    private List<ElementModel> _currentSelectionElements = new();
+    private List<ElementModel> _elementsVisibleInViewElements = new();
+    private List<ElementModel> _elementsBelongingToViewElements = new();
+    private List<ElementModel> _allModelElements = new();
+
+    // Active list displayed in the tree
+    private List<ElementModel> _activeElements = new();
 
     public ObservableCollection<TreeItemViewModel> RootNodes { get; } = new();
 
@@ -27,8 +40,126 @@ public partial class SelectionFilterViewModel : ObservableObject
     [ObservableProperty] private string _selectedWorkset;
     [ObservableProperty] private string _statusMessage;
     [ObservableProperty] private int _checkedElementsCount;
-    [ObservableProperty]
-    private string _filterText = string.Empty;
+    [ObservableProperty] private string _filterText = string.Empty;
+    [ObservableProperty] private bool _isBusy;
+    [ObservableProperty] private bool _isOnly3DModels;
+    [ObservableProperty] private bool _isOnlyAnnotation;
+    [ObservableProperty] private bool _hasBoundingBox;
+    [ObservableProperty] private bool _isLiveSelection;
+    [ObservableProperty] private bool _sortByPhase;
+    [ObservableProperty] private bool _sortByLevel;
+    [ObservableProperty] private bool _sortByWorkset;
+    [ObservableProperty] private bool _isUseOr;
+    [ObservableProperty] private bool _isOnlyByName;
+    [ObservableProperty] private bool _isUseRegex;
+
+    private List<string> _activeGroupings = new List<string>();
+
+    [ObservableProperty] private SelectionScope _currentScope = SelectionScope.CurrentSelection;
+    private HashSet<Autodesk.Revit.DB.ElementId> _persistentCheckedIds = new();
+
+    [RelayCommand]
+    private void ExpandAll()
+    {
+        if (RootNodes == null || !RootNodes.Any()) return;
+        
+        int targetLevel = FindLowestUnexpandedLevel(RootNodes);
+        if (targetLevel != int.MaxValue)
+        {
+            if (targetLevel == 0)
+            {
+                ForceCollapseAll(RootNodes.SelectMany(r => r.Children));
+            }
+            SetExpandedStateAtLevel(RootNodes, targetLevel, true);
+        }
+    }
+
+    [RelayCommand]
+    private void CollapseAll()
+    {
+        if (RootNodes == null || !RootNodes.Any()) return;
+
+        int targetLevel = FindHighestExpandedLevel(RootNodes);
+        if (targetLevel > 0) // Never collapse Level 0 (Root "All")
+        {
+            SetExpandedStateAtLevel(RootNodes, targetLevel, false);
+        }
+    }
+
+    private int FindLowestUnexpandedLevel(IEnumerable<TreeItemViewModel> nodes)
+    {
+        int lowest = int.MaxValue;
+        foreach (var node in nodes)
+        {
+            if (node.Children.Count > 0)
+            {
+                if (!node.IsExpanded)
+                {
+                    if (node.Level < lowest) lowest = node.Level;
+                }
+                else
+                {
+                    int childLowest = FindLowestUnexpandedLevel(node.Children);
+                    if (childLowest < lowest) lowest = childLowest;
+                }
+            }
+        }
+        return lowest;
+    }
+
+    private int FindHighestExpandedLevel(IEnumerable<TreeItemViewModel> nodes)
+    {
+        int highest = -1;
+        foreach (var node in nodes)
+        {
+            if (node.IsExpanded && node.Children.Count > 0)
+            {
+                if (node.Level > highest) highest = node.Level;
+                int childHighest = FindHighestExpandedLevel(node.Children);
+                if (childHighest > highest) highest = childHighest;
+            }
+        }
+        return highest;
+    }
+
+    private void SetExpandedStateAtLevel(IEnumerable<TreeItemViewModel> nodes, int targetLevel, bool state)
+    {
+        foreach (var node in nodes)
+        {
+            if (node.Level == targetLevel)
+            {
+                if (node.Children.Count > 0) node.IsExpanded = state;
+            }
+            else if (node.Level < targetLevel)
+            {
+                SetExpandedStateAtLevel(node.Children, targetLevel, state);
+            }
+        }
+    }
+
+    private void ForceCollapseAll(IEnumerable<TreeItemViewModel> nodes)
+    {
+        foreach (var node in nodes)
+        {
+            node.IsExpanded = false;
+            ForceCollapseAll(node.Children);
+        }
+    }
+
+    private int FindMaxTreeDepth(IEnumerable<TreeItemViewModel> nodes)
+    {
+        int max = 0;
+        foreach (var node in nodes)
+        {
+            if (node.Level > max) max = node.Level;
+            if (node.Children.Count > 0)
+            {
+                int childMax = FindMaxTreeDepth(node.Children);
+                if (childMax > max) max = childMax;
+            }
+        }
+        return max;
+    }
 
     [RelayCommand]
     private void OpenConfiguration()
@@ -37,160 +168,413 @@ public partial class SelectionFilterViewModel : ObservableObject
         configView.ShowDialog();
     }
 
-    private Dictionary<TreeItemViewModel, bool?> _preFilterSelectionState;
     private bool _isRestoringState = false;
-
     private bool _isInitializing = false;
+    private int _lastExpandedDepth = 0;
 
     private void OnTreeSelectionChanged()
     {
-        if (_isInitializing) return;
-        var selectedIds = new List<Autodesk.Revit.DB.ElementId>();
-        foreach (var node in RootNodes) node.GetAllSelectedIds(selectedIds);
-        CheckedElementsCount = selectedIds.Count;
+        if (TreeItemViewModel.IsBulkUpdating) return;
+        
+        UpdatePersistentCheckedIdsFromTree();
+        
+        if (IsLiveSelection)
+        {
+            ApplyFilter();
+        }
     }
 
+    /// <summary>
+    /// Constructor: called in Revit API context. Pre-fetches all scope data safely here.
+    /// </summary>
     public SelectionFilterViewModel(RevitSelectionService selectionService)
     {
+        LoggerService.LogInfo("SelectionFilterViewModel initializing...");
         _selectionService = selectionService;
-        _allAvailableElements = _selectionService.GetAvailableElements();
         
-        StatusMessage = $"Elementos encontrados: {_allAvailableElements.Count}";
-        
-        UpdateDropdowns();
-        InitializeTree();
-        OnTreeSelectionChanged();
+        try 
+        {
+            // 1. Get initial selection IDs from Revit (safe: API context)
+            _persistentCheckedIds = _selectionService.GetInitialSelectionIds();
+            LoggerService.LogInfo($"Initial selection IDs count: {_persistentCheckedIds.Count}");
+
+            // 2. Pre-fetch all scopes NOW (we are in Revit API thread)
+            LoggerService.LogInfo("Pre-fetching CurrentSelection elements...");
+            _currentSelectionElements = _selectionService.GetAvailableElements(SelectionScope.CurrentSelection);
+            LoggerService.LogInfo($"CurrentSelection: {_currentSelectionElements.Count} elements.");
+
+            LoggerService.LogInfo("Pre-fetching ElementsVisibleInView elements...");
+            _elementsVisibleInViewElements = _selectionService.GetAvailableElements(SelectionScope.ElementsVisibleInView);
+            LoggerService.LogInfo($"ElementsVisibleInView: {_elementsVisibleInViewElements.Count} elements.");
+
+            LoggerService.LogInfo("Pre-fetching ElementsBelongingToView elements...");
+            _elementsBelongingToViewElements = _selectionService.GetAvailableElements(SelectionScope.ElementsBelongingToView);
+            LoggerService.LogInfo($"ElementsBelongingToView: {_elementsBelongingToViewElements.Count} elements.");
+
+            LoggerService.LogInfo("Pre-fetching AllModelElements elements...");
+            var allRaw = _selectionService.GetAvailableElements(SelectionScope.AllModelElements);
+            _allModelElements = allRaw.Count > 10000 ? allRaw.Take(10000).ToList() : allRaw;
+            LoggerService.LogInfo($"AllModelElements: {_allModelElements.Count} elements (raw: {allRaw.Count}).");
+
+            // 3. Build tree for the default scope (CurrentSelection)
+            _activeElements = _currentSelectionElements;
+            BuildTree();
+        }
+        catch (Exception ex)
+        {
+            LoggerService.LogError("ViewModel Constructor", ex);
+        }
     }
 
-    private void UpdateDropdowns()
+    /// <summary>
+    /// Called when scope radio button changes. NO Revit API calls here – uses pre-fetched data.
+    /// </summary>
+    partial void OnCurrentScopeChanged(SelectionScope value)
     {
+        if (TreeItemViewModel.IsBulkUpdating) return;
+
+        try
+        {
+            LoggerService.LogInfo($"Scope switched to: {value}. Rebuilding tree from pre-fetched data...");
+
+            _activeElements = value switch
+            {
+                SelectionScope.CurrentSelection => _currentSelectionElements,
+                SelectionScope.ElementsVisibleInView => _elementsVisibleInViewElements,
+                SelectionScope.ElementsBelongingToView => _elementsBelongingToViewElements,
+                SelectionScope.AllModelElements => _allModelElements,
+                _                               => _currentSelectionElements
+            };
+
+            LoggerService.LogInfo($"Active elements for scope {value}: {_activeElements.Count}");
+            BuildTree();
+        }
+        catch (Exception ex)
+        {
+            LoggerService.LogError("OnCurrentScopeChanged", ex);
+        }
+    }
+
+    partial void OnIsOnly3DModelsChanged(bool value)
+    {
+        if (value)
+        {
+            IsOnlyAnnotation = false;
+            HasBoundingBox = false;
+            UncheckHiddenElements(e => !e.IsModelElement);
+        }
+        BuildTree();
+    }
+
+    partial void OnIsOnlyAnnotationChanged(bool value)
+    {
+        if (value)
+        {
+            IsOnly3DModels = false;
+            HasBoundingBox = false;
+            UncheckHiddenElements(e => !e.IsAnnotation);
+        }
+        BuildTree();
+    }
+
+    partial void OnHasBoundingBoxChanged(bool value)
+    {
+        if (value)
+        {
+            IsOnly3DModels = false;
+            IsOnlyAnnotation = false;
+            UncheckHiddenElements(e => !e.HasBoundingBox);
+        }
+        BuildTree();
+    }
+
+    private void UncheckHiddenElements(Func<ElementModel, bool> isHiddenPredicate)
+    {
+        if (_activeElements == null) return;
+        
+        var hiddenIds = _activeElements.Where(isHiddenPredicate).Select(e => e.Id).ToList();
+        bool changed = false;
+        foreach (var id in hiddenIds)
+        {
+            if (_persistentCheckedIds.Contains(id))
+            {
+                _persistentCheckedIds.Remove(id);
+                changed = true;
+            }
+        }
+        if (changed) CheckedElementsCount = _persistentCheckedIds.Count;
+    }
+
+    partial void OnIsLiveSelectionChanged(bool value)
+    {
+        if (value)
+        {
+            ApplyFilter();
+        }
+    }
+
+    partial void OnSortByPhaseChanged(bool value)
+    {
+        if (value) { if (!_activeGroupings.Contains("Phase")) _activeGroupings.Add("Phase"); }
+        else _activeGroupings.Remove("Phase");
+        BuildTree();
+    }
+
+    partial void OnSortByLevelChanged(bool value)
+    {
+        if (value) { if (!_activeGroupings.Contains("Level")) _activeGroupings.Add("Level"); }
+        else _activeGroupings.Remove("Level");
+        BuildTree();
+    }
+
+    partial void OnSortByWorksetChanged(bool value)
+    {
+        if (value) { if (!_activeGroupings.Contains("Workset")) _activeGroupings.Add("Workset"); }
+        else _activeGroupings.Remove("Workset");
+        BuildTree();
+    }
+
+    private IEnumerable<ElementModel> GetFilteredElements()
+    {
+        if (_activeElements == null) return Enumerable.Empty<ElementModel>();
+        
+        var filtered = _activeElements.AsEnumerable();
+        
+        if (IsOnly3DModels) filtered = filtered.Where(e => e.IsModelElement);
+        if (IsOnlyAnnotation) filtered = filtered.Where(e => e.IsAnnotation);
+        if (HasBoundingBox) filtered = filtered.Where(e => e.HasBoundingBox);
+        
+        return filtered;
+    }
+
+    /// <summary>Rebuilds dropdowns and the tree from _activeElements. Safe to call from UI thread.</summary>
+    private void BuildTree()
+    {
+        IsBusy = true;
+        TreeItemViewModel.IsBulkUpdating = true;
+        LoggerService.LogInfo($"BuildTree: {_activeElements.Count} elements for scope {CurrentScope}.");
+
+        try
+        {
+            int semanticExpansionLevel = 0; // Default semantic depth
+            bool hasPreviousState = false;
+
+            if (RootNodes != null && RootNodes.Any())
+            {
+                hasPreviousState = true;
+                int oldMaxDepth = FindMaxTreeDepth(RootNodes);
+                int oldG = oldMaxDepth - 4; // Base elements start at Level 4 with 0 groupings
+                if (oldG < 0) oldG = 0;
+
+                int lowestUnexpanded = FindLowestUnexpandedLevel(RootNodes);
+                int oldExpandedLevel = (lowestUnexpanded != int.MaxValue) ? lowestUnexpanded - 1 : FindHighestExpandedLevel(RootNodes);
+                
+                semanticExpansionLevel = oldExpandedLevel - oldG;
+            }
+
+            var filtered = GetFilteredElements().ToList();
+            StatusMessage = $"Elementos encontrados: {filtered.Count}";
+            UpdateDropdowns(filtered);
+            InitializeTree(filtered, !hasPreviousState);
+
+            // Restore the semantic expansion depth
+            if (hasPreviousState && RootNodes != null)
+            {
+                int newG = _activeGroupings.Count;
+                int newExpandedLevel = newG + semanticExpansionLevel;
+
+                for (int i = 0; i <= newExpandedLevel; i++)
+                {
+                    SetExpandedStateAtLevel(RootNodes, i, true);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            LoggerService.LogError("BuildTree", ex);
+        }
+        finally
+        {
+            foreach (var node in RootNodes) node.RefreshState();
+            TreeItemViewModel.IsBulkUpdating = false;
+            OnTreeSelectionChanged();
+            IsBusy = false;
+            LoggerService.LogInfo("BuildTree completed.");
+        }
+    }
+
+    private void UpdateDropdowns(IEnumerable<ElementModel> filteredElements)
+    {
+        LoggerService.LogInfo("Updating filter dropdowns...");
+        var elements = filteredElements.ToList();
         // Guardar selecciones actuales
         var prevCat = SelectedCategory;
         var prevFam = SelectedFamily;
         var prevType = SelectedType;
 
         Categories.Clear();
-        Categories.Add("Todos");
-        foreach (var c in _allAvailableElements.Select(e => e.CategoryName).Distinct().OrderBy(x => x))
-            Categories.Add(c);
-        SelectedCategory = prevCat ?? "Todos";
-
-        UpdateFilteredSubLists();
-    }
-
-    private void UpdateFilteredSubLists()
-    {
-        var filtered = _allAvailableElements.AsEnumerable();
-        if (SelectedCategory != "Todos" && !string.IsNullOrEmpty(SelectedCategory))
-            filtered = filtered.Where(e => e.CategoryName == SelectedCategory);
-
-        var fams = filtered.Select(e => e.FamilyName).Distinct().OrderBy(x => x).ToList();
         Families.Clear();
-        Families.Add("Todos");
-        foreach (var f in fams) Families.Add(f);
-        if (!Families.Contains(SelectedFamily)) SelectedFamily = "Todos";
-
-        var types = filtered.Select(e => e.TypeName).Distinct().OrderBy(x => x).ToList();
         Types.Clear();
-        Types.Add("Todos");
-        foreach (var t in types) Types.Add(t);
-        if (!Types.Contains(SelectedType)) SelectedType = "Todos";
-
-        var levels = filtered.Select(e => e.LevelName).Distinct().OrderBy(x => x).ToList();
         Levels.Clear();
-        Levels.Add("Todos");
-        foreach (var l in levels) Levels.Add(l);
-
-        var worksets = filtered.Select(e => e.WorksetName).Distinct().OrderBy(x => x).ToList();
         Worksets.Clear();
+
+        Categories.Add("Todos");
+        Families.Add("Todos");
+        Types.Add("Todos");
+        Levels.Add("Todos");
         Worksets.Add("Todos");
-        foreach (var w in worksets) Worksets.Add(w);
+
+        foreach (var cat in elements.Select(e => e.CategoryName).Distinct().OrderBy(x => x))
+            Categories.Add(cat);
+        foreach (var fam in elements.Select(e => e.FamilyName).Distinct().OrderBy(x => x))
+            Families.Add(fam);
+        foreach (var type in elements.Select(e => e.TypeName).Distinct().OrderBy(x => x))
+            Types.Add(type);
+        foreach (var lev in elements.Select(e => e.LevelName).Distinct().OrderBy(x => x))
+            Levels.Add(lev);
+        foreach (var ws in elements.Select(e => e.WorksetName).Distinct().OrderBy(x => x))
+            Worksets.Add(ws);
+
+        // Restore previous selection if still valid
+        SelectedCategory = Categories.Contains(prevCat) ? prevCat : "Todos";
+        SelectedFamily   = Families.Contains(prevFam)   ? prevFam : "Todos";
+        SelectedType     = Types.Contains(prevType)     ? prevType : "Todos";
     }
 
-    partial void OnSelectedCategoryChanged(string value) => UpdateFilteredSubLists();
-    partial void OnSelectedFamilyChanged(string value) => UpdateFilteredSubLists();
-    partial void OnSelectedTypeChanged(string value) => UpdateFilteredSubLists();
-
-    private void InitializeTree()
+    private void BuildCategorySubTree(IEnumerable<ElementModel> elementsInCategory, TreeItemViewModel catNode)
     {
-        RootNodes.Clear();
-        var rootAll = new TreeItemViewModel("All", null, 0, OnTreeSelectionChanged);
-        RootNodes.Add(rootAll);
+        int catCount = 0;
+        var families = elementsInCategory.GroupBy(e => e.FamilyName).OrderBy(g => g.Key);
 
-        int totalCount = 0;
-
-        var categories = _allAvailableElements
-            .GroupBy(e => e.CategoryName)
-            .OrderBy(g => g.Key);
-
-        foreach (var catGroup in categories)
+        foreach (var famGroup in families)
         {
-            var catNode = new TreeItemViewModel(catGroup.Key, rootAll, 1, OnTreeSelectionChanged);
-            rootAll.Children.Add(catNode);
-            int catCount = 0;
+            var famNode = new TreeItemViewModel(famGroup.Key, catNode, catNode.Level + 1, OnTreeSelectionChanged);
+            catNode.Children.Add(famNode);
+            int famCount = 0;
 
-            var families = catGroup
-                .GroupBy(e => e.FamilyName)
-                .OrderBy(g => g.Key);
+            var types = famGroup.GroupBy(e => e.TypeName).OrderBy(g => g.Key);
 
-            foreach (var famGroup in families)
+            foreach (var typeGroup in types)
             {
-                var famNode = new TreeItemViewModel(famGroup.Key, catNode, 2, OnTreeSelectionChanged);
-                catNode.Children.Add(famNode);
-                int famCount = 0;
+                var typeNode = new TreeItemViewModel(typeGroup.Key, famNode, famNode.Level + 1, OnTreeSelectionChanged);
+                famNode.Children.Add(typeNode);
+                int strCount = 0;
 
-                var types = famGroup
-                    .GroupBy(e => e.TypeName)
-                    .OrderBy(g => g.Key);
-
-                foreach (var typeGroup in types)
+                foreach (var element in typeGroup.OrderBy(e => e.Id.ToString()))
                 {
-                    var typeNode = new TreeItemViewModel(typeGroup.Key, famNode, 3, OnTreeSelectionChanged);
-                    famNode.Children.Add(typeNode);
-                    int strCount = 0;
-
-#if REVIT2024_OR_GREATER
-                    foreach (var element in typeGroup.OrderBy(e => e.Id.Value))
+                    var elNode = new TreeItemViewModel(element.Id.ToString(), typeNode, typeNode.Level + 1, OnTreeSelectionChanged)
                     {
-                        var elNode = new TreeItemViewModel($"ID: {element.Id.Value}", typeNode, 4, OnTreeSelectionChanged)
-#else
-                    foreach (var element in typeGroup.OrderBy(e => e.Id.IntegerValue))
-                    {
-                        var elNode = new TreeItemViewModel($"ID: {element.Id.IntegerValue}", typeNode, 4, OnTreeSelectionChanged)
-#endif
-                        {
-                            ElementId = element.Id,
-                            Count = 1
-                        };
-                        typeNode.Children.Add(elNode);
-                        strCount++;
-                    }
-                    typeNode.Count = strCount;
-                    famCount += strCount;
+                        ElementId = element.Id,
+                        SearchableMetadata = element.SearchableMetadata
+                    };
+                    typeNode.Children.Add(elNode);
+                    strCount++;
                 }
-                famNode.Count = famCount;
-                catCount += famCount;
+                typeNode.Count = strCount;
+                famCount += strCount;
             }
-            catNode.Count = catCount;
-            totalCount += catCount;
+            famNode.Count = famCount;
+            catCount += famCount;
         }
-        rootAll.Count = totalCount;
-
-        _isInitializing = true;
-        
-        var selectedIds = _selectionService.GetInitialSelectionIds();
-        if (selectedIds.Count > 0)
-        {
-            ApplyInitialSelection(rootAll, selectedIds);
-        }
-
-        rootAll.IsExpanded = true;
-        
-        _isInitializing = false;
-        OnTreeSelectionChanged();
+        catNode.Count = catCount;
     }
 
-    private bool ApplyInitialSelection(TreeItemViewModel node, HashSet<Autodesk.Revit.DB.ElementId> selectedIds)
+    private void BuildGroupedTree(IEnumerable<ElementModel> elements, TreeItemViewModel parentNode, int groupingIndex)
+    {
+        if (groupingIndex >= _activeGroupings.Count)
+        {
+            var categories = elements.GroupBy(e => e.CategoryName).OrderBy(g => g.Key);
+            foreach (var catGroup in categories)
+            {
+                var catNode = new TreeItemViewModel(catGroup.Key, parentNode, parentNode.Level + 1, OnTreeSelectionChanged);
+                parentNode.Children.Add(catNode);
+                BuildCategorySubTree(catGroup, catNode);
+            }
+            parentNode.Count = parentNode.Children.Sum(c => c.Count);
+            return;
+        }
+
+        string groupingType = _activeGroupings[groupingIndex];
+        if (groupingType == "Phase")
+        {
+            var phases = elements.GroupBy(e => new { e.PhaseName, e.PhaseOrder }).OrderBy(g => g.Key.PhaseOrder);
+            foreach (var phaseGroup in phases)
+            {
+                var phaseNode = new TreeItemViewModel(phaseGroup.Key.PhaseName, parentNode, parentNode.Level + 1, OnTreeSelectionChanged);
+                parentNode.Children.Add(phaseNode);
+                BuildGroupedTree(phaseGroup, phaseNode, groupingIndex + 1);
+            }
+            parentNode.Count = parentNode.Children.Sum(c => c.Count);
+        }
+        else if (groupingType == "Level")
+        {
+            var levels = elements.GroupBy(e => string.IsNullOrEmpty(e.LevelName) ? "None" : e.LevelName).OrderBy(g => g.Key);
+            foreach (var levelGroup in levels)
+            {
+                var levelNode = new TreeItemViewModel(levelGroup.Key, parentNode, parentNode.Level + 1, OnTreeSelectionChanged);
+                parentNode.Children.Add(levelNode);
+                BuildGroupedTree(levelGroup, levelNode, groupingIndex + 1);
+            }
+            parentNode.Count = parentNode.Children.Sum(c => c.Count);
+        }
+        else if (groupingType == "Workset")
+        {
+            var worksets = elements.GroupBy(e => string.IsNullOrEmpty(e.WorksetName) ? "None" : e.WorksetName).OrderBy(g => g.Key);
+            foreach (var wsGroup in worksets)
+            {
+                var wsNode = new TreeItemViewModel(wsGroup.Key, parentNode, parentNode.Level + 1, OnTreeSelectionChanged);
+                parentNode.Children.Add(wsNode);
+                BuildGroupedTree(wsGroup, wsNode, groupingIndex + 1);
+            }
+            parentNode.Count = parentNode.Children.Sum(c => c.Count);
+        }
+    }
+
+    private void InitializeTree(IEnumerable<ElementModel> filteredElements, bool forceExpand)
+    {
+        try 
+        {
+            var elements = filteredElements.ToList();
+            LoggerService.LogInfo($"Building tree structure offline for {elements.Count} elements...");
+            var rootAll = new TreeItemViewModel("All", null, 0, OnTreeSelectionChanged);
+            
+            BuildGroupedTree(elements, rootAll, 0);
+
+            rootAll.Count = rootAll.Children.Sum(c => c.Count);
+
+            if (_persistentCheckedIds.Count > 0)
+            {
+                LoggerService.LogInfo($"Applying selection state for {_persistentCheckedIds.Count} checked elements...");
+                ApplyInitialSelection(rootAll, _persistentCheckedIds, forceExpand);
+            }
+
+            rootAll.IsExpanded = true;
+
+            // Swap RootNodes on UI thread
+            var uiDispatcher = System.Windows.Threading.Dispatcher.CurrentDispatcher;
+            if (uiDispatcher.CheckAccess())
+            {
+                LoggerService.LogInfo($"Swapping tree root directly. New total: {rootAll.Count}");
+                RootNodes.Clear();
+                RootNodes.Add(rootAll);
+            }
+            else
+            {
+                uiDispatcher.Invoke(() => {
+                    RootNodes.Clear();
+                    RootNodes.Add(rootAll);
+                });
+            }
+            
+            LoggerService.LogInfo($"Tree built and swapped. {rootAll.Count} visible elements.");
+        }
+        catch (Exception ex)
+        {
+            LoggerService.LogError("InitializeTree", ex);
+        }
+    }
+
+    private bool ApplyInitialSelection(TreeItemViewModel node, HashSet<Autodesk.Revit.DB.ElementId> selectedIds, bool forceExpand)
     {
         if (node.Children.Count == 0)
         {
@@ -205,14 +589,79 @@ public partial class SelectionFilterViewModel : ObservableObject
         bool hasCheckedChildren = false;
         foreach (var child in node.Children)
         {
-            if (ApplyInitialSelection(child, selectedIds))
-            {
+            if (ApplyInitialSelection(child, selectedIds, forceExpand))
                 hasCheckedChildren = true;
-            }
         }
 
-        if (hasCheckedChildren) node.IsExpanded = true;
+        if (hasCheckedChildren && forceExpand) node.IsExpanded = true;
         return hasCheckedChildren;
+    }
+
+    public void SetExternalEvent(Autodesk.Revit.UI.ExternalEvent externalEvent)
+    {
+        _pickElementsEvent = externalEvent;
+    }
+
+    [RelayCommand]
+    private void PickElements()
+    {
+        // 1. Apply current selection so it's visible in Revit
+        ApplyFilter();
+
+        // 2. Hide the addin window
+        HideWindowRequested?.Invoke();
+
+        // 3. Trigger the external event for PickObjects
+        _pickElementsEvent?.Raise();
+    }
+
+    public void OnPickElementsFinished(List<Autodesk.Revit.DB.ElementId> newIds)
+    {
+        var dispatcher = System.Windows.Threading.Dispatcher.CurrentDispatcher;
+        dispatcher.InvokeAsync(() =>
+        {
+            if (newIds != null && newIds.Count > 0)
+            {
+                // Add new IDs to the persistent selection
+                foreach (var id in newIds)
+                {
+                    _persistentCheckedIds.Add(id);
+                }
+
+                // Ensure newly picked elements are injected into the active elements so they show up in the tree!
+                var allKnownById = _allModelElements.ToDictionary(e => e.Id);
+                foreach (var id in newIds)
+                {
+                    if (allKnownById.TryGetValue(id, out var model))
+                    {
+                        if (_activeElements != null && !_activeElements.Any(e => e.Id == id))
+                        {
+                            _activeElements.Add(model);
+                        }
+                    }
+                }
+
+                // Force a tree refresh so the newly selected items are checked
+                BuildTree();
+            }
+
+            // Restore the window
+            ShowWindowRequested?.Invoke();
+        });
+    }
+
+    private void UpdatePersistentCheckedIdsFromTree()
+    {
+        var selectedIdsInTree = new List<Autodesk.Revit.DB.ElementId>();
+        foreach (var node in RootNodes) node.GetAllSelectedIds(selectedIdsInTree);
+
+        var activeElementIds = _activeElements?.Select(e => e.Id).ToHashSet() ?? new HashSet<Autodesk.Revit.DB.ElementId>();
+        
+        // Mantener los IDs que estaban checkeados pero que no pertenecen al scope/filtro actual
+        var idsFromOtherScopes = _persistentCheckedIds.Where(id => !activeElementIds.Contains(id));
+        
+        _persistentCheckedIds = selectedIdsInTree.Concat(idsFromOtherScopes).ToHashSet();
+        CheckedElementsCount = _persistentCheckedIds.Count;
     }
 
     [RelayCommand]
@@ -220,31 +669,43 @@ public partial class SelectionFilterViewModel : ObservableObject
     {
         try
         {
-            var selectedIds = new List<Autodesk.Revit.DB.ElementId>();
-            foreach (var node in RootNodes) node.GetAllSelectedIds(selectedIds);
+            // ── 1. Actualizar el estado persistente de IDs marcados ────────────────
+            UpdatePersistentCheckedIdsFromTree();
 
-            if (selectedIds.Count > 0)
-            {
-                _selectionService.SetSelection(selectedIds);
-                StatusMessage = $"Seleccionados (Árbol): {selectedIds.Count}";
-            }
-            else
-            {
-                var filtered = _allAvailableElements.AsEnumerable();
-                if (SelectedCategory != "Todos" && !string.IsNullOrEmpty(SelectedCategory))
-                    filtered = filtered.Where(e => e.CategoryName == SelectedCategory);
-                if (SelectedFamily != "Todos" && !string.IsNullOrEmpty(SelectedFamily))
-                    filtered = filtered.Where(e => e.FamilyName == SelectedFamily);
-                if (SelectedType != "Todos" && !string.IsNullOrEmpty(SelectedType))
-                    filtered = filtered.Where(e => e.TypeName == SelectedType);
-                if (SelectedLevel != "Todos" && !string.IsNullOrEmpty(SelectedLevel))
-                    filtered = filtered.Where(e => e.LevelName == SelectedLevel);
-                if (SelectedWorkset != "Todos" && !string.IsNullOrEmpty(SelectedWorkset))
-                    filtered = filtered.Where(e => e.WorksetName == SelectedWorkset);
+            var finalIds = _persistentCheckedIds.ToList();
+            StatusMessage = $"Seleccionados: {finalIds.Count}";
 
-                var filteredList = filtered.ToList();
-                _selectionService.SetSelection(filteredList.Select(e => e.Id));
-                StatusMessage = $"Seleccionados (Filtros): {filteredList.Count}";
+            // ── 2. Aplicar la selección en Revit ───────────────────────────────────
+            _selectionService.SetSelection(finalIds);
+
+            // ── 4. Reconstruir _currentSelectionElements desde TODOS los scopes ────
+            // Buscamos el ElementModel de cada ID seleccionado en el pool completo,
+            // así no se pierden elementos que no estuvieran en el scope activo actual.
+            var allKnownById = _currentSelectionElements
+                .Concat(_elementsVisibleInViewElements)
+                .Concat(_elementsBelongingToViewElements)
+                .Concat(_allModelElements)
+                .GroupBy(e => e.Id)
+                .Select(g => g.First())
+                .ToDictionary(e => e.Id);
+
+            _currentSelectionElements = _persistentCheckedIds
+                .Where(id => allKnownById.ContainsKey(id))
+                .Select(id => allKnownById[id])
+                .ToList();
+
+            LoggerService.LogInfo(
+                $"Apply Selection: {_persistentCheckedIds.Count} IDs applied. " +
+                $"CurrentSelection updated to {_currentSelectionElements.Count} elements.");
+
+            // Clear search text if it exists, without reverting the selection in the UI
+            if (!string.IsNullOrEmpty(FilterText))
+            {
+                var dispatcher = System.Windows.Threading.Dispatcher.CurrentDispatcher;
+                dispatcher.InvokeAsync(() =>
+                {
+                    FilterText = string.Empty;
+                });
             }
         }
         catch (Exception ex)
@@ -265,110 +726,124 @@ public partial class SelectionFilterViewModel : ObservableObject
         ApplyFilter();
     }
 
-    partial void OnFilterTextChanged(string value)
+    [RelayCommand]
+    private void ApplySearch()
     {
-        if (string.IsNullOrEmpty(value))
-        {
-            ApplySearchFilter("");
-            RestoreSelectionState();
-            return;
-        }
+        string searchText = FilterText;
+        if (string.IsNullOrWhiteSpace(searchText)) return;
 
-        // Si es la primera vez que se filtra en esta sesión, guardamos el estado
-        if (_preFilterSelectionState == null && !_isRestoringState)
-        {
-            _preFilterSelectionState = new Dictionary<TreeItemViewModel, bool?>();
-            SaveSelectionState(RootNodes, _preFilterSelectionState);
-        }
+        System.Text.RegularExpressions.Regex searchRegex = null;
 
-        // Security Hardening: Sanitize filter text
-        string sanitizedValue = SecurityUtils.SanitizeInput(value);
-        ApplySearchFilter(sanitizedValue);
-    }
-
-    private void SaveSelectionState(IEnumerable<TreeItemViewModel> nodes, Dictionary<TreeItemViewModel, bool?> state)
-    {
-        foreach (var node in nodes)
+        if (IsUseRegex)
         {
-            state[node] = node.IsChecked;
-            SaveSelectionState(node.Children, state);
-        }
-    }
-
-    private void RestoreSelectionState()
-    {
-        if (_preFilterSelectionState == null) return;
-        
-        _isRestoringState = true;
-        // Restaurar estado sin disparar eventos innecesarios si es posible, pero IsChecked ya se encarga
-        foreach (var kvp in _preFilterSelectionState)
-        {
-            kvp.Key.IsChecked = kvp.Value;
-        }
-        _preFilterSelectionState = null;
-        _isRestoringState = false;
-    }
-
-    private void ApplySearchFilter(string searchText)
-    {
-        bool isEmpty = string.IsNullOrWhiteSpace(searchText);
-        if (!isEmpty)
-        {
-            searchText = searchText.ToLowerInvariant();
-            
-            // Desmarcar todo antes de aplicar la nueva selección basada en el filtro
-            foreach (var node in RootNodes)
+            try
             {
-                node.IsChecked = false;
+                // Compile regex with a 2-second timeout to prevent ReDoS (Regular Expression Denial of Service) attacks
+                searchRegex = new System.Text.RegularExpressions.Regex(
+                    searchText, 
+                    System.Text.RegularExpressions.RegexOptions.IgnoreCase | System.Text.RegularExpressions.RegexOptions.Compiled,
+                    TimeSpan.FromSeconds(2));
+            }
+            catch (Exception ex)
+            {
+                // Invalid regex syntax or other parsing error
+                LoggerService.LogInfo("Invalid regex pattern: " + ex.Message);
+                StatusMessage = "Invalid Regex Pattern";
+                return; // Stop the search safely
+            }
+        }
+        else
+        {
+            // Only sanitize input if we are NOT using Regex, otherwise we strip valid regex tokens
+            searchText = SecurityUtils.SanitizeInput(searchText).ToLowerInvariant();
+        }
+
+        TreeItemViewModel.IsBulkUpdating = true;
+
+        // If Use OR is OFF, the new search replaces the current selection.
+        if (!IsUseOr)
+        {
+            foreach (var node in RootNodes) node.SetCheckedState(false);
+        }
+
+        // Apply the current search matches
+        foreach (var node in RootNodes)
+            FilterNode(node, searchText, searchRegex, false);
+
+        // Ensure parent nodes reflect child states properly
+        foreach (var node in RootNodes) node.RefreshState();
+
+        TreeItemViewModel.IsBulkUpdating = false;
+        OnTreeSelectionChanged();
+
+        // Clear the text box after applying
+        FilterText = string.Empty;
+    }
+
+    private void FilterNode(TreeItemViewModel node, string searchText, System.Text.RegularExpressions.Regex searchRegex, bool isEmpty)
+    {
+        if (isEmpty) return;
+
+        bool match = false;
+        if (node.Level > 0)
+        {
+            try
+            {
+                if (searchRegex != null)
+                {
+                    // Regex Mode
+                    match = searchRegex.IsMatch(node.Name);
+
+                    // If "Only by name" is OFF, also allow searching by ElementId and Metadata
+                    if (!match && !IsOnlyByName)
+                    {
+                        if (node.ElementId != null)
+                        {
+                            match = searchRegex.IsMatch(node.ElementId.ToString());
+                        }
+                        
+                        if (!match && !string.IsNullOrEmpty(node.SearchableMetadata))
+                        {
+                            match = searchRegex.IsMatch(node.SearchableMetadata);
+                        }
+                    }
+                }
+                else
+                {
+                    // Standard Text Mode
+                    // Search by Name (Category, Family, Type, or Element Name)
+                    match = node.Name.ToLowerInvariant().Contains(searchText);
+
+                    // If "Only by name" is OFF, also allow searching by ElementId and Metadata
+                    if (!match && !IsOnlyByName)
+                    {
+                        if (node.ElementId != null)
+                        {
+                            match = node.ElementId.ToString().Contains(searchText);
+                        }
+                        
+                        if (!match && !string.IsNullOrEmpty(node.SearchableMetadata))
+                        {
+                            match = node.SearchableMetadata.Contains(searchText);
+                        }
+                    }
+                }
+            }
+            catch (System.Text.RegularExpressions.RegexMatchTimeoutException)
+            {
+                LoggerService.LogInfo("Regex match timed out. Possible ReDoS pattern.");
+                StatusMessage = "Regex Timeout Error";
             }
         }
 
-        foreach (var node in RootNodes)
+        if (match)
         {
-            FilterNode(node, searchText, isEmpty);
+            node.SetCheckedState(true);
         }
-    }
-
-    private bool FilterNode(TreeItemViewModel node, string searchText, bool isEmpty)
-    {
-        if (isEmpty)
-        {
-            node.IsVisible = true;
-            foreach (var child in node.Children) FilterNode(child, searchText, isEmpty);
-            return true;
-        }
-
-        bool match = node.Name.ToLowerInvariant().Contains(searchText);
-        bool childMatch = false;
 
         foreach (var child in node.Children)
         {
-            if (FilterNode(child, searchText, isEmpty))
-            {
-                childMatch = true;
-            }
+            FilterNode(child, searchText, searchRegex, isEmpty);
         }
-
-        node.IsVisible = match || childMatch;
-        
-        if (childMatch && !node.IsExpanded)
-        {
-            node.IsExpanded = true;
-        }
-
-        if (match && !isEmpty)
-        {
-            node.IsChecked = true;
-        }
-
-        return node.IsVisible;
-    }
-
-    [RelayCommand]
-    private void ClearSearch()
-    {
-        // Esto desencadenará OnFilterTextChanged("") que limpiará el filtro de visibilidad
-        FilterText = string.Empty;
-        RestoreSelectionState();
     }
 }

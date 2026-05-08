@@ -3,8 +3,17 @@ using Autodesk.Revit.UI;
 using FilterPlus.Models;
 using System.Collections.Generic;
 using System.Linq;
+using Nice3point.Revit.Extensions;
 
 namespace FilterPlus.Services;
+ 
+public enum SelectionScope
+{
+    CurrentSelection,
+    ElementsVisibleInView,
+    ElementsBelongingToView,
+    AllModelElements
+}
 
 public class RevitSelectionService
 {
@@ -19,21 +28,60 @@ public class RevitSelectionService
 
     public HashSet<ElementId> GetInitialSelectionIds()
     {
-        return _uiDoc.Selection.GetElementIds().ToHashSet();
+        var ids = _uiDoc.Selection.GetElementIds().ToHashSet();
+        LoggerService.LogInfo($"Initial selection retrieved: {ids.Count} elements.");
+        return ids;
     }
 
-    public List<ElementModel> GetAvailableElements()
+    public List<ElementModel> GetAvailableElements(SelectionScope scope)
     {
-        // Get all elements in active view that can be selected
-        var elements = new FilteredElementCollector(_doc, _doc.ActiveView.Id)
+        LoggerService.LogInfo($"Querying Revit for scope: {scope}...");
+        FilteredElementCollector collector;
+        
+        switch (scope)
+        {
+            case SelectionScope.CurrentSelection:
+                var selectedIds = _uiDoc.Selection.GetElementIds();
+                if (!selectedIds.Any()) return new List<ElementModel>();
+                collector = new FilteredElementCollector(_doc, selectedIds);
+                break;
+            case SelectionScope.ElementsVisibleInView:
+                collector = new FilteredElementCollector(_doc, _doc.ActiveView.Id);
+                break;
+            case SelectionScope.ElementsBelongingToView:
+            case SelectionScope.AllModelElements:
+                collector = new FilteredElementCollector(_doc);
+                break;
+            default:
+                collector = new FilteredElementCollector(_doc, _doc.ActiveView.Id);
+                break;
+        }
+
+        var elements = collector
             .WhereElementIsNotElementType()
             .ToElements();
 
         var result = new List<ElementModel>();
         var worksetTable = _doc.GetWorksetTable();
 
+        // Pre-fetch phases once for ordering
+        var phaseMap = _doc.Phases.Cast<Phase>()
+            .Select((p, i) => new { p.Id, p.Name, Order = i })
+            .ToDictionary(x => x.Id, x => x);
+
         foreach (var el in elements)
         {
+            // For ElementsBelongingToView, we include:
+            // 1. Elements owned by the view (view-specific like text, detail lines, etc.)
+            // 2. Elements visible in the view (have a bounding box)
+            if (scope == SelectionScope.ElementsBelongingToView)
+            {
+                bool isViewSpecific = el.OwnerViewId == _doc.ActiveView.Id;
+                bool isVisibleInView = el.get_BoundingBox(_doc.ActiveView) != null;
+                
+                if (!isViewSpecific && !isVisibleInView) continue;
+            }
+
             // Skip elements that don't have a valid category
             if (el.Category == null) continue;
 
@@ -74,6 +122,49 @@ public class RevitSelectionService
                 if (workset != null) worksetName = workset.Name;
             }
 
+            // Phase detection
+            string phaseName = "N/A";
+            int phaseOrder = 999;
+            var phaseId = el.CreatedPhaseId;
+            if (phaseId != ElementId.InvalidElementId && phaseMap.TryGetValue(phaseId, out var phaseInfo))
+            {
+                phaseName = phaseInfo.Name;
+                phaseOrder = phaseInfo.Order;
+            }
+
+            // Parameter metadata extraction for advanced deep-search (Safe Mode to prevent AccessViolationException)
+            System.Text.StringBuilder metaBuilder = new System.Text.StringBuilder();
+            try
+            {
+                // Marcas y Comentarios de Ejemplar
+                var pMark = el.get_Parameter(BuiltInParameter.ALL_MODEL_MARK);
+                if (pMark != null && pMark.HasValue) metaBuilder.Append(pMark.AsString()?.ToLowerInvariant()).Append(" ");
+
+                var pComments = el.get_Parameter(BuiltInParameter.ALL_MODEL_INSTANCE_COMMENTS);
+                if (pComments != null && pComments.HasValue) metaBuilder.Append(pComments.AsString()?.ToLowerInvariant()).Append(" ");
+
+                // Marcas y Comentarios de Tipo
+                var type = _doc.GetElement(el.GetTypeId()) as ElementType;
+                if (type != null)
+                {
+                    var pTypeMark = type.get_Parameter(BuiltInParameter.ALL_MODEL_TYPE_MARK);
+                    if (pTypeMark != null && pTypeMark.HasValue) metaBuilder.Append(pTypeMark.AsString()?.ToLowerInvariant()).Append(" ");
+
+                    var pTypeComments = type.get_Parameter(BuiltInParameter.ALL_MODEL_TYPE_COMMENTS);
+                    if (pTypeComments != null && pTypeComments.HasValue) metaBuilder.Append(pTypeComments.AsString()?.ToLowerInvariant()).Append(" ");
+                }
+
+                // Añadir el Nivel como "Restricción" base
+                if (!string.IsNullOrEmpty(levelName) && levelName != "N/A")
+                {
+                    metaBuilder.Append(levelName.ToLowerInvariant()).Append(" ");
+                }
+            }
+            catch
+            {
+                // Ignorar errores de lectura puntuales
+            }
+
             result.Add(new ElementModel
             {
                 Id = el.Id,
@@ -81,10 +172,17 @@ public class RevitSelectionService
                 FamilyName = familyName,
                 TypeName = typeName,
                 LevelName = levelName,
-                WorksetName = worksetName
+                WorksetName = worksetName,
+                IsModelElement = el.Category?.CategoryType == CategoryType.Model,
+                IsAnnotation = el.Category?.CategoryType == CategoryType.Annotation,
+                HasBoundingBox = el.get_BoundingBox(null) != null,
+                PhaseName = phaseName,
+                PhaseOrder = phaseOrder,
+                SearchableMetadata = metaBuilder.ToString()
             });
         }
 
+        LoggerService.LogInfo($"Revit query finished. {result.Count} valid elements found.");
         return result;
     }
 
