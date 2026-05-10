@@ -8,7 +8,7 @@ using JetBrains.Annotations;
 namespace FilterPlus.Commands;
 
 /// <summary>
-///     External command entry point
+///     External command entry point. Runs in Revit API context – safe to call Revit API here.
 /// </summary>
 [UsedImplicitly]
 [Transaction(TransactionMode.Manual)]
@@ -18,10 +18,23 @@ public class StartupCommand : ExternalCommand
     {
         try
         {
+            // Register dispatcher for logging as early as possible
+            LoggerService.SetDispatcher(System.Windows.Threading.Dispatcher.CurrentDispatcher);
+            LoggerService.LogInfo("Addin Startup command started.");
+
             var selectionService = new RevitSelectionService(UiDocument);
+
+            // ViewModel constructor pre-fetches ALL scope data here (safe: we are in Revit API thread)
             var viewModel = new SelectionFilterViewModel(selectionService);
-            var view = new SelectionFilterView(viewModel);
             
+            // Register external event for interactive selection
+            var pickElementsHandler = new PickElementsHandler(viewModel);
+            var externalEvent = Autodesk.Revit.UI.ExternalEvent.Create(pickElementsHandler);
+            viewModel.SetExternalEvent(externalEvent);
+            
+            LoggerService.LogInfo("ViewModel created. Showing window...");
+
+            var view = new SelectionFilterView(viewModel);
             view.Show();
         }
         catch (Exception ex)
