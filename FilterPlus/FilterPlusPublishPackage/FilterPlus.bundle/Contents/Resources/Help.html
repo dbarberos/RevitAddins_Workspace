@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Guía de Uso - FilterPlus</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; max-width: 800px; margin: 0 auto; padding: 20px; background-color: #f9f9f9; }
+        h1, h2, h3 { color: #007ACC; }
+        .version { font-weight: bold; color: #666; margin-bottom: 20px; }
+        hr { border: 0; border-top: 1px solid #eee; margin: 20px 0; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; background: white; }
+        table th, table td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        table th { background-color: #f2f2f2; }
+        .note { background-color: #e7f3fe; border-left: 6px solid #2196F3; padding: 10px; margin: 15px 0; }
+        .warning { background-color: #ffffcc; border-left: 6px solid #ffeb3b; padding: 10px; margin: 15px 0; }
+        code { background-color: #f4f4f4; padding: 2px 4px; border-radius: 4px; }
+    </style>
+</head>
+<body>
+    <h1>Guía de Uso - FilterPlus</h1>
+    <div class="version">
+        Versión Actual: 1.1.0<br>
+        Desarrollador: DBDev / dbase_Architecture
+    </div>
+    <hr>
+
+    <h2>1. Descripción General</h2>
+    <p><strong>FilterPlus</strong> es un add-in avanzado para Autodesk Revit diseñado para agilizar la selección y filtrado de elementos en proyectos complejos. Ofrece una <strong>navegación jerárquica total</strong> (Categoría > Familia > Tipo > ID de Elemento) y un sistema de organización dinámica.</p>
+
+    <h2>2. Instrucciones de Instalación</h2>
+    <p>El add-in se distribuye mediante el formato oficial de la Autodesk App Store.</p>
+    <ol>
+        <li>Cierre todas las sesiones de Revit abiertas.</li>
+        <li>Instale el archivo proporcionado por la Store.</li>
+        <li>Al abrir Revit, si aparece un aviso de seguridad, seleccione <strong>"Always Load"</strong> (Cargar siempre).</li>
+    </ol>
+    <div class="note">
+        <strong>NOTA:</strong> El proceso de desinstalación se realiza desde el Panel de Control de Windows.
+    </div>
+
+    <h2>3. Guía de Comandos y Funcionalidades</h2>
+    <h3>3.1. Explorador Jerárquico Avanzado</h3>
+    <p>La interfaz principal permite una selección granular mediante un árbol de 5 niveles con <strong>Memoria Semántica</strong>, preservando el despliegue visual al cambiar de vista.</p>
+    
+    <h3>3.2. Organización Dinámica</h3>
+    <p>Reorganice instantáneamente según <strong>Phase (Fase)</strong>, <strong>Level (Nivel)</strong> o <strong>Workset (Subproyecto)</strong>.</p>
+
+    <h3>3.3. Motor de Búsqueda Inteligente</h3>
+    <p>Soporte para <strong>Regex</strong>, lógica <strong>OR</strong> y modo de optimización por nombre.</p>
+
+    <h2>4. Requisitos del Sistema</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Requisito</th>
+                <th>Detalle</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Versiones de Revit</td>
+                <td>2023, 2024, 2025, 2026, 2027</td>
+            </tr>
+            <tr>
+                <td>Sistema Operativo</td>
+                <td>Windows 10 / 11 (64-bit)</td>
+            </tr>
+            <tr>
+                <td>Framework</td>
+                <td>.NET Framework 4.8 / .NET 8.0</td>
+            </tr>
+        </tbody>
+    </table>
+    <div class="warning">
+        <strong>AVISO:</strong> Revit 2025+ requiere .NET 8 instalado.
+    </div>
+
+    <hr>
+    <p><em>Para soporte técnico, contacte a: dbarberos@outlook.com</em></p>
+</body>
+</html>

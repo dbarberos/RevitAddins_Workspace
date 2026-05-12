@@ -76,4 +76,21 @@ public partial class ConfigurationViewModel : ObservableObject
                         MessageBoxButton.OK, 
                         MessageBoxImage.Information);
     }
+
+    [RelayCommand]
+    private void OpenPrivacyPolicy()
+    {
+        try
+        {
+            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+            {
+                FileName = "https://dbdev-dbarberos.github.io/PrivacyPolicy/",
+                UseShellExecute = true
+            });
+        }
+        catch (System.Exception ex)
+        {
+            MessageBox.Show("Could not open the privacy policy link: " + ex.Message);
+        }
+    }
 }

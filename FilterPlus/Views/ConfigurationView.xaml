@@ -102,23 +102,31 @@
         <TextBlock Grid.Row="2" Text="* You must restart Revit in order to apply these changes." 
                    FontStyle="Italic" Foreground="#999" TextWrapping="Wrap" Margin="5,0,0,0"/>
 
-        <StackPanel Grid.Row="4" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,10,0,0">
-            <Button Content="Save" Command="{Binding SaveCommand}" CommandParameter="{Binding ElementName=ConfigWindow}" 
-                    Width="90" Height="22" Margin="0,0,10,0" Background="#007ACC" Foreground="White" BorderThickness="0">
-                <Button.Resources>
-                    <Style TargetType="Border">
-                        <Setter Property="CornerRadius" Value="4"/>
-                    </Style>
-                </Button.Resources>
-            </Button>
-            <Button Content="Cancel" Command="{Binding CancelCommand}" CommandParameter="{Binding ElementName=ConfigWindow}" 
-                    Width="90" Height="22" Background="White" BorderBrush="#ccc" BorderThickness="1">
-                <Button.Resources>
-                    <Style TargetType="Border">
-                        <Setter Property="CornerRadius" Value="4"/>
-                    </Style>
-                </Button.Resources>
-            </Button>
-        </StackPanel>
+        <Grid Grid.Row="4" Margin="0,10,0,0">
+            <TextBlock VerticalAlignment="Center" HorizontalAlignment="Left" Margin="5,0,0,0">
+                <Hyperlink Command="{Binding OpenPrivacyPolicyCommand}" Foreground="#007ACC" TextDecorations="None">
+                    Privacy Policy
+                </Hyperlink>
+            </TextBlock>
+            
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <Button Content="Save" Command="{Binding SaveCommand}" CommandParameter="{Binding ElementName=ConfigWindow}" 
+                        Width="90" Height="22" Margin="0,0,10,0" Background="#007ACC" Foreground="White" BorderThickness="0">
+                    <Button.Resources>
+                        <Style TargetType="Border">
+                            <Setter Property="CornerRadius" Value="4"/>
+                        </Style>
+                    </Button.Resources>
+                </Button>
+                <Button Content="Cancel" Command="{Binding CancelCommand}" CommandParameter="{Binding ElementName=ConfigWindow}" 
+                        Width="90" Height="22" Background="White" BorderBrush="#ccc" BorderThickness="1">
+                    <Button.Resources>
+                        <Style TargetType="Border">
+                            <Setter Property="CornerRadius" Value="4"/>
+                        </Style>
+                    </Button.Resources>
+                </Button>
+            </StackPanel>
+        </Grid>
     </Grid>
 </Window>
