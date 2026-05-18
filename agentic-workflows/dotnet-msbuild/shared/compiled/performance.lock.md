@@ -1,4 +1,4 @@
-<!-- AUTO-GENERATED — DO NOT EDIT -->
+<!-- AUTO-GENERATED - DO NOT EDIT -->
 
 # Build Performance Baseline & Optimization
 
@@ -7,10 +7,10 @@
 Before optimizing a build, you need a **baseline**. Without measurements, optimization is guesswork. This skill covers how to establish baselines and apply systematic optimization techniques.
 
 **Related skills:**
-- `build-perf-diagnostics` — binlog-based bottleneck identification
-- `incremental-build` — Inputs/Outputs and up-to-date checks
-- `build-parallelism` — parallel and graph build tuning
-- `eval-performance` — glob and import chain optimization
+- `build-perf-diagnostics` â€” binlog-based bottleneck identification
+- `incremental-build` â€” Inputs/Outputs and up-to-date checks
+- `build-parallelism` â€” parallel and graph build tuning
+- `eval-performance` â€” glob and import chain optimization
 
 ---
 
@@ -65,12 +65,12 @@ dotnet build /bl:noop-build.binlog -m
 |----------|------------------|
 | Cold build | Full compilation, all targets run. This is your absolute baseline |
 | Warm build | Only changed projects recompile. Time proportional to change scope |
-| No-op build | < 5 seconds for small repos, < 30 seconds for large repos. All compilation targets should report "Skipping target — all outputs up-to-date" |
+| No-op build | < 5 seconds for small repos, < 30 seconds for large repos. All compilation targets should report "Skipping target â€” all outputs up-to-date" |
 
 **Red flags:**
-- No-op build > 30 seconds → incremental build is broken (see `incremental-build` skill)
-- Warm build recompiles everything → project dependency chain forces full rebuild
-- Cold build has long restore → NuGet cache issues
+- No-op build > 30 seconds â†’ incremental build is broken (see `incremental-build` skill)
+- Warm build recompiles everything â†’ project dependency chain forces full rebuild
+- Cold build has long restore â†’ NuGet cache issues
 
 ### Recording Baselines
 
@@ -294,10 +294,10 @@ dotnet build /graph /bl:graph-build.binlog
 
 | Scenario | Recommendation |
 |----------|---------------|
-| Large multi-project solution (20+ projects) | ✅ Try `/graph` — may see significant parallelism gains |
-| Small solution (< 5 projects) | ❌ Overhead of graph evaluation outweighs benefits |
-| CI builds | ✅ Graph builds are more predictable and parallelizable |
-| Local development | ⚠️ Test both — may or may not help depending on project structure |
+| Large multi-project solution (20+ projects) | âœ… Try `/graph` â€” may see significant parallelism gains |
+| Small solution (< 5 projects) | âŒ Overhead of graph evaluation outweighs benefits |
+| CI builds | âœ… Graph builds are more predictable and parallelizable |
+| Local development | âš ï¸ Test both â€” may or may not help depending on project structure |
 
 ### Troubleshooting Graph Build
 
@@ -391,23 +391,23 @@ Then use the `build-perf-diagnostics` skill and binlog tools for systematic bott
 
 ```
 Is your no-op build slow (> 10s per project)?
-├── YES → See `incremental-build` skill (fix Inputs/Outputs)
-└── NO
+â”œâ”€â”€ YES â†’ See `incremental-build` skill (fix Inputs/Outputs)
+â””â”€â”€ NO
     Is your cold build slow?
-    ├── YES
-    │   Is restore slow?
-    │   ├── YES → Optimize NuGet restore (use lock files, configure local cache)
-    │   └── NO
-    │       Is compilation slow?
-    │       ├── YES
-    │       │   Are analyzers/generators slow?
-    │       │   ├── YES → See `build-perf-diagnostics` skill
-    │       │   └── NO → Check parallelism, graph build, critical path (this skill + `build-parallelism`)
-    │       └── NO → Check custom targets (binlog analysis via `build-perf-diagnostics`)
-    └── NO
+    â”œâ”€â”€ YES
+    â”‚   Is restore slow?
+    â”‚   â”œâ”€â”€ YES â†’ Optimize NuGet restore (use lock files, configure local cache)
+    â”‚   â””â”€â”€ NO
+    â”‚       Is compilation slow?
+    â”‚       â”œâ”€â”€ YES
+    â”‚       â”‚   Are analyzers/generators slow?
+    â”‚       â”‚   â”œâ”€â”€ YES â†’ See `build-perf-diagnostics` skill
+    â”‚       â”‚   â””â”€â”€ NO â†’ Check parallelism, graph build, critical path (this skill + `build-parallelism`)
+    â”‚       â””â”€â”€ NO â†’ Check custom targets (binlog analysis via `build-perf-diagnostics`)
+    â””â”€â”€ NO
         Is your warm build slow?
-        ├── YES → Projects rebuilding unnecessarily → check `incremental-build` skill
-        └── NO → Build is healthy! Consider graph build or UseArtifactsOutput for further gains
+        â”œâ”€â”€ YES â†’ Projects rebuilding unnecessarily â†’ check `incremental-build` skill
+        â””â”€â”€ NO â†’ Build is healthy! Consider graph build or UseArtifactsOutput for further gains
 ```
 
 ---
@@ -435,7 +435,7 @@ Is your no-op build slow (> 10s per project)?
 
 ## Key Metrics and Thresholds
 
-- **Build duration**: what's "normal" — small project <10s, medium <60s, large <5min
+- **Build duration**: what's "normal" â€” small project <10s, medium <60s, large <5min
 - **Node utilization**: ideal is >80% active time across nodes. Low utilization = serialization bottleneck
 - **Single target domination**: if one target is >50% of build time, investigate
 - **Analyzer time vs compile time**: analyzers should be <30% of Csc task time. If higher, consider removing expensive analyzers
@@ -454,7 +454,7 @@ Is your no-op build slow (> 10s per project)?
 
 ### 2. Roslyn Analyzers and Source Generators
 
-- **Symptoms**: Csc task takes much longer than expected for file count (>2× clean compile time)
+- **Symptoms**: Csc task takes much longer than expected for file count (>2Ã— clean compile time)
 - **Diagnosis**: Check the Task Performance Summary in the replayed log for Csc task time; grep for analyzer timing messages; compare Csc duration with and without analyzers (`/p:RunAnalyzers=false`)
 - **Fixes**:
   - Conditionally disable in dev: `<RunAnalyzers Condition="'$(ContinuousIntegrationBuild)' != 'true'">false</RunAnalyzers>`
@@ -462,7 +462,7 @@ Is your no-op build slow (> 10s per project)?
   - Code-style only: `<EnforceCodeStyleInBuild Condition="'$(ContinuousIntegrationBuild)' == 'true'">true</EnforceCodeStyleInBuild>`
   - Remove genuinely redundant analyzers from inner loop
   - Severity config in .editorconfig for less critical rules
-- **Key principle**: Preserve analyzer enforcement in CI. Never just "remove" analyzers — configure them conditionally.
+- **Key principle**: Preserve analyzer enforcement in CI. Never just "remove" analyzers â€” configure them conditionally.
 - **GlobalPackageReference**: Analyzers added via `GlobalPackageReference` in `Directory.Packages.props` apply to ALL projects. Consider if test projects need the same analyzer set as production code.
 - **EnforceCodeStyleInBuild**: When set to `true` in `Directory.Build.props`, forces code-style analysis on every build. Should be conditional on CI environment (`ContinuousIntegrationBuild`) to avoid slowing dev inner loop.
 
@@ -482,7 +482,7 @@ Is your no-op build slow (> 10s per project)?
 ### 5. Evaluation Overhead
 
 - **Symptoms**: build starts slow before any compilation
-- **Root causes**: complex Directory.Build.props, wildcard globs scanning large directories, NuGetSdkResolver overhead (adds 180-400ms per project evaluation even when restored — see dotnet/msbuild#4025)
+- **Root causes**: complex Directory.Build.props, wildcard globs scanning large directories, NuGetSdkResolver overhead (adds 180-400ms per project evaluation even when restored â€” see dotnet/msbuild#4025)
 - **Fixes**: reduce Directory.Build.props complexity, use `<EnableDefaultItems>false</EnableDefaultItems>` for legacy projects with explicit file lists, avoid NuGet-based SDK resolvers if possible
 - See: `eval-performance` skill for detailed guidance
 
@@ -491,7 +491,7 @@ Is your no-op build slow (> 10s per project)?
 - **Symptoms**: restore runs every build even when unnecessary
 - **Fixes**:
   - Separate restore from build: `dotnet restore` then `dotnet build --no-restore`
-  - Enable static graph evaluation: `<RestoreUseStaticGraphEvaluation>true</RestoreUseStaticGraphEvaluation>` in Directory.Build.props — can save significant time in large builds (results are workload-dependent)
+  - Enable static graph evaluation: `<RestoreUseStaticGraphEvaluation>true</RestoreUseStaticGraphEvaluation>` in Directory.Build.props â€” can save significant time in large builds (results are workload-dependent)
 
 ### 7. Large Project Count and Graph Shape
 
@@ -512,7 +512,7 @@ Step-by-step workflow using text log replay:
    ```bash
    grep "Target Performance Summary\|Task Performance Summary" -A 50 full.log
    ```
-   This shows all targets and tasks sorted by cumulative time — equivalent to finding expensive targets/tasks.
+   This shows all targets and tasks sorted by cumulative time â€” equivalent to finding expensive targets/tasks.
 3. **Find per-project build times**:
    ```bash
    grep "done building project\|Project Performance Summary" full.log
@@ -548,9 +548,9 @@ Step-by-step workflow using text log replay:
 
 When reporting findings, categorize by impact to help prioritize fixes:
 
-- 🔴 **HIGH IMPACT** (do first): Items consuming >10% of total build time, or a single target >50% of build time
-- 🟡 **MEDIUM IMPACT**: Items consuming 2-10% of build time
-- 🟢 **QUICK WINS**: Easy changes with modest impact (e.g., property flags in Directory.Build.props)
+- ðŸ”´ **HIGH IMPACT** (do first): Items consuming >10% of total build time, or a single target >50% of build time
+- ðŸŸ¡ **MEDIUM IMPACT**: Items consuming 2-10% of build time
+- ðŸŸ¢ **QUICK WINS**: Easy changes with modest impact (e.g., property flags in Directory.Build.props)
 
 ---
 
@@ -579,21 +579,21 @@ MSBuild's incremental build mechanism allows targets to be skipped when their ou
 
 ## Why Incremental Builds Break (Top Causes)
 
-1. **Missing Inputs/Outputs on custom targets** — Without both attributes, the target always runs. This is the single most common cause of unnecessary rebuilds.
+1. **Missing Inputs/Outputs on custom targets** â€” Without both attributes, the target always runs. This is the single most common cause of unnecessary rebuilds.
 
-2. **Volatile properties in Outputs path** — If the output path includes something that changes between builds (e.g., a timestamp, build number, or random GUID), MSBuild will never find the previous output and will always rebuild.
+2. **Volatile properties in Outputs path** â€” If the output path includes something that changes between builds (e.g., a timestamp, build number, or random GUID), MSBuild will never find the previous output and will always rebuild.
 
-3. **File writes outside of tracked Outputs** — If a target writes files that aren't listed in its `Outputs`, MSBuild doesn't know about them. The target may be skipped (because its declared outputs are up to date), but downstream targets may still be triggered.
+3. **File writes outside of tracked Outputs** â€” If a target writes files that aren't listed in its `Outputs`, MSBuild doesn't know about them. The target may be skipped (because its declared outputs are up to date), but downstream targets may still be triggered.
 
-4. **Missing FileWrites registration** — Files created during the build but not registered in the `FileWrites` item group won't be cleaned by `dotnet clean`. Over time, stale files can confuse incremental checks.
+4. **Missing FileWrites registration** â€” Files created during the build but not registered in the `FileWrites` item group won't be cleaned by `dotnet clean`. Over time, stale files can confuse incremental checks.
 
-5. **Glob changes** — When you add or remove source files, the item set (e.g., `@(Compile)`) changes. Since these items feed into `Inputs`, the set of inputs changes and triggers a rebuild. This is expected behavior but can be surprising.
+5. **Glob changes** â€” When you add or remove source files, the item set (e.g., `@(Compile)`) changes. Since these items feed into `Inputs`, the set of inputs changes and triggers a rebuild. This is expected behavior but can be surprising.
 
-6. **Property changes** — Properties that feed into `Inputs` or `Outputs` paths (e.g., `$(Configuration)`, `$(TargetFramework)`) will cause rebuilds when changed. Switching between Debug and Release is a full rebuild by design.
+6. **Property changes** â€” Properties that feed into `Inputs` or `Outputs` paths (e.g., `$(Configuration)`, `$(TargetFramework)`) will cause rebuilds when changed. Switching between Debug and Release is a full rebuild by design.
 
-7. **NuGet package updates** — Changing a package version updates `project.assets.json` and potentially many resolved assembly paths. This changes the inputs to `ResolveAssemblyReferences` and `CoreCompile`, triggering a rebuild.
+7. **NuGet package updates** â€” Changing a package version updates `project.assets.json` and potentially many resolved assembly paths. This changes the inputs to `ResolveAssemblyReferences` and `CoreCompile`, triggering a rebuild.
 
-8. **Build server VBCSCompiler cache invalidation** — The Roslyn compiler server (`VBCSCompiler`) caches compilation state. If the server is recycled (timeout, crash, or manual kill), the next build may be slower even though MSBuild's incremental checks pass, because the compiler must repopulate its in-memory caches.
+8. **Build server VBCSCompiler cache invalidation** â€” The Roslyn compiler server (`VBCSCompiler`) caches compilation state. If the server is recycled (timeout, crash, or manual kill), the next build may be slower even though MSBuild's incremental checks pass, because the compiler must repopulate its in-memory caches.
 
 ## Diagnosing "Why Did This Rebuild?"
 
@@ -621,9 +621,9 @@ Use binary logs (binlogs) to understand exactly why targets ran instead of being
 3. **Inspect non-skipped targets** by looking for their execution messages in the diagnostic log. Check for "out of date" messages that indicate why a target ran.
 
 4. **Look for key messages** in the binlog:
-   - `"Building target 'X' completely"` — means MSBuild found no outputs or all outputs are missing; this is a full target execution.
-   - `"Building target 'X' incrementally"` — means some (but not all) outputs are out of date.
-   - `"Skipping target 'X' because all output files are up-to-date"` — target was correctly skipped.
+   - `"Building target 'X' completely"` â€” means MSBuild found no outputs or all outputs are missing; this is a full target execution.
+   - `"Building target 'X' incrementally"` â€” means some (but not all) outputs are out of date.
+   - `"Skipping target 'X' because all output files are up-to-date"` â€” target was correctly skipped.
 
 5. **Search for "is newer than output"** messages to find the specific input file that triggered the rebuild:
    ```bash
@@ -634,8 +634,8 @@ Use binary logs (binlogs) to understand exactly why targets ran instead of being
 ### Additional diagnostic techniques
 
 - Compare `first.binlog` and `second.binlog` side by side in the MSBuild Structured Log Viewer to see what changed.
-- Use `grep 'Target Performance Summary' -A 30 second-full.log` to see which targets consumed the most time in the second build — these are your optimization targets.
-- Check for targets with zero-duration that still ran — they may have unnecessary dependencies causing them to execute.
+- Use `grep 'Target Performance Summary' -A 30 second-full.log` to see which targets consumed the most time in the second build â€” these are your optimization targets.
+- Check for targets with zero-duration that still ran â€” they may have unnecessary dependencies causing them to execute.
 
 ## FileWrites and Clean Build
 
@@ -673,7 +673,7 @@ Visual Studio has its own up-to-date check (Fast Up-to-Date Check, or FUTDC) tha
     <DisableFastUpToDateCheck>true</DisableFastUpToDateCheck>
   </PropertyGroup>
   ```
-- **Diagnose FUTDC decisions** by viewing the Output window in VS: go to **Tools → Options → Projects and Solutions → SDK-Style Projects** and set **Up-to-date Checks** logging level to **Verbose** or above. FUTDC will log exactly which file it considers out of date.
+- **Diagnose FUTDC decisions** by viewing the Output window in VS: go to **Tools â†’ Options â†’ Projects and Solutions â†’ SDK-Style Projects** and set **Up-to-date Checks** logging level to **Verbose** or above. FUTDC will log exactly which file it considers out of date.
 - **Common VS FUTDC issues**:
   - Custom build actions not registered with the FUTDC system
   - `CopyToOutputDirectory` items that are newer than the last build
@@ -710,12 +710,12 @@ The following is a complete example of a well-structured incremental custom targ
 ### Common mistakes to avoid
 
 ```xml
-<!-- BAD: No Inputs/Outputs — runs every build -->
+<!-- BAD: No Inputs/Outputs â€” runs every build -->
 <Target Name="BadTarget" BeforeTargets="CoreCompile">
   <Exec Command="generate-code.exe" />
 </Target>
 
-<!-- BAD: Volatile output path — never finds previous output -->
+<!-- BAD: Volatile output path â€” never finds previous output -->
 <Target Name="BadTarget2"
         Inputs="@(Compile)"
         Outputs="$(OutputPath)gen_$([System.DateTime]::Now.Ticks).cs">
@@ -739,13 +739,13 @@ The following is a complete example of a well-structured incremental custom targ
 
 MSBuild provides built-in tools to understand what's running and why.
 
-- **`/clp:PerformanceSummary`** — Appends a summary at the end of the build showing time spent in each target and task. Use this to quickly identify the most expensive operations:
+- **`/clp:PerformanceSummary`** â€” Appends a summary at the end of the build showing time spent in each target and task. Use this to quickly identify the most expensive operations:
   ```shell
   dotnet build /clp:PerformanceSummary
   ```
   This shows a table of targets sorted by cumulative time, making it easy to spot targets that shouldn't be running in an incremental build.
 
-- **`/pp:preprocess.xml`** — Generates a single XML file with all imports inlined, showing the fully evaluated project. This is invaluable for understanding what targets, properties, and items are defined and where they come from:
+- **`/pp:preprocess.xml`** â€” Generates a single XML file with all imports inlined, showing the fully evaluated project. This is invaluable for understanding what targets, properties, and items are defined and where they come from:
   ```shell
   dotnet msbuild /pp:preprocess.xml
   ```
@@ -755,11 +755,11 @@ MSBuild provides built-in tools to understand what's running and why.
 
 ## Common Fixes
 
-- **Always add `Inputs` and `Outputs` to custom targets** — This is the single most impactful change for incremental build performance. Without both attributes, the target runs every time.
-- **Use `$(IntermediateOutputPath)` for generated files** — Files in `obj/` are tracked by MSBuild's clean infrastructure and won't leak between configurations.
-- **Register generated files in `FileWrites`** — Ensures `dotnet clean` removes them and prevents stale file accumulation.
-- **Avoid volatile data in build** — Don't embed timestamps, random values, or build counters in file paths or generated content unless you have a deliberate strategy for managing staleness. If you must use volatile data, isolate it to a single file with minimal downstream impact.
-- **Use `Returns` instead of `Outputs` when you need to pass items without creating incremental build dependency** — `Outputs` serves double duty: it defines the incremental check AND the items returned from the target. If you only need to pass items to calling targets without affecting incrementality, use `Returns` instead:
+- **Always add `Inputs` and `Outputs` to custom targets** â€” This is the single most impactful change for incremental build performance. Without both attributes, the target runs every time.
+- **Use `$(IntermediateOutputPath)` for generated files** â€” Files in `obj/` are tracked by MSBuild's clean infrastructure and won't leak between configurations.
+- **Register generated files in `FileWrites`** â€” Ensures `dotnet clean` removes them and prevents stale file accumulation.
+- **Avoid volatile data in build** â€” Don't embed timestamps, random values, or build counters in file paths or generated content unless you have a deliberate strategy for managing staleness. If you must use volatile data, isolate it to a single file with minimal downstream impact.
+- **Use `Returns` instead of `Outputs` when you need to pass items without creating incremental build dependency** â€” `Outputs` serves double duty: it defines the incremental check AND the items returned from the target. If you only need to pass items to calling targets without affecting incrementality, use `Returns` instead:
   ```xml
   <!-- Outputs: affects incremental check AND return value -->
   <Target Name="GetFiles" Outputs="@(DiscoveredFiles)">...</Target>
@@ -783,7 +783,7 @@ MSBuild provides built-in tools to understand what's running and why.
 - MSBuild builds projects in dependency order (topological sort)
 - Critical path: longest chain of dependent projects determines minimum build time
 - Bottleneck: if project A depends on B, C, D and B takes 60s while C and D take 5s, B is the bottleneck
-- Diagnosis: replay binlog to diagnostic log with `performancesummary` and check Project Performance Summary — shows per-project time; grep for `node.*assigned` to check scheduling
+- Diagnosis: replay binlog to diagnostic log with `performancesummary` and check Project Performance Summary â€” shows per-project time; grep for `node.*assigned` to check scheduling
 - Wide graphs (many independent projects) parallelize well; deep graphs (long chains) don't
 
 ## Graph Build Mode (`/graph`)
@@ -797,7 +797,7 @@ MSBuild provides built-in tools to understand what's running and why.
 
 ## Optimizing Project References
 
-- Reduce unnecessary `<ProjectReference>` — each adds to the dependency chain
+- Reduce unnecessary `<ProjectReference>` â€” each adds to the dependency chain
 - Use `<ProjectReference ... SkipGetTargetFrameworkProperties="true">` to avoid extra evaluations
 - `<ProjectReference ... ReferenceOutputAssembly="false">` for build-order-only dependencies
 - Consider if a ProjectReference should be a PackageReference instead (pre-built NuGet)
@@ -822,8 +822,8 @@ Step-by-step:
 1. Replay the binlog: `dotnet msbuild build.binlog -noconlog -fl -flp:v=diag;logfile=full.log;performancesummary`
 2. Check Project Performance Summary at the end of `full.log`
 3. Ideal: build time should be much less than sum of project times (parallelism)
-4. If build time ≈ sum of project times: too many serial dependencies, or one slow project blocking others
-5. `grep 'Target Performance Summary' -A 30 full.log` → find the bottleneck targets
+4. If build time â‰ˆ sum of project times: too many serial dependencies, or one slow project blocking others
+5. `grep 'Target Performance Summary' -A 30 full.log` â†’ find the bottleneck targets
 6. Consider splitting large projects or optimizing the critical path
 
 ## CI/CD Parallelism Tips
@@ -872,25 +872,6 @@ Key insight: evaluation happens BEFORE any targets run. Slow evaluation = slow b
 
 ## Expensive Glob Patterns
 
-- Globs like `**/*.cs` walk the entire directory tree
-- Default SDK globs are optimized, but custom globs may not be
-- Problem: globbing over `node_modules/`, `.git/`, `bin/`, `obj/` — millions of files
-- Fix: use `<DefaultItemExcludes>` to exclude large directories
-- Fix: be specific with glob paths: `src/**/*.cs` instead of `**/*.cs`
-- Fix: use `<EnableDefaultItems>false</EnableDefaultItems>` only as last resort (lose SDK defaults)
-- Check: grep for Compile items in the diagnostic log → if Compile items include unexpected files, globs are too broad
-
-## Import Chain Analysis
-
-- Deep import chains (>20 levels) slow evaluation
-- Each import: file I/O + parse + evaluate
-- Common causes: NuGet packages adding .props/.targets, framework SDK imports, Directory.Build chains
-- Diagnosis: `/pp` output → search for `<!-- Importing` comments to see import tree
-- Fix: reduce transitive package imports where possible, consolidate imports
-
-## Multiple Evaluations
-
-- A project evaluated multiple times = wasted work
-- Common causes: referenced from multiple other projects 
+- G
 
 [truncated]

@@ -1,61 +1,61 @@
 ---
 name: revit-addin-testing
-description: Guía para testing de Add-ins de Revit — pruebas unitarias con mocks de la API, validación de builds y estrategias de testing sin instancia de Revit.
+description: Guide for testing Revit Add-ins — unit testing with API mocks, build validation, and testing strategies without a Revit instance. Use this when configuring CI/CD, setting up tests, or validating business logic independently of the Revit API.
 ---
 
 # Revit Add-in Testing
 
-## Objetivo
-Guiar al agente en la creación de pruebas para Add-ins de Revit, abarcando desde validación de compilación hasta pruebas unitarias con aislamiento de la API.
+## Objective
+Guide the agent in creating tests for Revit Add-ins, ranging from build validation to unit testing with API isolation.
 
-## Cuándo Usar
-- Al configurar testing en un proyecto de add-in nuevo o existente
-- Al necesitar validar lógica de servicios sin una instancia de Revit
-- Al configurar CI/CD para compilación automática
+## When to Use
+- When configuring testing in a new or existing add-in project.
+- When needing to validate service logic without a Revit instance.
+- When configuring CI/CD for automatic builds.
 
 ---
 
-## 1. Estrategia de Testing para Add-ins de Revit
+## 1. Testing Strategy for Revit Add-ins
 
-### El problema fundamental
-La API de Revit **no puede ejecutarse fuera de Revit** (no hay modo headless). Esto significa:
-- No se pueden crear instancias de `Document`, `Element`, `FilteredElementCollector` en tests
-- Los tests unitarios deben **aislar la lógica de negocio** de las llamadas a la API
-- La validación real requiere cargar el add-in en Revit
+### The fundamental problem
+The Revit API **cannot be executed outside of Revit** (there is no headless mode). This means:
+- You cannot create instances of `Document`, `Element`, `FilteredElementCollector` in tests.
+- Unit tests must **isolate the business logic** from API calls.
+- Real validation requires loading the add-in in Revit.
 
-### Niveles de testing
+### Testing levels
 
-| Nivel | Qué prueba | Herramienta | Automatizable |
+| Level | What it tests | Tool | Automatable |
 |-------|-----------|-------------|---------------|
-| **Build** | Compilación sin errores | `dotnet build` | ✅ Sí |
-| **Unitario** | Lógica de servicios y modelos | xUnit / NUnit + mocks | ✅ Sí |
-| **Integración** | Add-in cargado en Revit | RevitTestFramework / manual | ⚠️ Parcial |
-| **Manual** | UI, Ribbon, flujo completo | Revit real | ❌ No |
+| **Build** | Compilation without errors | `dotnet build` | ✅ Yes |
+| **Unit** | Service and model logic | xUnit / NUnit + mocks | ✅ Yes |
+| **Integration** | Add-in loaded in Revit | RevitTestFramework / manual | ⚠️ Partial |
+| **Manual** | UI, Ribbon, complete flow | Real Revit | ❌ No |
 
 ---
 
-## 2. Validación de Build (Nivel Mínimo Obligatorio)
+## 2. Build Validation (Minimum Required Level)
 
-**SIEMPRE** ejecutar tras cualquier cambio:
+**ALWAYS** run after any change:
 
 ```powershell
-dotnet build {{Nombre}}.csproj --configuration Release
+dotnet build {{Name}}.csproj --configuration Release
 ```
 
-### Checklist de validación post-build
-- [ ] Compila sin errores (`exit code 0`)
-- [ ] Sin warnings críticos (`CS0104` ambigüedad, `CS0618` obsoleto)
-- [ ] DLL generada en la carpeta de salida esperada
-- [ ] Archivo `.addin` presente y con `FullClassName` correcto
+### Post-build validation checklist
+- [ ] Compiles without errors (`exit code 0`).
+- [ ] No critical warnings (`CS0104` ambiguity, `CS0618` obsolete).
+- [ ] DLL generated in the expected output folder.
+- [ ] `.addin` file present and with the correct `FullClassName`.
 
 ---
 
-## 3. Pruebas Unitarias — Arquitectura Testable
+## 3. Unit Tests — Testable Architecture
 
-### Principio: Separar la lógica de la API
+### Principle: Separate logic from the API
 
 ```csharp
-// ❌ NO TESTABLE: lógica mezclada con la API de Revit
+// ❌ NOT TESTABLE: logic mixed with the Revit API
 public class CmdCountWalls : IExternalCommand
 {
     public Result Execute(ExternalCommandData data, ref string msg, ElementSet elements)
@@ -66,27 +66,27 @@ public class CmdCountWalls : IExternalCommand
             .WhereElementIsNotElementType()
             .ToElements();
         
-        // Lógica de negocio mezclada aquí...
+        // Business logic mixed here...
         var grouped = walls.GroupBy(w => w.get_Parameter(BuiltInParameter.WALL_BASE_CONSTRAINT).AsValueString());
-        TaskDialog.Show("Resultado", $"Total: {walls.Count}, Grupos: {grouped.Count()}");
+        TaskDialog.Show("Result", $"Total: {walls.Count}, Groups: {grouped.Count()}");
         return Result.Succeeded;
     }
 }
 ```
 
 ```csharp
-// ✅ TESTABLE: lógica extraída a un servicio con interfaz
+// ✅ TESTABLE: logic extracted to a service with an interface
 
-// 1. Modelo de datos (testable, sin dependencia de Revit)
+// 1. Data model (testable, no Revit dependency)
 public record WallInfo(string Name, string Level, double Length);
 
-// 2. Interfaz del servicio (abstracción de la API)
+// 2. Service interface (API abstraction)
 public interface IWallService
 {
     IList<WallInfo> GetAllWalls();
 }
 
-// 3. Implementación real (usa API de Revit — no se testea unitariamente)
+// 3. Real implementation (uses Revit API — not unit tested)
 public class WallService(Document doc) : IWallService
 {
     public IList<WallInfo> GetAllWalls()
@@ -103,7 +103,7 @@ public class WallService(Document doc) : IWallService
     }
 }
 
-// 4. Servicio de análisis (lógica pura — 100% testable)
+// 4. Analysis service (pure logic — 100% testable)
 public class WallAnalysisService
 {
     public Dictionary<string, int> GroupByLevel(IList<WallInfo> walls)
@@ -114,14 +114,14 @@ public class WallAnalysisService
         => walls.Sum(w => w.Length);
 }
 
-// 5. Command (orquestación mínima)
+// 5. Command (minimal orchestration)
 public class CmdCountWalls(IWallService wallService, WallAnalysisService analysis) : IExternalCommand
 {
     public Result Execute(ExternalCommandData data, ref string msg, ElementSet elements)
     {
         var walls = wallService.GetAllWalls();
         var groups = analysis.GroupByLevel(walls);
-        TaskDialog.Show("Resultado", $"Total: {walls.Count}, Niveles: {groups.Count}");
+        TaskDialog.Show("Result", $"Total: {walls.Count}, Levels: {groups.Count}");
         return Result.Succeeded;
     }
 }
@@ -129,26 +129,26 @@ public class CmdCountWalls(IWallService wallService, WallAnalysisService analysi
 
 ---
 
-## 4. Configuración del Proyecto de Tests
+## 4. Test Project Configuration
 
-### Estructura de carpetas
+### Folder structure
 ```
-{{Nombre}}/
-├── {{Nombre}}.csproj          # Proyecto principal
-└── {{Nombre}}.Tests/
-    ├── {{Nombre}}.Tests.csproj
+{{Name}}/
+├── {{Name}}.csproj          # Main project
+└── {{Name}}.Tests/
+    ├── {{Name}}.Tests.csproj
     ├── Services/
     │   └── WallAnalysisServiceTests.cs
     └── Helpers/
         └── UnitHelperTests.cs
 ```
 
-### `.csproj` del proyecto de tests
+### `.csproj` of the test project
 
 ```xml
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net48</TargetFramework>  <!-- Mismo framework que el add-in -->
+    <TargetFramework>net48</TargetFramework>  <!-- Same framework as the add-in -->
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <IsPackable>false</IsPackable>
@@ -162,16 +162,16 @@ public class CmdCountWalls(IWallService wallService, WallAnalysisService analysi
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\{{Nombre}}.csproj" />
+    <ProjectReference Include="..\{{Name}}.csproj" />
   </ItemGroup>
 </Project>
 ```
 
-> **⚠️ Nota para .NET 8 (Revit 2025+):** Cambiar `TargetFramework` a `net8.0-windows`.
+> **⚠️ Note for .NET 8 (Revit 2025+):** Change `TargetFramework` to `net8.0-windows`.
 
 ---
 
-## 5. Ejemplo de Test Unitario
+## 5. Unit Test Example
 
 ```csharp
 using FluentAssertions;
@@ -225,7 +225,7 @@ public class WallAnalysisServiceTests
 
 ---
 
-## 6. Testing de Helpers (sin dependencia de Revit)
+## 6. Helper Testing (without Revit dependency)
 
 ```csharp
 using FluentAssertions;
@@ -246,46 +246,44 @@ public class OperationResultTests
     [Fact]
     public void Fail_CreatesFailedResultWithMessage()
     {
-        var result = OperationResult<int>.Fail("algo salió mal");
+        var result = OperationResult<int>.Fail("something went wrong");
         result.Success.Should().BeFalse();
-        result.ErrorMessage.Should().Be("algo salió mal");
+        result.ErrorMessage.Should().Be("something went wrong");
     }
 }
 ```
 
 ---
 
-## 7. Ejecución de Tests
+## 7. Test Execution
 
 ```powershell
-# Ejecutar todos los tests
-dotnet test {{Nombre}}.Tests/{{Nombre}}.Tests.csproj
+# Run all tests
+dotnet test {{Name}}.Tests/{{Name}}.Tests.csproj
 
-# Con detalle de resultados
+# With detailed results
 dotnet test --verbosity normal
 
-# Solo tests de una clase específica
+# Only tests of a specific class
 dotnet test --filter "FullyQualifiedName~WallAnalysisServiceTests"
 ```
 
 ---
 
-## 8. Reglas para el Agente
+## 8. Agent Rules
 
-### Cuándo crear tests
-- **Siempre** que se cree un servicio con lógica de negocio pura (sin API de Revit)
-- **Siempre** que se creen helpers/extensiones reutilizables
-- **No crear** tests para Commands (son orquestadores — se validan manualmente)
-- **No crear** tests para Services que dependan directamente de `Document` o `FilteredElementCollector`
+### When to create tests
+- **Always** when a service with pure business logic (no Revit API) is created.
+- **Always** when reusable helpers/extensions are created.
 
-### Qué NO testear unitariamente
-- Clases `IExternalCommand` — son coordinadores thin
-- Servicios que requieren instancias reales de `Document`
-- Código de UI/XAML
-- Configuración del Ribbon (`Application.cs`)
+### What NOT to unit test
+- `IExternalCommand` classes — they are thin coordinators.
+- Services requiring real `Document` instances.
+- UI/XAML code.
+- Ribbon configuration (`Application.cs`).
 
-### Qué SÍ testear
-- Lógica de transformación de datos (agrupación, filtrado, cálculo)
-- Modelos de datos y sus validaciones
-- Helpers y extensiones que no dependen de la API
-- ViewModels (lógica de presentación aislada de Revit)
+### What TO test
+- Data transformation logic (grouping, filtering, calculation).
+- Data models and their validations.
+- Helpers and extensions that do not depend on the API.
+- ViewModels (presentation logic isolated from Revit).
