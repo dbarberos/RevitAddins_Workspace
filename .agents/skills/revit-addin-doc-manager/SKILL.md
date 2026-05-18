@@ -1,59 +1,59 @@
 ---
-name: revit-addin-auto-doc-manager
-description: Gestión autónoma de documentación y versionado para Add-ins de Revit mediante inspección de archivos técnicos.
+name: revit-addin-doc-manager
+description: Autonomous management of documentation and versioning for Revit Add-ins through technical file inspection. Use this when generating a user guide, creating a changelog, or updating project documentation based on git tags and source code.
 ---
 
-# Revit Add-in Documentation Skill (Versión Autónoma)
+# Revit Add-in Documentation Skill (Autonomous Version)
 
-## Objetivo
-Este skill permite al agente administrar el ciclo de vida de la documentación del Add-in con intervención humana mínima. El agente debe actuar como un documentador técnico que extrae la verdad directamente del código y los archivos de configuración del proyecto.
+## Objective
+This skill allows the agent to manage the lifecycle of the Add-in documentation with minimal human intervention. The agent must act as a technical documenter that extracts the truth directly from the code and project configuration files.
 
-## 1. Fase de Inspección Automática (Extracción de Datos)
-Antes de realizar cualquier acción o preguntar al usuario, el agente DEBE intentar extraer los siguientes datos:
+## 1. Automatic Inspection Phase (Data Extraction)
+Before performing any action or asking the user, the agent MUST try to extract the following data:
 
-* **Versión del Proyecto:** 
-    1. Ejecutar `git describe --tags --abbrev=0` para obtener la versión oficial.
-    2. Si falla, buscar en `Properties/AssemblyInfo.cs` el atributo `[assembly: AssemblyVersion("...")]`.
-    3. Si no existe, buscar en el archivo `.csproj` la etiqueta `<Version>` o `<AssemblyVersion>`.
-* **Identidad del Add-in:** 1. Leer el archivo `.addin` (Manifiesto de Revit) para obtener el `AddInId`, el `FullClassName` y el `Text`.
-* **Detección de Funcionalidades:** 1. Analizar las clases que heredan de `IExternalCommand` para identificar nuevos comandos.
+* **Project Version:** 
+    1. Run `git describe --tags --abbrev=0` to get the official version.
+    2. If it fails, look in `Properties/AssemblyInfo.cs` for the `[assembly: AssemblyVersion("...")]` attribute.
+    3. If it doesn't exist, look in the `.csproj` file for the `<Version>` or `<AssemblyVersion>` tag.
+* **Add-in Identity:** 1. Read the `.addin` file (Revit Manifest) to get the `AddInId`, `FullClassName`, and `Text`.
+* **Feature Detection:** 1. Analyze classes inheriting from `IExternalCommand` to identify new commands.
 
-## 2. Instrucciones de Operación
+## 2. Operation Instructions
 
-### Escenario A: Si no existe la carpeta de documentación
-1.  **Creación:** Crear una carpeta llamada `/docs` en la raíz del proyecto.
-2.  **Generación Base:** Crear el archivo `Guia_Uso.md` siguiendo la estructura técnica de Autodesk (Referencia: AppID 4005291581487532621).
-3.  **Contenido Inicial:** Rellenar automáticamente con los datos extraídos en la Fase 1.
+### Scenario A: If the documentation folder does not exist
+1.  **Creation:** Create a folder named `/docs` in the project root.
+2.  **Base Generation:** Create the `User_Guide.md` file following Autodesk's technical structure (Reference: AppID 4005291581487532621).
+3.  **Initial Content:** Automatically fill it with the data extracted in Phase 1.
 
-### Escenario B: Si el documento ya existe
-1.  **Comparación de Versiones:** Comparar la versión extraída del código con la última versión registrada en la guía.
-2.  **Actualización Silenciosa:** 
-    * Si la versión del código es mayor, actualizar el encabezado de la guía.
-    * **Generación de Changelog:** Ejecutar `git log [last_tag]..HEAD --oneline` para extraer los cambios realizados desde la última versión.
-    * Añadir una nueva entrada en la sección `# Historial de Cambios` con la fecha actual, la nueva versión y el resumen de commits (categorizados como Añadido, Cambiado o Corregido).
-    * Si se detectan nuevas clases de comandos, añadir secciones de "Uso" para esos comandos con el marcador `[PENDIENTE: Descripción funcional]`.
+### Scenario B: If the document already exists
+1.  **Version Comparison:** Compare the version extracted from the code with the latest version recorded in the guide.
+2.  **Silent Update:** 
+    * If the code version is higher, update the guide's header.
+    * **Changelog Generation:** Run `git log [last_tag]..HEAD --oneline` to extract the changes made since the last version.
+    * Add a new entry in the `# Changelog` section with the current date, the new version, and the commit summary (categorized as Added, Changed, or Fixed).
+    * If new command classes are detected, add "Usage" sections for those commands with the placeholder `[PENDING: Functional description]`.
 
-## 3. Interacción con el Usuario (Mínima Necesaria)
-El agente solo interrumpirá al usuario si:
-1.  No se encuentra ningún archivo `.csproj` o `.addin` en el directorio.
-2.  El agente detecta una nueva funcionalidad pero no puede deducir su propósito mediante el nombre de la clase o los comentarios del código.
-3.  Falta información de contacto o soporte que no está en el código.
+## 3. User Interaction (Minimal Required)
+The agent will only interrupt the user if:
+1.  No `.csproj` or `.addin` file is found in the directory.
+2.  The agent detects a new feature but cannot deduce its purpose through the class name or code comments.
+3.  Contact or support information is missing and not found in the code.
 
-## 4. Estructura Requerida del Documento (`Guia_Uso.md`)
-El documento generado debe seguir este orden estricto:
+## 4. Required Document Structure (`User_Guide.md`)
+The generated document must strictly follow this order:
 
-1.  **Título del Add-in:** (Extraído del archivo .addin).
-2.  **Versión Actual:** (Extraída de AssemblyInfo o .csproj).
-3.  **Descripción General:** Propósito del Add-in.
-4.  **Instrucciones de Instalación:** Basadas en la ubicación de los archivos `.bundle` o `.msi`.
-5.  **Guía de Comandos:**
-    * Listado de botones en el Ribbon de Revit.
-    * Explicación técnica de cada comando (`FullClassName`).
-6.  **Historial de Versiones (Changelog):**
-    * `## [Versión X.X.X] - YYYY-MM-DD`
-    * Listado automático de: **Añadido**, **Cambiado** o **Corregido**.
+1.  **Add-in Title:** (Extracted from the .addin file).
+2.  **Current Version:** (Extracted from AssemblyInfo or .csproj).
+3.  **General Description:** Purpose of the Add-in.
+4.  **Installation Instructions:** Based on the location of the `.bundle` or `.msi` files.
+5.  **Command Guide:**
+    * List of buttons on the Revit Ribbon.
+    * Technical explanation of each command (`FullClassName`).
+6.  **Version History (Changelog):**
+    * `## [Version X.X.X] - YYYY-MM-DD`
+    * Automatic list of: **Added**, **Changed**, or **Fixed**.
 
-## 5. Reglas de Formato
-* Utilizar Markdown profesional.
-* Tablas para datos técnicos (ID de cliente, Versiones de Revit soportadas).
-* Bloques de advertencia para requisitos del sistema (ej. "Requiere Revit 2021 o superior").
+## 5. Formatting Rules
+* Use professional Markdown.
+* Use tables for technical data (Client ID, Supported Revit Versions).
+* Use warning blocks for system requirements (e.g. "Requires Revit 2021 or higher").

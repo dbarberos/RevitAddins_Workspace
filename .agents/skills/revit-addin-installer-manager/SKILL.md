@@ -1,36 +1,40 @@
+---
+name: revit-addin-installer-manager
+description: Automates the creation of professional MSI installers for multi-version Revit Add-ins (2023-2027) using WiX Toolset v3.11+. Use this when preparing a deployment package, updating installer versions, or generating WXS scripts.
+---
+
 # Skill: Revit Add-in Installer Manager (WiX Toolset Automation)
 
-**Versión:** 1.1
-**Descripción:** Automatiza la creación de instaladores MSI profesionales para Add-ins de Revit multiversión (2023-2027), utilizando WiX Toolset v3.11+.
+**Version:** 1.1
 
 ---
 
-## 🟢 1. Fase de Configuración Inicial (Entrada de Usuario y Git)
-Al activar este skill, el Agente debe recopilar:
-1.  **Versión del Add-in (Git):** Ejecutar `git describe --tags --abbrev=0` para obtener la última versión.
-    *   **Acción Proactiva:** Si el tag existe (ej. `v1.0.0`), el Agente debe actualizar automáticamente la etiqueta `<Version>` en el archivo `.csproj` del proyecto.
-2.  **Versiones de Revit Objetivo:** (Ej. 2023, 2024, 2025, 2026, 2027).
-3.  **Nombre Comercial:** Nombre del Add-in para el Panel de Control.
-4.  **Fabricante:** Nombre del desarrollador o empresa.
-5.  **UI Deseada:** ¿Mínima (Minimal) o con selección de ruta (InstallDir)?
+## 🟢 1. Initial Configuration Phase (User Input and Git)
+When activating this skill, the Agent must collect:
+1.  **Add-in Version (Git):** Run `git describe --tags --abbrev=0` to get the latest version.
+    *   **Proactive Action:** If the tag exists (e.g., `v1.0.0`), the Agent must automatically update the `<Version>` tag in the project's `.csproj` file.
+2.  **Target Revit Versions:** (e.g., 2023, 2024, 2025, 2026, 2027).
+3.  **Commercial Name:** Add-in name for the Control Panel.
+4.  **Manufacturer:** Name of the developer or company.
+5.  **Desired UI:** Minimal (`WixUI_Minimal`) or with path selection (`WixUI_InstallDir`)?
 
 ---
 
-## 🛠 2. Lógica de Ejecución Automática
+## 🛠 2. Automatic Execution Logic
 
-### Paso A: Escaneo de Estructura Multi-Configuración
-El Agente mapeará las carpetas de salida del proyecto (basado en el patrón de Nice3point):
-- Busca `bin/Release.R24/FilterPlus/`, `bin/Release.R25/FilterPlus/`, etc.
-- Verifica la existencia del manifiesto `.addin` en la raíz del proyecto.
+### Step A: Multi-Configuration Structure Scanning
+The Agent will map the project's output folders (based on the Nice3point pattern):
+- Look for `bin/Release.R24/FilterPlus/`, `bin/Release.R25/FilterPlus/`, etc.
+- Verify the existence of the `.addin` manifest in the project root.
 
-### Paso B: Generación de `Product.wxs` (Lógica Central)
-El Agente escribirá el archivo con la siguiente estructura técnica:
+### Step B: `Product.wxs` Generation (Core Logic)
+The Agent will write the file with the following technical structure:
 
-1.  **Namespaces**: Incluir `xmlns="http://schemas.microsoft.com/wix/2006/wi"`.
-2.  **Variables de UI**:
-    - `<UIRef Id="WixUI_Minimal" />` o `<UIRef Id="WixUI_InstallDir" />`.
+1.  **Namespaces**: Include `xmlns="http://schemas.microsoft.com/wix/2006/wi"`.
+2.  **UI Variables**:
+    - `<UIRef Id="WixUI_Minimal" />` or `<UIRef Id="WixUI_InstallDir" />`.
     - `<WixVariable Id="WixUILicenseRtf" Value="Resources\License.rtf" />`.
-3.  **Jerarquía de Directorios**:
+3.  **Directory Hierarchy**:
     ```xml
     <Directory Id="TARGETDIR" Name="SourceDir">
       <Directory Id="AppDataFolder">
@@ -39,7 +43,7 @@ El Agente escribirá el archivo con la siguiente estructura técnica:
             <Directory Id="Addins" Name="Addins">
               <Directory Id="REVIT2024" Name="2024" />
               <Directory Id="REVIT2025" Name="2025" />
-              <!-- Repetir según versiones -->
+              <!-- Repeat according to versions -->
             </Directory>
           </Directory>
         </Directory>
@@ -47,41 +51,41 @@ El Agente escribirá el archivo con la siguiente estructura técnica:
     </Directory>
     ```
 
-### Paso C: Definición de Componentes por Versión
-El Agente generará un `ComponentGroup` por cada versión de Revit, vinculando el `.addin` específico y la carpeta de binarios correspondiente.
+### Step C: Component Definition by Version
+The Agent will generate a `ComponentGroup` for each Revit version, linking the specific `.addin` and the corresponding binaries folder.
 
 ---
 
-## 🛡 3. Reglas de Oro para un WXS Robusto (Anti-Errores)
-Para evitar errores de compilación comunes en WiX (ICE64, ICE38, Duplicate Symbols), el Agente debe seguir estas reglas estrictas al generar el código:
+## 🛡 3. Golden Rules for a Robust WXS (Anti-Errors)
+To avoid common compilation errors in WiX (ICE64, ICE38, Duplicate Symbols), the Agent must follow these strict rules when generating the code:
 
-### A. Gestión de IDs y Símbolos Únicos
-*   **Nunca** dejes que WiX asigne IDs automáticos a los archivos en instaladores multiversión.
-*   **Regla**: Cada archivo debe tener un `Id` único que incluya la versión (ej: `Id="F_Dll24"`, `Id="F_Dll25"`). Esto evita el error *"Duplicate symbol 'File:Nombre.dll' found"*.
+### A. Unique IDs and Symbols Management
+*   **Never** let WiX assign automatic IDs to files in multi-version installers.
+*   **Rule**: Each file must have a unique `Id` that includes the version (e.g., `Id="F_Dll24"`, `Id="F_Dll25"`). This prevents the error *"Duplicate symbol 'File:Name.dll' found"*.
 
-### B. GUIDs Estáticos vs Automáticos
-*   **Regla**: Usa siempre **GUIDs fijos y estáticos** para los componentes (`Guid="XXXX-..."`). 
-*   **Por qué**: El uso de `Guid="*"` (automático) falla si el componente contiene más de un elemento (ej: un Archivo + una Clave de Registro). Al ser instalaciones multiversión complejas, el GUID fijo garantiza estabilidad.
+### B. Static vs Automatic GUIDs
+*   **Rule**: Always use **fixed and static GUIDs** for components (`Guid="XXXX-..."`). 
+*   **Why**: Using `Guid="*"` (automatic) fails if the component contains more than one element (e.g., a File + a Registry Key). Being complex multi-version installations, the fixed GUID guarantees stability.
 
-### C. Validación de Seguridad Windows (ICE)
-Para instalaciones en `AppData` (Per-User):
-1.  **ICE38 (KeyPath de Registro)**: Cada componente **debe** tener una `RegistryValue` en `HKCU` como `KeyPath="yes"`. No uses el archivo como KeyPath.
-2.  **ICE64 (Borrado de Carpetas)**: Cada nivel de la jerarquía de directorios (`Autodesk`, `Revit`, `Addins`, `2024`, etc.) debe tener una instrucción `<RemoveFolder Id="..." On="uninstall"/>` vinculada a un componente.
-3.  **Componente de Limpieza**: Se recomienda crear un `ComponentGroup` llamado `CleanupComponents` que se encargue exclusivamente de las instrucciones `RemoveFolder` de las carpetas superiores.
-
----
-
-## 🤖 4. Instrucciones de Comportamiento para el Agente
-- **Referencia Automática**: El Agente debe instruir al usuario para que añada la referencia a `WixUIExtension.dll` en Visual Studio si se detecta que el proyecto es nuevo.
-- **UpgradeCode**: Debe ser persistente para permitir actualizaciones (`MajorUpgrade`).
-- **Validación de Rutas**: Verificar siempre que las rutas relativas (ej: `..\..\..\`) coincidan con la profundidad de la carpeta del instalador respecto a los binarios.
-- **Estructura de Componentes**: Cada archivo importante (DLL, .addin) debe ir en su propio `<Component>`.
+### C. Windows Security Validation (ICE)
+For installations in `AppData` (Per-User):
+1.  **ICE38 (Registry KeyPath)**: Each component **must** have a `RegistryValue` in `HKCU` as `KeyPath="yes"`. Do not use the file as KeyPath.
+2.  **ICE64 (Folder Cleanup)**: Each level of the directory hierarchy (`Autodesk`, `Revit`, `Addins`, `2024`, etc.) must have a `<RemoveFolder Id="..." On="uninstall"/>` instruction linked to a component.
+3.  **Cleanup Component**: It is recommended to create a `ComponentGroup` named `CleanupComponents` that exclusively handles the `RemoveFolder` instructions of the upper folders.
 
 ---
 
-## 📋 5. Flujo de Trabajo del Agente
-1.  **Versión:** Obtener tag de Git y sincronizar con `.csproj`.
-2.  **Preparación:** Crear carpeta `Installer/` y subcarpeta `Resources/` dentro del proyecto.
-3.  **Recursos:** Generar `License.rtf` básico.
-4.  **Escritura:** Generar el archivo `Product.wxs` completo aplicando las **Reglas de Oro** de la Sección 3, asegurando que `Product/@Version` coincida con la versión de Git.
-5.  **Finalización:** Entregar los comandos para compilar vía consola o guiar en el uso de la interfaz de Visual Studio.
+## 🤖 4. Behavioral Instructions for the Agent
+- **Automatic Reference**: The Agent must instruct the user to add the reference to `WixUIExtension.dll` in Visual Studio if the project is detected as new.
+- **UpgradeCode**: Must be persistent to allow updates (`MajorUpgrade`).
+- **Path Validation**: Always verify that the relative paths (e.g., `..\..\..\`) match the depth of the installer folder with respect to the binaries.
+- **Component Structure**: Every important file (DLL, .addin) must go in its own `<Component>`.
+
+---
+
+## 📋 5. Agent Workflow
+1.  **Version:** Get Git tag and synchronize with `.csproj`.
+2.  **Preparation:** Create `Installer/` folder and `Resources/` subfolder inside the project.
+3.  **Resources:** Generate basic `License.rtf`.
+4.  **Writing:** Generate the complete `Product.wxs` file applying the **Golden Rules** from Section 3, ensuring that `Product/@Version` matches the Git version.
+5.  **Completion:** Provide the commands to compile via console or guide in the use of the Visual Studio interface.

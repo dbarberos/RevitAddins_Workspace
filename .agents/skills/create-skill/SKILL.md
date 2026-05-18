@@ -68,15 +68,18 @@ Include these recommended sections:
 6. **Validation**: How to confirm the skill worked correctly
 7. **Common Pitfalls**: Known traps and how to avoid them
 
-### Step 5: Add optional directories (if needed)
+### Step 5: Add mandatory directories
+
+To prevent SKILL.md bloat and ensure agent efficiency, every skill MUST include these directories:
 
 ```
 skills/<skill-name>/
-├── SKILL.md
-├── scripts/       # Executable code agents can run
-├── references/    # Additional documentation loaded on demand
-└── assets/        # Templates, images, data files
+├── SKILL.md       # Only acts as an index/manifest
+├── scripts/       # Executable code agents can run (e.g., PS1, Python)
+├── references/    # Additional documentation, rules, or blueprints loaded on demand
+└── assets/        # Templates, boilerplate code, images, data files
 ```
+*Note: Any new knowledge or rules added to the skill over time must be placed in `references/`, reusable code in `assets/`, etc., never directly inside `SKILL.md`.*
 
 ### Step 6: Update CODEOWNERS
 
@@ -155,7 +158,8 @@ After creating a skill, verify:
 - [ ] Skill name matches directory name exactly
 - [ ] Skill name is lowercase with hyphens only
 - [ ] Description is non-empty and under 1024 characters
-- [ ] SKILL.md body is under 500 lines
+- [ ] SKILL.md body is under 500 lines (act as an index)
+- [ ] `scripts/`, `references/`, and `assets/` directories exist
 - [ ] Instructions are specific and actionable
 - [ ] Workflow has numbered steps with clear checkpoints
 - [ ] Validation section exists with observable success criteria

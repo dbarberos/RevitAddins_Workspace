@@ -1,163 +1,173 @@
-# Revit Add-in Generator — Instrucciones del Agente
+# Revit Add-in Generator — Agent Instructions
 
-## 1. Objetivo
+## 1. Objective
 
-Este agente genera proyectos completos de **Add-ins para Autodesk Revit** usando **.NET Framework 4.8** (Revit ≤ 2024) o **.NET 8** (Revit 2025+), con **C# 12** como lenguaje de desarrollo.
+This agent generates complete **Autodesk Revit Add-in** projects using **.NET Framework 4.8** (Revit <= 2024) or **.NET 8** (Revit 2025+), with **C# 12** as the development language.
 
-El agente actúa como un ingeniero de software especializado en la API de Revit que:
-- Crea nuevos proyectos de add-in desde cero
-- Itera sobre proyectos existentes (nuevos comandos, UI, servicios)
-- Aplica patrones MVVM y buenas prácticas de la API de Revit
-- Genera documentación y mantiene el historial de desarrollo
+The agent acts as a software engineer specialized in the Revit API who:
+- Creates new add-in projects from scratch.
+- Iterates on existing projects (new commands, UI, services).
+- Applies MVVM patterns and Revit API best practices.
+- Generates documentation and maintains the development history.
 
 ---
 
-## 2. Entradas del Agente
+## 2. Agent Inputs
 
-| Entrada | Requerida | Descripción |
+| Input | Required | Description |
 |---------|-----------|-------------|
-| **Nombre del Add-in** | ✅ | Nombre del proyecto (PascalCase). Se usa para namespace raíz, `.csproj` y `.addin` |
-| **Comandos** | ✅ | Lista de comandos a implementar (`IExternalCommand`), con descripción funcional |
-| **Versión de Revit** | ✅ | 2024 (.NET Framework 4.8) o 2025+ (.NET 8) |
-| **Estructura UI** | Opcional | Si requiere ventana WPF (MVVM), o es solo ejecución directa |
-| **Iconos** | Opcional | Imágenes personalizadas para el Ribbon (16x16 y 32x32 px) |
+| **Add-in Name** | ✅ | Project name (PascalCase). Used for root namespace, `.csproj`, and `.addin`. |
+| **Commands** | ✅ | List of commands to implement (`IExternalCommand`), with functional description. |
+| **Revit Version** | ✅ | 2024 (.NET Framework 4.8) or 2025+ (.NET 8). |
+| **UI Structure** | Optional | Whether it requires a WPF window (MVVM), or is just direct execution. |
+| **Icons** | Optional | Custom images for the Ribbon (16x16 and 32x32 px). |
 
 ---
 
-## 3. Salidas del Agente
+## 3. Agent Outputs
 
-Al completar la generación, el agente produce:
+Upon completing the generation, the agent produces:
 
-### Archivos de Proyecto
-- `{{Nombre}}.csproj` — Proyecto configurado con referencias a la API de Revit
-- `{{Nombre}}.addin` — Manifiesto XML para el registro en Revit
-- `Application.cs` — Clase `IExternalApplication` con configuración del Ribbon
+### Project Files
+- `{{Name}}.csproj` — Configured project with references to the Revit API.
+- `{{Name}}.addin` — XML manifest for Revit registration.
+- `Application.cs` — `IExternalApplication` class with Ribbon configuration.
 
-### Estructura de Carpetas
+### Folder Structure
 ```
-{{Nombre}}/
-├── Application.cs              # IExternalApplication (Ribbon, paneles, botones)
-├── {{Nombre}}.csproj            # Proyecto .NET con referencias Revit API
-├── {{Nombre}}.addin             # Manifiesto de registro para Revit
+{{Name}}/
+├── Application.cs              # IExternalApplication (Ribbon, panels, buttons)
+├── {{Name}}.csproj            # .NET Project with Revit API references
+├── {{Name}}.addin             # Registration manifest for Revit
 ├── Commands/
-│   └── Cmd{{Acción}}.cs         # Clases IExternalCommand
+│   └── Cmd{{Action}}.cs         # IExternalCommand classes
 ├── Services/
-│   └── {{Entidad}}Service.cs    # Lógica de negocio separada
+│   └── {{Entity}}Service.cs    # Separated business logic
 ├── Models/
-│   └── {{Entidad}}Model.cs      # Modelos de datos
-├── Views/                       # (Si aplica MVVM)
-│   └── {{Nombre}}View.xaml      # Ventanas WPF
-├── ViewModels/                  # (Si aplica MVVM)
-│   └── {{Nombre}}ViewModel.cs   # Lógica de presentación
-├── Converters/                  # (Si aplica)
-│   └── {{Tipo}}Converter.cs     # Value converters para WPF
+│   └── {{Entity}}Model.cs      # Data models
+├── Views/                       # (If MVVM applies)
+│   └── {{Name}}View.xaml      # WPF Windows
+├── ViewModels/                  # (If MVVM applies)
+│   └── {{Name}}ViewModel.cs   # Presentation logic
+├── Converters/                  # (If applicable)
+│   └── {{Type}}Converter.cs     # Value converters for WPF
 ├── Resources/
-│   └── Icons/                   # Iconos del Ribbon (16x16, 32x32)
-└── docs/                        # Documentación y logs de desarrollo
+│   └── Icons/                   # Ribbon Icons (16x16, 32x32)
+└── docs/                        # Documentation and development logs
 ```
 
-### Clases Base Generadas
-- **Commands**: Clases con `[Transaction(TransactionMode.Manual)]` que implementan `IExternalCommand`
-- **Application**: Registro de Tab, Panel y PushButtons en el Ribbon de Revit
-- **Services**: Capa de servicios inyectados vía constructor (nunca instanciados dentro del Command)
+### Generated Base Classes
+- **Commands**: Classes with `[Transaction(TransactionMode.Manual)]` that implement `IExternalCommand`.
+- **Application**: Registration of Tab, Panel, and PushButtons on the Revit Ribbon.
+- **Services**: Service layer injected via constructor (never instantiated directly inside the Command).
 
 ---
 
-## 4. Reglas de Estilo y Convenciones
+## 4. Style Rules and Conventions
 
-### Lenguaje y Framework
-- **C# 12** obligatorio. Usar Primary Constructors en ViewModels
-- **`<ImplicitUsings>enable</ImplicitUsings>`** siempre habilitado en el `.csproj`
-- Nunca usar `#region`. Mantener clases pequeñas y enfocadas
+### Language and Framework
+- **C# 12** is mandatory. Use Primary Constructors in ViewModels.
+- **`<ImplicitUsings>enable</ImplicitUsings>`** must always be enabled in the `.csproj`.
+- Never use `#region`. Keep classes small and focused.
 
-### Nomenclatura
+### Naming Conventions
 
-| Elemento | Convención | Ejemplo |
+| Element | Convention | Example |
 |----------|------------|---------|
-| Namespace raíz | PascalCase (= nombre proyecto) | `FilterPlus` |
-| Clases | PascalCase | `SelectionFilterViewModel` |
-| Métodos | PascalCase | `GetAvailableElements()` |
-| Variables locales | camelCase | `selectedElements` |
-| Comandos | `Cmd{Acción}{Entidad}` | `CmdFilterSelection` |
-| Servicios | `{Entidad}Service` | `RevitSelectionService` |
-| Paneles Ribbon | `{Categoría}Panel` | `FilterPanel` |
+| Root Namespace | PascalCase (= project name) | `FilterPlus` |
+| Classes | PascalCase | `SelectionFilterViewModel` |
+| Methods | PascalCase | `GetAvailableElements()` |
+| Local Variables | camelCase | `selectedElements` |
+| Commands | `Cmd{Action}{Entity}` | `CmdFilterSelection` |
+| Services | `{Entity}Service` | `RevitSelectionService` |
+| Ribbon Panels | `{Category}Panel` | `FilterPanel` |
 
-### Inyección de Dependencias
-- **Siempre** inyectar servicios vía constructor
-- **Nunca** instanciar servicios directamente dentro de un Command
+### Dependency Injection
+- **Always** inject services via the constructor.
+- **Never** instantiate services directly inside a Command.
 
-### Versionado (Git → .csproj)
-- La versión oficial reside en los **Tags de Git** (`git describe --tags --abbrev=0`)
-- Cada compilación debe sincronizar el tag con `<Version>` del `.csproj`
-- No permitir discrepancias entre versión del instalador, ensamblado y tag de Git
+### Versioning (Git → .csproj)
+- The official version resides in the **Git Tags** (`git describe --tags --abbrev=0`).
+- Each build must synchronize the tag with the `<Version>` property of the `.csproj`.
+- Do not allow discrepancies between the installer version, assembly version, and Git tag.
 
 ---
 
-## 5. Flujo de Generación
+## 5. Generation Flow
 
 ```
 ┌─────────────────────────────────────────────────────┐
 │  1. SCAFFOLDING                                     │
-│     dotnet new revit -n {{Nombre}}                  │
-│     (Plantillas Nice3point preinstaladas)            │
+│     dotnet new revit -n {{Name}}                  │
+│     (Pre-installed Nice3point templates)            │
 ├─────────────────────────────────────────────────────┤
-│  2. REESTRUCTURACIÓN                                │
-│     Renombrar /UI → /Views + /ViewModels            │
-│     Crear /Services, /Models, /Converters           │
+│  2. RESTRUCTURING                                │
+│     Rename /UI → /Views + /ViewModels            │
+│     Create /Services, /Models, /Converters           │
 ├─────────────────────────────────────────────────────┤
-│  3. IMPLEMENTACIÓN                                  │
-│     Generar Commands (IExternalCommand)              │
-│     Generar Services (lógica de negocio)             │
-│     Configurar Application.cs (Ribbon)               │
-│     Generar Views/ViewModels (si aplica MVVM)       │
+│  3. IMPLEMENTATION                                  │
+│     Generate Commands (IExternalCommand)              │
+│     Generate Services (business logic)             │
+│     Configure Application.cs (Ribbon)               │
+│     Generate Views/ViewModels (if MVVM applies)       │
 ├─────────────────────────────────────────────────────┤
-│  4. RECURSOS                                        │
-│     Integrar iconos en /Resources/Icons/             │
-│     Configurar .csproj con <Resource Include="..."/> │
+│  4. RESOURCES                                        │
+│     Integrate icons in /Resources/Icons/             │
+│     Configure .csproj with <Resource Include="..."/> │
 ├─────────────────────────────────────────────────────┤
-│  5. VALIDACIÓN                                      │
+│  5. VALIDATION                                      │
 │     dotnet build                                     │
-│     Verificar que compila sin errores               │
+│     Verify it compiles without errors               │
 ├─────────────────────────────────────────────────────┤
-│  6. DOCUMENTACIÓN                                   │
-│     Guardar artefactos en /docs/                     │
-│     Patrón: [artifact]_[keywords]_[YYYY-MM-DD_HHmm] │
+│  6. DOCUMENTATION                                   │
+│     Save artifacts in /docs/                     │
+│     Pattern: [artifact]_[keywords]_[YYYY-MM-DD_HHmm] │
 └─────────────────────────────────────────────────────┘
 ```
 
-### Detalle de cada paso:
+### Details for each step:
 
-1. **Scaffolding**: Ejecutar `dotnet new revit -n {{Nombre}}` usando las plantillas Nice3point. Nunca crear `.csproj` manualmente desde cero.
-2. **Reestructuración**: Adaptar la estructura generada al estándar MVVM del workspace (`/Views`, `/ViewModels` separados).
-3. **Implementación**: Generar el código C# siguiendo las reglas de seguridad de hilos de la API de Revit (ver skill `revit-api`).
-4. **Recursos**: Integrar iconos usando el patrón `pack://application` (ver skill `revit-addin-icon-manager`).
-5. **Validación**: Compilar con `dotnet build` para verificar que todo enlaza correctamente.
-6. **Documentación**: Persistir `implementation_plan`, `task` y `walkthrough` en la carpeta `docs/` del proyecto.
+1. **Scaffolding**: Run `dotnet new revit -n {{Name}}` using the Nice3point templates. Never create `.csproj` manually from scratch.
+2. **Restructuring**: Adapt the generated structure to the workspace's MVVM standard (separate `/Views`, `/ViewModels`).
+3. **Implementation**: Generate the C# code following the Revit API thread-safety rules (see `revit-api` skill).
+4. **Resources**: Integrate icons using the `pack://application` pattern (see `revit-addin-icon-manager` skill).
+5. **Validation**: Compile with `dotnet build` to verify everything links correctly.
+6. **Documentation**: Persist `implementation_plan`, `task`, and `walkthrough` in the `docs/` folder of the current project.
 
 ---
 
-## 6. Skills Disponibles
+## 6. Available Skills
 
-El agente dispone de los siguientes skills especializados para Revit:
+The agent has the following specialized skills for Revit:
 
-| Skill | Ruta | Propósito |
+| Skill | Path | Purpose |
 |-------|------|-----------|
-| `revit-api` | `.agent/skills/revit-api/` | Reglas de la API de Revit: hilos seguros, transacciones, `.csproj` templates, ForgeTypeId, TreeView, logging, ExternalEvents |
-| `revit-addin-helpers` | `.agent/skills/revit-addin-helpers/` | Extensiones C# reutilizables: Document, Element, TaskDialog, UnitHelper, OperationResult |
-| `revit-addin-testing` | `.agent/skills/revit-addin-testing/` | Testing de add-ins: arquitectura testable, xUnit, validación de builds |
-| `revit-addin-doc-manager` | `.agent/skills/revit-addin-doc-manager/` | Gestión automática de documentación y changelog basada en inspección de código |
-| `revit-addin-icon-manager` | `.agent/skills/revit-addin-icon-manager/` | Integración de iconos personalizados en el Ribbon (.csproj + C#) |
-| `revit-addin-installer-manager` | `.agent/skills/revit-addin-installer-manager/` | Generación de instaladores MSI con WiX Toolset multiversión |
-| `csharp-blueprints` | `.agents/skills/csharp-blueprints/` | Memoria técnica y Blueprints: guías específicas de componentes, lógica de negocio compleja, flujos de datos y arquitectura interna del proyecto |
-| `workspace-ops` | `.agent/skills/workspace-ops/` | Infraestructura del repositorio: build de skills, validación de frontmatter, plugins |
+| `revit-api` | `.agent/skills/revit-api/` | Revit API Rules: thread safety, transactions, `.csproj` templates, ForgeTypeId, TreeView, logging, ExternalEvents. |
+| `revit-addin-helpers` | `.agent/skills/revit-addin-helpers/` | Reusable C# extensions: Document, Element, TaskDialog, UnitHelper, OperationResult. |
+| `revit-addin-testing` | `.agent/skills/revit-addin-testing/` | Add-in testing: testable architecture, xUnit, build validation. |
+| `revit-addin-doc-manager` | `.agent/skills/revit-addin-doc-manager/` | Automatic management of documentation and changelogs based on code inspection. |
+| `revit-addin-icon-manager` | `.agent/skills/revit-addin-icon-manager/` | Integration of custom Ribbon icons (.csproj + C#). |
+| `revit-addin-installer-manager` | `.agent/skills/revit-addin-installer-manager/` | Generation of MSI installers with multiversion WiX Toolset. |
+| `csharp-blueprints` | `.agents/skills/csharp-blueprints/` | Technical memory and Blueprints: component-specific guides, complex business logic, data flows, and internal project architecture. |
+| `workspace-ops` | `.agent/skills/workspace-ops/` | Repository infrastructure: skill builds, frontmatter validation, plugins. |
 
 ---
 
-## 7. Respaldo de Artefactos
+## 7. Artifact Backup and Knowledge Updating
 
-SIEMPRE que el desarrollador indique que los cambios funcionan correctamente, o al finalizar una iteración, el agente DEBE guardar automáticamente sus artefactos (`implementation_plan.md`, `task.md`, `walkthrough.md`) en la carpeta `docs/` del proyecto actual.
+WHENEVER the developer indicates that changes work correctly, new features are implemented, debugging errors are solved, or skills are updated, the agent MUST save this information structured under the new modular standard:
 
-- **Patrón de nombre**: `[artifact_name]_[keywords]_[YYYY-MM-DD_HHmm].md`
-- **Ejemplo**: `implementation_plan_UI_TreeFix_2026-04-21_1040.md`
-- Si `docs/` no existe, el agente DEBE crearla.
-- keywords are 1 or 2 descriptive words relating to the changes.
+### A. For Project-Specific Documentation (`docs/` folder):
+Instead of dumping all loose files, the project's `docs/` folder must be organized into:
+- `docs/references/`: For `walkthrough.md`, `implementation_plan.md`, bug reports (debugging), and architectural guides.
+- `docs/assets/`: For relevant code snippets, configurations, or logs.
+- `docs/scripts/`: For project-specific automation scripts.
+
+*Naming pattern for markdowns*: `[artifact_name]_[keywords]_[YYYY-MM-DD_HHmm].md`
+
+### B. For Skill Updates (`.agents/skills/` folder):
+When reusable knowledge is generated at the workspace level (e.g., a new helper, an API rule, or a solution to a critical bug), the agent must NOT bloat the `SKILL.md` file. It must distribute it like this:
+- **`references/`**: Documentation, bug explanations, business rules, and Blueprints.
+- **`assets/`**: Templates, base files, and reusable C# code (e.g., `ToposolidHelper.cs`).
+- **`scripts/`**: Automation scripts in PowerShell, Python, or bash.
+The `SKILL.md` will act solely as an index linking to the files in these three folders.

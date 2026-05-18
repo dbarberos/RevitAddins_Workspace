@@ -1,24 +1,24 @@
 ---
-name: C# Component Blueprints
-description: Guías específicas para los componentes y clases C# de los add-ins. Úsalo para entender la arquitectura interna y lógica de negocio de cada módulo.
+name: csharp-component-blueprints
+description: Technical memory and architectural blueprints for complex C# components. Use this to understand the internal logic, business rules, and UI patterns of the add-in before modifying existing core classes.
 ---
 
-# 🏗️ Índice de Blueprints de Componentes
+# 🏗️ Component Blueprints Index
 
-Este directorio contiene la "memoria técnica" de los componentes C# más complejos. El objetivo es que cualquier agente o desarrollador pueda entender la lógica interna sin tener que analizar miles de líneas de código desde cero.
+This directory contains the "technical memory" of the most complex C# components. The goal is that any agent or developer can understand the internal logic without having to analyze thousands of lines of code from scratch.
 
-## 📂 Directorio de Guías
+## 📂 Guides Directory
 
-- [SelectionFilterViewModel_Blueprint](SelectionFilterViewModel_Blueprint.md): Lógica de árbol jerárquico, filtrado offline y sincronización en vivo del explorador.
-- [1. Arquitectura Base y Patrones](1Arquitectura%20Base%20y%20Patrones%20Esenciales%20en%20Revit%20API.md): Cimientos del add-in, interfaces IExternalApplication/IExternalCommand, variables globales y genéricos.
-- [2. Diseño de Interfaces (UI)](2Diseño%20Eficiente%20de%20Interfaces%20de%20Usuario%20para%20Revit%20API.md): Creación profesional del Ribbon, métodos de extensión para UI, gestión de iconos embebidos y organización de menús (PullDowns/Stacks).
-- [3. Filtros y Selección](3Dominio%20de%20Filtros%20y%20Selección%20en%20Revit%20API.md): Uso avanzado de FilteredElementCollector, LINQ para Revit, recolección de Worksets y filtros de selección interactivos (ISelectionFilter).
-- [4. Transacciones y Eventos](4Dominio%20de%20Transacciones,%20Colaboración%20y%20Eventos%20en%20Revit%20API.md): Gestión segura de la base de datos, editabilidad en modelos colaborativos (Worksharing) y suscripción a eventos nativos de Revit.
-- [5. Formularios Avanzados (WinForms)](5Diseño%20de%20Interfaces%20Avanzadas%20con%20WinForms%20y%20Revit%20API.md): Patrón FormResult, layouts responsivos, ListViews con filtrado dinámico y barras de progreso asíncronas (DoEvents).
-- [6. Escalabilidad y Rendimiento](6Escalabilidad,%20Interoperabilidad%20y%20Rendimiento%20de%20Add-ins.md): Soporte multiversión (#if), disponibilidad dinámica de comandos, interoperabilidad con Excel (ClosedXML) y diccionarios para alto rendimiento.
-- [RevitSelectionService_Blueprint](RevitSelectionService_Blueprint.md): Gestión de colectores, pre-fetch de fases y thread-safety (Pendiente de redactar).
+- [SelectionFilterViewModel_Blueprint](references/SelectionFilterViewModel_Blueprint.md): Hierarchical tree logic, offline filtering, and live synchronization of the explorer.
+- [1. Base Architecture and Patterns](references/1_Base_Architecture_and_Patterns.md): Add-in foundations, `IExternalApplication`/`IExternalCommand` interfaces, global variables, and generics.
+- [2. UI Design](references/2_Efficient_UI_Design.md): Professional Ribbon creation, UI extension methods, embedded icon management, and menu organization (PullDowns/Stacks).
+- [3. Filters and Selection](references/3_Filters_and_Selection.md): Advanced use of `FilteredElementCollector`, LINQ for Revit, Workset collection, and interactive selection filters (`ISelectionFilter`).
+- [4. Transactions and Events](references/4_Transactions_and_Events.md): Secure database management, editability in collaborative models (Worksharing), and subscription to native Revit events.
+- [5. Advanced Forms (WinForms)](references/5_Advanced_UI_WinForms.md): `FormResult` pattern, responsive layouts, dynamic filtering ListViews, and async progress bars (`DoEvents`).
+- [6. Scalability and Performance](references/6_Scalability_and_Performance.md): Multiversion support (`#if`), dynamic command availability, Excel interoperability (`ClosedXML`), and high-performance dictionaries.
+- [RevitSelectionService_Blueprint](references/RevitSelectionService_Blueprint.md): Collector management, phase pre-fetching, and thread-safety (Pending to write).
 
-## 💡 Cómo usar estas guías
-1. Cuando se te pida modificar una clase existente, busca primero si existe su Blueprint aquí.
-2. Si creas una nueva lógica compleja, **es obligatorio** generar su correspondiente Blueprint en este directorio para futuras referencias.
-3. Los Blueprints deben centrarse en el "POR QUÉ" y en las "REGLAS DE NEGOCIO", no solo en el "CÓMO".
+## 💡 How to use these guides
+1. When asked to modify an existing class, first check if its Blueprint exists here.
+2. If you create new complex logic, **it is mandatory** to generate its corresponding Blueprint in the `references/` directory for future reference.
+3. Blueprints should focus on the "WHY" and "BUSINESS RULES", not just the "HOW".

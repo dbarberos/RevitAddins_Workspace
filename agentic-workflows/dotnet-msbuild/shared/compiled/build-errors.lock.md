@@ -1,4 +1,4 @@
-<!-- AUTO-GENERATED — DO NOT EDIT -->
+<!-- AUTO-GENERATED - DO NOT EDIT -->
 
 # Analyzing MSBuild Failures with Binary Logs
 
@@ -89,7 +89,7 @@ grep "PackageReference\|ProjectReference" full.log | head -30
 | `dotnet msbuild X.binlog -noconlog -fl -flp:errorsonly;logfile=errors.log` | Errors only |
 | `dotnet msbuild X.binlog -noconlog -fl -flp:warningsonly;logfile=warnings.log` | Warnings only |
 | `grep -n "PATTERN" full.log` | Search for patterns in the replayed log |
-| `dotnet msbuild -pp:preprocessed.xml Proj.csproj` | Preprocess — inline all imports into one file |
+| `dotnet msbuild -pp:preprocessed.xml Proj.csproj` | Preprocess â€” inline all imports into one file |
 
 ## Generating a binlog (only if none exists)
 
@@ -99,11 +99,11 @@ dotnet build /bl:build.binlog
 
 ## Common error patterns
 
-1. **CS0246 / "type not found"** → Missing PackageReference — check the .csproj
-2. **MSB4019 / "imported project not found"** → SDK install or global.json issue
-3. **NU1605 / "package downgrade"** → Version conflict in package graph
-4. **MSB3277 / "version conflicts"** → Binding redirect or version alignment issue
-5. **Project failed at ResolveProjectReferences** → Cascading failure from a dependency
+1. **CS0246 / "type not found"** â†’ Missing PackageReference â€” check the .csproj
+2. **MSB4019 / "imported project not found"** â†’ SDK install or global.json issue
+3. **NU1605 / "package downgrade"** â†’ Version conflict in package graph
+4. **MSB3277 / "version conflicts"** â†’ Binding redirect or version alignment issue
+5. **Project failed at ResolveProjectReferences** â†’ Cascading failure from a dependency
 
 ---
 
@@ -126,7 +126,7 @@ You MUST add the `/bl:{}` flag to:
 
 > **Note:** The `{}` placeholder requires MSBuild 17.8+ / .NET 8 SDK or later.
 
-The `{}` placeholder in the binlog filename is replaced by MSBuild with a unique identifier, guaranteeing no two builds ever overwrite each other — without needing to track or check existing files.
+The `{}` placeholder in the binlog filename is replaced by MSBuild with a unique identifier, guaranteeing no two builds ever overwrite each other â€” without needing to track or check existing files.
 
 ```bash
 # Every invocation produces a distinct file automatically
@@ -153,19 +153,19 @@ dotnet test -bl:{{}}
 ## Examples
 
 ```bash
-# ✅ CORRECT - {} generates a unique name automatically (bash/cmd)
+# âœ… CORRECT - {} generates a unique name automatically (bash/cmd)
 dotnet build /bl:{}
 dotnet test /bl:{}
 
-# ✅ CORRECT - PowerShell escaping
+# âœ… CORRECT - PowerShell escaping
 dotnet build -bl:{{}}
 dotnet test -bl:{{}}
 
-# ❌ WRONG - Missing /bl flag entirely
+# âŒ WRONG - Missing /bl flag entirely
 dotnet build
 dotnet test
 
-# ❌ WRONG - No filename (overwrites the same msbuild.binlog every time)
+# âŒ WRONG - No filename (overwrites the same msbuild.binlog every time)
 dotnet build /bl
 dotnet build /bl
 ```
@@ -178,7 +178,7 @@ If the binlog filename needs to be known upfront (e.g., for CI artifact upload),
 2. Choose a name not already taken (e.g., by incrementing a counter from the highest existing number)
 
 ```bash
-# Example: directory contains 3.binlog — use 4.binlog
+# Example: directory contains 3.binlog â€” use 4.binlog
 dotnet build /bl:4.binlog
 ```
 
@@ -187,10 +187,10 @@ dotnet build /bl:4.binlog
 When cleaning the repository with `git clean`, **always exclude binlog files** to preserve your build history:
 
 ```bash
-# ✅ CORRECT - Exclude binlog files from cleaning
+# âœ… CORRECT - Exclude binlog files from cleaning
 git clean -fdx -e "*.binlog"
 
-# ❌ WRONG - This deletes binlog files (they're usually in .gitignore)
+# âŒ WRONG - This deletes binlog files (they're usually in .gitignore)
 git clean -fdx
 ```
 
@@ -265,11 +265,11 @@ grep -i 'TargetFramework\|Configuration\|Platform\|RuntimeIdentifier' full.log |
 Look for properties like `TargetFramework`, `Configuration`, `Platform`, and `RuntimeIdentifier` that should differentiate output paths.
 
 Also check **solution-related properties** to identify multi-solution builds:
-- `SolutionFileName`, `SolutionName`, `SolutionPath`, `SolutionDir`, `SolutionExt` — differ when a project is built from multiple solutions
-- `CurrentSolutionConfigurationContents` — the number of project entries reveals which solution an evaluation belongs to (e.g., 1 project vs ~49 projects)
+- `SolutionFileName`, `SolutionName`, `SolutionPath`, `SolutionDir`, `SolutionExt` â€” differ when a project is built from multiple solutions
+- `CurrentSolutionConfigurationContents` â€” the number of project entries reveals which solution an evaluation belongs to (e.g., 1 project vs ~49 projects)
 
 Look for **extra global properties that don't affect output paths** but create distinct MSBuild project instances:
-- `PublishReadyToRun` — a publish setting that doesn't change `OutputPath` or `IntermediateOutputPath`, but MSBuild treats it as a distinct project instance, preventing result caching and causing redundant target execution (e.g., `CopyFilesToOutputDirectory` running again)
+- `PublishReadyToRun` â€” a publish setting that doesn't change `OutputPath` or `IntermediateOutputPath`, but MSBuild treats it as a distinct project instance, preventing result caching and causing redundant target execution (e.g., `CopyFilesToOutputDirectory` running again)
 - Any other global property that differs between evaluations but doesn't contribute to path differentiation
 
 ### Filter Out Non-Build Evaluations
@@ -333,7 +333,7 @@ grep 'Target "CoreCompile"' full.log
 
 Compare the durations:
 - The instance with a long `CoreCompile` duration (e.g., seconds) is the **primary build** that did the actual compilation
-- Instances where `CoreCompile` was skipped (duration ~0-10ms) are **redundant builds** — they didn't recompile but may still run other targets like `CopyFilesToOutputDirectory` that write to the same output directory
+- Instances where `CoreCompile` was skipped (duration ~0-10ms) are **redundant builds** â€” they didn't recompile but may still run other targets like `CopyFilesToOutputDirectory` that write to the same output directory
 
 This helps distinguish the "real" build from redundant instances created by extra global properties or multi-solution builds.
 
@@ -359,10 +359,10 @@ For each evaluation, collect:
 
 ```
 For each unique OutputPath:
-  - If multiple evaluations share it → CLASH
+  - If multiple evaluations share it â†’ CLASH
   
 For each unique IntermediateOutputPath:
-  - If multiple evaluations share it → CLASH
+  - If multiple evaluations share it â†’ CLASH
 ```
 
 ## Common Causes and Fixes
@@ -443,7 +443,7 @@ Or simply use the SDK defaults which place `obj` inside each project's directory
 |---|---|---|
 | `SolutionFileName` | `BuildAnalyzers.sln` | `Main.slnx` |
 | `CurrentSolutionConfigurationContents` | 1 project entry | ~49 project entries |
-| `OutputPath` | `bin\Release\netstandard2.0\` | `bin\Release\netstandard2.0\` ← **clash** |
+| `OutputPath` | `bin\Release\netstandard2.0\` | `bin\Release\netstandard2.0\` â† **clash** |
 
 **Example:** A repo build script builds `BuildAnalyzers.sln` then `Main.slnx`, and both solutions include `SharedAnalyzers.csproj`. Both builds write to `bin\Release\netstandard2.0\`. The first build compiles; the second skips compilation but still runs `CopyFilesToOutputDirectory`.
 
@@ -461,7 +461,7 @@ Or simply use the SDK defaults which place `obj` inside each project's directory
 | Property | Eval A (from Razor.slnx) | Eval B (from Razor.slnx) |
 |---|---|---|
 | `PublishReadyToRun` | *(not set)* | `false` |
-| `OutputPath` | `bin\Release\netstandard2.0\` | `bin\Release\netstandard2.0\` ← **clash** |
+| `OutputPath` | `bin\Release\netstandard2.0\` | `bin\Release\netstandard2.0\` â† **clash** |
 
 This is particularly wasteful for projects where the extra property has no effect (e.g., `PublishReadyToRun` on a `netstandard2.0` class library that doesn't use ReadyToRun compilation).
 
@@ -489,7 +489,7 @@ grep -i 'IntermediateOutputPath\s*=' full.log | sort -u
 # e.g.  IntermediateOutputPath = obj\Debug\net8.0\
 #       IntermediateOutputPath = obj\Debug\net9.0\
 
-# 5. Compare paths → No clash (paths differ by TargetFramework)
+# 5. Compare paths â†’ No clash (paths differ by TargetFramework)
 ```
 
 ## Tips
@@ -515,11 +515,11 @@ When multiple evaluations share an output path, compare these global properties 
 | `RuntimeIdentifier` | Yes | Different RIDs should have different paths |
 | `Configuration` | Yes | Debug vs Release |
 | `Platform` | Yes | AnyCPU vs x64 etc. |
-| `SolutionFileName` | No | Identifies which solution built the project — different values indicate multi-solution clash |
+| `SolutionFileName` | No | Identifies which solution built the project â€” different values indicate multi-solution clash |
 | `SolutionName` | No | Solution name without extension |
 | `SolutionPath` | No | Full path to the solution file |
 | `SolutionDir` | No | Directory containing the solution file |
-| `CurrentSolutionConfigurationContents` | No | XML with project entries — count of entries reveals which solution |
+| `CurrentSolutionConfigurationContents` | No | XML with project entries â€” count of entries reveals which solution |
 | `BuildProjectReferences` | No | `false` = P2P query, not a real build - ignore these |
 | `MSBuildRestoreSessionId` | No | Present = restore phase evaluation |
 | `PublishReadyToRun` | No | Publish setting, doesn't change build output path but creates distinct project instances |
@@ -610,7 +610,7 @@ For generated files that need to be copied to output (config files, data files, 
 
 ### For Generated Source Files (Code That Needs Compilation)
 
-If you're generating `.cs` files that need to be compiled, use **`BeforeTargets="CoreCompile;BeforeCompile"`**. This is the correct timing for adding `Compile` items — it runs late enough that the file generation has occurred, but before the compiler runs. Using `BeforeBuild` is too early for some scenarios and may not work reliably with all SDK features.
+If you're generating `.cs` files that need to be compiled, use **`BeforeTargets="CoreCompile;BeforeCompile"`**. This is the correct timing for adding `Compile` items â€” it runs late enough that the file generation has occurred, but before the compiler runs. Using `BeforeBuild` is too early for some scenarios and may not work reliably with all SDK features.
 
 ```xml
 <Target Name="IncludeGeneratedSourceFiles" BeforeTargets="CoreCompile;BeforeCompile">
@@ -636,9 +636,9 @@ Note: Specifying both `CoreCompile` and `BeforeCompile` ensures the target runs 
 
 Choose the `BeforeTargets` value based on the type of file being generated:
 
-- **`BeforeTargets="BeforeBuild"`** — For non-code files added to `None` or `Content`. Runs early enough for copy-to-output scenarios.
-- **`BeforeTargets="CoreCompile;BeforeCompile"`** — For generated source files added to `Compile`. Ensures the file is included before the compiler runs.
-- **`BeforeTargets="AssignTargetPaths"`** — The "final stop" before `None` and `Content` items (among others) are transformed into new items. Use as a fallback if `BeforeBuild` is too early.
+- **`BeforeTargets="BeforeBuild"`** â€” For non-code files added to `None` or `Content`. Runs early enough for copy-to-output scenarios.
+- **`BeforeTargets="CoreCompile;BeforeCompile"`** â€” For generated source files added to `Compile`. Ensures the file is included before the compiler runs.
+- **`BeforeTargets="AssignTargetPaths"`** â€” The "final stop" before `None` and `Content` items (among others) are transformed into new items. Use as a fallback if `BeforeBuild` is too early.
 
 ## Globbing Behavior
 
