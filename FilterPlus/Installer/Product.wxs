@@ -4,7 +4,7 @@
              Name="FilterPlus" 
              Language="1033" 
              Version="1.1.0" 
-             Manufacturer="AI_CORP" 
+             Manufacturer="DBDev_dbarberos" 
              UpgradeCode="5E7F46B1-A7D4-4E8B-B0D1-1C9C8B5F9E01">
         
         <Package InstallerVersion="200" Compressed="yes" InstallScope="perUser" />
@@ -15,12 +15,12 @@
         <WixVariable Id="WixUILicenseRtf" Value="Resources\License.rtf" />
 
         <Feature Id="ProductFeature" Title="FilterPlus" Level="1">
-            <ComponentGroupRef Id="CleanupComponents" />
-            <ComponentGroupRef Id="Revit2023Components" />
-            <ComponentGroupRef Id="Revit2024Components" />
-            <ComponentGroupRef Id="Revit2025Components" />
-            <ComponentGroupRef Id="Revit2026Components" />
-            <ComponentGroupRef Id="Revit2027Components" />
+             <ComponentGroupRef Id="CleanupComponents" />
+             <ComponentGroupRef Id="Revit2023Components" />
+             <ComponentGroupRef Id="Revit2024Components" />
+             <ComponentGroupRef Id="Revit2025Components" />
+             <ComponentGroupRef Id="Revit2026Components" />
+             <ComponentGroupRef Id="Revit2027Components" />
         </Feature>
     </Product>
 
@@ -46,7 +46,7 @@
         <!-- Component Group for Directory Cleanup (ICE64) -->
         <ComponentGroup Id="CleanupComponents">
             <Component Id="C_Cleanup" Guid="1EC163E9-E30A-4CAC-8CC5-623AF96D34AE" Directory="TARGETDIR">
-                <RegistryValue Root="HKCU" Key="Software\AI_CORP\FilterPlus" Name="installed" Type="integer" Value="1" KeyPath="yes" />
+                <RegistryValue Root="HKCU" Key="Software\DBDev_dbarberos\FilterPlus" Name="installed" Type="integer" Value="1" KeyPath="yes" />
                 <RemoveFolder Id="RemoveAutodesk" Directory="AutodeskDir" On="uninstall" />
                 <RemoveFolder Id="RemoveRevit" Directory="RevitDir" On="uninstall" />
                 <RemoveFolder Id="RemoveAddins" Directory="AddinsDir" On="uninstall" />
@@ -56,12 +56,12 @@
         <!-- Revit 2023 -->
         <ComponentGroup Id="Revit2023Components">
             <Component Id="Addin_2023" Guid="ECF5AD41-1093-45CE-AB4B-C3083389C016" Directory="REVIT2023">
-                <RegistryValue Root="HKCU" Key="Software\AI_CORP\FilterPlus\2023" Name="addin" Type="integer" Value="1" KeyPath="yes" />
+                <RegistryValue Root="HKCU" Key="Software\DBDev_dbarberos\FilterPlus\2023" Name="addin" Type="integer" Value="1" KeyPath="yes" />
                 <File Source="..\bin\Release.R23\publish\FilterPlus.addin" Id="Ad23"/>
                 <RemoveFolder Id="Remove2023" Directory="REVIT2023" On="uninstall" />
             </Component>
             <Component Id="Dlls_2023" Guid="2D2592A0-20E2-4F02-B20C-3690C3BE79CA" Directory="FOLDER2023">
-                <RegistryValue Root="HKCU" Key="Software\AI_CORP\FilterPlus\2023" Name="dlls" Type="integer" Value="1" KeyPath="yes" />
+                <RegistryValue Root="HKCU" Key="Software\DBDev_dbarberos\FilterPlus\2023" Name="dlls" Type="integer" Value="1" KeyPath="yes" />
                 <File Source="..\bin\Release.R23\publish\FilterPlus\FilterPlus.dll" Id="Dl23"/>
                 <File Source="..\bin\Release.R23\publish\FilterPlus\Nice3point.Revit.Extensions.dll" Id="Ext23"/>
                 <File Source="..\bin\Release.R23\publish\FilterPlus\Nice3point.Revit.Toolkit.dll" Id="Tlk23"/>
@@ -73,12 +73,12 @@
         <!-- Revit 2024 -->
         <ComponentGroup Id="Revit2024Components">
             <Component Id="Addin_2024" Guid="10F0D313-1F4E-4E68-AA80-618F4885BBE0" Directory="REVIT2024">
-                <RegistryValue Root="HKCU" Key="Software\AI_CORP\FilterPlus\2024" Name="addin" Type="integer" Value="1" KeyPath="yes" />
+                <RegistryValue Root="HKCU" Key="Software\DBDev_dbarberos\FilterPlus\2024" Name="addin" Type="integer" Value="1" KeyPath="yes" />
                 <File Source="..\bin\Release.R24\publish\FilterPlus.addin" Id="Ad24"/>
                 <RemoveFolder Id="Remove2024" Directory="REVIT2024" On="uninstall" />
             </Component>
             <Component Id="Dlls_2024" Guid="1CC88A46-33BF-4DC1-8E0B-1697BED432DB" Directory="FOLDER2024">
-                <RegistryValue Root="HKCU" Key="Software\AI_CORP\FilterPlus\2024" Name="dlls" Type="integer" Value="1" KeyPath="yes" />
+                <RegistryValue Root="HKCU" Key="Software\DBDev_dbarberos\FilterPlus\2024" Name="dlls" Type="integer" Value="1" KeyPath="yes" />
                 <File Source="..\bin\Release.R24\publish\FilterPlus\FilterPlus.dll" Id="Dl24"/>
                 <File Source="..\bin\Release.R24\publish\FilterPlus\Nice3point.Revit.Extensions.dll" Id="Ext24"/>
                 <File Source="..\bin\Release.R24\publish\FilterPlus\Nice3point.Revit.Toolkit.dll" Id="Tlk24"/>
@@ -90,12 +90,12 @@
         <!-- Revit 2025 -->
         <ComponentGroup Id="Revit2025Components">
             <Component Id="Addin_2025" Guid="58F5F3E3-5C41-49B1-B40B-CC8E9221AC47" Directory="REVIT2025">
-                <RegistryValue Root="HKCU" Key="Software\AI_CORP\FilterPlus\2025" Name="addin" Type="integer" Value="1" KeyPath="yes" />
+                <RegistryValue Root="HKCU" Key="Software\DBDev_dbarberos\FilterPlus\2025" Name="addin" Type="integer" Value="1" KeyPath="yes" />
                 <File Source="..\bin\Release.R25\publish\FilterPlus.addin" Id="Ad25"/>
                 <RemoveFolder Id="Remove2025" Directory="REVIT2025" On="uninstall" />
             </Component>
             <Component Id="Dlls_2025" Guid="3F6039B1-6B8B-4139-BF3D-BA644796FE50" Directory="FOLDER2025">
-                <RegistryValue Root="HKCU" Key="Software\AI_CORP\FilterPlus\2025" Name="dlls" Type="integer" Value="1" KeyPath="yes" />
+                <RegistryValue Root="HKCU" Key="Software\DBDev_dbarberos\FilterPlus\2025" Name="dlls" Type="integer" Value="1" KeyPath="yes" />
                 <File Source="..\bin\Release.R25\publish\FilterPlus\FilterPlus.dll" Id="Dl25"/>
                 <File Source="..\bin\Release.R25\publish\FilterPlus\Nice3point.Revit.Extensions.dll" Id="Ext25"/>
                 <File Source="..\bin\Release.R25\publish\FilterPlus\Nice3point.Revit.Toolkit.dll" Id="Tlk25"/>
@@ -107,12 +107,12 @@
         <!-- Revit 2026 -->
         <ComponentGroup Id="Revit2026Components">
             <Component Id="Addin_2026" Guid="4C153BF1-9C93-4065-A504-6900BC53EFDC" Directory="REVIT2026">
-                <RegistryValue Root="HKCU" Key="Software\AI_CORP\FilterPlus\2026" Name="addin" Type="integer" Value="1" KeyPath="yes" />
+                <RegistryValue Root="HKCU" Key="Software\DBDev_dbarberos\FilterPlus\2026" Name="addin" Type="integer" Value="1" KeyPath="yes" />
                 <File Source="..\bin\Release.R26\publish\FilterPlus.addin" Id="Ad26"/>
                 <RemoveFolder Id="Remove2026" Directory="REVIT2026" On="uninstall" />
             </Component>
             <Component Id="Dlls_2026" Guid="C9D3E51A-4402-4F98-9FBA-CF3527F4D08D" Directory="FOLDER2026">
-                <RegistryValue Root="HKCU" Key="Software\AI_CORP\FilterPlus\2026" Name="dlls" Type="integer" Value="1" KeyPath="yes" />
+                <RegistryValue Root="HKCU" Key="Software\DBDev_dbarberos\FilterPlus\2026" Name="dlls" Type="integer" Value="1" KeyPath="yes" />
                 <File Source="..\bin\Release.R26\publish\FilterPlus\FilterPlus.dll" Id="Dl26"/>
                 <File Source="..\bin\Release.R26\publish\FilterPlus\Nice3point.Revit.Extensions.dll" Id="Ext26"/>
                 <File Source="..\bin\Release.R26\publish\FilterPlus\Nice3point.Revit.Toolkit.dll" Id="Tlk26"/>
@@ -124,12 +124,12 @@
         <!-- Revit 2027 -->
         <ComponentGroup Id="Revit2027Components">
             <Component Id="Addin_2027" Guid="431736DA-E479-46C5-AD02-4408B5CB1EDF" Directory="REVIT2027">
-                <RegistryValue Root="HKCU" Key="Software\AI_CORP\FilterPlus\2027" Name="addin" Type="integer" Value="1" KeyPath="yes" />
+                <RegistryValue Root="HKCU" Key="Software\DBDev_dbarberos\FilterPlus\2027" Name="addin" Type="integer" Value="1" KeyPath="yes" />
                 <File Source="..\bin\Release.R27\publish\FilterPlus.addin" Id="Ad27"/>
                 <RemoveFolder Id="Remove2027" Directory="REVIT2027" On="uninstall" />
             </Component>
             <Component Id="Dlls_2027" Guid="EF9342D3-9C0A-4BE3-8540-0A8A96D2B5A2" Directory="FOLDER2027">
-                <RegistryValue Root="HKCU" Key="Software\AI_CORP\FilterPlus\2027" Name="dlls" Type="integer" Value="1" KeyPath="yes" />
+                <RegistryValue Root="HKCU" Key="Software\DBDev_dbarberos\FilterPlus\2027" Name="dlls" Type="integer" Value="1" KeyPath="yes" />
                 <File Source="..\bin\Release.R27\publish\FilterPlus\FilterPlus.dll" Id="Dl27"/>
                 <File Source="..\bin\Release.R27\publish\FilterPlus\Nice3point.Revit.Extensions.dll" Id="Ext27"/>
                 <File Source="..\bin\Release.R27\publish\FilterPlus\Nice3point.Revit.Toolkit.dll" Id="Tlk27"/>

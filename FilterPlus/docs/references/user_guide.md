@@ -1,7 +1,7 @@
 # User Guide - FilterPlus
 
-**Current Version:** 1.0.0  
-**Developer:** DBDev / dbase_Architecture  
+**Current Version:** 1.1.0  
+**Developer:** DBDev_dbarberos  
 
 ---
 

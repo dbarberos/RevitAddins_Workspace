@@ -15,7 +15,7 @@ When activating this skill, the Agent must collect:
     *   **Proactive Action:** If the tag exists (e.g., `v1.0.0`), the Agent must automatically update the `<Version>` tag in the project's `.csproj` file.
 2.  **Target Revit Versions:** (e.g., 2023, 2024, 2025, 2026, 2027).
 3.  **Commercial Name:** Add-in name for the Control Panel.
-4.  **Manufacturer:** Name of the developer or company.
+4.  **Manufacturer:** Name of the developer or company (defaults to `"DBDev_dbarberos"`).
 5.  **Desired UI:** Minimal (`WixUI_Minimal`) or with path selection (`WixUI_InstallDir`)?
 
 ---
