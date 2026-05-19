@@ -87,4 +87,12 @@ Optimize the interactive prototyping and real-time execution of Revit API code u
 ---
 
 ## References
-- *(Additional guides and references will be listed here as ingested)*
+- [Environment Setup & Transaction Lifecycles](file:///c:/Users/david.barbero/Documents/DOCUMENTOS/ALTEN/Workbench/RevitAddins_Workspace/RevitAddins_Workspace/.agents/skills/revit-rps-python/references/rps_environment_setup.md)
+- [Reference Points, Vectors, and Curves](file:///c:/Users/david.barbero/Documents/DOCUMENTOS/ALTEN/Workbench/RevitAddins_Workspace/RevitAddins_Workspace/.agents/skills/revit-rps-python/references/rps_geometry_creation.md)
+- [Solid Extrusions, Revolves, and Divided Surfaces](file:///c:/Users/david.barbero/Documents/DOCUMENTOS/ALTEN/Workbench/RevitAddins_Workspace/RevitAddins_Workspace/.agents/skills/revit-rps-python/references/rps_forms_and_surfaces.md)
+- [Family Manager and Adaptive Components](file:///c:/Users/david.barbero/Documents/DOCUMENTOS/ALTEN/Workbench/RevitAddins_Workspace/RevitAddins_Workspace/.agents/skills/revit-rps-python/references/rps_families_and_adaptive.md)
+- [Parametrics, System.Random, and Microsoft Excel COM](file:///c:/Users/david.barbero/Documents/DOCUMENTOS/ALTEN/Workbench/RevitAddins_Workspace/RevitAddins_Workspace/.agents/skills/revit-rps-python/references/rps_parametric_random_excel.md)
+- [Custom Form Classes & Execution Boilerplates](file:///c:/Users/david.barbero/Documents/DOCUMENTOS/ALTEN/Workbench/RevitAddins_Workspace/RevitAddins_Workspace/.agents/skills/revit-rps-python/references/rps_oop_custom_classes.md)
+- [Reading and Writing Text Files (Stream I/O)](file:///c:/Users/david.barbero/Documents/DOCUMENTOS/ALTEN/Workbench/RevitAddins_Workspace/RevitAddins_Workspace/.agents/skills/revit-rps-python/references/rps_text_files_io.md)
+- [Curated RPS Sample Scripts Library Index](file:///c:/Users/david.barbero/Documents/DOCUMENTOS/ALTEN/Workbench/RevitAddins_Workspace/RevitAddins_Workspace/.agents/skills/revit-rps-python/assets/rps_sample_scripts_index.md)
+
