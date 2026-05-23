@@ -1,185 +1,105 @@
 ---
 name: create-skill
-description: Scaffolds new agent skills for the dotnet/skills repository. Use when creating a new skill, generating SKILL.md files, or setting up skill directory structures. Handles frontmatter generation, section templates, and validation guidance.
+description: Scaffolds new agent skills for the RevitAddins_Workspace repository. Use when creating a new skill, generating SKILL.md files, or setting up skill directory structures. Handles frontmatter generation, section templates, and validation guidance for dual-stack (C#/Python) environments.
 ---
 
-# Create Skill
+# Create Skill — Guía de Creación y Andamiaje de Habilidades
 
-This skill helps you scaffold new agent skills that conform to the Agent Skills specification and the dotnet/skills repository conventions.
+Este skill asiste al agente en la creación y estructuración de nuevas habilidades de IA modulares, asegurando que cumplan con la topología unificada de doble stack del repositorio.
 
 ## When to Use
-
-- Creating a new skill from scratch
-- Generating a SKILL.md file with proper frontmatter
-- Setting up the skill directory structure with optional folders
-- Ensuring compliance with agentskills.io specification
+- Al crear una habilidad nueva desde cero para expandir las capacidades del agente (p. ej., manipulación de PDFs, generación automática de documentación de Word, o integraciones de CI/CD).
+- Al estructurar y generar un archivo `SKILL.md` con su correspondiente bloque YAML de frontmatter.
+- Al configurar la jerarquía física de subcarpetas obligatorias para prevenir el engrosamiento del índice principal.
 
 ## When Not to Use
+- Al modificar código fuente de skills ya existentes (edita directamente sus assets o referencias en su lugar).
+- Al configurar prompts de flujos de trabajo aislados (usa la carpeta `.agents/prompts/` en su lugar).
 
-- Modifying existing skills (edit directly instead)
-- Creating custom agents (use the agents/ directory pattern)
+---
 
 ## Inputs
 
 | Input | Required | Description |
 |-------|----------|-------------|
-| Skill name | Yes | Lowercase, alphanumeric, hyphens only (e.g., `code-review`, `ci-triage`) |
-| Description | Yes | What the skill does and when agents should use it (1-1024 chars) |
-| Purpose | Yes | One paragraph describing the outcome |
-| Workflow steps | Recommended | Numbered steps the agent should follow |
+| **Skill name** | Sí | Nombre en minúsculas, alfanumérico y con guiones (p. ej., `pdf-generator`, `revit-clash-detector`). |
+| **Description** | Sí | Qué hace la habilidad y cuándo debe usarla el agente (1-1024 caracteres). |
+| **Purpose** | Sí | Un párrafo detallando el resultado y meta del skill. |
+| **Workflow** | Recomendado | Pasos numerados secuenciales con puntos de control (checkpoints). |
 
-## Workflow
-
-### Step 1: Validate the skill name
-
-Ensure the name:
-- Contains only lowercase letters, numbers, and hyphens
-- Does not start or end with a hyphen
-- Does not contain consecutive hyphens
-- Is between 1-64 characters
-
-### Step 2: Create the skill directory
-
-```
-skills/<skill-name>/
-└── SKILL.md
-```
-
-### Step 3: Generate SKILL.md with frontmatter
-
-Create the file with required YAML frontmatter:
-
-```yaml
 ---
-name: <skill-name>
-description: <description of what the skill does and when to use it>
+
+## Workflow de Creación
+
+### Paso 1: Validación del Nombre del Skill
+Asegúrate de que el nombre:
+- Contenga únicamente letras minúsculas, números y guiones sencillos.
+- No comience ni termine con un guion.
+- Tenga una longitud de entre 1 y 64 caracteres.
+
+### Paso 2: Creación de la Estructura de Directorios
+Crea el directorio del skill bajo la ruta física unificada del repositorio:
+```text
+.agents/skills/<skill-name>/
+├── SKILL.md         # Índice y manifiesto semántico principal del skill
+├── scripts/         # Scripts ejecutables auxiliares (PowerShell, Python, Bash)
+├── references/      # Guías técnicas, reglas de API y lecciones aprendidas de debugging
+└── assets/          # Código fuente reusable inyectable (.cs, .py, .wxs, .xml)
+```
+
 ---
-```
 
-### Step 4: Add body content sections
+## 🛠️ Reglas Estrictas de Segregación de Contenido
 
-Include these recommended sections:
+### A. Guardado de Assets de Código (assets/):
+*   **Regla Obligatoria:** Todo código fuente o fragmento C# o Python reusable **debe** guardarse en su archivo físico con extensión nativa correspondiente (p. ej. `MyHelper.cs`, `script.py`, `Product.wxs`).
+*   **Prohibición:** Está estrictamente **prohibido** incrustar bloques de código extensos directamente dentro de `SKILL.md` o en archivos Markdown de `references/`. Esto mantiene los tokens de contexto en el nivel óptimo.
 
-1. **Purpose**: One paragraph describing the outcome
-2. **When to Use**: Bullet list of appropriate scenarios
-3. **When Not to Use**: Boundaries and exclusions
-4. **Inputs**: Table of required and optional inputs
-5. **Workflow**: Numbered steps with checkpoints
-6. **Validation**: How to confirm the skill worked correctly
-7. **Common Pitfalls**: Known traps and how to avoid them
+### B. Preservación de Lecciones de Depuración (references/):
+*   **Regla Obligatoria:** Cada vez que el agente solucione un error complejo de Revit API, un fallo de compilación de C# o un problema de ejecución en Python/pyRevit, **debe** documentar la resolución.
+*   **Formato de Archivo:** Crea un reporte Markdown rápido en la carpeta `references/` del skill bajo la nomenclatura:  
+    `references/debugging_[keywords]_[YYYY-MM-DD].md`
+*   **Contenido Mínimo:**
+    1.  **Síntoma:** Qué error de consola o comportamiento anómalo se presentó.
+    2.  **Causa Raíz:** Por qué falló la API, transacción o hilo de Revit.
+    3.  **Solución:** Explicación técnica y fragmento de código corregido que solucionó el bug.
 
-### Step 5: Add mandatory directories
+---
 
-To prevent SKILL.md bloat and ensure agent efficiency, every skill MUST include these directories:
+## Plantilla Base para `SKILL.md`
 
-```
-skills/<skill-name>/
-├── SKILL.md       # Only acts as an index/manifest
-├── scripts/       # Executable code agents can run (e.g., PS1, Python)
-├── references/    # Additional documentation, rules, or blueprints loaded on demand
-└── assets/        # Templates, boilerplate code, images, data files
-```
-*Note: Any new knowledge or rules added to the skill over time must be placed in `references/`, reusable code in `assets/`, etc., never directly inside `SKILL.md`.*
-
-### Step 6: Update CODEOWNERS
-
-Add entries in `.github/CODEOWNERS` for the new skill and its test directory:
-
-```
-/plugins/<plugin>/skills/<skill-name>/  @owner-team
-/tests/<plugin>/<skill-name>/           @owner-team
-```
-
-Match the owner pattern used by sibling skills in the same plugin.
-
-### Step 7: Validate the skill
-
-- Confirm frontmatter fields are valid
-- Ensure SKILL.md is under 500 lines
-- Check that file references use relative paths
-- Verify instructions are actionable and specific
-
-## SKILL.md Template
-
-Use this template when creating a new skill:
+Todo nuevo archivo `SKILL.md` debe actuar únicamente como un **índice ligero de metadatos** estructurado bajo el siguiente formato:
 
 ```markdown
 ---
 name: <skill-name>
-description: <1-1024 char description of what the skill does and when to use it>
+description: <1-1024 caracteres describiendo qué hace el skill y cuándo invocarlo>
 ---
 
-# <Skill Title>
+# <Nombre del Skill>
 
-<One paragraph describing the skill's purpose and outcome.>
+<Un párrafo conciso describiendo el propósito y resultado de este componente.>
 
-## When to Use
+## 📚 Referencias Técnicas (Knowledge Base)
+Consulta los siguientes archivos en la carpeta `references/` para obtener guías en profundidad:
 
-- <Scenario 1>
-- <Scenario 2>
+*   `references/guia_tecnica.md`: Explicación conceptual del dominio del skill.
+*   `references/debugging_[problema]_[fecha].md`: Lecciones aprendidas e historial de fallos solucionados.
 
-## When Not to Use
+## 📦 Assets (Plantillas y Código Fuente)
+Los siguientes archivos se encuentran en la carpeta `assets/` listos para inyectarse directamente en el proyecto:
 
-- <Exclusion 1>
-- <Exclusion 2>
-
-## Inputs
-
-| Input | Required | Description |
-|-------|----------|-------------|
-| <input-name> | Yes/No | <description> |
-
-## Workflow
-
-### Step 1: <Action>
-
-<Instructions for this step>
-
-### Step 2: <Action>
-
-<Instructions for this step>
-
-## Validation
-
-- [ ] <Verification step 1>
-- [ ] <Verification step 2>
-
-## Common Pitfalls
-
-| Pitfall | Solution |
-|---------|----------|
-| <Problem> | <How to avoid or fix> |
+*   `assets/HelperClass.cs`: Clase base de soporte en C# (si aplica).
+*   `assets/utility_script.py`: Script base de soporte en Python (si aplica).
 ```
 
-## Validation Checklist
+---
 
-After creating a skill, verify:
+## Lista de Verificación de Validación
 
-- [ ] Skill name matches directory name exactly
-- [ ] Skill name is lowercase with hyphens only
-- [ ] Description is non-empty and under 1024 characters
-- [ ] SKILL.md body is under 500 lines (act as an index)
-- [ ] `scripts/`, `references/`, and `assets/` directories exist
-- [ ] Instructions are specific and actionable
-- [ ] Workflow has numbered steps with clear checkpoints
-- [ ] Validation section exists with observable success criteria
-- [ ] No secrets, tokens, or internal URLs included
-- [ ] `.github/CODEOWNERS` has entries for the new skill and its test directory
-
-## Common Pitfalls
-
-| Pitfall | Solution |
-|---------|----------|
-| Name contains uppercase letters | Use only lowercase: `code-review` not `Code-Review` |
-| Description is vague | Include what it does AND when to use it |
-| Instructions are ambiguous | Use numbered steps with concrete actions |
-| Missing validation steps | Add checkpoints that verify success |
-| SKILL.md too long | Move detailed content to `references/` files |
-| Hardcoded environment assumptions | Document requirements in `compatibility` field |
-| Missing CODEOWNERS entry | Add entries for both `/plugins/<plugin>/skills/<skill-name>/` and `/tests/<plugin>/<skill-name>/` matching sibling skills' owner pattern |
-
-## References
-
-- [Agent Skills Specification](https://agentskills.io/specification)
-- [Repository README](../../README.md)
-- [Contributing Guidelines](../../CONTRIBUTING.md)
+- [ ] El nombre del skill coincide exactamente con el nombre de su subcarpeta.
+- [ ] La descripción YAML es concisa, descriptiva y no excede los 1024 caracteres.
+- [ ] El archivo principal `SKILL.md` no excede las 50 líneas físicas (actúa únicamente como índice).
+- [ ] Las carpetas secundarias `references/`, `assets/` y `scripts/` existen físicamente.
+- [ ] No existen fragmentos de código inyectables incrustados en `SKILL.md`. Todo código reusable reside en `assets/` con sus respectivas extensiones de archivo nativas (`.cs`, `.py`).
+- [ ] Los reportes de resolución de errores se guardan bajo la nomenclatura `debugging_[keywords]_[YYYY-MM-DD].md`.

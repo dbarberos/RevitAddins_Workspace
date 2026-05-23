@@ -40,7 +40,7 @@ When you modify:
 **YOU MUST review and update** `eng/skill-validator/src/docs/InvestigatingResults.md` to keep the failure investigation guide, the schema documentation, and the example scripts synchronized.
 
 ## 4. When to Use This Skill
-- When creating or modifying skills in the `.agent/skills/` folder
+- When creating or modifying skills in the `.agents/skills/` folder
 - When updating plugins under `plugins/`
 - When debugging skill-validator build issues
 - When you need to regenerate lock files after changes in skill frontmatter
