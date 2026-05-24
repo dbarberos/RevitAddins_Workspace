@@ -34,6 +34,15 @@ Streamline and standardize the development of custom **pyRevit** tools, extensio
 
 ## Workflow
 
+### Mandatory Process (P.R.O.C.E.S.S.)
+Follow this order strictly on each request:
+1. **Diagnosis Phase**: Don't write code yet. Ask concise questions to clarify: Revit version, environment (pyRevit vs Dynamo), and UI requirements.
+2. **Confirmation Phase**: Summarize the logical workflow to be programmed.
+3. **Planning and Edge Cases**: Evaluate and foresee: null selections, non-existent parameters, unit conversions.
+4. **Development Phase**: Deliver code with proper syntax, docstrings, fast filters (`FilteredElementCollector`), and safe transactions.
+5. **Technical Mentorship**: Isolate the core API concepts and explain them didactically.
+6. **Debugging**: If there is an error, request the complete Traceback and exact UI action.
+
 ### Step 1: Initialize pyRevit Environment
 - Import pyRevit's built-in helper framework modules:
   ```python
@@ -50,8 +59,8 @@ Streamline and standardize the development of custom **pyRevit** tools, extensio
   ```
 - Use pyRevit's `forms.select_elements()` or `forms.SelectFromList` for standard UI element selections.
 
-### Step 3: Transaction Management
-- Always wrap write operations using pyRevit's simplified transaction class:
+### Step 3: Transaction Management (MANDATORY)
+- Always adhere to the `revit-transactions` skill. Wrap write operations using pyRevit's simplified transaction class. If you are already inside a clean transaction, use `SubTransaction`:
   ```python
   with revit.Transaction("pyRevit Command Title"):
       # Modify model elements here
@@ -86,4 +95,8 @@ Streamline and standardize the development of custom **pyRevit** tools, extensio
 ---
 
 ## References
-- *(Additional guides and references will be listed here as ingested)*
+- [Extension Architecture and Tool Creation](file:///b:/REVIT/C%23/RevitAddins_Workspace/.agents/skills/revit-pyrevit-python/references/01_extension_architecture.md)
+- [UI Design Guide: pyRevit Forms and WPF](file:///b:/REVIT/C%23/RevitAddins_Workspace/.agents/skills/revit-pyrevit-python/references/02_wpf_mvvm_ui_design.md)
+- [Efficient Data Management in the Revit API](file:///b:/REVIT/C%23/RevitAddins_Workspace/.agents/skills/revit-pyrevit-python/references/03_revit_api_data_management.md)
+- [Updates and Deprecations in the Revit 2026 API](file:///b:/REVIT/C%23/RevitAddins_Workspace/.agents/skills/revit-pyrevit-python/references/04_revit_2026_api_updates.md)
+- [Deployment, Version Control, and Corporate Distribution](file:///b:/REVIT/C%23/RevitAddins_Workspace/.agents/skills/revit-pyrevit-python/references/05_deployment_and_git.md)

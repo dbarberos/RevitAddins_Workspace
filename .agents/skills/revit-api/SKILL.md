@@ -16,7 +16,8 @@ description: Strict C# rules for Autodesk Revit Add-in development. Use this whe
 # Revit API Instructions
 * When searching for elements in the model using `FilteredElementCollector`, ALWAYS prioritize QuickFilters (like `OfCategory()`) over slow filters like parameter literals.
 * Never attempt to modify the Revit UI (Ribbon) outside the application's `OnStartup` event.
-* Any modification to the model must be wrapped inside a `Transaction` block.
+* **TRANSACTIONS (MANDATORY)**: Any modification to the model MUST be wrapped inside a `Transaction` block complying strictly with the `revit-transactions` skill (using `using`, and checking for `SubTransaction` when necessary).
+* **THREAD SAFETY (MANDATORY)**: When making Revit API calls from a background thread or WPF ViewModel (`[RelayCommand]`), you MUST wrap the execution using the `revit-async-operations` skill (`RevitTask.RunAsync()`) to prevent `InvalidOperationException` and UI freezing.
 
 ## 📚 Technical References (Knowledge Base)
 For deep technical details, consult the following files in the `references/` folder:
@@ -24,7 +25,8 @@ For deep technical details, consult the following files in the `references/` fol
 - `references/thread_safety_and_events.md`: Critical rules about thread contexts, `Dispatcher`, `ExternalEvent`, and `DoEvents` (Avoiding Crashes).
 - `references/treeview_construction.md`: How to massively build trees and TreeViews without blocking the UI.
 - `references/csproj_templates.md`: Base `.csproj` templates for .NET Framework 4.8 and .NET 8 using `Nice3point`.
-- `references/forge_type_id.md`: How to handle modern unit conversions (`ForgeTypeId`) vs obsolete classes (`DisplayUnitType`).
+- `references/revit_breaking_changes.md`: How to manage units conversion with `ForgeTypeId` vs legacy `DisplayUnitType` and other API breakages.
+- `references/revit_filtered_element_collector.md`: Mandatory guidelines for high-performance element selection, quick filters, and memory-saving iterations.
 
 # Agent Execution Flow
 1. When the user asks you to create a new Add-in, your first step MUST be to run `dotnet new revit -n [Name]`.

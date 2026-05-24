@@ -1,0 +1,413 @@
+Es una excelente iniciativa estructurar todo este conocimiento en un sistema de *Skills* robusto y estandarizado. Para un perfil orientado a la optimización de procesos y desarrollo avanzado en el sector AECO, organizar la lógica de desarrollo en una arquitectura progresiva (como sugiere la documentación de *Skills*) garantizará que los flujos de trabajo sean escalables y consistentes.
+
+Para abordar esto paso a paso, primero definiremos la estructura de directorios y el archivo principal `SKILL.md` (con tu prompt corregido bajo los estándares técnicos requeridos). Luego, elaboraremos la primera guía detallada que actuará como documento de referencia.
+
+### 1. Estructura de Directorios Propuesta
+
+Siguiendo las mejores prácticas para la creación de *Skills* , todo el sistema debe residir en una carpeta principal nombrada en formato `kebab-case`. El contenido se dividirá mediante "revelación progresiva" (Progressive Disclosure) para optimizar la memoria de contexto.
+
+Crea la siguiente estructura en tu entorno local:
+
+```text
+pyrevit-dev-mentor/
+├── SKILL.md                                  # Instrucciones principales del agente (tu prompt optimizado)
+├── scripts/                                  # (Opcional) Scripts de validación en Python/Bash
+├── references/                               # Base de conocimiento detallada para el agente
+│   ├── 01_extension_architecture.md          # Estructura de carpetas y creación de herramientas
+│   ├── 02_wpf_mvvm_ui_design.md              # Diseño de interfaces y enlace de datos
+│   ├── 03_revit_api_data_management.md       # Manejo eficiente de la base de datos (FilteredElementCollector)
+│   ├── 04_revit_2026_api_updates.md          # Cambios y obsolescencias en la nueva API
+│   └── 05_deployment_and_git.md              # Control de versiones y despliegue corporativo
+└── assets/                                   # Plantillas de código (boilerplates)
+
+```
+
+---
+
+### 2. Archivo Principal: `SKILL.md`
+
+Este archivo debe guardarse exactamente con el nombre `SKILL.md` en la raíz de la carpeta `pyrevit-dev-mentor/`. He adaptado tu prompt para incluir el bloque *YAML frontmatter* obligatorio, el cual le indicará al sistema cuándo y cómo activar el conocimiento, asegurando que las directrices de codificación se apliquen sin excepciones.
+
+**Contenido para `SKILL.md`:**
+
+```markdown
+---
+name: pyrevit-dev-mentor
+description: Asiste en la creación, depuración y optimización de automatizaciones para Autodesk Revit. Úsalo cuando el usuario solicite código Python (IronPython/CPython), extensiones pyRevit, interfaces WPF/XAML o explicaciones de la API de Revit.
+---
+
+# Mentor y Desarrollador Senior pyRevit
+
+## 1. Rol y Enfoque
+Eres un **BIM Manager Técnico y Desarrollador Senior de la API de Revit**. Dominas `pyrevit`, `Autodesk.Revit.DB`, `Autodesk.Revit.UI`, diseño de interfaces (WPF/XAML, Windows Forms), y librerías de datos de Python (`json`, `csv`, `collections`). Eres metódico, te enfocas en el rendimiento (Big O notation aplicada a modelos BIM) y en resolver el problema de raíz. Tu comunicación es técnica, clara y puramente didáctica.
+
+Antes de programar, **es una regla estricta** consultar los documentos en la carpeta `references/`. Tu código debe imitar exactamente su estructura, nomenclatura (snake_case para variables/funciones, PascalCase para clases), comentarios y flujos de trabajo.
+
+## 2. Flujo de Trabajo Obligatorio (P.R.O.C.E.S.S.)
+Sigue estrictamente este orden en cada solicitud:
+
+* **Paso 1: Fase de Diagnóstico:** No escribas código aún. Haz preguntas concisas para aclarar:
+    * Versión de Revit y motor de Python (IronPython2 vs CPython3).
+    * Entorno de ejecución: ¿pyRevit o Dynamo?
+    * Categorías, familias y nombres de parámetros exactos.
+    * *UI Obligatoria:* pyRevit usa WPF/XAML por defecto (alternativa `pyrevit.forms`). Dynamo usa Windows Forms (alternativa `Data-Shapes`).
+* **Paso 2: Fase de Confirmación:** Resume el flujo de trabajo lógico que se va a programar.
+* **Paso 3: Planificación y Edge Cases:** Evalúa silenciosamente y prevé: selecciones nulas, parámetros inexistentes, conversión de unidades (`UnitUtils`), o el uso de `UnwrapElement()` en Dynamo.
+* **Paso 4: Fase de Desarrollo:** Entrega el código con:
+    * Sintaxis adecuada al motor seleccionado.
+    * Docstring inicial (Propósito, Compatibilidad, Dependencias).
+    * Filtros rápidos (`FilteredElementCollector`) y transacciones seguras.
+* **Paso 5: Mentoría Técnica:** Aísla los conceptos fundamentales de la API (máximo 10) y explícalos de forma didáctica. Proporciona *snippets* aislados y menciona las clases exactas (ej. `Autodesk.Revit.DB.Transaction`).
+* **Paso 6: Depuración (Si aplica):** Si hay un error, exige: Traceback completo, línea exacta, acción en la UI y versión del entorno.
+
+## 3. Protecciones y Guardrails
+* **Optimización Extrema:** Nunca iteres sobre la base de datos de Revit sin aplicar `ElementCategoryFilter` o similares.
+* **Transacciones:** Toda modificación requiere `Transaction` o `TransactionGroup`.
+* **Cero Alucinaciones:** Usa nombres exactos de la API. Si se pide algo imposible, propón una alternativa viable basada en la documentación oficial.
+
+```
+
+---
+
+### 3. Documento de Referencia 1: Arquitectura y Creación de Extensiones
+
+Este documento debe guardarse en la ruta `pyrevit-dev-mentor/references/01_extension_architecture.md`. Se basa en los fundamentos de pyRevit y la lógica de configuración extraída de la documentación y los tutoriales analizados.
+
+**Contenido para `01_extension_architecture.md`:**
+
+```markdown
+# Arquitectura y Creación de Extensiones pyRevit
+
+## 1. Fundamentos de la API y pyRevit
+* [cite_start]La API (Application Programming Interface) de Revit permite extender la funcionalidad del software para automatizar tareas repetitivas y crear flujos de trabajo personalizados[cite: 140, 141].
+* [cite_start]pyRevit es considerado el método más rápido y sencillo para iniciarse en el desarrollo de la API de Revit[cite: 2, 5].
+* [cite_start]A diferencia de C#, Python permite un prototipado mucho más rápido, una sintaxis más limpia y no requiere reiniciar Revit ni compilar el código cada vez que se hacen cambios[cite: 166, 167].
+
+## 2. Estructura de Directorios de una Extensión
+[cite_start]Para crear una barra de herramientas personalizada, pyRevit utiliza una jerarquía de carpetas con sufijos específicos que definen la interfaz de usuario dentro de Revit[cite: 6].
+
+1.  **Directorio Raíz (`.extension`):** La carpeta principal de tu herramienta (ej. `MiEmpresa.extension`).
+2.  [cite_start]**Pestaña (`.tab`):** Representa la pestaña en la cinta de opciones de Revit (ej. `Herramientas.tab`)[cite: 122].
+3.  **Panel (`.panel`):** Agrupa botones con funcionalidades similares.
+4.  **Botón (`.pushbutton`):** Contiene el código ejecutable. Aquí reside el archivo lógico principal.
+5.  [cite_start]**Directorio de Librerías (`lib/`):** Utilizado para almacenar código reutilizable y módulos compartidos que pueden ser llamados por múltiples scripts[cite: 17, 34].
+
+## 3. Archivos del Botón (`.pushbutton`)
+Dentro de la carpeta `.pushbutton`, se requieren elementos básicos:
+* [cite_start]`script.py`: El script ejecutable en Python (IronPython o CPython)[cite: 181].
+* `icon.png`: (Opcional) El icono de la herramienta.
+
+## 4. Plantilla Base de Código (Boilerplate)
+[cite_start]Todo script de modificación debe interactuar con el documento activo y manejar las transacciones de manera segura[cite: 146].
+
+```python
+# -*- coding: utf-8 -*-
+"""
+Propósito: Plantilla base para operaciones en Revit.
+"""
+from Autodesk.Revit.DB import FilteredElementCollector, Transaction
+
+# Obtener la aplicación, el documento y la vista activa
+doc = __revit__.ActiveUIDocument.Document
+uidoc = __revit__.ActiveUIDocument
+view = doc.ActiveView
+
+# [cite_start]Toda modificación a la base de datos de Revit DEBE estar dentro de una transacción [cite: 146]
+t = Transaction(doc, "Nombre de la Operación")
+t.Start()
+
+try:
+    # LÓGICA DEL SCRIPT AQUÍ
+    # Ej: Recopilar elementos, aplicar cambios.
+    t.Commit()
+except Exception as e:
+    t.RollBack()
+    print("Error en la ejecución: {}".format(e))
+
+```
+
+## 5. Implementación Rápida
+
+* El uso de herramientas como `EF-pyRevit StarterKit` puede ayudar a generar la estructura base de una extensión en menos de 2 minutos.
+
+
+* Es recomendable mantener copias de seguridad del código y emplear Git para proteger el desarrollo.
+
+
+
+```
+
+---
+
+
+```
+¡Perfecto! Continuamos con el segundo documento de referencia.
+
+Este archivo detallará la creación de interfaces de usuario (UI) avanzadas utilizando **WPF (Windows Presentation Foundation)** y el patrón de diseño **MVVM (Model-View-ViewModel)**. En el desarrollo profesional para Revit, huir de las interfaces básicas y dominar WPF te permite crear herramientas robustas, escalables y con una experiencia de usuario (UX) excelente.
+
+Debes guardar este documento en la ruta: `pyrevit-dev-mentor/references/02_wpf_mvvm_ui_design.md`.
+
+**Contenido para `02_wpf_mvvm_ui_design.md`:**
+
+```markdown
+# Diseño de Interfaces con WPF y el Patrón MVVM en pyRevit
+
+## 1. Introducción a WPF en pyRevit
+[cite_start]WPF (Windows Presentation Foundation) es un framework de interfaz de usuario moderno creado por Microsoft para construir aplicaciones de escritorio y formularios UI[cite: 179, 180]. En el ecosistema de pyRevit, WPF es el estándar de oro para las interfaces de usuario.
+
+[cite_start]Para que WPF funcione en pyRevit, necesitamos dividir el desarrollo en dos archivos fundamentales[cite: 180, 181]:
+* [cite_start]**El archivo XAML (Frontend):** Actúa de forma similar al HTML en el desarrollo web[cite: 181]. [cite_start]Aquí es donde se diseña la interfaz, se definen los botones, las cajas de texto, las listas y los eventos visuales[cite: 181].
+* [cite_start]**El script de IronPython (Backend):** Maneja la lógica, interactúa con el formulario, recopila los inputs del usuario y ejecuta las modificaciones en la base de datos de Revit[cite: 180, 182].
+
+## 2. El Patrón de Diseño MVVM
+[cite_start]MVVM (Model-View-ViewModel) es un patrón de arquitectura de software crucial para separar la interfaz gráfica (Frontend) de la lógica de negocio (Backend)[cite: 185, 186]. Comprender esto es vital para desarrollos de nivel Senior.
+
+[cite_start]El patrón consta de tres componentes[cite: 187]:
+1.  [cite_start]**Model (El Modelo):** Representa los datos y la lógica de la aplicación[cite: 187]. [cite_start]En nuestro contexto, es el script de Python que interactúa con la API de Revit para buscar o almacenar datos (por ejemplo, usar un `FilteredElementCollector` para obtener todas las vistas)[cite: 187, 189].
+2.  [cite_start]**View (La Vista):** Es la capa frontal de la interfaz, escrita en XAML[cite: 187]. [cite_start]Muestra los datos y permite al usuario interactuar con ellos[cite: 187, 189].
+3.  [cite_start]**ViewModel (El Modelo de Vista):** Actúa como un "traductor" entre el *Model* y la *View*[cite: 188]. [cite_start]Toma los datos crudos de la API de Revit (Model) y los envuelve en clases compatibles para que se muestren correctamente en la interfaz XAML (View)[cite: 188, 190].
+
+[cite_start]*Ejemplo Práctico:* Si quieres mostrar una lista de vistas de Revit en un listbox, tu *Model* obtiene los elementos, tu *View* tiene el `<ListBox>`, y tu *ViewModel* asegura que los nombres de las vistas se enlacen (Data Binding) correctamente al ListBox[cite: 189, 190].
+
+## 3. Contexto de la API de Revit y WPF
+[cite_start]Es un requerimiento estricto que las acciones ejecutadas desde una interfaz WPF interactúen con Revit dentro de un "Contexto de API de Revit Válido" (Valid Revit API Context)[cite: 72]. 
+* **Regla de Oro:** Cualquier botón en tu UI de WPF que modifique el modelo BIM debe iniciar y confirmar una `Transaction` de Revit.
+
+## 4. Mejores Prácticas y Uso de IA
+* [cite_start]**Prototipado con IA:** Herramientas como ChatGPT son excelentes generando código XAML para WPF[cite: 183]. [cite_start]Puedes proporcionar un código base ("boilerplate") y pedirle a la IA que construya la estructura visual[cite: 183].
+* [cite_start]**Conocimiento Base:** A pesar de la ayuda de la IA, es obligatorio entender cómo funcionan los enlaces (Bindings) y la sintaxis XAML manualmente para poder depurar errores complejos y formular las preguntas correctas ("prompts") a la inteligencia artificial[cite: 184, 185].
+
+```
+
+---
+
+### Siguientes pasos
+
+Este documento sienta las bases para cuando el usuario pida interfaces. La siguiente pieza fundamental de conocimiento es **cómo extraer y gestionar datos eficientemente de Revit**, optimizando el tiempo de ejecución de la herramienta.
+
+¿Continuamos elaborando el documento `03_revit_api_data_management.md` basado en los principios de coleccionismo de elementos (`FilteredElementCollector`) y las guías del curso de Python para Revit?
+
+¡Excelente! Prosigamos con el tercer documento de referencia.
+
+Este archivo es crucial para la eficiencia (performance) de cualquier automatización. Aborda cómo interactuar con Revit como si fuera una base de datos, centrándose en la extracción de elementos mediante el `FilteredElementCollector` y la aplicación de las mejores prácticas de rendimiento (evitando cuellos de botella y minimizando la complejidad algorítmica).
+
+Debes guardar este documento en la ruta: `pyrevit-dev-mentor/references/03_revit_api_data_management.md`.
+
+**Contenido para `03_revit_api_data_management.md`:**
+
+```markdown
+# Manejo Eficiente de Datos en la API de Revit
+
+## 1. Revit como Base de Datos
+Para interactuar con el modelo BIM de manera programática, debes entender que un archivo de Revit es fundamentalmente una base de datos estructurada.
+* Todo en Revit (muros, líneas, vistas, configuraciones) es un `Element`.
+* El acceso a esta base de datos se realiza a través de la clase `Document` (generalmente accesible vía `__revit__.ActiveUIDocument.Document` en pyRevit).
+
+## 2. El Recolector: FilteredElementCollector
+La única forma de extraer elementos de la base de datos de Revit es utilizando la clase `FilteredElementCollector`. Iterar sobre toda la base de datos sin filtros y comprobar condiciones usando sentencias `if` nativas de Python es una práctica prohibida por su extrema ineficiencia.
+
+### Regla de Rendimiento (Optimización O(n)):
+**Pasa la carga de trabajo a la API de Revit (C++), no a Python.** Usa los filtros nativos de la API antes de convertir los resultados en listas o iterables de Python.
+
+## 3. Filtros Rápidos vs. Filtros Lentos
+La API de Revit clasifica sus filtros de búsqueda en dos categorías. Siempre debes priorizar los filtros rápidos.
+
+### Filtros Rápidos (Quick Filters)
+Operan a nivel de los metadatos del elemento en memoria, sin necesidad de expandir completamente el objeto, haciéndolos extremadamente rápidos.
+* `OfCategory(BuiltInCategory)`: Filtra por categoría (ej. OST_Walls, OST_Doors).
+* `OfClass(Type)`: Filtra por la clase del objeto en la API (ej. `Wall`, `FamilyInstance`).
+* `ElementIsElementTypeFilter(bool)`: Separa Tipos (Types) de Ejemplares (Instances). La API provee atajos convenientes para esto:
+    * `.WhereElementIsNotElementType()` -> Obtiene ejemplares.
+    * `.WhereElementIsElementType()` -> Obtiene tipos.
+
+### Filtros Lentos (Slow Filters)
+Requieren que Revit expanda completamente la geometría o los parámetros del elemento en memoria para evaluarlos. Úsalos **solo después** de haber aplicado al menos un filtro rápido.
+* `ElementParameterFilter`: Busca elementos por el valor de un parámetro específico.
+* Filtros espaciales y de intersección de geometría (`BoundingBoxIntersectsFilter`, `ElementIntersectsElementFilter`).
+
+## 4. Plantillas de Código (Snippets) Eficientes
+
+### A. Coleccionar todos los ejemplares de una categoría (Ej: Muros)
+```python
+from Autodesk.Revit.DB import FilteredElementCollector, BuiltInCategory
+
+# 1. Instanciar el colector
+# 2. Aplicar filtro rápido de categoría
+# 3. Excluir Tipos (obtener solo ejemplares)
+# 4. Convertir a elementos iterables
+walls = (FilteredElementCollector(doc)
+         .OfCategory(BuiltInCategory.OST_Walls)
+         .WhereElementIsNotElementType()
+         .ToElements())
+
+```
+
+### B. Coleccionar Tipos de Familia (Ej: Tipos de Muro)
+
+```python
+from Autodesk.Revit.DB import FilteredElementCollector, WallType
+
+# Uso del filtro rápido OfClass
+wall_types = (FilteredElementCollector(doc)
+              .OfClass(WallType)
+              .ToElements())
+
+```
+
+### C. Buscar Vistas en el Proyecto (Evitando bucles 'for' ineficientes)
+
+```python
+from Autodesk.Revit.DB import FilteredElementCollector, BuiltInCategory, View
+
+# Obtener todas las vistas del proyecto (Tipos y Ejemplares)
+views = (FilteredElementCollector(doc)
+         .OfCategory(BuiltInCategory.OST_Views)
+         .OfClass(View)
+         .ToElements())
+
+```
+
+## 5. Manejo de Parámetros
+
+Una vez obtenidos los elementos, acceder a sus datos implica consultar sus `Parameters`.
+
+* Usa `element.LookupParameter("NombreDelParametro")` con precaución, ya que falla si hay parámetros duplicados (compartidos vs de proyecto) o depende del idioma.
+* **Práctica Senior:** Prefiere el uso de `element.get_Parameter(BuiltInParameter.NOMBRE_DEL_PARAMETRO)` siempre que sea posible. Es universal, a prueba de idiomas y computacionalmente más robusto.
+
+
+
+```
+
+---
+
+### Siguientes pasos
+
+Ya tenemos la arquitectura, el diseño de la interfaz de usuario y la extracción eficiente de datos. 
+
+El siguiente paso es elaborar el documento **`04_revit_2026_api_updates.md`**. [cite_start]Este documento es vital porque las versiones recientes de Revit (especialmente 2024, 2025 y la inminente 2026) han introducido cambios drásticos y han marcado muchas clases antiguas como obsoletas (por ejemplo, el paso de `int` a enteros de 64 bits `ElementId`, o los profundos cambios en la API de armaduras/rebars y Toposolids)[cite: 246, 248]. Tener esto documentado asegurará que tu agente no genere código depreciado.
+
+```
+
+¡Comprendido! Prosigamos con el cuarto documento de referencia.
+
+Este archivo es vital para asegurar que las automatizaciones generadas sean compatibles con las versiones más recientes de Revit, previniendo errores por el uso de código depreciado (obsoleto). Se enfocará específicamente en los cambios introducidos en la **API de Revit 2026**.
+
+Debes guardar este documento en la ruta: `pyrevit-dev-mentor/references/04_revit_2026_api_updates.md`.
+
+**Contenido para `04_revit_2026_api_updates.md`:**
+
+```markdown
+# Actualizaciones y Obsolescencias en la API de Revit 2026
+
+## 1. Introducción
+[cite_start]Revit 2026 trae nuevas características y cambios que afectan el funcionamiento de la API, por lo que es crucial conocer qué ha sido eliminado, qué ha cambiado y qué nuevas funciones están disponibles para que los scripts continúen funcionando sin problemas[cite: 244]. Como desarrollador Senior, debes verificar siempre la compatibilidad de los métodos según la versión de Revit en la que operará el script.
+
+## 2. Cambios Críticos y ElementId
+El manejo de los identificadores de elementos ha sufrido modificaciones importantes de tipo de datos en las versiones recientes, consolidándose en 2026:
+* [cite_start]**ElementId a 64 bits:** El constructor de `Autodesk.Revit.DB.ElementId` ha sido modificado internamente para utilizar enteros de 64 bits (`integer 64`) en lugar de 32 bits (`integer 32`)[cite: 248, 249].
+* [cite_start]**Obtención del valor numérico:** La antigua propiedad `IntegerValue` ha sido completamente eliminada de la API[cite: 249]. [cite_start]Ahora se debe utilizar estrictamente la propiedad `Value` en su lugar[cite: 250].
+
+## 3. Eliminaciones y Sustituciones Frecuentes
+Muchos métodos y propiedades comunes han sido reemplazados o renombrados. Al programar, asegúrate de utilizar las versiones actuales:
+* [cite_start]**Slab Shape Editor (Suelos y Cubiertas):** Para las clases `Floor` y `RoofBase`, la propiedad `SlabShapeEditor` ha sido eliminada; en su lugar, se debe llamar al método `GetSlabShapeEditor()`[cite: 251].
+* [cite_start]**Dibujo en Slab Shape Editor:** Los métodos `DrawPoint` y `DrawSplitLine` han sido reemplazados por `AddPoint` y `AddSplitLine` respectivamente[cite: 257].
+* [cite_start]**Viscosidad en MEP:** Propiedades como la viscosidad del aire y conductos han sido renombradas para incluir la palabra "Dynamic" (ej. `DynamicViscosity`)[cite: 251, 252].
+* [cite_start]**Fases:** La propiedad `NumberofPhases` cambió su nombre a `PhasesNumber`[cite: 252].
+* [cite_start]**Matrices (Arrays):** Métodos relacionados con arreglos radiales y lineales fueron removidos y reemplazados por controles como `IsValidNumberOfMembers`[cite: 257].
+* [cite_start]**Curvas:** El método `IsCurveLoopValid` fue removido y reemplazado por `IsOuterControlValid`[cite: 257, 258].
+* [cite_start]**Importación PDF:** El método `IsPdfImportAvailable` fue eliminado ya que siempre retornaba verdadero[cite: 253].
+
+## 4. Cambios Estructurales y de Geometría
+[cite_start]La API para estructuras, especialmente las armaduras (Rebars), ha recibido modificaciones masivas en Revit 2026[cite: 268, 269].
+* [cite_start]**Estructuras Compuestas (Compound Structures):** Las capas del núcleo (*core layers*) ya no son requeridas estrictamente, lo que facilita la creación programática de muros y cerramientos[cite: 265, 266].
+* [cite_start]**Posicionamiento de Vistas:** Se introdujo la nueva clase `ViewPosition` para manejar el posicionamiento automatizado de vistas dentro de los planos (*sheets*)[cite: 264].
+* [cite_start]**Toposolids:** Se añadieron nuevos métodos como `CreateSubdivision` y herramientas de estabilidad de cortes (`CutVoidStability`)[cite: 274].
+* [cite_start]**CEF:** El Chromium Embedded Framework (CEF) fue removido de la API[cite: 260].
+* [cite_start]**Eventos de Cierre:** Los eventos `DocumentClosing` y `DocumentClosed` ya no serán invocados si Revit se cierra por corrupción o cancelación del proceso[cite: 266, 267].
+
+## 5. Advertencia sobre la Documentación Oficial 2026
+[cite_start]Al buscar referencias de clases en la documentación oficial de la API de Revit 2026, notarás que mucha información vital, como descripciones detalladas, comentarios (`remarks`) y ejemplos de código, ha sido omitida[cite: 283, 284]. 
+* [cite_start]**Estrategia de Depuración:** Si necesitas comprender en profundidad una clase o método en 2026, es altamente recomendable consultar la documentación de la versión 2025 para obtener contexto y ejemplos adicionales[cite: 283, 284].
+
+```
+
+---
+
+### Siguientes pasos
+
+Con esto, el agente tiene una base robusta para evitar errores de obsolescencia. Solo nos falta el último documento, el **`05_deployment_and_git.md`**, que enseñará al agente a aconsejar sobre cómo empaquetar, versionar con Git y desplegar estas extensiones corporativamente usando la lógica de instalación remota de pyRevit.
+
+¡Perfecto! Con este quinto documento completamos la base de conocimiento estructurada de tu *Skill*.
+
+Este archivo abordará cómo empaquetar, proteger con control de versiones (Git) y distribuir las herramientas de pyRevit a nivel corporativo, un aspecto fundamental para un BIM Manager que necesita desplegar automatizaciones a múltiples usuarios.
+
+Debes guardar este documento en la ruta: `pyrevit-dev-mentor/references/05_deployment_and_git.md`.
+
+**Contenido para `05_deployment_and_git.md`:**
+
+```markdown
+# Despliegue, Control de Versiones y Distribución Corporativa
+
+## 1. Importancia del Control de Versiones
+El desarrollo profesional exige proteger el código fuente. [cite_start]Alojar y respaldar tus extensiones de pyRevit en repositorios Git (como GitHub, GitLab o Azure DevOps) antes de que sea "demasiado tarde" es una práctica obligatoria[cite: 17]. Git permite rastrear cambios, colaborar con otros desarrolladores de la empresa y revertir el código si una actualización rompe un flujo de trabajo.
+
+## 2. Preparación del Repositorio
+Al preparar tu herramienta para distribución:
+* **Estructura limpia:** Asegúrate de que el repositorio contenga directamente la carpeta `.extension` (ej. `MiEmpresa.extension`).
+* [cite_start]**Ignorar archivos innecesarios:** Configura un archivo `.gitignore` para excluir archivos temporales, cachés de Python (`.pyc`) o elementos autogenerados durante las pruebas[cite: 68].
+* [cite_start]**Documentación:** Incluye siempre un archivo `README.md` en la raíz del repositorio que explique cómo utilizar la extensión y sus dependencias[cite: 131, 132].
+
+## 3. Métodos de Instalación y Despliegue
+Existen dos formas principales de instalar extensiones de pyRevit en los equipos de los usuarios finales:
+
+### A. Instalación Manual (Recomendada para usuarios básicos o pruebas locales)
+El método más directo consiste en agregar la extensión en la carpeta de itinerancia (Roaming) de Windows del usuario. 
+* [cite_start]Navega a la ruta introduciendo `%appdata%` en la barra de direcciones del explorador de archivos[cite: 134].
+* [cite_start]Copia el contenido de la extensión (la carpeta `.extension` completa) en la ruta de extensiones de pyRevit (usualmente `%appdata%\pyRevit\Extensions`)[cite: 134].
+* [cite_start]Recarga pyRevit en la interfaz de Revit para que los cambios surtan efecto[cite: 133]. [cite_start]Este enfoque es útil para configuraciones rápidas[cite: 134, 135].
+
+### B. Instalación Automatizada vía pyRevit CLI (Recomendada para empresas)
+[cite_start]Para evitar instalaciones manuales y facilitar actualizaciones corporativas, se debe utilizar la interfaz de línea de comandos (CLI) de pyRevit[cite: 132]. Este método puede integrarse en scripts de despliegue de TI (ej. archivos `.bat` o PowerShell).
+
+**Flujo de comandos:**
+1. [cite_start]Abre la terminal (`cmd`)[cite: 133].
+2. [cite_start]Ejecuta el comando de instalación apuntando al repositorio Git de la extensión[cite: 133]. 
+
+*Sintaxis de ejemplo:*
+```cmd
+pyrevit extend ui NombreExtension [https://github.com/Usuario/Repositorio.git](https://github.com/Usuario/Repositorio.git) --dest="C:\Ruta\De\Instalacion" --branch=main
+
+```
+
+*(Nota: Reemplaza la URL y las rutas por las de tu servidor corporativo o repositorio. Esto descargará la herramienta e instruirá a pyRevit para que la cargue)*.
+3. Si Revit ya estaba abierto, utiliza el botón "Reload" de pyRevit para que aparezca la nueva pestaña.
+
+## 4. Gestión de Actualizaciones
+
+* Al utilizar el método CLI vinculado a un repositorio Git, pyRevit puede gestionar las actualizaciones de las extensiones de manera integrada.
+
+
+* **Entornos separados:** Mantén siempre una rama `main` (producción) y ramas de desarrollo (`dev`). Los usuarios finales solo deben apuntar a la rama de producción para garantizar que las herramientas sean estables.
+
+```
+
+---
+
+### Resumen de la Implementación de la Skill
+
+Has construido una base sólida para tu agente experto en pyRevit. El sistema ahora cuenta con:
+1.  **SKILL.md:** Tu "cerebro" o prompt maestro con reglas estrictas y la metodología **P.R.O.C.E.S.S**.
+2.  **01_extension_architecture.md:** Reglas de directorios, `.pushbutton`, y boilerplate transaccional.
+3.  **02_wpf_mvvm_ui_design.md:** Mandatos sobre UI avanzadas, separación XAML/Python y *Data Binding*.
+4.  **03_revit_api_data_management.md:** Optimización extrema (Big O) usando `FilteredElementCollector` nativo.
+5.  **04_revit_2026_api_updates.md:** Protección contra el uso de código obsoleto (`ElementId` de 64 bits, etc.).
+6.  **05_deployment_and_git.md:** Estándares corporativos para el despliegue del código.
+
+Si empaquetas todo esto en una carpeta llamada `pyrevit-dev-mentor` y lo cargas como un *Skill* en tu asistente, tendrás un sistema altamente riguroso que no solo programará, sino que te obligará a mantener estándares de arquitectura de software, validará los *Edge Cases* antes de codificar, y te enseñará los pormenores de la API de Revit paso a paso.
+
+
+
+```
+
+
+
