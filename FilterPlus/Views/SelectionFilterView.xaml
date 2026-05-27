@@ -321,14 +321,14 @@
                 </Grid>
             </Border>
 
-            <!-- Card de Add Checked -->
+            <!-- Card de Increase Checked -->
             <Border Grid.Row="2" Background="White" CornerRadius="8" Padding="15,10" Margin="0,0,0,10" BorderBrush="#e8e8e8" BorderThickness="1">
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
-                    <TextBlock Grid.Row="0" Text="Add Checked" FontWeight="500" Margin="0,0,0,10" Foreground="#333" FontSize="13"/>
+                    <TextBlock Grid.Row="0" Text="Increase Checked" FontWeight="500" Margin="0,0,0,10" Foreground="#333" FontSize="13"/>
                     
                     <Grid Grid.Row="1" HorizontalAlignment="Center">
                         <Grid.ColumnDefinitions>
@@ -341,25 +341,44 @@
                         <!-- Columna Izquierda -->
                         <StackPanel Grid.Column="0">
                             <TextBlock Text="WHAT" FontSize="9" FontWeight="SemiBold" Foreground="#999" Margin="0,0,0,5"/>
-                            <CheckBox Content="Option 1" IsChecked="{Binding AddChecked1}" Style="{StaticResource SwitchStyle}" Margin="0,0,0,6" FontSize="11"/>
-                            <CheckBox Content="Option 2" IsChecked="{Binding AddChecked2}" Style="{StaticResource SwitchStyle}" Margin="0,0,0,6" FontSize="11"/>
-                            <CheckBox Content="Option 3" IsChecked="{Binding AddChecked3}" Style="{StaticResource SwitchStyle}" Margin="0,0,0,6" FontSize="11"/>
-                            <CheckBox Content="Option 4" IsChecked="{Binding AddChecked4}" Style="{StaticResource SwitchStyle}" Margin="0,0,0,6" FontSize="11"/>
-                            <CheckBox Content="Option 5" IsChecked="{Binding AddChecked5}" Style="{StaticResource SwitchStyle}" Margin="0,0,0,0" FontSize="11"/>
+                            <CheckBox Content="Same category" IsChecked="{Binding IncreaseWhatSameCategory}" Style="{StaticResource SwitchStyle}" Margin="0,0,0,6" FontSize="11"/>
+                            <CheckBox Content="Same Family" IsChecked="{Binding IncreaseWhatSameFamily}" Style="{StaticResource SwitchStyle}" Margin="0,0,0,6" FontSize="11"/>
+                            <CheckBox Content="Same Type" IsChecked="{Binding IncreaseWhatSameType}" Style="{StaticResource SwitchStyle}" Margin="0,0,0,6" FontSize="11"/>
+                            <CheckBox Content="Same Workset" IsChecked="{Binding IncreaseWhatSameWorkset}" Style="{StaticResource SwitchStyle}" Margin="0,0,0,6" FontSize="11"/>
+                            <CheckBox Content="Host of Element" IsChecked="{Binding IncreaseWhatHostOfElement}" Style="{StaticResource SwitchStyle}" Margin="0,0,0,6" FontSize="11"/>
+                            <CheckBox Content="Hosted Elements" IsChecked="{Binding IncreaseWhatHostedElements}" Style="{StaticResource SwitchStyle}" Margin="0,0,0,6" FontSize="11"/>
+                            <CheckBox Content="Nested Elements" IsChecked="{Binding IncreaseWhatNestedElements}" Style="{StaticResource SwitchStyle}" Margin="0,0,0,6" FontSize="11"/>
+                            <CheckBox Content="Joined Elements" IsChecked="{Binding IncreaseWhatJoinedElements}" Style="{StaticResource SwitchStyle}" Margin="0,0,0,6" FontSize="11"/>
+                            <CheckBox Content="Supercomponent" IsChecked="{Binding IncreaseWhatSupercomponent}" Style="{StaticResource SwitchStyle}" Margin="0,0,0,6" FontSize="11"/>
+                            <CheckBox Content="group of Assembly" IsChecked="{Binding IncreaseWhatGroupOfAssembly}" Style="{StaticResource SwitchStyle}" Margin="0,0,0,6" FontSize="11"/>
+                            <CheckBox Content="Dependent" IsChecked="{Binding IncreaseWhatDependent}" Style="{StaticResource SwitchStyle}" Margin="0,0,0,6" FontSize="11"/>
+                            <CheckBox Content="Intersects" IsChecked="{Binding IncreaseWhatIntersects}" Style="{StaticResource SwitchStyle}" Margin="0,0,0,6" FontSize="11"/>
+                            <CheckBox Content="Same MEP System" IsChecked="{Binding IncreaseWhatSameMEPSystem}" Style="{StaticResource SwitchStyle}" Margin="0,0,0,0" FontSize="11"/>
                         </StackPanel>
                         
                         <StackPanel Grid.Column="2">
                             <TextBlock Text="WHERE" FontSize="9" FontWeight="SemiBold" Foreground="#999" Margin="0,0,0,5"/>
-                            <CheckBox Content="Option 6" IsChecked="{Binding AddChecked6}" Style="{StaticResource SwitchStyle}" Margin="0,0,0,6" FontSize="11"/>
-                            <CheckBox Content="Option 7" IsChecked="{Binding AddChecked7}" Style="{StaticResource SwitchStyle}" Margin="0,0,0,6" FontSize="11"/>
+                            <RadioButton Content="All model" IsChecked="{Binding IncreaseWhereAllModel}" GroupName="WhereGroup" Margin="0,0,0,6" FontSize="11"/>
+                            <RadioButton Content="Current View" IsChecked="{Binding IncreaseWhereCurrentView}" GroupName="WhereGroup" Margin="0,0,0,6" FontSize="11"/>
                             
                             <TextBlock Text="HOW" FontSize="9" FontWeight="SemiBold" Foreground="#999" Margin="0,5,0,5"/>
+                            <RadioButton Content="Add ToCurrent" IsChecked="{Binding IncreaseHowAddToCurrent}" GroupName="HowGroup" Margin="0,0,0,6" FontSize="11"/>
+                            <RadioButton Content="Create New" IsChecked="{Binding IncreaseHowCreateNew}" GroupName="HowGroup" Margin="0,0,0,6" FontSize="11"/>
 
-                            <CheckBox Content="Option 8" IsChecked="{Binding AddChecked8}" Style="{StaticResource SwitchStyle}" Margin="0,0,0,6" FontSize="11"/>
-                            <CheckBox Content="Option 9" IsChecked="{Binding AddChecked9}" Style="{StaticResource SwitchStyle}" Margin="0,0,0,6" FontSize="11"/>
-                            <CheckBox Content="Option 10" IsChecked="{Binding AddChecked10}" Style="{StaticResource SwitchStyle}" Margin="0,0,0,0" FontSize="11"/>
+                            <TextBlock Text="UNSELECT ELEMENTS IF" FontSize="9" FontWeight="SemiBold" Foreground="#999" Margin="0,5,0,5"/>
+                            <CheckBox Content="Belongs to Group" IsChecked="{Binding IncreaseUnselectBelongsToGroup}" Style="{StaticResource SwitchStyle}" Margin="0,0,0,6" FontSize="11"/>
+                            <CheckBox Content="Belongs to Assembly" IsChecked="{Binding IncreaseUnselectBelongsToAssembly}" Style="{StaticResource SwitchStyle}" Margin="0,0,0,0" FontSize="11"/>
                         </StackPanel>
                     </Grid>
+
+                    <!-- APPLY BUTTON -->
+                    <Button Grid.Row="1" Content="Apply" Command="{Binding ApplyIncreaseCheckedCommand}" HorizontalAlignment="Right" VerticalAlignment="Bottom" Padding="12,3" Background="#007ACC" Foreground="White" BorderThickness="0" Cursor="Hand">
+                        <Button.Resources>
+                            <Style TargetType="Border">
+                                <Setter Property="CornerRadius" Value="4"/>
+                            </Style>
+                        </Button.Resources>
+                    </Button>
                 </Grid>
             </Border>
         </Grid>

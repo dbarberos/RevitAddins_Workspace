@@ -20,6 +20,9 @@ public class RevitSelectionService
     private readonly UIDocument _uiDoc;
     private readonly Document _doc;
 
+    public UIDocument UiDocument => _uiDoc;
+    public Document Document => _doc;
+
     public RevitSelectionService(UIDocument uiDoc)
     {
         _uiDoc = uiDoc;

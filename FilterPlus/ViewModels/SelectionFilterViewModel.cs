@@ -53,18 +53,30 @@ public partial class SelectionFilterViewModel : ObservableObject
     [ObservableProperty] private bool _isOnlyByName;
     [ObservableProperty] private bool _isUseRegex;
 
-    // Add Checked Options (Placeholders for UI)
-    [ObservableProperty] private bool _addChecked1;
-    [ObservableProperty] private bool _addChecked2;
-    [ObservableProperty] private bool _addChecked3;
-    [ObservableProperty] private bool _addChecked4;
-    [ObservableProperty] private bool _addChecked5;
-    [ObservableProperty] private bool _addChecked6;
-    [ObservableProperty] private bool _addChecked7;
-    [ObservableProperty] private bool _addChecked8;
-    [ObservableProperty] private bool _addChecked9;
-    [ObservableProperty] private bool _addChecked10;
+    // Increase Checked Options
+    [ObservableProperty] private bool _increaseWhatSameCategory;
+    [ObservableProperty] private bool _increaseWhatSameFamily;
+    [ObservableProperty] private bool _increaseWhatSameType;
+    [ObservableProperty] private bool _increaseWhatSameWorkset;
+    [ObservableProperty] private bool _increaseWhatHostOfElement;
+    [ObservableProperty] private bool _increaseWhatHostedElements;
+    [ObservableProperty] private bool _increaseWhatNestedElements;
+    [ObservableProperty] private bool _increaseWhatJoinedElements;
+    [ObservableProperty] private bool _increaseWhatSupercomponent;
+    [ObservableProperty] private bool _increaseWhatGroupOfAssembly;
+    [ObservableProperty] private bool _increaseWhatDependent;
+    [ObservableProperty] private bool _increaseWhatIntersects;
+    [ObservableProperty] private bool _increaseWhatSameMEPSystem;
 
+    [ObservableProperty] private bool _increaseWhereAllModel = true;
+    [ObservableProperty] private bool _increaseWhereCurrentView;
+
+    [ObservableProperty] private bool _increaseHowAddToCurrent = true;
+    [ObservableProperty] private bool _increaseHowCreateNew;
+
+    [ObservableProperty] private bool _increaseUnselectBelongsToGroup;
+    [ObservableProperty] private bool _increaseUnselectBelongsToAssembly;
+    
     private List<string> _activeGroupings = new List<string>();
 
     [ObservableProperty] private SelectionScope _currentScope = SelectionScope.CurrentSelection;
@@ -790,6 +802,276 @@ public partial class SelectionFilterViewModel : ObservableObject
 
         // Clear the text box after applying
         FilterText = string.Empty;
+    }
+
+    [RelayCommand]
+    private void ApplyIncreaseChecked()
+    {
+        try
+        {
+            TreeItemViewModel.IsBulkUpdating = true;
+            
+            // 1. Get currently checked ElementIds from the tree
+            var currentCheckedIds = new List<Autodesk.Revit.DB.ElementId>();
+            foreach (var node in RootNodes)
+                node.GetAllSelectedIds(currentCheckedIds);
+                
+            if (currentCheckedIds.Count == 0)
+            {
+                TreeItemViewModel.IsBulkUpdating = false;
+                StatusMessage = "No elements selected in the tree to expand.";
+                return;
+            }
+
+            var doc = _selectionService.Document;
+            var sourceElements = currentCheckedIds.Select(id => doc.GetElement(id)).Where(e => e != null).ToList();
+
+            // 2. Define search domain based on WHERE
+            Autodesk.Revit.DB.FilteredElementCollector collector;
+            if (IncreaseWhereCurrentView)
+                collector = new Autodesk.Revit.DB.FilteredElementCollector(doc, doc.ActiveView.Id);
+            else
+                collector = new Autodesk.Revit.DB.FilteredElementCollector(doc);
+                
+            var domainElements = collector.WhereElementIsNotElementType().ToElements();
+            
+            var targetIds = new HashSet<Autodesk.Revit.DB.ElementId>();
+            
+            // 3. Apply WHAT rules
+            if (IncreaseWhatSameCategory)
+            {
+                var targetCatIds = sourceElements.Select(e => e.Category?.Id).Where(id => id != null).ToHashSet();
+                foreach (var el in domainElements)
+                {
+                    if (el.Category != null && targetCatIds.Contains(el.Category.Id))
+                        targetIds.Add(el.Id);
+                }
+            }
+            if (IncreaseWhatSameFamily || IncreaseWhatSameType)
+            {
+                var targetFamilyNames = new HashSet<string>();
+                var targetTypeIds = new HashSet<Autodesk.Revit.DB.ElementId>();
+                
+                foreach (var el in sourceElements)
+                {
+                    var typeId = el.GetTypeId();
+                    if (typeId != null && typeId != Autodesk.Revit.DB.ElementId.InvalidElementId)
+                    {
+                        targetTypeIds.Add(typeId);
+                        var type = doc.GetElement(typeId) as Autodesk.Revit.DB.ElementType;
+                        if (type != null && !string.IsNullOrEmpty(type.FamilyName))
+                        {
+                            targetFamilyNames.Add(type.FamilyName);
+                        }
+                    }
+                }
+                
+                foreach (var el in domainElements)
+                {
+                    var typeId = el.GetTypeId();
+                    if (typeId == null || typeId == Autodesk.Revit.DB.ElementId.InvalidElementId) continue;
+
+                    if (IncreaseWhatSameType)
+                    {
+                        if (targetTypeIds.Contains(typeId))
+                            targetIds.Add(el.Id);
+                    }
+                    else if (IncreaseWhatSameFamily)
+                    {
+                        var type = doc.GetElement(typeId) as Autodesk.Revit.DB.ElementType;
+                        if (type != null && !string.IsNullOrEmpty(type.FamilyName) && targetFamilyNames.Contains(type.FamilyName))
+                        {
+                            targetIds.Add(el.Id);
+                        }
+                    }
+                }
+            }
+            if (IncreaseWhatSameWorkset && doc.IsWorkshared)
+            {
+                var targetWorksetIds = sourceElements.Select(e => e.WorksetId).Where(id => id != Autodesk.Revit.DB.WorksetId.InvalidWorksetId).ToHashSet();
+                foreach (var el in domainElements)
+                {
+                    if (targetWorksetIds.Contains(el.WorksetId))
+                        targetIds.Add(el.Id);
+                }
+            }
+            if (IncreaseWhatHostOfElement)
+            {
+                foreach (var el in sourceElements)
+                {
+                    if (el is Autodesk.Revit.DB.FamilyInstance fi && fi.Host != null)
+                        targetIds.Add(fi.Host.Id);
+                }
+            }
+            if (IncreaseWhatHostedElements)
+            {
+                var sourceIdsHash = sourceElements.Select(e => e.Id).ToHashSet();
+                foreach (var el in domainElements)
+                {
+                    if (el is Autodesk.Revit.DB.FamilyInstance fi && fi.Host != null && sourceIdsHash.Contains(fi.Host.Id))
+                        targetIds.Add(el.Id);
+                }
+            }
+            if (IncreaseWhatNestedElements)
+            {
+                foreach (var el in sourceElements)
+                {
+                    if (el is Autodesk.Revit.DB.FamilyInstance fi)
+                    {
+                        var subComponents = fi.GetSubComponentIds();
+                        foreach (var subId in subComponents) targetIds.Add(subId);
+                    }
+                }
+            }
+            if (IncreaseWhatJoinedElements)
+            {
+                foreach (var el in sourceElements)
+                {
+                    try {
+                        var joined = Autodesk.Revit.DB.JoinGeometryUtils.GetJoinedElements(doc, el);
+                        foreach (var jId in joined) targetIds.Add(jId);
+                    } catch {} // Fails for elements that cannot be joined
+                }
+            }
+            if (IncreaseWhatSupercomponent)
+            {
+                foreach (var el in sourceElements)
+                {
+                    if (el is Autodesk.Revit.DB.FamilyInstance fi && fi.SuperComponent != null)
+                    {
+                        targetIds.Add(fi.SuperComponent.Id);
+                    }
+                }
+            }
+            if (IncreaseWhatGroupOfAssembly)
+            {
+                foreach (var el in sourceElements)
+                {
+                    if (el.GroupId != Autodesk.Revit.DB.ElementId.InvalidElementId)
+                    {
+                        var group = doc.GetElement(el.GroupId) as Autodesk.Revit.DB.Group;
+                        if (group != null)
+                        {
+                            foreach (var memberId in group.GetMemberIds()) targetIds.Add(memberId);
+                        }
+                    }
+                    if (el.AssemblyInstanceId != Autodesk.Revit.DB.ElementId.InvalidElementId)
+                    {
+                        var assembly = doc.GetElement(el.AssemblyInstanceId) as Autodesk.Revit.DB.AssemblyInstance;
+                        if (assembly != null)
+                        {
+                            foreach (var memberId in assembly.GetMemberIds()) targetIds.Add(memberId);
+                        }
+                    }
+                }
+            }
+            if (IncreaseWhatDependent)
+            {
+                foreach (var el in sourceElements)
+                {
+                    try
+                    {
+                        var dependentIds = el.GetDependentElements(null);
+                        foreach (var depId in dependentIds) targetIds.Add(depId);
+                    } catch {}
+                }
+            }
+            if (IncreaseWhatIntersects && domainElements.Count > 0)
+            {
+                var domainIds = domainElements.Select(e => e.Id).ToList();
+                foreach (var el in sourceElements)
+                {
+                    try
+                    {
+                        var intersects = new Autodesk.Revit.DB.FilteredElementCollector(doc, domainIds)
+                            .WherePasses(new Autodesk.Revit.DB.ElementIntersectsElementFilter(el))
+                            .ToElementIds();
+                        foreach (var id in intersects) targetIds.Add(id);
+                    }
+                    catch { } // Some elements cannot be used in intersection filters
+                }
+            }
+            if (IncreaseWhatSameMEPSystem)
+            {
+                foreach (var el in sourceElements)
+                {
+                    Autodesk.Revit.DB.ConnectorManager cm = null;
+                    if (el is Autodesk.Revit.DB.FamilyInstance fi && fi.MEPModel != null)
+                        cm = fi.MEPModel.ConnectorManager;
+                    else if (el is Autodesk.Revit.DB.MEPCurve mepCurve)
+                        cm = mepCurve.ConnectorManager;
+                    
+                    if (cm != null)
+                    {
+                        foreach (Autodesk.Revit.DB.Connector conn in cm.Connectors)
+                        {
+                            var mepSystem = conn.MEPSystem;
+                            if (mepSystem != null)
+                            {
+                                foreach (Autodesk.Revit.DB.Element sysEl in mepSystem.Elements)
+                                    targetIds.Add(sysEl.Id);
+                            }
+                        }
+                    }
+                }
+            }
+            
+            // Unify with current if AddToCurrent is selected
+            if (IncreaseHowAddToCurrent)
+            {
+                foreach (var id in currentCheckedIds) targetIds.Add(id);
+            }
+            
+            // 4. Exclusions (UNSELECT ELEMENTS IF)
+            if (IncreaseUnselectBelongsToGroup || IncreaseUnselectBelongsToAssembly)
+            {
+                var finalTargetIds = new HashSet<Autodesk.Revit.DB.ElementId>();
+                foreach (var id in targetIds)
+                {
+                    var el = doc.GetElement(id);
+                    if (el == null) continue;
+                    
+                    if (IncreaseUnselectBelongsToGroup && el.GroupId != Autodesk.Revit.DB.ElementId.InvalidElementId)
+                        continue;
+                    if (IncreaseUnselectBelongsToAssembly && el.AssemblyInstanceId != Autodesk.Revit.DB.ElementId.InvalidElementId)
+                        continue;
+                        
+                    finalTargetIds.Add(id);
+                }
+                targetIds = finalTargetIds;
+            }
+
+            // 5. Apply to Tree
+            foreach (var node in RootNodes)
+                node.SetCheckedState(false); // Reset all first
+
+            void CheckNodeRecursive(TreeItemViewModel node)
+            {
+                if (node.ElementId != null && targetIds.Contains(node.ElementId))
+                {
+                    node.IsChecked = true;
+                }
+                foreach (var child in node.Children)
+                    CheckNodeRecursive(child);
+            }
+
+            foreach (var node in RootNodes)
+                CheckNodeRecursive(node);
+                
+            foreach (var node in RootNodes) node.RefreshState();
+
+            UpdatePersistentCheckedIdsFromTree();
+            StatusMessage = $"Increase applied. Total checked: {CheckedElementsCount}";
+        }
+        catch (System.Exception ex)
+        {
+            LoggerService.LogError("ApplyIncreaseChecked", ex);
+            StatusMessage = "Error al expandir selección.";
+        }
+        finally
+        {
+            TreeItemViewModel.IsBulkUpdating = false;
+        }
     }
 
     private void FilterNode(TreeItemViewModel node, string searchText, System.Text.RegularExpressions.Regex searchRegex, bool isEmpty)
