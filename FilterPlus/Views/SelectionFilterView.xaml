@@ -341,19 +341,19 @@
                         <!-- Columna Izquierda -->
                         <StackPanel Grid.Column="0">
                             <TextBlock Text="WHAT" FontSize="9" FontWeight="SemiBold" Foreground="#999" Margin="0,0,0,5"/>
-                            <CheckBox Content="Same category" IsChecked="{Binding IncreaseWhatSameCategory}" Style="{StaticResource SwitchStyle}" Margin="0,0,0,6" FontSize="11"/>
-                            <CheckBox Content="Same Family" IsChecked="{Binding IncreaseWhatSameFamily}" Style="{StaticResource SwitchStyle}" Margin="0,0,0,6" FontSize="11"/>
-                            <CheckBox Content="Same Type" IsChecked="{Binding IncreaseWhatSameType}" Style="{StaticResource SwitchStyle}" Margin="0,0,0,6" FontSize="11"/>
-                            <CheckBox Content="Same Workset" IsChecked="{Binding IncreaseWhatSameWorkset}" Style="{StaticResource SwitchStyle}" Margin="0,0,0,6" FontSize="11"/>
-                            <CheckBox Content="Host of Element" IsChecked="{Binding IncreaseWhatHostOfElement}" Style="{StaticResource SwitchStyle}" Margin="0,0,0,6" FontSize="11"/>
-                            <CheckBox Content="Hosted Elements" IsChecked="{Binding IncreaseWhatHostedElements}" Style="{StaticResource SwitchStyle}" Margin="0,0,0,6" FontSize="11"/>
-                            <CheckBox Content="Nested Elements" IsChecked="{Binding IncreaseWhatNestedElements}" Style="{StaticResource SwitchStyle}" Margin="0,0,0,6" FontSize="11"/>
-                            <CheckBox Content="Joined Elements" IsChecked="{Binding IncreaseWhatJoinedElements}" Style="{StaticResource SwitchStyle}" Margin="0,0,0,6" FontSize="11"/>
-                            <CheckBox Content="Supercomponent" IsChecked="{Binding IncreaseWhatSupercomponent}" Style="{StaticResource SwitchStyle}" Margin="0,0,0,6" FontSize="11"/>
-                            <CheckBox Content="group of Assembly" IsChecked="{Binding IncreaseWhatGroupOfAssembly}" Style="{StaticResource SwitchStyle}" Margin="0,0,0,6" FontSize="11"/>
-                            <CheckBox Content="Dependent" IsChecked="{Binding IncreaseWhatDependent}" Style="{StaticResource SwitchStyle}" Margin="0,0,0,6" FontSize="11"/>
-                            <CheckBox Content="Intersects" IsChecked="{Binding IncreaseWhatIntersects}" Style="{StaticResource SwitchStyle}" Margin="0,0,0,6" FontSize="11"/>
-                            <CheckBox Content="Same MEP System" IsChecked="{Binding IncreaseWhatSameMEPSystem}" Style="{StaticResource SwitchStyle}" Margin="0,0,0,0" FontSize="11"/>
+                            <CheckBox Content="Same category" IsChecked="{Binding IncreaseWhatSameCategory}" Style="{StaticResource SwitchStyle}" Margin="0,0,0,6" FontSize="11" ToolTip="Finds all elements belonging to the same Categories as your current selection and adds them to the tree."/>
+                            <CheckBox Content="Same Family" IsChecked="{Binding IncreaseWhatSameFamily}" Style="{StaticResource SwitchStyle}" Margin="0,0,0,6" FontSize="11" ToolTip="Finds all elements belonging to the same Families as your current selection and adds them to the tree."/>
+                            <CheckBox Content="Same Type" IsChecked="{Binding IncreaseWhatSameType}" Style="{StaticResource SwitchStyle}" Margin="0,0,0,6" FontSize="11" ToolTip="Finds all elements of the exact same Types as your current selection and adds them to the tree."/>
+                            <CheckBox Content="Same Workset" IsChecked="{Binding IncreaseWhatSameWorkset}" Style="{StaticResource SwitchStyle}" Margin="0,0,0,6" FontSize="11" ToolTip="Finds all elements located in the same Worksets as your current selection and adds them to the tree."/>
+                            <CheckBox Content="Host of Element" IsChecked="{Binding IncreaseWhatHostOfElement}" Style="{StaticResource SwitchStyle}" Margin="0,0,0,6" FontSize="11" ToolTip="If you selected hosted elements (e.g., doors), this finds and adds their parent Hosts (e.g., walls) to the tree."/>
+                            <CheckBox Content="Hosted Elements" IsChecked="{Binding IncreaseWhatHostedElements}" Style="{StaticResource SwitchStyle}" Margin="0,0,0,6" FontSize="11" ToolTip="If you selected host elements (e.g., walls), this finds and adds all elements hosted by them to the tree."/>
+                            <CheckBox Content="Nested Elements" IsChecked="{Binding IncreaseWhatNestedElements}" Style="{StaticResource SwitchStyle}" Margin="0,0,0,6" FontSize="11" ToolTip="If you selected parent families, this finds and adds all their internal nested subcomponents to the tree."/>
+                            <CheckBox Content="Joined Elements" IsChecked="{Binding IncreaseWhatJoinedElements}" Style="{StaticResource SwitchStyle}" Margin="0,0,0,6" FontSize="11" ToolTip="Finds all elements that are geometrically joined to your current selection and adds them to the tree."/>
+                            <CheckBox Content="Supercomponent" IsChecked="{Binding IncreaseWhatSupercomponent}" Style="{StaticResource SwitchStyle}" Margin="0,0,0,6" FontSize="11" ToolTip="If you selected nested subcomponents, this finds and adds their parent 'Supercomponent' family to the tree."/>
+                            <CheckBox Content="Group or Assembly" IsChecked="{Binding IncreaseWhatGroupOfAssembly}" Style="{StaticResource SwitchStyle}" Margin="0,0,0,6" FontSize="11" ToolTip="Finds all elements that belong to the same Model Groups or Assemblies as your current selection and adds them."/>
+                            <CheckBox Content="Dependent" IsChecked="{Binding IncreaseWhatDependent}" Style="{StaticResource SwitchStyle}" Margin="0,0,0,6" FontSize="11" ToolTip="Finds all elements that depend on your selection (like tags or dimensions) and adds them."/>
+                            <CheckBox Content="Intersects" IsChecked="{Binding IncreaseWhatIntersects}" Style="{StaticResource SwitchStyle}" Margin="0,0,0,6" FontSize="11" ToolTip="Runs a 3D geometric intersection check and adds any elements that physically collide with your selection."/>
+                            <CheckBox Content="Same MEP System" IsChecked="{Binding IncreaseWhatSameMEPSystem}" Style="{StaticResource SwitchStyle}" Margin="0,0,0,0" FontSize="11" ToolTip="Finds the MEP networks of your selection and adds all connected physical pipes, ducts, or equipment to the tree."/>
                         </StackPanel>
                         
                         <StackPanel Grid.Column="2">
