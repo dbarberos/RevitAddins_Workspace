@@ -27,6 +27,7 @@ For deep technical details, consult the following files in the `references/` fol
 - `references/csproj_templates.md`: Base `.csproj` templates for .NET Framework 4.8 and .NET 8 using `Nice3point`.
 - `references/revit_breaking_changes.md`: How to manage units conversion with `ForgeTypeId` vs legacy `DisplayUnitType` and other API breakages.
 - `references/revit_filtered_element_collector.md`: Mandatory guidelines for high-performance element selection, quick filters, and memory-saving iterations.
+- `references/revit_element_relations_and_connectivity.md`: Advanced navigation of element relationships, model groups, assemblies, 3D physical intersection filters, and MEP connector networks connectivity.
 
 # Agent Execution Flow
 1. When the user asks you to create a new Add-in, your first step MUST be to run `dotnet new revit -n [Name]`.

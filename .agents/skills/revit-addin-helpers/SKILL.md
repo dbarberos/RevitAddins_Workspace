@@ -24,6 +24,7 @@ The following files are located in the `assets/` folder and you can copy them di
 - `assets/RevitUI.cs`: Simplified wrapper for `TaskDialog` and Dark UI Theme detection.
 - `assets/UnitHelper.cs`: Unit conversion utilities using `ForgeTypeId`.
 - `assets/OperationResult.cs`: Wrapper for operation results in a controlled manner.
+- `assets/RevitRelationshipUtils.cs`: High-performance utilities to query nesting, groups, assemblies, physical 3D intersections, and MEP system networks.
 
 ## Integration Rules
 - All helpers must be placed in the project's `/Helpers` folder.
