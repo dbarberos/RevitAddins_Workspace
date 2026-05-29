@@ -1,20 +1,20 @@
 ---
 name: apply-skillopt
-description: Optimiza y documenta de forma autónoma el conocimiento técnico y de depuración adquirido en desarrollos anteriores (C# y Python). Se activa mediante "aplica el skillopt para todo el trabajo realizado anterior de <feature/cambio>". Extrae lecciones aprendidas, crea guías conceptuales y extrae snippets de código en las habilidades del repositorio correspondientes.
+description: Autonomously optimizes and documents technical knowledge and debugging lessons-learned from previous development cycles (C# and Python). Triggered via "aplica el skillopt para todo el trabajo realizado anterior de <feature/change>". Synthesizes lessons, creates technical reference guides, and extracts reusable code assets into corresponding global repository skills.
 ---
 
-# Apply SkillOpt — Meta-Optimización de Habilidades de IA
+# Apply SkillOpt — Meta-Optimization of AI Skills
 
-Este skill actúa como un optimizador y consolidador de conocimientos en el repositorio. Permite que el agente extraiga las mejores prácticas, reglas de diseño de API de Revit y resoluciones de bugs de forma autónoma a partir de tareas completadas, integrándolas directamente en las habilidades globales correspondientes de manera estructurada y modular.
+This skill acts as a dynamic knowledge consolidator and optimizer within the repository. It empowers the agent to autonomously extract best practices, Revit API design rules, and debugging resolutions from completed tasks, structuring and injecting them directly into the relevant global skills for future usage.
 
-## 📚 Referencias Técnicas (Knowledge Base)
+## 📚 Technical References (Knowledge Base)
 
-Consulta los siguientes archivos en la carpeta `references/` para conocer el flujo operativo detallado de SkillOpt adaptado a este proyecto:
+Refer to the following files in the `references/` folder to understand the detailed SkillOpt operational workflow customized for this project:
 
-*   `references/guia_skillopt_workflow.md`: Guía de funcionamiento paso a paso para el análisis de trayectoria, validación y actualización de skills del repositorio.
+*   `references/skillopt_workflow_guide.md`: Step-by-step guideline for trajectory analysis, verification, and automated updating of repository skills.
 
-## 📦 Assets (Plantillas y Scripts de Soporte)
+## 📦 Assets (Templates & Support Scripts)
 
-Los scripts automatizados auxiliares residen en:
+Helper automation scripts reside under:
 
-*   `scripts/git_analyzer.ps1`: (Opcional) Script de PowerShell para analizar archivos modificados en el último commit o estado de trabajo local.
+*   `scripts/git_analyzer.ps1`: (Optional) PowerShell script to analyze modified files in the last commit or active workspace state.

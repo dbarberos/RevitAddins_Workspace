@@ -148,7 +148,7 @@ Clasificar en carpetas específicas del proyecto en desarrollo:
 - `docs/assets/`: Plantillas base o configuraciones generadas.
 - `docs/scripts/`: Scripts locales de automatización.
 
-*Patrón de Nombres:* `[tipo_artefacto]_[palabras_clave]_[YYYY-MM-DD_HHmm].md`
+*Patrón de Nombres:* `[tipo_artefacto]_[YYYYMMDD]_[descripcion_breve].md` (ej. `walkthrough_20260529_my_new_feature.md`)
 
 ### B. Para Repositorio de Skills Globales (`.agents/skills/` folder):
 Nunca engrosar el archivo `SKILL.md` principal (que actúa solo como índice). Distribuir el conocimiento así:

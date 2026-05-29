@@ -28,8 +28,9 @@ For deep technical details, consult the following files in the `references/` fol
 - `references/revit_breaking_changes.md`: How to manage units conversion with `ForgeTypeId` vs legacy `DisplayUnitType` and other API breakages.
 - `references/revit_filtered_element_collector.md`: Mandatory guidelines for high-performance element selection, quick filters, and memory-saving iterations.
 - `references/revit_element_relations_and_connectivity.md`: Advanced navigation of element relationships, model groups, assemblies, 3D physical intersection filters, and MEP connector networks connectivity.
+- `references/revit_model_exploration_and_filtering.md`: Advanced querying scopes, safe loadable/system family type resolution, sequential phase sorting, and safe parameter index mining.
 
 # Agent Execution Flow
 1. When the user asks you to create a new Add-in, your first step MUST be to run `dotnet new revit -n [Name]`.
 2. Your second step MUST be to restructure the `/UI` folders into `/Views` and `/ViewModels` according to MVVM standards.
-3. Whenever you create, iterate, or modify an add-in, you MUST copy the generated artifacts (Implementation Plan, Task, and Walkthrough) to the current project's `docs/` folder, following the modular documentation standard (e.g. `docs/references/[artifact]_[keywords]_[YYYY-MM-DD_HHmm].md`).
+3. Whenever you create, iterate, or modify an add-in, you MUST copy the generated artifacts (Implementation Plan, Task, and Walkthrough) to the current project's `docs/` folder, following the modular documentation standard (e.g. `docs/references/[artifact]_[YYYYMMDD]_[brief_description].md`).

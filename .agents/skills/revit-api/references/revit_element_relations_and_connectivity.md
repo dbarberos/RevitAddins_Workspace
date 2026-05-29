@@ -1,17 +1,17 @@
 # Revit Element Relations, Grouping, and MEP Systems Connectivity
 
-Esta guía técnica proporciona patrones de diseño óptimos y lecciones de depuración para navegar relaciones complejas entre elementos del modelo en Autodesk Revit (C#).
+This technical guide provides optimal design patterns and debugging lessons-learned for navigating complex relationships between model elements in Autodesk Revit using C#.
 
 ---
 
-## 1. Supercomponentes (Nested Families)
-Al trabajar con familias anidadas (*nested families*), a menudo necesitamos identificar el componente principal o contenedor de un elemento secundario seleccionado.
+## 1. Supercomponents (Nested Families)
+When working with nested family instances, it is often necessary to identify the parent family instance that acts as the container for a selected subcomponent.
 
-*   **API Clave:** `(el as FamilyInstance)?.SuperComponent`
-*   **Regla Óptima:**
-    *   Si `SuperComponent` es diferente de `null`, el elemento seleccionado es una subfamilia.
-    *   Para obtener el elemento padre que controla la instancia completa, se navega recursivamente hacia arriba o se lee directamente el primer `SuperComponent`.
-*   **Código de Referencia:**
+*   **Key API:** `(el as FamilyInstance)?.SuperComponent`
+*   **Optimal Pattern:**
+    *   If `SuperComponent` is not `null`, the selected element is a nested subcomponent.
+    *   To find the top-level parent family instance controlling the active nested group, recursively traverse upwards or query the direct `SuperComponent`.
+*   **Reference Code:**
     ```csharp
     public static Element GetParentFamily(Element element)
     {
@@ -25,15 +25,15 @@ Al trabajar con familias anidadas (*nested families*), a menudo necesitamos iden
 
 ---
 
-## 2. Grupos y Ensamblajes (Model Groups & Assemblies)
-Los elementos pueden pertenecer a una agrupación física (`Group`) o a una instancia de ensamblaje (`AssemblyInstance`). Si el usuario selecciona un elemento miembro, comúnmente se requiere seleccionar toda la agrupación.
+## 2. Groups and Assemblies (Model Groups & Assemblies)
+Elements in Revit can belong to a physical `Group` or an `AssemblyInstance`. If a user selects a nested member, the add-in commonly needs to select the entire grouping.
 
-*   **API Clave:** `GroupId`, `AssemblyInstanceId` y `GetMemberIds()`
-*   **Patrón Óptimo:**
+*   **Key API:** `GroupId`, `AssemblyInstanceId` and `GetMemberIds()`
+*   **Optimal Pattern:**
     ```csharp
     public static ICollection<ElementId> GetGroupingMembers(Element element, Document doc)
     {
-        // 1. Verificar si pertenece a un Grupo de Modelo
+        // 1. Check if the element belongs to a Model Group
         if (element.GroupId != ElementId.InvalidElementId)
         {
             if (doc.GetElement(element.GroupId) is Group group)
@@ -42,7 +42,7 @@ Los elementos pueden pertenecer a una agrupación física (`Group`) o a una inst
             }
         }
 
-        // 2. Verificar si pertenece a un Ensamblaje (Assembly)
+        // 2. Check if the element belongs to an Assembly Instance
         if (element.AssemblyInstanceId != ElementId.InvalidElementId)
         {
             if (doc.GetElement(element.AssemblyInstanceId) is AssemblyInstance assembly)
@@ -57,30 +57,30 @@ Los elementos pueden pertenecer a una agrupación física (`Group`) o a una inst
 
 ---
 
-## 3. Elementos Dependientes
-Existen relaciones de dependencia lógica (cotas, etiquetas de texto, barridos de muro hospedados, etc.) que se destruyen o mueven junto con el elemento anfitrión.
+## 3. Dependent Elements
+Logical dependency relationships (e.g., hosted tags, dimension lines, wall sweeps, hosted inserts) can be queried using Revit's native dependency crawler. These elements are typically modified or deleted alongside their host.
 
-*   **API Clave:** `Element.GetDependentElements(ElementFilter)`
-*   **Regla de Performance:**
-    *   Pasar `null` al filtro recupera **todos** los elementos dependientes.
-    *   Es sumamente útil para recolectar anotaciones de documentación en vistas asociadas de forma instantánea.
+*   **Key API:** `Element.GetDependentElements(ElementFilter)`
+*   **Performance Rule:**
+    *   Passing `null` as the filter argument retrieves **all** dependent elements.
+    *   This is highly useful for instantly collecting associated annotations in views when processing an element.
 
 ---
 
-## 4. Intersección Física 3D Real (Real 3D Physical Intersection)
-A menudo requerimos buscar elementos que colisionan o intersectan físicamente con nuestra selección. 
+## 4. Real 3D Physical Intersection
+It is often necessary to find elements that physically clash or intersect with a user's active selection.
 
-*   **API Clave:** `ElementIntersectsElementFilter`
-*   **Lección Aprendida (Performance & Scope):**
-    *   *Fallo Común:* Aplicar un filtro de intersección física en un `FilteredElementCollector` global de todo el documento es sumamente lento y puede congelar Revit en modelos grandes.
-    *   *Solución Óptima (Filtrado en Cascada):* Restringir el recolector de intersección a un **dominio de búsqueda pre-filtrado** (por ejemplo, los elementos actualmente cargados en la vista o una lista acotada de identificadores), y aplicar el filtro físico individualmente contra cada elemento origen.
-*   **Código de Referencia:**
+*   **Key API:** `ElementIntersectsElementFilter`
+*   **Lesson Learned (Performance & Scope):**
+    *   *Common Failure:* Applying a physical intersection filter directly to a global `FilteredElementCollector` scanned across the entire document is extremely slow and will lock up Revit in medium-to-large models.
+    *   *Optimal Solution (Cascaded Filtering):* Always restrict the intersection collector to a **pre-filtered search domain** (e.g., elements loaded in the active view or a bounded list of pre-selected identifiers), and then apply the physical clashing filter individually.
+*   **Reference Code:**
     ```csharp
     public static List<Element> GetIntersectingElements(Element sourceElement, ICollection<ElementId> searchDomainIds, Document doc)
     {
         if (searchDomainIds == null || searchDomainIds.Count == 0) return new List<Element>();
 
-        // Restringir el colector únicamente al dominio acotado para evitar escaneo completo de base de datos
+        // Restrict the collector to the pre-filtered domain to avoid full DB table scans
         using (var collector = new FilteredElementCollector(doc, searchDomainIds))
         {
             var intersectFilter = new ElementIntersectsElementFilter(sourceElement);
@@ -91,17 +91,17 @@ A menudo requerimos buscar elementos que colisionan o intersectan físicamente c
 
 ---
 
-## 5. Conectividad y Redes de Sistemas MEP
-En ingeniería MEP (mecánica, electricidad y fontanería), los conductos, tuberías y terminales están conectados en redes. Si necesitamos propagar una selección o comprobar continuidad física a lo largo del sistema, debemos navegar a través de la conectividad de los conectores.
+## 5. MEP System Connectivity and Networks
+In mechanical, electrical, and plumbing (MEP) engineering, ducts, pipes, fittings, and mechanical equipment are linked into networks. To propagate selections or verify flow continuity across a system, you must traverse connector points.
 
-*   **API Clave:** `ConnectorManager`, `Connector` y `MEPSystem`
-*   **Estrategia de Navegación de Red:**
-    1.  Determinar si el elemento es un elemento de curva MEP (`MEPCurve`) o un equipo/terminal con un modelo MEP (`FamilyInstance.MEPModel`).
-    2.  Obtener el `ConnectorManager` del objeto.
-    3.  Iterar todos los conectores activos (`Connectors`).
-    4.  Para cada conector, leer su `MEPSystem` correspondiente.
-    5.  Si el sistema es válido, extraer todas sus partes físicas a través de `mepSystem.Elements`.
-*   **Código de Referencia:**
+*   **Key API:** `ConnectorManager`, `Connector`, and `MEPSystem`
+*   **Network Traversal Strategy:**
+    1.  Determine if the target element is an MEP curve (`MEPCurve` (duct/pipe)) or a terminal/equipment with an active MEP model (`FamilyInstance.MEPModel`).
+    2.  Retrieve the object's `ConnectorManager`.
+    3.  Iterate through all active `Connectors`.
+    4.  For each connector, read its associated `MEPSystem`.
+    5.  If a valid system is resolved, extract all its physical member components via `mepSystem.Elements`.
+*   **Reference Code:**
     ```csharp
     public static List<Element> GetMEPSystemElements(Element element, Document doc)
     {
@@ -130,7 +130,7 @@ En ingeniería MEP (mecánica, electricidad y fontanería), los conductos, tuber
                         systemElements.Add(mepElement);
                     }
                 }
-                // Si encontramos un sistema válido, comúnmente no requerimos seguir iterando otros conectores
+                // Once a valid MEP system is found, further connector checking is usually unnecessary
                 break;
             }
         }
