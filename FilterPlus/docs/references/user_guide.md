@@ -27,10 +27,12 @@ FilterPlus respects user privacy. The application operates entirely locally with
 
 ---
 
-## 3. Installation & Custom Installer Justification
-The add-in is distributed via a professional custom MSI installer. 
+## 3. Installation & Uninstallation
+The installer that ran when you downloaded this plug-in from the Autodesk App Store has already installed the plug-in. You may need to restart the Autodesk product to activate the plug-in. 
 
-**Justification for Custom Installer:**
+To uninstall this plug-in, exit the Autodesk product if you are currently running it, simply rerun the installer by downloading it again from the Autodesk App Store, and select the 'Uninstall' button, or you can uninstall it from 'Control Panel\Programs\Programs and Features' (Windows 10/11), just as you would uninstall any other application from your system.
+
+**Justification for Custom Installer (If using MSI):**
 A custom installer is strictly necessary because FilterPlus requires installation across multiple locations to support multiple Revit versions simultaneously (2023, 2024, 2025, 2026, and 2027). The installer must dynamically detect which versions of Revit are present on the user's system and place the appropriate `Addins` manifest and `.dll` payloads into their respective `%AppData%\Autodesk\Revit\Addins\[Version]` directories. Furthermore, the custom installer seamlessly handles the automatic uninstallation of older versions prior to installing new updates, ensuring clean registries and preventing duplicate ribbon icons or API conflicts. 
 
 1.  Close all open Revit sessions.
@@ -39,25 +41,79 @@ A custom installer is strictly necessary because FilterPlus requires installatio
 4.  Upon opening Revit, if a security prompt appears, select **"Always Load"**.
 
 > [!NOTE]
-> Uninstallation completely removes all application files and settings from the system. When a newer version is installed, the installer will automatically remove the older version first.
+> Uninstallation completely removes all application files and settings from the system. When a new version is installed, the installer will automatically remove the older version first.
 
 ---
 
-## 4. Commands and Features Guide
+## 4. Usage Instructions
 
-### 3.1. Ribbon Panel
+### FilterPlus Hierarchical Explorer
+The main FilterPlus application allows you to filter and navigate elements in your active selection or project. It constructs a dynamic hierarchical tree-view categorized by **Category > Family > Type > Instance** (Element ID). Unlike standard flat selection filters, it displays element counts at each level and allows you to select, check, or uncheck elements interactively, immediately synchronizing your choices with the active Revit selection.
+
+### Pre-Filtering (Dropdown Filters)
+Filter and narrow down elements before selecting or displaying them. Dropdown controls at the top of the interface let you pre-filter elements based on:
+- **Category**
+- **Family**
+- **Type**
+- **Level**
+- **Workset**
+
+By default, selecting "Todos" (All) displays all elements, while choosing a specific value isolates those elements within the tree structure.
+
+### Semantic Grouping & Sorting
+You can dynamically restructure the explorer's hierarchy by grouping elements semantically. Toggle the grouping options on/off to sort elements by:
+- **Phase**
+- **Level**
+- **Workset**
+
+When active, the tree view introduces corresponding parent nodes (e.g., Level name or Phase name) above the Category nodes, rendering complex structural and architectural models highly readable.
+
+### Element Scope Filters
+Toggles at the top let you filter the active scope on the fly:
+- **3D Model Elements only:** Hides 2D views, annotations, and system elements.
+- **Annotation Elements only:** Isolates text, dimensions, and detail items.
+- **Has Bounding Box only:** Filters elements to show only those possessing valid geometric boundaries.
+
+### Text Search & Regex System
+Locate elements quickly by typing keywords in the search bar. You can control the search behavior using the following options:
+- **Search only by name:** Limits matches strictly to element name strings.
+- **Use Regex:** Enables advanced Regular Expression pattern matching.
+- **Use OR Logic:** If active, new search matches are appended to the currently checked elements. If inactive (default), a new search resets the checks to only matching items.
+
+### Increase Checked (Expand Selection)
+Expand your current selection based on advanced relational and geometric rules. You can toggle checkboxes under the "Increase Checked" section to find:
+- **Same Category / Same Family / Same Type / Same Workset / Same MEP System**
+- **Host of Element / Hosted Elements** (identifies hosts or elements hosted by the current selection)
+- **Nested Elements / Supercomponents** (extracts nested family items or their host supercomponents)
+- **Joined Elements / Intersecting Elements** (finds elements joined to or physically intersecting the checked items)
+- **Group of Assembly** (finds elements belonging to the same Revit Group or Assembly)
+- **Dependent Elements** (finds dependent elements linked via Revit's API dependency rules)
+
+**Expansion Constraints:**
+- **Search Range:** Limit expansion to either the **Entire Model** or the **Current View**.
+- **Result Output:** Choose to either **Add to Current Selection** or **Create a New Selection** set.
+- **Exclusions:** Automatically unselect/exclude elements that belong to **Groups** or **Assemblies** to prevent editing locked objects.
+
+### Interactive Element Picking (Pick in Revit)
+Click the **Pick Elements** button to temporarily hide the FilterPlus window and select objects directly in the Revit viewport. Once selection is complete, the window automatically reappears, and the new elements are loaded into the tree view and checked.
+
+---
+
+## 5. Commands and Features Guide
+
+### 5.1. Ribbon Panel
 The add-in creates a custom tab named **"DBDev"** (configurable) containing the **FilterPlus** panel.
 
 | Command | Function | Technical Class |
 | :--- | :--- | :--- |
 | **FilterPlus** | Opens the main window for hierarchical selection and filtering. | `FilterPlus.Commands.StartupCommand` |
 
-### 3.2. Context Menu Integration (Revit 2025+)
+### 5.2. Context Menu Integration (Revit 2025+)
 In Revit 2025 and higher, FilterPlus integrates into the right-click context menu when elements are selected, allowing you to instantly filter the current selection.
 
 ---
 
-## 4. System Requirements
+## 6. System Requirements
 
 | Requirement | Detail |
 | :--- | :--- |
@@ -70,7 +126,7 @@ In Revit 2025 and higher, FilterPlus integrates into the right-click context men
 
 ---
 
-## 5. Version History (Changelog)
+## 7. Version History (Changelog)
 
 ### [1.0.0] - 2026-04-29
 #### Added
