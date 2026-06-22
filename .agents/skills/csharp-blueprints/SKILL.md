@@ -17,6 +17,13 @@ This directory contains the "technical memory" of the most complex C# components
 - [5. Advanced Forms (WinForms)](references/5_Advanced_UI_WinForms.md): `FormResult` pattern, responsive layouts, dynamic filtering ListViews, and async progress bars (`DoEvents`).
 - [6. Scalability and Performance](references/6_Scalability_and_Performance.md): Multiversion support (`#if`), dynamic command availability, Excel interoperability (`ClosedXML`), and high-performance dictionaries.
 - [RevitSelectionService_Blueprint](references/RevitSelectionService_Blueprint.md): Collector management, phase pre-fetching, and thread-safety (Pending to write).
+- [debugging_increase_checked_apply_not_firing_2026-06-22](references/debugging_increase_checked_apply_not_firing_2026-06-22.md): Root cause analysis for "Apply" button with no effect — empty currentCheckedIds, missing element injection into `_activeElements`, and scope-crossing persistence gap.
+- [guide_visible_in_view_scope_filter_2026-06-22](references/guide_visible_in_view_scope_filter_2026-06-22.md): Pattern for adding a "Visible in current view" WHERE scope using the two-argument `FilteredElementCollector(doc, viewId)` overload.
+- [guide_unselect_elements_purge_pattern_2026-06-22](references/guide_unselect_elements_purge_pattern_2026-06-22.md): Design pattern for applying exclusion rules (group/assembly membership) as a global purge AFTER unification — enabling standalone purge mode with no WHAT rules.
+
+## 🔧 Assets (Reusable Code)
+
+- [SelectionSetHelper.cs](assets/SelectionSetHelper.cs): Static helper with `UnifySelectionSets()`, `PurgeByMembership()`, and `GetDomainElements()` for multi-scope selection expansion pipelines.
 
 ## 💡 How to use these guides
 1. When asked to modify an existing class, first check if its Blueprint exists here.

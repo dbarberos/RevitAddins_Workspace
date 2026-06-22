@@ -70,6 +70,7 @@ public partial class SelectionFilterViewModel : ObservableObject
 
     [ObservableProperty] private bool _increaseWhereAllModel = true;
     [ObservableProperty] private bool _increaseWhereCurrentView;
+    [ObservableProperty] private bool _increaseWhereVisibleInView;
 
     [ObservableProperty] private bool _increaseHowAddToCurrent = true;
     [ObservableProperty] private bool _increaseHowCreateNew;
@@ -810,12 +811,15 @@ public partial class SelectionFilterViewModel : ObservableObject
         try
         {
             TreeItemViewModel.IsBulkUpdating = true;
+            LoggerService.LogInfo($"[ApplyIncreaseChecked] START. Current Scope in Select: {CurrentScope}. _activeElements count: {(_activeElements?.Count ?? 0)}.");
             
             // 1. Get currently checked ElementIds from the tree
             var currentCheckedIds = new List<Autodesk.Revit.DB.ElementId>();
             foreach (var node in RootNodes)
                 node.GetAllSelectedIds(currentCheckedIds);
                 
+            LoggerService.LogInfo($"[ApplyIncreaseChecked] Checked elements in explorer tree: {currentCheckedIds.Count}. IDs: {string.Join(", ", currentCheckedIds)}");
+
             if (currentCheckedIds.Count == 0)
             {
                 TreeItemViewModel.IsBulkUpdating = false;
@@ -827,13 +831,30 @@ public partial class SelectionFilterViewModel : ObservableObject
             var sourceElements = currentCheckedIds.Select(id => doc.GetElement(id)).Where(e => e != null).ToList();
 
             // 2. Define search domain based on WHERE
-            Autodesk.Revit.DB.FilteredElementCollector collector;
-            if (IncreaseWhereCurrentView)
-                collector = new Autodesk.Revit.DB.FilteredElementCollector(doc, doc.ActiveView.Id);
+            // Query Revit database directly to avoid any 10,000 pre-fetch limit during selection expansion
+            List<Autodesk.Revit.DB.Element> domainElements;
+            if (IncreaseWhereVisibleInView)
+            {
+                // Match "Elements Visible" (SelectionScope.ElementsVisibleInView)
+                var visibleCollector = new Autodesk.Revit.DB.FilteredElementCollector(doc, doc.ActiveView.Id);
+                domainElements = visibleCollector.WhereElementIsNotElementType().ToElements().ToList();
+                LoggerService.LogInfo($"[ApplyIncreaseChecked] Domain: Visible in current view. Collector count: {domainElements.Count}.");
+            }
+            else if (IncreaseWhereCurrentView)
+            {
+                // Match "Elements in View" (SelectionScope.ElementsBelongingToView)
+                var viewCollector = new Autodesk.Revit.DB.FilteredElementCollector(doc);
+                domainElements = viewCollector.WhereElementIsNotElementType().ToElements()
+                    .Where(el => el.OwnerViewId == doc.ActiveView.Id || el.get_BoundingBox(doc.ActiveView) != null)
+                    .ToList();
+                LoggerService.LogInfo($"[ApplyIncreaseChecked] Domain: Current View. Collector count: {domainElements.Count}.");
+            }
             else
-                collector = new Autodesk.Revit.DB.FilteredElementCollector(doc);
-                
-            var domainElements = collector.WhereElementIsNotElementType().ToElements();
+            {
+                var modelCollector = new Autodesk.Revit.DB.FilteredElementCollector(doc);
+                domainElements = modelCollector.WhereElementIsNotElementType().ToElements().ToList();
+                LoggerService.LogInfo($"[ApplyIncreaseChecked] Domain: All Model. Collector count: {domainElements.Count}.");
+            }
             
             var targetIds = new HashSet<Autodesk.Revit.DB.ElementId>();
             
@@ -846,6 +867,7 @@ public partial class SelectionFilterViewModel : ObservableObject
                     if (el.Category != null && targetCatIds.Contains(el.Category.Id))
                         targetIds.Add(el.Id);
                 }
+                LoggerService.LogInfo($"[ApplyIncreaseChecked] Checked 'Same Category'. Accumulative targets: {targetIds.Count}.");
             }
             if (IncreaseWhatSameFamily || IncreaseWhatSameType)
             {
@@ -885,6 +907,7 @@ public partial class SelectionFilterViewModel : ObservableObject
                         }
                     }
                 }
+                LoggerService.LogInfo($"[ApplyIncreaseChecked] Checked 'Same Family/Type'. Accumulative targets: {targetIds.Count}.");
             }
             if (IncreaseWhatSameWorkset && doc.IsWorkshared)
             {
@@ -894,6 +917,7 @@ public partial class SelectionFilterViewModel : ObservableObject
                     if (targetWorksetIds.Contains(el.WorksetId))
                         targetIds.Add(el.Id);
                 }
+                LoggerService.LogInfo($"[ApplyIncreaseChecked] Checked 'Same Workset'. Accumulative targets: {targetIds.Count}.");
             }
             if (IncreaseWhatHostOfElement)
             {
@@ -902,6 +926,7 @@ public partial class SelectionFilterViewModel : ObservableObject
                     if (el is Autodesk.Revit.DB.FamilyInstance fi && fi.Host != null)
                         targetIds.Add(fi.Host.Id);
                 }
+                LoggerService.LogInfo($"[ApplyIncreaseChecked] Checked 'Host of Element'. Accumulative targets: {targetIds.Count}.");
             }
             if (IncreaseWhatHostedElements)
             {
@@ -911,6 +936,7 @@ public partial class SelectionFilterViewModel : ObservableObject
                     if (el is Autodesk.Revit.DB.FamilyInstance fi && fi.Host != null && sourceIdsHash.Contains(fi.Host.Id))
                         targetIds.Add(el.Id);
                 }
+                LoggerService.LogInfo($"[ApplyIncreaseChecked] Checked 'Hosted Elements'. Accumulative targets: {targetIds.Count}.");
             }
             if (IncreaseWhatNestedElements)
             {
@@ -922,6 +948,7 @@ public partial class SelectionFilterViewModel : ObservableObject
                         foreach (var subId in subComponents) targetIds.Add(subId);
                     }
                 }
+                LoggerService.LogInfo($"[ApplyIncreaseChecked] Checked 'Nested Elements'. Accumulative targets: {targetIds.Count}.");
             }
             if (IncreaseWhatJoinedElements)
             {
@@ -932,6 +959,7 @@ public partial class SelectionFilterViewModel : ObservableObject
                         foreach (var jId in joined) targetIds.Add(jId);
                     } catch {} // Fails for elements that cannot be joined
                 }
+                LoggerService.LogInfo($"[ApplyIncreaseChecked] Checked 'Joined Elements'. Accumulative targets: {targetIds.Count}.");
             }
             if (IncreaseWhatSupercomponent)
             {
@@ -942,6 +970,7 @@ public partial class SelectionFilterViewModel : ObservableObject
                         targetIds.Add(fi.SuperComponent.Id);
                     }
                 }
+                LoggerService.LogInfo($"[ApplyIncreaseChecked] Checked 'Supercomponent'. Accumulative targets: {targetIds.Count}.");
             }
             if (IncreaseWhatGroupOfAssembly)
             {
@@ -964,6 +993,7 @@ public partial class SelectionFilterViewModel : ObservableObject
                         }
                     }
                 }
+                LoggerService.LogInfo($"[ApplyIncreaseChecked] Checked 'Group or Assembly'. Accumulative targets: {targetIds.Count}.");
             }
             if (IncreaseWhatDependent)
             {
@@ -975,6 +1005,7 @@ public partial class SelectionFilterViewModel : ObservableObject
                         foreach (var depId in dependentIds) targetIds.Add(depId);
                     } catch {}
                 }
+                LoggerService.LogInfo($"[ApplyIncreaseChecked] Checked 'Dependent Elements'. Accumulative targets: {targetIds.Count}.");
             }
             if (IncreaseWhatIntersects && domainElements.Count > 0)
             {
@@ -990,6 +1021,7 @@ public partial class SelectionFilterViewModel : ObservableObject
                     }
                     catch { } // Some elements cannot be used in intersection filters
                 }
+                LoggerService.LogInfo($"[ApplyIncreaseChecked] Checked 'Intersects'. Accumulative targets: {targetIds.Count}.");
             }
             if (IncreaseWhatSameMEPSystem)
             {
@@ -1014,19 +1046,32 @@ public partial class SelectionFilterViewModel : ObservableObject
                         }
                     }
                 }
+                LoggerService.LogInfo($"[ApplyIncreaseChecked] Checked 'MEP System'. Accumulative targets: {targetIds.Count}.");
             }
             
-            // Unify with current if AddToCurrent is selected
+            // 4. Unify with current and other scopes
+            var activeElementIds = _activeElements?.Select(e => e.Id).ToHashSet() ?? new HashSet<Autodesk.Revit.DB.ElementId>();
+            var idsFromOtherScopes = _persistentCheckedIds.Where(id => !activeElementIds.Contains(id)).ToList();
+
+            var finalCheckedIds = new HashSet<Autodesk.Revit.DB.ElementId>();
             if (IncreaseHowAddToCurrent)
             {
-                foreach (var id in currentCheckedIds) targetIds.Add(id);
+                foreach (var id in currentCheckedIds) finalCheckedIds.Add(id);
             }
-            
-            // 4. Exclusions (UNSELECT ELEMENTS IF)
+            foreach (var id in targetIds)
+            {
+                finalCheckedIds.Add(id);
+            }
+            foreach (var id in idsFromOtherScopes)
+            {
+                finalCheckedIds.Add(id);
+            }
+
+            // 5. Exclusions (UNSELECT ELEMENTS IF) - applies to the unified finalCheckedIds to purge the selection
             if (IncreaseUnselectBelongsToGroup || IncreaseUnselectBelongsToAssembly)
             {
-                var finalTargetIds = new HashSet<Autodesk.Revit.DB.ElementId>();
-                foreach (var id in targetIds)
+                var purgedCheckedIds = new HashSet<Autodesk.Revit.DB.ElementId>();
+                foreach (var id in finalCheckedIds)
                 {
                     var el = doc.GetElement(id);
                     if (el == null) continue;
@@ -1036,36 +1081,95 @@ public partial class SelectionFilterViewModel : ObservableObject
                     if (IncreaseUnselectBelongsToAssembly && el.AssemblyInstanceId != Autodesk.Revit.DB.ElementId.InvalidElementId)
                         continue;
                         
-                    finalTargetIds.Add(id);
+                    purgedCheckedIds.Add(id);
                 }
-                targetIds = finalTargetIds;
-            }
-
-            // 5. Apply to Tree
-            foreach (var node in RootNodes)
-                node.SetCheckedState(false); // Reset all first
-
-            void CheckNodeRecursive(TreeItemViewModel node)
-            {
-                if (node.ElementId != null && targetIds.Contains(node.ElementId))
-                {
-                    node.IsChecked = true;
-                }
-                foreach (var child in node.Children)
-                    CheckNodeRecursive(child);
-            }
-
-            foreach (var node in RootNodes)
-                CheckNodeRecursive(node);
                 
-            foreach (var node in RootNodes) node.RefreshState();
+                // Keep targetIds in sync so we don't inject excluded elements
+                targetIds.IntersectWith(purgedCheckedIds);
+                
+                finalCheckedIds = purgedCheckedIds;
+                LoggerService.LogInfo($"[ApplyIncreaseChecked] Checked exclusions. Final targets after purging: {finalCheckedIds.Count}.");
+            }
+            
+            LoggerService.LogInfo($"[ApplyIncreaseChecked] Final checked IDs unified (including other scopes): {finalCheckedIds.Count}. IDs: {string.Join(", ", finalCheckedIds)}");
 
-            UpdatePersistentCheckedIdsFromTree();
+            // 6. Inject newly matched elements into _activeElements (if they aren't already in it)
+            var activeIds = _activeElements.Select(e => e.Id).ToHashSet();
+            LoggerService.LogInfo($"[ApplyIncreaseChecked] Explorer tree currently has {activeIds.Count} active IDs.");
+            
+            // Build a unified dictionary of all pre-fetched element models for O(1) reuse
+            var allKnownById = _allModelElements
+                .Concat(_elementsVisibleInViewElements)
+                .Concat(_elementsBelongingToViewElements)
+                .Concat(_currentSelectionElements)
+                .GroupBy(e => e.Id)
+                .Select(g => g.First())
+                .ToDictionary(e => e.Id);
+                
+            LoggerService.LogInfo($"[ApplyIncreaseChecked] Pre-fetched scopes unified cache has {allKnownById.Count} elements.");
+
+            var elementsToInject = new List<ElementModel>();
+            foreach (var id in targetIds)
+            {
+                if (activeIds.Contains(id))
+                {
+                    LoggerService.LogInfo($"[ApplyIncreaseChecked] Element {id} is already in activeIds, skipping injection.");
+                    continue;
+                }
+                
+                if (allKnownById.TryGetValue(id, out var existingModel))
+                {
+                    LoggerService.LogInfo($"[ApplyIncreaseChecked] Element {id} found in pre-fetched cache. Injecting model.");
+                    elementsToInject.Add(existingModel);
+                }
+                else
+                {
+                    // Map on the fly from Revit Element if not pre-fetched
+                    var el = doc.GetElement(id);
+                    if (el != null && el.Category != null)
+                    {
+                        var newModel = _selectionService.MapToElementModel(el);
+                        if (newModel != null)
+                        {
+                            LoggerService.LogInfo($"[ApplyIncreaseChecked] Element {id} ({el.Name}) NOT in pre-fetched cache. Mapped on-the-fly and injecting.");
+                            elementsToInject.Add(newModel);
+                        }
+                        else
+                        {
+                            LoggerService.LogInfo($"[ApplyIncreaseChecked] Element {id} failed to map to ElementModel.");
+                        }
+                    }
+                    else
+                    {
+                        LoggerService.LogInfo($"[ApplyIncreaseChecked] Element {id} not found in doc, or has null Category.");
+                    }
+                }
+            }
+                
+            if (elementsToInject.Count > 0)
+            {
+                LoggerService.LogInfo($"[ApplyIncreaseChecked] Injecting {elementsToInject.Count} elements into active elements list.");
+                _activeElements.AddRange(elementsToInject);
+            }
+            else
+            {
+                LoggerService.LogInfo($"[ApplyIncreaseChecked] No new elements needed to be injected.");
+            }
+
+            // 7. Update persistent checked IDs
+            _persistentCheckedIds = finalCheckedIds;
+            LoggerService.LogInfo($"[ApplyIncreaseChecked] Updating _persistentCheckedIds to: {string.Join(", ", _persistentCheckedIds)}");
+            
+            // 8. Rebuild tree to show newly injected elements and apply check states
+            LoggerService.LogInfo($"[ApplyIncreaseChecked] Invoking BuildTree() now...");
+            BuildTree();
+            
             StatusMessage = $"Increase applied. Total checked: {CheckedElementsCount}";
+            LoggerService.LogInfo($"[ApplyIncreaseChecked] COMPLETE. Status: {StatusMessage}. CheckedElementsCount: {CheckedElementsCount}.");
         }
         catch (System.Exception ex)
         {
-            LoggerService.LogError("ApplyIncreaseChecked", ex);
+            LoggerService.LogError("[ApplyIncreaseChecked] EXCEPTION", ex);
             StatusMessage = "Error al expandir selección.";
         }
         finally

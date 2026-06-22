@@ -70,7 +70,7 @@ public class RevitSelectionService
         // Pre-fetch phases once for ordering
         var phaseMap = _doc.Phases.Cast<Phase>()
             .Select((p, i) => new { p.Id, p.Name, Order = i })
-            .ToDictionary(x => x.Id, x => x);
+            .ToDictionary(x => x.Id, x => (x.Name, x.Order));
 
         foreach (var el in elements)
         {
@@ -85,108 +85,143 @@ public class RevitSelectionService
                 if (!isViewSpecific && !isVisibleInView) continue;
             }
 
-            // Skip elements that don't have a valid category
-            if (el.Category == null) continue;
-
-            string categoryName = el.Category.Name;
-            string familyName = "N/A";
-            string typeName = el.Name;
-            string levelName = "N/A";
-            string worksetName = "N/A";
-
-            if (el is FamilyInstance fi)
+            var model = MapToElementModel(el, phaseMap, worksetTable);
+            if (model != null)
             {
-                if (fi.Symbol != null)
-                {
-                    familyName = fi.Symbol.FamilyName;
-                    typeName = fi.Symbol.Name;
-                }
+                result.Add(model);
             }
-            else if (el is HostObject host)
-            {
-                // Walls, Floors, etc.
-                var type = _doc.GetElement(host.GetTypeId()) as ElementType;
-                if (type != null)
-                {
-                    familyName = type.FamilyName;
-                    typeName = type.Name;
-                }
-            }
-
-            if (el.LevelId != ElementId.InvalidElementId)
-            {
-                var level = _doc.GetElement(el.LevelId);
-                if (level != null) levelName = level.Name;
-            }
-
-            if (el.WorksetId != WorksetId.InvalidWorksetId && _doc.IsWorkshared)
-            {
-                var workset = worksetTable.GetWorkset(el.WorksetId);
-                if (workset != null) worksetName = workset.Name;
-            }
-
-            // Phase detection
-            string phaseName = "N/A";
-            int phaseOrder = 999;
-            var phaseId = el.CreatedPhaseId;
-            if (phaseId != ElementId.InvalidElementId && phaseMap.TryGetValue(phaseId, out var phaseInfo))
-            {
-                phaseName = phaseInfo.Name;
-                phaseOrder = phaseInfo.Order;
-            }
-
-            // Parameter metadata extraction for advanced deep-search (Safe Mode to prevent AccessViolationException)
-            System.Text.StringBuilder metaBuilder = new System.Text.StringBuilder();
-            try
-            {
-                // Marcas y Comentarios de Ejemplar
-                var pMark = el.get_Parameter(BuiltInParameter.ALL_MODEL_MARK);
-                if (pMark != null && pMark.HasValue) metaBuilder.Append(pMark.AsString()?.ToLowerInvariant()).Append(" ");
-
-                var pComments = el.get_Parameter(BuiltInParameter.ALL_MODEL_INSTANCE_COMMENTS);
-                if (pComments != null && pComments.HasValue) metaBuilder.Append(pComments.AsString()?.ToLowerInvariant()).Append(" ");
-
-                // Marcas y Comentarios de Tipo
-                var type = _doc.GetElement(el.GetTypeId()) as ElementType;
-                if (type != null)
-                {
-                    var pTypeMark = type.get_Parameter(BuiltInParameter.ALL_MODEL_TYPE_MARK);
-                    if (pTypeMark != null && pTypeMark.HasValue) metaBuilder.Append(pTypeMark.AsString()?.ToLowerInvariant()).Append(" ");
-
-                    var pTypeComments = type.get_Parameter(BuiltInParameter.ALL_MODEL_TYPE_COMMENTS);
-                    if (pTypeComments != null && pTypeComments.HasValue) metaBuilder.Append(pTypeComments.AsString()?.ToLowerInvariant()).Append(" ");
-                }
-
-                // Añadir el Nivel como "Restricción" base
-                if (!string.IsNullOrEmpty(levelName) && levelName != "N/A")
-                {
-                    metaBuilder.Append(levelName.ToLowerInvariant()).Append(" ");
-                }
-            }
-            catch
-            {
-                // Ignorar errores de lectura puntuales
-            }
-
-            result.Add(new ElementModel
-            {
-                Id = el.Id,
-                CategoryName = categoryName,
-                FamilyName = familyName,
-                TypeName = typeName,
-                LevelName = levelName,
-                WorksetName = worksetName,
-                IsModelElement = el.Category?.CategoryType == CategoryType.Model,
-                IsAnnotation = el.Category?.CategoryType == CategoryType.Annotation,
-                HasBoundingBox = el.get_BoundingBox(null) != null,
-                PhaseName = phaseName,
-                PhaseOrder = phaseOrder,
-                SearchableMetadata = metaBuilder.ToString()
-            });
         }
 
         LoggerService.LogInfo($"Revit query finished. {result.Count} valid elements found.");
         return result;
+    }
+
+    public ElementModel MapToElementModel(
+        Element el, 
+        Dictionary<ElementId, (string Name, int Order)> phaseMap = null, 
+        WorksetTable worksetTable = null)
+    {
+        if (el == null) return null;
+        if (el.Category == null) return null;
+
+        string categoryName = el.Category.Name;
+        string familyName = "N/A";
+        string typeName = el.Name;
+        string levelName = "N/A";
+        string worksetName = "N/A";
+
+        if (el is FamilyInstance fi)
+        {
+            if (fi.Symbol != null)
+            {
+                familyName = fi.Symbol.FamilyName;
+                typeName = fi.Symbol.Name;
+            }
+        }
+        else if (el is HostObject host)
+        {
+            // Walls, Floors, etc.
+            var type = _doc.GetElement(host.GetTypeId()) as ElementType;
+            if (type != null)
+            {
+                familyName = type.FamilyName;
+                typeName = type.Name;
+            }
+        }
+
+        if (el.LevelId != ElementId.InvalidElementId)
+        {
+            var level = _doc.GetElement(el.LevelId);
+            if (level != null) levelName = level.Name;
+        }
+
+        if (el.WorksetId != WorksetId.InvalidWorksetId && _doc.IsWorkshared)
+        {
+            var table = worksetTable ?? _doc.GetWorksetTable();
+            var workset = table.GetWorkset(el.WorksetId);
+            if (workset != null) worksetName = workset.Name;
+        }
+
+        // Phase detection
+        string phaseName = "N/A";
+        int phaseOrder = 999;
+        var phaseId = el.CreatedPhaseId;
+        if (phaseId != ElementId.InvalidElementId)
+        {
+            if (phaseMap != null && phaseMap.TryGetValue(phaseId, out var phaseInfo))
+            {
+                phaseName = phaseInfo.Name;
+                phaseOrder = phaseInfo.Order;
+            }
+            else
+            {
+                var phase = _doc.GetElement(phaseId) as Phase;
+                if (phase != null)
+                {
+                    phaseName = phase.Name;
+                    // Dynamically calculate phase order
+                    int order = 0;
+                    foreach (Phase p in _doc.Phases)
+                    {
+                        if (p.Id == phaseId)
+                        {
+                            phaseOrder = order;
+                            break;
+                        }
+                        order++;
+                    }
+                }
+            }
+        }
+
+        // Parameter metadata extraction for advanced deep-search (Safe Mode to prevent AccessViolationException)
+        System.Text.StringBuilder metaBuilder = new System.Text.StringBuilder();
+        try
+        {
+            // Marcas y Comentarios de Ejemplar
+            var pMark = el.get_Parameter(BuiltInParameter.ALL_MODEL_MARK);
+            if (pMark != null && pMark.HasValue) metaBuilder.Append(pMark.AsString()?.ToLowerInvariant()).Append(" ");
+
+            var pComments = el.get_Parameter(BuiltInParameter.ALL_MODEL_INSTANCE_COMMENTS);
+            if (pComments != null && pComments.HasValue) metaBuilder.Append(pComments.AsString()?.ToLowerInvariant()).Append(" ");
+
+            // Marcas y Comentarios de Tipo
+            var type = _doc.GetElement(el.GetTypeId()) as ElementType;
+            if (type != null)
+            {
+                var pTypeMark = type.get_Parameter(BuiltInParameter.ALL_MODEL_TYPE_MARK);
+                if (pTypeMark != null && pTypeMark.HasValue) metaBuilder.Append(pTypeMark.AsString()?.ToLowerInvariant()).Append(" ");
+
+                var pTypeComments = type.get_Parameter(BuiltInParameter.ALL_MODEL_TYPE_COMMENTS);
+                if (pTypeComments != null && pTypeComments.HasValue) metaBuilder.Append(pTypeComments.AsString()?.ToLowerInvariant()).Append(" ");
+            }
+
+            // Añadir el Nivel como "Restricción" base
+            if (!string.IsNullOrEmpty(levelName) && levelName != "N/A")
+            {
+                metaBuilder.Append(levelName.ToLowerInvariant()).Append(" ");
+            }
+        }
+        catch
+        {
+            // Ignorar errores de lectura puntuales
+        }
+
+        return new ElementModel
+        {
+            Id = el.Id,
+            CategoryName = categoryName,
+            FamilyName = familyName,
+            TypeName = typeName,
+            LevelName = levelName,
+            WorksetName = worksetName,
+            IsModelElement = el.Category?.CategoryType == CategoryType.Model,
+            IsAnnotation = el.Category?.CategoryType == CategoryType.Annotation,
+            HasBoundingBox = el.get_BoundingBox(null) != null,
+            PhaseName = phaseName,
+            PhaseOrder = phaseOrder,
+            SearchableMetadata = metaBuilder.ToString()
+        };
     }
 
     public void SetSelection(IEnumerable<ElementId> ids)

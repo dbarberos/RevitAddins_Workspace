@@ -327,6 +327,7 @@
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
                     <TextBlock Grid.Row="0" Text="Increase Checked" FontWeight="500" Margin="0,0,0,10" Foreground="#333" FontSize="13"/>
                     
@@ -360,6 +361,7 @@
                             <TextBlock Text="WHERE" FontSize="9" FontWeight="SemiBold" Foreground="#999" Margin="0,0,0,5"/>
                             <RadioButton Content="All model" IsChecked="{Binding IncreaseWhereAllModel}" GroupName="WhereGroup" Margin="0,0,0,6" FontSize="11"/>
                             <RadioButton Content="Current View" IsChecked="{Binding IncreaseWhereCurrentView}" GroupName="WhereGroup" Margin="0,0,0,6" FontSize="11"/>
+                            <RadioButton Content="Visible in current view" IsChecked="{Binding IncreaseWhereVisibleInView}" GroupName="WhereGroup" Margin="0,0,0,6" FontSize="11"/>
                             
                             <TextBlock Text="HOW" FontSize="9" FontWeight="SemiBold" Foreground="#999" Margin="0,5,0,5"/>
                             <RadioButton Content="Add ToCurrent" IsChecked="{Binding IncreaseHowAddToCurrent}" GroupName="HowGroup" Margin="0,0,0,6" FontSize="11"/>
@@ -372,7 +374,7 @@
                     </Grid>
 
                     <!-- APPLY BUTTON -->
-                    <Button Grid.Row="1" Content="Apply" Command="{Binding ApplyIncreaseCheckedCommand}" HorizontalAlignment="Right" VerticalAlignment="Bottom" Padding="12,3" Background="#007ACC" Foreground="White" BorderThickness="0" Cursor="Hand">
+                    <Button Grid.Row="2" Content="Apply" Command="{Binding ApplyIncreaseCheckedCommand}" HorizontalAlignment="Right" Margin="0,10,0,0" Padding="12,3" Background="#007ACC" Foreground="White" BorderThickness="0" Cursor="Hand">
                         <Button.Resources>
                             <Style TargetType="Border">
                                 <Setter Property="CornerRadius" Value="4"/>
