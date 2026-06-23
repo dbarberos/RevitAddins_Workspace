@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ApplicationPackage
   SchemaVersion="1.0"
-  AppVersion="1.1.0"
+  AppVersion="1.2.0"
   Author="DBDev_dbarberos"
   Description="FilterPlus"
   Name="FilterPlus"
-  ProductCode="E80D603F-05C2-4DA8-9602-82904D30BAE0"
+  ProductCode="CFA95A7A-AAF2-4E1B-86F1-7263E2CC7FBB"
   OnlineDocumentation="https://dbdev-dbarberos.github.io/PrivacyPolicy/"
   ProductType="Application"
   Icon="./Contents/Resources/Icons/RibbonIcon32.png"
@@ -19,23 +19,23 @@
   <!-- The components will be dynamically injected here by the PowerShell script -->
     <Components Description="FilterPlus Add-in for Revit 2024">
     <RuntimeRequirements OS="Win64" Platform="Revit" SeriesMin="R2024" SeriesMax="R2024" />
-    <ComponentEntry AppName="FilterPlus" Version="1.1.0" ModuleName="./Contents/2024/FilterPlus.addin" AppDescription="Filter and Selection add-in" LoadOnRevitStartup="True" />
-  </Components>
-  <Components Description="FilterPlus Add-in for Revit 2023">
-    <RuntimeRequirements OS="Win64" Platform="Revit" SeriesMin="R2023" SeriesMax="R2023" />
-    <ComponentEntry AppName="FilterPlus" Version="1.1.0" ModuleName="./Contents/2023/FilterPlus.addin" AppDescription="Filter and Selection add-in" LoadOnRevitStartup="True" />
+    <ComponentEntry AppName="FilterPlus" Version="1.2.0" ModuleName="./Contents/2024/FilterPlus.addin" AppDescription="Filter and Selection add-in" LoadOnRevitStartup="True" />
   </Components>
   <Components Description="FilterPlus Add-in for Revit 2025">
     <RuntimeRequirements OS="Win64" Platform="Revit" SeriesMin="R2025" SeriesMax="R2025" />
-    <ComponentEntry AppName="FilterPlus" Version="1.1.0" ModuleName="./Contents/2025/FilterPlus.addin" AppDescription="Filter and Selection add-in" LoadOnRevitStartup="True" />
+    <ComponentEntry AppName="FilterPlus" Version="1.2.0" ModuleName="./Contents/2025/FilterPlus.addin" AppDescription="Filter and Selection add-in" LoadOnRevitStartup="True" />
+  </Components>
+  <Components Description="FilterPlus Add-in for Revit 2023">
+    <RuntimeRequirements OS="Win64" Platform="Revit" SeriesMin="R2023" SeriesMax="R2023" />
+    <ComponentEntry AppName="FilterPlus" Version="1.2.0" ModuleName="./Contents/2023/FilterPlus.addin" AppDescription="Filter and Selection add-in" LoadOnRevitStartup="True" />
   </Components>
   <Components Description="FilterPlus Add-in for Revit 2026">
     <RuntimeRequirements OS="Win64" Platform="Revit" SeriesMin="R2026" SeriesMax="R2026" />
-    <ComponentEntry AppName="FilterPlus" Version="1.1.0" ModuleName="./Contents/2026/FilterPlus.addin" AppDescription="Filter and Selection add-in" LoadOnRevitStartup="True" />
+    <ComponentEntry AppName="FilterPlus" Version="1.2.0" ModuleName="./Contents/2026/FilterPlus.addin" AppDescription="Filter and Selection add-in" LoadOnRevitStartup="True" />
   </Components>
   <Components Description="FilterPlus Add-in for Revit 2027">
     <RuntimeRequirements OS="Win64" Platform="Revit" SeriesMin="R2027" SeriesMax="R2027" />
-    <ComponentEntry AppName="FilterPlus" Version="1.1.0" ModuleName="./Contents/2027/FilterPlus.addin" AppDescription="Filter and Selection add-in" LoadOnRevitStartup="True" />
+    <ComponentEntry AppName="FilterPlus" Version="1.2.0" ModuleName="./Contents/2027/FilterPlus.addin" AppDescription="Filter and Selection add-in" LoadOnRevitStartup="True" />
   </Components>
 
 

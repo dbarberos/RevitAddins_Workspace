@@ -16,11 +16,26 @@ $AssetsDir = Join-Path $ProjectDir "..\.agents\skills\revit-appstore-bundle\asse
 
 Write-Host "Building Autodesk App Store Bundle for $AppName v$Version..."
 
-# Clean previous
-if (Test-Path $DeployDir) {
-    Remove-Item -Path $DeployDir -Recurse -Force
+# Prepare Deploy and Archive directories
+if (-not (Test-Path $DeployDir)) {
+    New-Item -ItemType Directory -Path $DeployDir | Out-Null
 }
-New-Item -ItemType Directory -Path $DeployDir | Out-Null
+$ArchiveDir = Join-Path $DeployDir "Archive"
+if (-not (Test-Path $ArchiveDir)) {
+    New-Item -ItemType Directory -Path $ArchiveDir | Out-Null
+}
+
+# Archive any older zip files found in Deploy
+$OldZips = Get-ChildItem -Path $DeployDir -Filter "*.zip"
+foreach ($zip in $OldZips) {
+    # We move it to archive if it's not the one we are about to create
+    Move-Item -Path $zip.FullName -Destination $ArchiveDir -Force
+}
+
+# Clean ONLY the temporary staging bundle folder, not the whole Deploy dir
+if (Test-Path $BundlePath) {
+    Remove-Item -Path $BundlePath -Recurse -Force
+}
 New-Item -ItemType Directory -Path $BundlePath | Out-Null
 
 # Create basic Contents folder
