@@ -231,10 +231,12 @@
         <GridSplitter Grid.Column="1" Grid.Row="0" Width="5" HorizontalAlignment="Stretch" Background="#EEE" Margin="0,0,5,0" />
 
         <!-- COLUMNA DERECHA: SELECCIÓN Y FILTROS -->
-        <Grid Grid.Column="2" Grid.Row="0">
+        <Grid Grid.Column="2" Grid.Row="0" Grid.IsSharedSizeScope="True">
+
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/> <!-- Filter Card -->
                 <RowDefinition Height="Auto"/> <!-- Select Card -->
+                <RowDefinition Height="Auto"/> <!-- Add Checked Card -->
             </Grid.RowDefinitions>
 
             <!-- Card de Filtro -->
@@ -283,10 +285,11 @@
                     
                     <Grid Grid.Row="1" HorizontalAlignment="Center">
                         <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto" SharedSizeGroup="RightPanelCol1"/>
                             <ColumnDefinition Width="20"/> <!-- Separación reducida -->
-                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto" SharedSizeGroup="RightPanelCol2"/>
                         </Grid.ColumnDefinitions>
+
                         
                         <!-- Columna Izquierda: Scopes -->
                         <StackPanel Grid.Column="0">
@@ -315,6 +318,69 @@
                             <CheckBox Content="on Live Selection" IsChecked="{Binding IsLiveSelection}" Style="{StaticResource SwitchStyle}" Margin="0,0,0,0" FontSize="11"/>
                         </StackPanel>
                     </Grid>
+                </Grid>
+            </Border>
+
+            <!-- Card de Increase Checked -->
+            <Border Grid.Row="2" Background="White" CornerRadius="8" Padding="15,10" Margin="0,0,0,10" BorderBrush="#e8e8e8" BorderThickness="1">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    <TextBlock Grid.Row="0" Text="Increase Checked" FontWeight="500" Margin="0,0,0,10" Foreground="#333" FontSize="13"/>
+                    
+                    <Grid Grid.Row="1" HorizontalAlignment="Center">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" SharedSizeGroup="RightPanelCol1"/>
+                            <ColumnDefinition Width="20"/>
+                            <ColumnDefinition Width="Auto" SharedSizeGroup="RightPanelCol2"/>
+                        </Grid.ColumnDefinitions>
+
+                        
+                        <!-- Columna Izquierda -->
+                        <StackPanel Grid.Column="0">
+                            <TextBlock Text="WHAT" FontSize="9" FontWeight="SemiBold" Foreground="#999" Margin="0,0,0,5"/>
+                            <CheckBox Content="Same category" IsChecked="{Binding IncreaseWhatSameCategory}" Style="{StaticResource SwitchStyle}" Margin="0,0,0,6" FontSize="11" ToolTip="Finds all elements belonging to the same Categories as your current selection and adds them to the tree."/>
+                            <CheckBox Content="Same Family" IsChecked="{Binding IncreaseWhatSameFamily}" Style="{StaticResource SwitchStyle}" Margin="0,0,0,6" FontSize="11" ToolTip="Finds all elements belonging to the same Families as your current selection and adds them to the tree."/>
+                            <CheckBox Content="Same Type" IsChecked="{Binding IncreaseWhatSameType}" Style="{StaticResource SwitchStyle}" Margin="0,0,0,6" FontSize="11" ToolTip="Finds all elements of the exact same Types as your current selection and adds them to the tree."/>
+                            <CheckBox Content="Same Workset" IsChecked="{Binding IncreaseWhatSameWorkset}" Style="{StaticResource SwitchStyle}" Margin="0,0,0,6" FontSize="11" ToolTip="Finds all elements located in the same Worksets as your current selection and adds them to the tree."/>
+                            <CheckBox Content="Host of Element" IsChecked="{Binding IncreaseWhatHostOfElement}" Style="{StaticResource SwitchStyle}" Margin="0,0,0,6" FontSize="11" ToolTip="If you selected hosted elements (e.g., doors), this finds and adds their parent Hosts (e.g., walls) to the tree."/>
+                            <CheckBox Content="Hosted Elements" IsChecked="{Binding IncreaseWhatHostedElements}" Style="{StaticResource SwitchStyle}" Margin="0,0,0,6" FontSize="11" ToolTip="If you selected host elements (e.g., walls), this finds and adds all elements hosted by them to the tree."/>
+                            <CheckBox Content="Nested Elements" IsChecked="{Binding IncreaseWhatNestedElements}" Style="{StaticResource SwitchStyle}" Margin="0,0,0,6" FontSize="11" ToolTip="If you selected parent families, this finds and adds all their internal nested subcomponents to the tree."/>
+                            <CheckBox Content="Joined Elements" IsChecked="{Binding IncreaseWhatJoinedElements}" Style="{StaticResource SwitchStyle}" Margin="0,0,0,6" FontSize="11" ToolTip="Finds all elements that are geometrically joined to your current selection and adds them to the tree."/>
+                            <CheckBox Content="Supercomponent" IsChecked="{Binding IncreaseWhatSupercomponent}" Style="{StaticResource SwitchStyle}" Margin="0,0,0,6" FontSize="11" ToolTip="If you selected nested subcomponents, this finds and adds their parent 'Supercomponent' family to the tree."/>
+                            <CheckBox Content="Group or Assembly" IsChecked="{Binding IncreaseWhatGroupOfAssembly}" Style="{StaticResource SwitchStyle}" Margin="0,0,0,6" FontSize="11" ToolTip="Finds all elements that belong to the same Model Groups or Assemblies as your current selection and adds them."/>
+                            <CheckBox Content="Dependent" IsChecked="{Binding IncreaseWhatDependent}" Style="{StaticResource SwitchStyle}" Margin="0,0,0,6" FontSize="11" ToolTip="Finds all elements that depend on your selection (like tags or dimensions) and adds them."/>
+                            <CheckBox Content="Intersects" IsChecked="{Binding IncreaseWhatIntersects}" Style="{StaticResource SwitchStyle}" Margin="0,0,0,6" FontSize="11" ToolTip="Runs a 3D geometric intersection check and adds any elements that physically collide with your selection."/>
+                            <CheckBox Content="Same MEP System" IsChecked="{Binding IncreaseWhatSameMEPSystem}" Style="{StaticResource SwitchStyle}" Margin="0,0,0,0" FontSize="11" ToolTip="Finds the MEP networks of your selection and adds all connected physical pipes, ducts, or equipment to the tree."/>
+                        </StackPanel>
+                        
+                        <StackPanel Grid.Column="2">
+                            <TextBlock Text="WHERE" FontSize="9" FontWeight="SemiBold" Foreground="#999" Margin="0,0,0,5"/>
+                            <RadioButton Content="All model" IsChecked="{Binding IncreaseWhereAllModel}" GroupName="WhereGroup" Margin="0,0,0,6" FontSize="11"/>
+                            <RadioButton Content="Current View" IsChecked="{Binding IncreaseWhereCurrentView}" GroupName="WhereGroup" Margin="0,0,0,6" FontSize="11"/>
+                            <RadioButton Content="Visible in current view" IsChecked="{Binding IncreaseWhereVisibleInView}" GroupName="WhereGroup" Margin="0,0,0,6" FontSize="11"/>
+                            
+                            <TextBlock Text="HOW" FontSize="9" FontWeight="SemiBold" Foreground="#999" Margin="0,5,0,5"/>
+                            <RadioButton Content="Add ToCurrent" IsChecked="{Binding IncreaseHowAddToCurrent}" GroupName="HowGroup" Margin="0,0,0,6" FontSize="11"/>
+                            <RadioButton Content="Create New" IsChecked="{Binding IncreaseHowCreateNew}" GroupName="HowGroup" Margin="0,0,0,6" FontSize="11"/>
+
+                            <TextBlock Text="UNSELECT ELEMENTS IF" FontSize="9" FontWeight="SemiBold" Foreground="#999" Margin="0,5,0,5"/>
+                            <CheckBox Content="Belongs to Group" IsChecked="{Binding IncreaseUnselectBelongsToGroup}" Style="{StaticResource SwitchStyle}" Margin="0,0,0,6" FontSize="11"/>
+                            <CheckBox Content="Belongs to Assembly" IsChecked="{Binding IncreaseUnselectBelongsToAssembly}" Style="{StaticResource SwitchStyle}" Margin="0,0,0,0" FontSize="11"/>
+                        </StackPanel>
+                    </Grid>
+
+                    <!-- APPLY BUTTON -->
+                    <Button Grid.Row="2" Content="Apply" Command="{Binding ApplyIncreaseCheckedCommand}" HorizontalAlignment="Right" Margin="0,10,0,0" Padding="12,3" Background="#007ACC" Foreground="White" BorderThickness="0" Cursor="Hand">
+                        <Button.Resources>
+                            <Style TargetType="Border">
+                                <Setter Property="CornerRadius" Value="4"/>
+                            </Style>
+                        </Button.Resources>
+                    </Button>
                 </Grid>
             </Border>
         </Grid>

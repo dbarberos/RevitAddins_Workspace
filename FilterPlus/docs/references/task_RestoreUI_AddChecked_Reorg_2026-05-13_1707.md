@@ -1,0 +1,7 @@
+- [x] Uncomment `_logView.Show()` in `SelectionFilterView.xaml.cs`
+- [x] Ensure `Add Checked` card is visible in `SelectionFilterView.xaml`
+- [x] Update left column in `SelectionFilterView.xaml` with "WHAT" title
+- [x] Split right column in `SelectionFilterView.xaml` into "WHERE" and "HOW" groups
+- [x] Sync column alignment between "Select" and "Add Checked" cards (SharedSizeGroup)
+- [x] Fix "HOW" title margin
+- [x] Verify compilation and local execution

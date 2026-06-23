@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+  
+  <!-- VARIABLES DE CONFIGURACIÓN -->
+  <?define AddinName = "{{Name}}" ?>
+  <?define Manufacturer = "DBDev_dbarberos" ?>
+  <?define UpgradeCode = "CAMBIA-ESTE-GUID-POR-UNO-ESTATICO-PARA-EL-UPGRADE-..." ?>
+  <?define Version = "$(var.BuildVersion)" ?> <!-- Asignada desde git tag por MSBuild o CLI -->
+
+  <Product Id="*" 
+           Name="$(var.AddinName) (Revit Add-in)" 
+           Language="1033" 
+           Version="$(var.Version)" 
+           Manufacturer="$(var.Manufacturer)" 
+           UpgradeCode="$(var.UpgradeCode)">
+    
+    <Package InstallerVersion="500" 
+             Compressed="yes" 
+             InstallScope="perUser" />
+
+    <!-- REGLAS DE ACTUALIZACIÓN (MAJOR UPGRADE) -->
+    <MajorUpgrade DowngradeErrorMessage="A newer version of [ProductName] is already installed." />
+    
+    <MediaTemplate EmbedCab="yes" />
+
+    <!-- INTERFAZ GRÁFICA DEL INSTALADOR (WiX UI) -->
+    <UIRef Id="WixUI_Minimal" />
+    <WixVariable Id="WixUILicenseRtf" Value="Resources\License.rtf" />
+
+    <!-- ESTRUCTURA DE DIRECTORIOS (ICE64 CUMPLE CON REMOVEFOLDER EN HKCU) -->
+    <Directory Id="TARGETDIR" Name="SourceDir">
+      <Directory Id="AppDataFolder">
+        <Directory Id="Autodesk" Name="Autodesk">
+          <Directory Id="Revit" Name="Revit">
+            <Directory Id="Addins" Name="Addins">
+              <!-- Carpetas de destino por versión de Revit -->
+              <Directory Id="REVIT2024" Name="2024" />
+              <Directory Id="REVIT2025" Name="2025" />
+            </Directory>
+          </Directory>
+        </Directory>
+      </Directory>
+    </Directory>
+
+    <!-- COMPONENTES DE INSTALACIÓN (ICE38 CUMPLE CON REGISTRYKEYPATH EN HKCU) -->
+    <ComponentGroup Id="ProductComponents">
+      
+      <!-- Componente Revit 2024 -->
+      <Component Id="C_Revit2024" Guid="[GUID-ESTATICO-1]" Directory="REVIT2024">
+        <RegistryValue Root="HKCU" Key="Software\$(var.Manufacturer)\$(var.AddinName)\2024" Name="installed" Type="integer" Value="1" KeyPath="yes" />
+        
+        <!-- Manifiesto de Revit -->
+        <File Id="F_Addin24" Name="$(var.AddinName).addin" Source="..\..\$(var.AddinName).addin" />
+        
+        <!-- Binarios compilados -->
+        <File Id="F_Dll24" Name="$(var.AddinName).dll" Source="..\bin\Release.R24\$(var.AddinName)\$(var.AddinName).dll" />
+      </Component>
+
+      <!-- Componente Revit 2025 -->
+      <Component Id="C_Revit2025" Guid="[GUID-ESTATICO-2]" Directory="REVIT2025">
+        <RegistryValue Root="HKCU" Key="Software\$(var.Manufacturer)\$(var.AddinName)\2025" Name="installed" Type="integer" Value="1" KeyPath="yes" />
+        
+        <!-- Manifiesto de Revit -->
+        <File Id="F_Addin25" Name="$(var.AddinName).addin" Source="..\..\$(var.AddinName).addin" />
+        
+        <!-- Binarios compilados -->
+        <File Id="F_Dll25" Name="$(var.AddinName).dll" Source="..\bin\Release.R25\$(var.AddinName)\$(var.AddinName).dll" />
+      </Component>
+
+    </ComponentGroup>
+
+    <!-- COMPONENTES DE LIMPIEZA DE CARPETAS (ICE64) -->
+    <ComponentGroup Id="CleanupComponents">
+      <Component Id="C_FolderCleanup" Guid="[GUID-ESTATICO-CLEANUP]" Directory="Addins">
+        <RegistryValue Root="HKCU" Key="Software\$(var.Manufacturer)\$(var.AddinName)\Cleanup" Name="clean" Type="integer" Value="1" KeyPath="yes" />
+        <RemoveFolder Id="RemoveREVIT2024" Directory="REVIT2024" On="uninstall" />
+        <RemoveFolder Id="RemoveREVIT2025" Directory="REVIT2025" On="uninstall" />
+        <RemoveFolder Id="RemoveAddins" Directory="Addins" On="uninstall" />
+        <RemoveFolder Id="RemoveRevit" Directory="Revit" On="uninstall" />
+        <RemoveFolder Id="RemoveAutodesk" Directory="Autodesk" On="uninstall" />
+      </Component>
+    </ComponentGroup>
+
+    <!-- CARACTERÍSTICAS A INSTALAR -->
+    <Feature Id="ProductFeature" Title="$(var.AddinName) Installation" Level="1">
+      <ComponentGroupRef Id="ProductComponents" />
+      <ComponentGroupRef Id="CleanupComponents" />
+    </Feature>
+
+  </Product>
+</Wix>

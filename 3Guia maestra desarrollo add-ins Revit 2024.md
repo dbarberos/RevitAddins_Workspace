@@ -1,86 +1,86 @@
 ---
 
-# 📘 **Documento Maestro Profesional — Desarrollo de Add-ins para Autodesk Revit (2024+)**
+# 📘 **Master Professional Document — Autodesk Revit Add-in Development (2024+)**
 
-## **1. Propósito del Documento**
-Este documento define los estándares técnicos, arquitectónicos y operativos para el desarrollo de add-ins profesionales para Autodesk Revit.  
-Su objetivo es:
+## **1. Document Purpose**
+This document defines the technical, architectural, and operational standards for developing professional add-ins for Autodesk Revit.  
+Its objective is to:
 
-- Garantizar consistencia entre proyectos  
-- Facilitar la generación automática de código mediante IA  
-- Asegurar compatibilidad con Revit 2024, 2025 y versiones futuras  
-- Establecer un marco de trabajo moderno, escalable y mantenible  
+- Guarantee consistency across projects.
+- Facilitate automatic code generation using AI agents.
+- Ensure compatibility with Revit 2024, 2025, and future versions.
+- Establish a modern, scalable, and maintainable workflow framework.
 
 ---
 
-# **2. Entorno de Desarrollo**
+## **2. Development Environment**
 
-## **2.1 IDE Recomendado**
-- **Visual Studio 2022** (Community o superior)
+### **2.1 Recommended IDE**
+- **Visual Studio 2022** (Community or higher)
 
-## **2.2 Framework según versión de Revit**
+### **2.2 Framework by Revit Version**
 
-| Versión Revit | Framework requerido |
+| Revit Version | Required Framework |
 |---------------|--------------------|
-| Revit 2024 y anteriores | **.NET Framework 4.8** |
+| Revit 2024 and earlier | **.NET Framework 4.8** |
 | Revit 2025+ | **.NET 8 (Windows)** |
 
-## **2.3 Dependencias esenciales**
-Revit requiere dos ensamblados principales:
+### **2.3 Essential Dependencies**
+Revit requires two main assemblies:
 
 - `RevitAPI.dll`  
 - `RevitAPIUI.dll`
 
-En Revit 2025+ estas referencias se gestionan mediante paquetes NuGet oficiales.
+In Revit 2025+, these references are managed through official NuGet packages.
 
 ---
 
-# **3. Plantillas y Frameworks Recomendados**
+## **3. Recommended Templates and Frameworks**
 
-## **3.1 Plantillas Nice3point (estándar recomendado)**
+### **3.1 Nice3point Templates (Recommended Standard)**
 
-Para garantizar consistencia y rapidez, **todos los proyectos deben generarse utilizando la CLI de .NET con las plantillas de Nice3point**. La IA o el desarrollador no debe crear el `.csproj` ni la estructura básica manualmente desde cero.
+To guarantee consistency and speed, **all projects must be generated using the .NET CLI with Nice3point templates**. Neither the AI nor the developer should create the `.csproj` or basic folder structure manually from scratch.
 
-Instalación de las plantillas (una sola vez por máquina):
+Template installation (one-time setup per machine):
 
 ```bash
 dotnet new install Nice3point.Revit.Templates
 ```
 
-**Creación de un nuevo proyecto base:**
+**Creating a new base project:**
 
 ```bash
 dotnet new revit -n {{ProjectName}}
 ```
 
-Ventajas de usar este flujo:
+Advantages of using this workflow:
 
-- Configuración automática del `.addin`  
-- Build events preconfigurados (copiado automático a Revit)
-- Soporte multiversión integrado 
-- Estructura profesional desde el minuto cero  
+- Automatic configuration of the `.addin` manifest.
+- Preconfigured build events (automatic copying to the Revit add-ins directory).
+- Integrated multi-version support.
+- Professional structure from minute zero.
 
-## **3.2 Configuración Crítica del Archivo `.csproj`**
+### **3.2 Critical `.csproj` File Configuration**
 
-Al usar plantillas modernas (como Nice3point), el compilador inyecta muchos espacios de nombres globales de forma automática (Revit API, Nice3point Extensions, colecciones genéricas de .NET, JetBrains.Annotations, etc.).  
+When using modern templates (like Nice3point), the compiler automatically injects many global namespaces (Revit API, Nice3point Extensions, generic .NET collections, JetBrains.Annotations, etc.).  
 
-**Regla de Oro:**
-- Asegúrate **SIEMPRE** de que **`<ImplicitUsings>enable</ImplicitUsings>`** esté configurado en tu archivo `.csproj`. 
-- **Nunca establezcas** `<ImplicitUsings>disable</ImplicitUsings>`. Si lo desactivas, los métodos de extensión esenciales (como `Application.CreatePanel()`), las colecciones genéricas y otras dependencias fallarán al compilar y requerirán importaciones de namespaces manuales en todo el código.
-
----
-
-# **4. Anatomía de un Add-in de Revit**
-
-Todo add-in consta de tres elementos fundamentales:
-
-1. **Archivo Manifiesto (.addin)**  
-2. **Clase de Aplicación (`IExternalApplication`)**  
-3. **Clases de Comando (`IExternalCommand`)**
+**Golden Rule:**
+- **ALWAYS** ensure that **`<ImplicitUsings>enable</ImplicitUsings>`** is configured in your `.csproj` file. 
+- **Never set** `<ImplicitUsings>disable</ImplicitUsings>`. Disabling it will cause compilation failures for essential extension methods (like `Application.CreatePanel()`), generic collections, and other dependencies, requiring manual imports across all your code.
 
 ---
 
-## **4.1 Archivo Manifiesto (.addin)**
+## **4. Anatomy of a Revit Add-in**
+
+Every add-in consists of three fundamental elements:
+
+1. **Manifest File (.addin)**  
+2. **Application Class (`IExternalApplication`)**  
+3. **Command Classes (`IExternalCommand`)**
+
+---
+
+### **4.1 Manifest File (.addin)**
 
 ```xml
 <?xml version="1.0" encoding="utf-8"?>
@@ -96,14 +96,14 @@ Todo add-in consta de tres elementos fundamentales:
 </RevitAddIns>
 ```
 
-### **Reglas:**
-- El GUID debe ser único  
-- El Assembly debe apuntar al `.dll` final  
-- El FullClassName debe coincidir exactamente con el namespace y clase  
+#### **Rules:**
+- The GUID must be unique.
+- The Assembly path must point to the final `.dll`.
+- The FullClassName must match the namespace and class name exactly.
 
 ---
 
-## **4.2 Clase de Comando (`IExternalCommand`)**
+### **4.2 Command Class (`IExternalCommand`)**
 
 ```csharp
 [Transaction(TransactionMode.Manual)]
@@ -129,14 +129,14 @@ public class {{COMMAND_NAME}} : IExternalCommand
 }
 ```
 
-### **Reglas:**
-- Siempre usar `TransactionMode.Manual`  
-- Manejar excepciones de forma controlada  
-- Nunca modificar el documento sin transacción  
+#### **Rules:**
+- Always use `TransactionMode.Manual`.
+- Handle exceptions in a controlled manner.
+- Never modify the document without an active transaction.
 
 ---
 
-## **4.3 Clase de Aplicación (`IExternalApplication`)**
+### **4.3 Application Class (`IExternalApplication`)**
 
 ```csharp
 public class Application : IExternalApplication
@@ -168,20 +168,20 @@ public class Application : IExternalApplication
 
 ---
 
-# **5. Reglas de Oro de la API de Revit**
+## **5. Golden Rules of the Revit API**
 
-## **5.1 Transacciones**
+### **5.1 Transactions**
 
 ```csharp
-using (Transaction t = new Transaction(doc, "Descripción"))
+using (Transaction t = new Transaction(doc, "Description"))
 {
     t.Start();
-    // cambios
+    // Changes
     t.Commit();
 }
 ```
 
-## **5.2 Búsqueda de elementos**
+### **5.2 Querying Elements**
 
 ```csharp
 var walls = new FilteredElementCollector(doc)
@@ -190,17 +190,17 @@ var walls = new FilteredElementCollector(doc)
     .ToElements();
 ```
 
-## **5.3 Unidades y ForgeTypeId**
-Desde Revit 2022+:
+### **5.3 Units and ForgeTypeId**
+From Revit 2022+:
 
-- Evitar tipos obsoletos basados en enteros  
-- Usar `UnitTypeId`, `SpecTypeId`, `ForgeTypeId`  
+- Avoid obsolete integer-based unit types.
+- Use `UnitTypeId`, `SpecTypeId`, and `ForgeTypeId` classes.
 
 ---
 
-# **6. Estructura de Carpetas Estándar**
+## **6. Standard Folder Structure**
 
-Al generar el proyecto mediante la plantilla (y adaptarlo si es necesario), la estructura final debe alinearse a lo siguiente:
+When generating a project using the template (and adapting it if necessary), the final structure must align with the following:
 
 ```text
 /src
@@ -210,10 +210,10 @@ Al generar el proyecto mediante la plantilla (y adaptarlo si es necesario), la e
     /Services
     /Models
     /UI
-      /Views        <-- (Ventanas y controles WPF .xaml)
-      /ViewModels   <-- (Lógica de presentación .cs, MVVM)
+      /Views        <-- (WPF windows and controls .xaml)
+      /ViewModels   <-- (Presentation logic .cs, MVVM)
     /Utils
-    /Resources      <-- (Para íconos .png de 16x16 y 32x32 del Ribbon)
+    /Resources      <-- (For Ribbon .png icons of 16x16 and 32x32 px)
 /addin
   {{ProjectName}}.addin
 /docs
@@ -221,41 +221,41 @@ Al generar el proyecto mediante la plantilla (y adaptarlo si es necesario), la e
   CHANGELOG.md
 ```
 
-*Nota Crítica: Todo nuevo add-in deberá crearse siempre como una carpeta independiente en la raíz del entorno de trabajo (`RevitAddins_Workspace/{{ProjectName}}`).*
+*Critical Note: Every new add-in must always be created as an independent folder in the workspace root (`RevitAddins_Workspace/{{ProjectName}}`).*
 
 ---
 
-# **7. Convenciones de Nombres**
+## **7. Naming Conventions**
 
-| Elemento | Convención |
+| Element | Convention |
 |----------|------------|
-| **Namespace Raíz** | **`{{ProjectName}}`** (Ej. `MyAwesomeAddin`) |
-| Clases | PascalCase |
-| Métodos | PascalCase |
+| **Root Namespace** | **`{{ProjectName}}`** (e.g. `MyAwesomeAddin`) |
+| Classes | PascalCase |
+| Methods | PascalCase |
 | Variables | camelCase |
-| Comandos | `Cmd{Acción}{Entidad}` |
-| Servicios | `{Entidad}Service` |
-| Paneles | `{Categoria}Panel` |
-| Pestañas | `{Empresa}` |
+| Commands | `Cmd{Action}{Entity}` |
+| Services | `{Entity}Service` |
+| Panels | `{Category}Panel` |
+| Tabs | `{Company}` |
 
 ---
 
-# **8. Patrones de Diseño Recomendados**
+## **8. Recommended Design Patterns**
 
-- **Service Layer** para lógica de negocio  
-- **Command Handler** para comandos complejos  
-- **Result<T>** para operaciones seguras  
-- **Logger centralizado**  
-- **MVVM** para interfaces WPF  
+- **Service Layer** for business logic.
+- **Command Handler** for complex commands.
+- **Result<T>** for safe operations.
+- **Centralized Logger**.
+- **MVVM** for WPF interfaces.
 
 ---
 
-# **9. Manejo de Excepciones**
+## **9. Exception Handling**
 
-### **Reglas:**
-- Nunca mostrar excepciones crudas  
-- Siempre loggear  
-- Usar `TaskDialog` para errores controlados  
+#### **Rules:**
+- Never show raw exceptions to users.
+- Always log technical details.
+- Use `TaskDialog` for user-friendly errors.
 
 ```csharp
 catch (Exception ex)
@@ -268,53 +268,54 @@ catch (Exception ex)
 
 ---
 
-# **10. Flujo de Trabajo Completo**
+## **10. Complete Workflow**
 
-1. Instalar plantillas Nice3point  
-2. Crear proyecto desde Visual Studio  
-3. Implementar comandos  
-4. Configurar Ribbon  
-5. Seleccionar versión objetivo (R24 o R25)  
-6. Compilar (copiado automático del .addin)  
-7. Depurar en Revit  
+1. Install Nice3point templates.
+2. Create project using templates.
+3. Implement commands.
+4. Configure Ribbon UI.
+5. Select target version (R24 or R25).
+6. Compile (automatic copying of `.addin`).
+7. Debug in Revit.
 
 ---
 
-# **11. Documentación e Historial de Desarrollo (Logs)**
+## **11. Documentation and Development Logs**
 
-Para asegurar la trazabilidad, depuración y aprendizaje continuo, **se debe mantener un registro de cada creación, iteración o modificación** de un add-in.
+To ensure traceability, debugging, and continuous learning, **a log of every creation, iteration, or modification of an add-in must be maintained**.
 
-- **Regla estricta para el Agente (IA):** Siempre que el usuario indique que la tarea actual ha finalizado o **que los cambios ya funcionan correctamente**, el Agente copiará obligatoriamente los artefactos generados en la carpeta `docs/` dentro del proyecto correspondiente.
-- Los archivos deben nombrarse obligatoriamente con el patrón que incluye una o dos palabras clave descriptivas sobre los cambios además de la fecha y hora: `[nombre_artefacto]_[keywords]_[YYYY-MM-DD_HHmm].md`.
-- Allí se guardarán las versiones finales de cada iteración:
-  - `implementation_plan_[keywords]_[YYYY-MM-DD_HHmm].md`
-  - `task_[keywords]_[YYYY-MM-DD_HHmm].md`
-  - `walkthrough_[keywords]_[YYYY-MM-DD_HHmm].md`
+- **Strict Rule for the Agent (IA):** Whenever the user indicates that the current task is completed or **that the changes work correctly**, the Agent must copy the generated artifacts following a modular structure.
+  - Project documentation must be stored in `docs/references/`, `docs/assets/`, or `docs/scripts/`.
+  - The files must be named using the strict pattern: `[artifact_name]_[keywords]_[YYYY-MM-DD_HHmm].md`.
+  - Standard artifacts include:
+    - `implementation_plan_[keywords]_[YYYY-MM-DD_HHmm].md`
+    - `task_[keywords]_[YYYY-MM-DD_HHmm].md`
+    - `walkthrough_[keywords]_[YYYY-MM-DD_HHmm].md`
 
-Esto garantiza que siempre haya una fuente de consulta en el futuro para entender cómo se estructuró el código o por qué se tomaron ciertas decisiones de diseño.
+This guarantees there is always a searchable, auditable technical log to understand how the code was structured and why design decisions were made.
 
-# **12. Mejores Prácticas y Solución de Problemas (WPF)**
+---
 
-Al desarrollar interfaces complejas con WPF para Revit (especialmente exploradores jerárquicos), se deben tener en cuenta los siguientes problemas detectados y sus soluciones:
+## **12. WPF Best Practices & Troubleshooting**
 
-## **12.1 Virtualización de TreeView y Reciclaje de Contenedores**
-**Problema:** Al usar `VirtualizingStackPanel.VirtualizationMode="Recycling"` en un `TreeView` con bindings bidireccionales (`TwoWay`) en la propiedad `IsExpanded`, se puede producir una corrupción del estado visual al reconstruir o filtrar el árbol. Los contenedores visuales antiguos pueden "empujar" su estado de expansión previo a los nuevos objetos de datos antes de resetearse, provocando expansiones espontáneas no deseadas.
+When developing complex WPF interfaces for Revit (especially hierarchical explorers), keep in mind the following detected issues and their solutions:
 
-**Solución:** 
-- Cambiar el modo a **`VirtualizationMode="Standard"`** en el XAML del TreeView.
-- Esto asegura que los contenedores visuales se destruyan y recreen limpiamente, evitando la transferencia de estados "fantasma" entre nodos antiguos y nuevos.
+### **12.1 TreeView Virtualization and Container Recycling**
+**Issue:** Using `VirtualizingStackPanel.VirtualizationMode="Recycling"` on a `TreeView` with two-way bindings on the `IsExpanded` property can produce visual state corruption during filtering or reconstruction. Old visual containers might "push" their previous expansion state to new data objects before resetting, causing spontaneous unwanted branch expansions.
+
+**Solution:** 
+- Set the virtualization mode to **`VirtualizationMode="Standard"`** in the TreeView XAML.
+- This ensures visual containers are cleanly destroyed and recreated, preventing "ghost" states from transferring between nodes.
 
 ```xml
 <TreeView VirtualizingStackPanel.IsVirtualizing="True"
           VirtualizingStackPanel.VirtualizationMode="Standard">
 ```
 
-## **12.2 Conflictos de Expansión por Restauración de Selección**
-**Problema:** Al reconstruir un árbol y restaurar automáticamente los "checks" (selección) de elementos, es común tener una lógica recursiva que expande los padres para que el elemento seleccionado sea visible. Sin embargo, si el usuario ha organizado o contraído el árbol manualmente, esta lógica sobrescribirá su estado visual, forzando la apertura de ramas que deberían estar cerradas.
+### **12.2 Expansion Conflicts due to Selection Restoration**
+**Issue:** Rebuilding a tree and automatically restoring element checkboxes (selection) often uses recursive logic to expand parents so the checked item is visible. However, if the user manually collapsed a branch, this logic will overwrite their UI preferences, forcing open branches that should be closed.
 
-**Solución:**
-- Implementar un parámetro de control (ej. `bool forceExpand`) en la lógica de restauración de selección.
-- **`forceExpand = true`**: Solo durante el primer lanzamiento del add-in (para mostrar qué hay seleccionado en Revit).
-- **`forceExpand = false`**: Durante reconstrucciones por cambios de filtros o switches de organización, permitiendo que la "Memoria Semántica de Profundidad" mantenga el control visual.
-
----
+**Solution:**
+- Implement a control parameter (e.g., `bool forceExpand`) in the selection restoration logic.
+- **`forceExpand = true`**: Only during the initial launch of the add-in (to show active selections).
+- **`forceExpand = false`**: During rebuilds triggered by filters or visual organization switches, allowing visual collapse/expand preferences to be respected.
