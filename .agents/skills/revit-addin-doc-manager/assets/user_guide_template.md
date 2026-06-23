@@ -30,21 +30,42 @@ Este asset define la estructura de secciones obligatoria y las reglas de formato
 
 ---
 
-## 3. Instrucciones de Instalación
+## 3. Installation & Uninstallation
 
-1.  Cierra todas las sesiones activas de Autodesk Revit.
-2.  Ejecuta el archivo instalador `.msi` o descomprime la carpeta `.bundle` en el directorio de complementos de Revit del usuario:
-    `%APPDATA%\Autodesk\Revit\Addins\[Año]\`
-3.  Inicia Revit. Si aparece el diálogo de seguridad, haz clic en **"Cargar siempre"** (Always Load).
+The installer that ran when you downloaded this plug-in from the Autodesk App Store has already installed the plug-in. You may need to restart the Autodesk product to activate the plug-in.
+
+To uninstall this plug-in, exit the Autodesk product if you are currently running it, simply rerun the installer by downloading it again from the Autodesk App Store, and select the 'Uninstall' button, or you can uninstall it from 'Control Panel\\Programs\\Programs and Features' (Windows 10/11), just as you would uninstall any other application from your system.
 
 ---
 
-## 4. Guía de Comandos (Ribbon UI)
+## 4. Commands and Features Guide
 
-| Comando / Botón | Clase Ejecutora (`FullClassName`) | Descripción Funcional y Uso |
-|-----------------|-----------------------------------|----------------------------|
-| **[Botón 1]** | `{{Namespace}}.Commands.Cmd[Action]` | [Explicación de qué hace al pulsarlo y qué parámetros o selecciones requiere.] |
-| **[Botón 2]** | `{{Namespace}}.Commands.Cmd[Action2]` | [Explicación del segundo botón...] |
+### 4.1. Ribbon Panel Integration
+The add-in creates a custom tab containing the plugin panel.
+
+| Command | Function | Technical Class |
+|---------|----------|-----------------|
+| **[App Start]** | Initializes the Ribbon panel and the application. | `{{Namespace}}.Application` |
+| **[Command 1]** | [Functional description] | `{{Namespace}}.Commands.Cmd[Action]` |
+
+---
+
+## 5. Comprehensive Usage Guide
+
+### Main Interface / Explorer
+[Provide an overview of the main UI, the hierarchical tree, or core views.]
+
+### Scope and Filters
+[List the available scope toggles and grouping options using bullet points]
+- **Filter A**: Description.
+- **Filter B**: Description.
+
+### Advanced Logic and Tools
+[Explain search functionality, expansions, or specific features using clear bullet points and alerts]
+* **Constraint 1**: Description.
+* **Exclusion 1**: Description.
+> [!TIP]
+> **Pro-Tip**: Explain hidden gems or workflow optimizations.
 
 ---
 
