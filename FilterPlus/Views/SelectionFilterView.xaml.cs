@@ -19,7 +19,7 @@ public partial class SelectionFilterView : Window
         viewModel.ShowWindowRequested = this.Show;
 
         _logView = new LogView();
-        // _logView.Show();
+        _logView.Show();
         
         this.Closed += (s, e) => _logView.Close();
     }

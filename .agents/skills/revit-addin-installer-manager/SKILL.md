@@ -1,87 +1,20 @@
-# Skill: Revit Add-in Installer Manager (WiX Toolset Automation)
-
-**Versión:** 1.1
-**Descripción:** Automatiza la creación de instaladores MSI profesionales para Add-ins de Revit multiversión (2023-2027), utilizando WiX Toolset v3.11+.
-
+---
+name: revit-addin-installer-manager
+description: Automates the creation of professional MSI installers for multi-version Revit Add-ins (2023-2027) using WiX Toolset v3.11+. Use this when preparing a deployment package, updating installer versions, or generating WXS scripts.
 ---
 
-## 🟢 1. Fase de Configuración Inicial (Entrada de Usuario y Git)
-Al activar este skill, el Agente debe recopilar:
-1.  **Versión del Add-in (Git):** Ejecutar `git describe --tags --abbrev=0` para obtener la última versión.
-    *   **Acción Proactiva:** Si el tag existe (ej. `v1.0.0`), el Agente debe actualizar automáticamente la etiqueta `<Version>` en el archivo `.csproj` del proyecto.
-2.  **Versiones de Revit Objetivo:** (Ej. 2023, 2024, 2025, 2026, 2027).
-3.  **Nombre Comercial:** Nombre del Add-in para el Panel de Control.
-4.  **Fabricante:** Nombre del desarrollador o empresa.
-5.  **UI Deseada:** ¿Mínima (Minimal) o con selección de ruta (InstallDir)?
+# Revit Add-in Installer Manager (WiX Toolset Automation)
 
----
+Este skill guía al agente en la automatización de la creación de instaladores profesionales en formato `.msi` para add-ins multi-versión de Revit, gestionando el empaquetado de recursos de forma robusta e independiente de Visual Studio.
 
-## 🛠 2. Lógica de Ejecución Automática
+## 📚 Referencias Técnicas (Knowledge Base)
+Para obtener especificaciones teóricas y guías de validación de Windows Installer, consulta los archivos en la carpeta `references/`:
 
-### Paso A: Escaneo de Estructura Multi-Configuración
-El Agente mapeará las carpetas de salida del proyecto (basado en el patrón de Nice3point):
-- Busca `bin/Release.R24/FilterPlus/`, `bin/Release.R25/FilterPlus/`, etc.
-- Verifica la existencia del manifiesto `.addin` en la raíz del proyecto.
+*   `references/wix_toolset_architecture.md`: Explicación de cómo es posible crear archivos `.msi` y compilar proyectos de C# sin utilizar Visual Studio (desmitificando el rol del IDE y permitiendo flujos de CI/CD).
+*   `references/wxs_golden_rules.md`: Reglas de oro obligatorias para escribir archivos XML `.wxs` robustos, previniendo errores de validación de Windows Installer (ICE38 y ICE64) en instalaciones en AppData.
 
-### Paso B: Generación de `Product.wxs` (Lógica Central)
-El Agente escribirá el archivo con la siguiente estructura técnica:
+## 📦 Assets (Plantillas y Ejemplos de Configuración de Instalador)
+Los siguientes archivos se encuentran en la carpeta `assets/` y pueden inyectarse o utilizarse como guía en los proyectos:
 
-1.  **Namespaces**: Incluir `xmlns="http://schemas.microsoft.com/wix/2006/wi"`.
-2.  **Variables de UI**:
-    - `<UIRef Id="WixUI_Minimal" />` o `<UIRef Id="WixUI_InstallDir" />`.
-    - `<WixVariable Id="WixUILicenseRtf" Value="Resources\License.rtf" />`.
-3.  **Jerarquía de Directorios**:
-    ```xml
-    <Directory Id="TARGETDIR" Name="SourceDir">
-      <Directory Id="AppDataFolder">
-        <Directory Id="Autodesk" Name="Autodesk">
-          <Directory Id="Revit" Name="Revit">
-            <Directory Id="Addins" Name="Addins">
-              <Directory Id="REVIT2024" Name="2024" />
-              <Directory Id="REVIT2025" Name="2025" />
-              <!-- Repetir según versiones -->
-            </Directory>
-          </Directory>
-        </Directory>
-      </Directory>
-    </Directory>
-    ```
-
-### Paso C: Definición de Componentes por Versión
-El Agente generará un `ComponentGroup` por cada versión de Revit, vinculando el `.addin` específico y la carpeta de binarios correspondiente.
-
----
-
-## 🛡 3. Reglas de Oro para un WXS Robusto (Anti-Errores)
-Para evitar errores de compilación comunes en WiX (ICE64, ICE38, Duplicate Symbols), el Agente debe seguir estas reglas estrictas al generar el código:
-
-### A. Gestión de IDs y Símbolos Únicos
-*   **Nunca** dejes que WiX asigne IDs automáticos a los archivos en instaladores multiversión.
-*   **Regla**: Cada archivo debe tener un `Id` único que incluya la versión (ej: `Id="F_Dll24"`, `Id="F_Dll25"`). Esto evita el error *"Duplicate symbol 'File:Nombre.dll' found"*.
-
-### B. GUIDs Estáticos vs Automáticos
-*   **Regla**: Usa siempre **GUIDs fijos y estáticos** para los componentes (`Guid="XXXX-..."`). 
-*   **Por qué**: El uso de `Guid="*"` (automático) falla si el componente contiene más de un elemento (ej: un Archivo + una Clave de Registro). Al ser instalaciones multiversión complejas, el GUID fijo garantiza estabilidad.
-
-### C. Validación de Seguridad Windows (ICE)
-Para instalaciones en `AppData` (Per-User):
-1.  **ICE38 (KeyPath de Registro)**: Cada componente **debe** tener una `RegistryValue` en `HKCU` como `KeyPath="yes"`. No uses el archivo como KeyPath.
-2.  **ICE64 (Borrado de Carpetas)**: Cada nivel de la jerarquía de directorios (`Autodesk`, `Revit`, `Addins`, `2024`, etc.) debe tener una instrucción `<RemoveFolder Id="..." On="uninstall"/>` vinculada a un componente.
-3.  **Componente de Limpieza**: Se recomienda crear un `ComponentGroup` llamado `CleanupComponents` que se encargue exclusivamente de las instrucciones `RemoveFolder` de las carpetas superiores.
-
----
-
-## 🤖 4. Instrucciones de Comportamiento para el Agente
-- **Referencia Automática**: El Agente debe instruir al usuario para que añada la referencia a `WixUIExtension.dll` en Visual Studio si se detecta que el proyecto es nuevo.
-- **UpgradeCode**: Debe ser persistente para permitir actualizaciones (`MajorUpgrade`).
-- **Validación de Rutas**: Verificar siempre que las rutas relativas (ej: `..\..\..\`) coincidan con la profundidad de la carpeta del instalador respecto a los binarios.
-- **Estructura de Componentes**: Cada archivo importante (DLL, .addin) debe ir en su propio `<Component>`.
-
----
-
-## 📋 5. Flujo de Trabajo del Agente
-1.  **Versión:** Obtener tag de Git y sincronizar con `.csproj`.
-2.  **Preparación:** Crear carpeta `Installer/` y subcarpeta `Resources/` dentro del proyecto.
-3.  **Recursos:** Generar `License.rtf` básico.
-4.  **Escritura:** Generar el archivo `Product.wxs` completo aplicando las **Reglas de Oro** de la Sección 3, asegurando que `Product/@Version` coincida con la versión de Git.
-5.  **Finalización:** Entregar los comandos para compilar vía consola o guiar en el uso de la interfaz de Visual Studio.
+*   `assets/ProductTemplate.wxs`: Plantilla XML base estructurada para empaquetado de add-ins multi-versión (Revit 2024 y 2025) con componentes de limpieza e IDs únicos.
+*   `assets/LicenseTemplate.rtf`: Archivo base en formato de Texto Enriquecido (RTF) para el Acuerdo de Licencia de Usuario Final (EULA) que se muestra en la interfaz del instalador.

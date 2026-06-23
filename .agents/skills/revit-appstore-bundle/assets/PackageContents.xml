@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ApplicationPackage
+  SchemaVersion="1.0"
+  AppVersion="{{Version}}"
+  Author="{{Author}}"
+  Description="{{AppName}}"
+  Name="{{AppName}}"
+  ProductCode="{{ProductCode}}"
+  OnlineDocumentation="https://dbdev-dbarberos.github.io/PrivacyPolicy/"
+  ProductType="Application"
+  Icon="./Contents/Resources/Icons/RibbonIcon32.png"
+  HelpFile="./docs/user_guide.md">
+
+  <CompanyDetails
+    Name="{{Author}}"
+    Url="https://apps.autodesk.com/en/Publisher/PublisherHomepage"
+    Email="{{Email}}" />
+
+  <!-- The components will be dynamically injected here by the PowerShell script -->
+  {{Components}}
+
+</ApplicationPackage>

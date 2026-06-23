@@ -1,4 +1,4 @@
-<!-- AUTO-GENERATED — DO NOT EDIT -->
+<!-- AUTO-GENERATED - DO NOT EDIT -->
 
 # MSBuild Anti-Pattern Catalog
 
@@ -50,7 +50,7 @@ Use this catalog when scanning project files for improvements.
 
 ## AP-02: Unquoted Condition Expressions
 
-**Smell**: `Condition="$(Foo) == Bar"` — either side of a comparison is unquoted.
+**Smell**: `Condition="$(Foo) == Bar"` â€” either side of a comparison is unquoted.
 
 **Why it's bad**: If the property is empty or contains spaces/special characters, the condition evaluates incorrectly or throws a parse error. MSBuild requires single-quoted strings for reliable comparisons.
 
@@ -140,7 +140,7 @@ Use this catalog when scanning project files for improvements.
   <Compile Include="Models\User.cs" />
 </ItemGroup>
 
-<!-- GOOD: Remove entirely — SDK includes all .cs files by default.
+<!-- GOOD: Remove entirely â€” SDK includes all .cs files by default.
      Only use Remove/Exclude when you need to opt out: -->
 <ItemGroup>
   <Compile Remove="LegacyCode\**" />
@@ -210,7 +210,7 @@ Analyzer and build-tool packages should always use `PrivateAssets="all"` to prev
 
 **Smell**: The same `<PropertyGroup>` block appears in 3+ project files.
 
-**Why it's bad**: Maintenance burden — a change must be made in every file. Inconsistencies creep in over time.
+**Why it's bad**: Maintenance burden â€” a change must be made in every file. Inconsistencies creep in over time.
 
 ```xml
 <!-- BAD: Repeated in every .csproj -->
@@ -242,7 +242,7 @@ See `directory-build-organization` skill for full guidance on structuring `Direc
 
 **Smell**: `<PackageReference Include="X" Version="1.2.3" />` with different versions of the same package across projects.
 
-**Why it's bad**: Version drift — different projects use different versions of the same package, leading to runtime mismatches, unexpected behavior, or diamond dependency conflicts.
+**Why it's bad**: Version drift â€” different projects use different versions of the same package, leading to runtime mismatches, unexpected behavior, or diamond dependency conflicts.
 
 ```xml
 <!-- BAD: Version specified in each project, can drift -->
@@ -380,7 +380,7 @@ See `incremental-build` skill for deep guidance on Inputs/Outputs, FileWrites, a
 <Project Sdk="Microsoft.NET.Sdk">
 ```
 
-**Exception**: Imports that are *required* for the build to work correctly should fail fast — don't guard those. Guard imports that are optional or environment-specific (e.g., local developer overrides, CI-specific settings).
+**Exception**: Imports that are *required* for the build to work correctly should fail fast â€” don't guard those. Guard imports that are optional or environment-specific (e.g., local developer overrides, CI-specific settings).
 
 ---
 
@@ -406,7 +406,7 @@ See `incremental-build` skill for deep guidance on Inputs/Outputs, FileWrites, a
 
 ## AP-15: Unconditional Property Override in Multiple Scopes
 
-**Smell**: A property set unconditionally in both `Directory.Build.props` and a `.csproj` — last write wins silently.
+**Smell**: A property set unconditionally in both `Directory.Build.props` and a `.csproj` â€” last write wins silently.
 
 **Why it's bad**: Hard to trace which value is actually used. Makes the build fragile and confusing for anyone reading the project files.
 
@@ -551,12 +551,12 @@ For additional anti-patterns (AP-16 through AP-21) and a quick-reference checkli
 
 **Smell**: `<PropertyGroup Condition="'$(TargetFramework)' == '...'">` or `<Property Condition="'$(TargetFramework)' == '...'">` in `Directory.Build.props` or any `.props` file imported before the project body.
 
-**Why it's bad**: `$(TargetFramework)` is NOT reliably available in `Directory.Build.props` or any `.props` file imported before the project body. It is only set that early for multi-targeting projects, which receive `TargetFramework` as a global property from the outer build. Single-targeting projects (using singular `<TargetFramework>`) set it in the project body, which is evaluated *after* `.props`. This means property conditions on `$(TargetFramework)` in `.props` files silently fail for single-targeting projects — the condition never matches because the property is empty. This applies to both `<PropertyGroup Condition="...">` and individual `<Property Condition="...">` elements.
+**Why it's bad**: `$(TargetFramework)` is NOT reliably available in `Directory.Build.props` or any `.props` file imported before the project body. It is only set that early for multi-targeting projects, which receive `TargetFramework` as a global property from the outer build. Single-targeting projects (using singular `<TargetFramework>`) set it in the project body, which is evaluated *after* `.props`. This means property conditions on `$(TargetFramework)` in `.props` files silently fail for single-targeting projects â€” the condition never matches because the property is empty. This applies to both `<PropertyGroup Condition="...">` and individual `<Property Condition="...">` elements.
 
 For a detailed explanation of MSBuild's evaluation and execution phases, see [Build process overview](https://learn.microsoft.com/en-us/visualstudio/msbuild/build-process-overview).
 
 ```xml
-<!-- BAD: In Directory.Build.props — TargetFramework may be empty here -->
+<!-- BAD: In Directory.Build.props â€” TargetFramework may be empty here -->
 <PropertyGroup Condition="'$(TargetFramework)' == 'net8.0'">
   <DefineConstants>$(DefineConstants);MY_FEATURE</DefineConstants>
 </PropertyGroup>
@@ -566,7 +566,7 @@ For a detailed explanation of MSBuild's evaluation and execution phases, see [Bu
   <DefineConstants Condition="'$(TargetFramework)' == 'net8.0'">$(DefineConstants);MY_FEATURE</DefineConstants>
 </PropertyGroup>
 
-<!-- GOOD: In Directory.Build.targets — TargetFramework is always available -->
+<!-- GOOD: In Directory.Build.targets â€” TargetFramework is always available -->
 <PropertyGroup Condition="'$(TargetFramework)' == 'net8.0'">
   <DefineConstants>$(DefineConstants);MY_FEATURE</DefineConstants>
 </PropertyGroup>
@@ -578,17 +578,17 @@ For a detailed explanation of MSBuild's evaluation and execution phases, see [Bu
 </PropertyGroup>
 ```
 
-**⚠️ Item and Target conditions are NOT affected.** This restriction applies ONLY to property conditions (`<PropertyGroup Condition="...">` and `<Property Condition="...">`). Item conditions (`<ItemGroup Condition="...">`) and Target conditions in `.props` files are SAFE because items and targets evaluate after all properties (including those set in the project body) have been evaluated. This includes `PackageVersion` items in `Directory.Packages.props`, `PackageReference` items in `Directory.Build.props`, and any other item types.
+**âš ï¸ Item and Target conditions are NOT affected.** This restriction applies ONLY to property conditions (`<PropertyGroup Condition="...">` and `<Property Condition="...">`). Item conditions (`<ItemGroup Condition="...">`) and Target conditions in `.props` files are SAFE because items and targets evaluate after all properties (including those set in the project body) have been evaluated. This includes `PackageVersion` items in `Directory.Packages.props`, `PackageReference` items in `Directory.Build.props`, and any other item types.
 
-**Do NOT flag the following patterns — they are correct:**
+**Do NOT flag the following patterns â€” they are correct:**
 
 ```xml
-<!-- OK in Directory.Build.props — ItemGroup conditions evaluate late -->
+<!-- OK in Directory.Build.props â€” ItemGroup conditions evaluate late -->
 <ItemGroup Condition="'$(TargetFramework)' == 'net472'">
   <PackageReference Include="System.Memory" />
 </ItemGroup>
 
-<!-- OK in Directory.Packages.props — PackageVersion items evaluate late -->
+<!-- OK in Directory.Packages.props â€” PackageVersion items evaluate late -->
 <ItemGroup Condition="'$(TargetFramework)' == 'net8.0'">
   <PackageVersion Include="Microsoft.AspNetCore.Mvc.Testing" Version="8.0.11" />
 </ItemGroup>
@@ -596,7 +596,7 @@ For a detailed explanation of MSBuild's evaluation and execution phases, see [Bu
   <PackageVersion Include="Microsoft.AspNetCore.Mvc.Testing" Version="9.0.0" />
 </ItemGroup>
 
-<!-- OK — Individual item conditions also evaluate late -->
+<!-- OK â€” Individual item conditions also evaluate late -->
 <ItemGroup>
   <PackageReference Include="System.Memory" Condition="'$(TargetFramework)' == 'net472'" />
 </ItemGroup>
@@ -610,27 +610,27 @@ When reviewing an MSBuild file, scan for these in order:
 
 | # | Check | Severity |
 |---|-------|----------|
-| AP-02 | Unquoted conditions | 🔴 Error-prone |
-| AP-19 | Side effects in evaluation | 🔴 Dangerous |
-| AP-21 | Property conditioned on TargetFramework in .props | 🔴 Silent failure |
-| AP-03 | Hardcoded absolute paths | 🔴 Broken on other machines |
-| AP-06 | `<Reference>` with HintPath for NuGet | 🟡 Legacy |
-| AP-07 | Missing `PrivateAssets="all"` on tools | 🟡 Leaks to consumers |
-| AP-11 | Missing Inputs/Outputs on targets | 🟡 Perf regression |
-| AP-13 | Import without Exists guard | 🟡 Fragile |
-| AP-05 | Manual file listing in SDK-style | 🔵 Noise |
-| AP-04 | Restating SDK defaults | 🔵 Noise |
-| AP-08 | Copy-paste across csproj files | 🔵 Maintainability |
-| AP-09 | Scattered package versions | 🔵 Version drift |
-| AP-01 | `<Exec>` for built-in tasks | 🔵 Cross-platform |
-| AP-14 | Backslashes in cross-platform paths | 🔵 Cross-platform |
-| AP-10 | Monolithic targets | 🔵 Maintainability |
-| AP-12 | Defaults in .targets instead of .props | 🔵 Ordering issue |
-| AP-15 | Unconditional property override | 🔵 Confusing |
-| AP-16 | `<Exec>` for string operations | 🔵 Preference |
-| AP-17 | Mixed Include/Update in one ItemGroup | 🔵 Subtle bugs |
-| AP-18 | Redundant transitive ProjectReferences | 🔵 Graph noise |
-| AP-20 | Platform-specific Exec without guard | 🔵 Cross-platform |.
+| AP-02 | Unquoted conditions | ðŸ”´ Error-prone |
+| AP-19 | Side effects in evaluation | ðŸ”´ Dangerous |
+| AP-21 | Property conditioned on TargetFramework in .props | ðŸ”´ Silent failure |
+| AP-03 | Hardcoded absolute paths | ðŸ”´ Broken on other machines |
+| AP-06 | `<Reference>` with HintPath for NuGet | ðŸŸ¡ Legacy |
+| AP-07 | Missing `PrivateAssets="all"` on tools | ðŸŸ¡ Leaks to consumers |
+| AP-11 | Missing Inputs/Outputs on targets | ðŸŸ¡ Perf regression |
+| AP-13 | Import without Exists guard | ðŸŸ¡ Fragile |
+| AP-05 | Manual file listing in SDK-style | ðŸ”µ Noise |
+| AP-04 | Restating SDK defaults | ðŸ”µ Noise |
+| AP-08 | Copy-paste across csproj files | ðŸ”µ Maintainability |
+| AP-09 | Scattered package versions | ðŸ”µ Version drift |
+| AP-01 | `<Exec>` for built-in tasks | ðŸ”µ Cross-platform |
+| AP-14 | Backslashes in cross-platform paths | ðŸ”µ Cross-platform |
+| AP-10 | Monolithic targets | ðŸ”µ Maintainability |
+| AP-12 | Defaults in .targets instead of .props | ðŸ”µ Ordering issue |
+| AP-15 | Unconditional property override | ðŸ”µ Confusing |
+| AP-16 | `<Exec>` for string operations | ðŸ”µ Preference |
+| AP-17 | Mixed Include/Update in one ItemGroup | ðŸ”µ Subtle bugs |
+| AP-18 | Redundant transitive ProjectReferences | ðŸ”µ Graph noise |
+| AP-20 | Platform-specific Exec without guard | ðŸ”µ Cross-platform |.
 
 ---
 
@@ -651,7 +651,7 @@ When reviewing an MSBuild file, scan for these in order:
 **SDK-style indicators:**
 
 - `<Project Sdk="Microsoft.NET.Sdk">` attribute on root element
-- Minimal content — a simple project may be 10–15 lines
+- Minimal content â€” a simple project may be 10â€“15 lines
 - No explicit file includes (implicit globbing)
 - `<PackageReference>` items instead of `packages.config`
 
@@ -686,7 +686,7 @@ When reviewing an MSBuild file, scan for these in order:
 </Project>
 ```
 
-## Migration Checklist: Legacy → SDK-style
+## Migration Checklist: Legacy â†’ SDK-style
 
 ### Step 1: Replace Project Root Element
 
@@ -785,7 +785,7 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyDescription("A useful library")]
 [assembly: AssemblyCompany("Contoso")]
 [assembly: AssemblyProduct("MyLibrary")]
-[assembly: AssemblyCopyright("Copyright © Contoso 2024")]
+[assembly: AssemblyCopyright("Copyright Â© Contoso 2024")]
 [assembly: ComVisible(false)]
 [assembly: Guid("...")]
 [assembly: AssemblyVersion("1.2.0.0")]
@@ -800,12 +800,12 @@ using System.Runtime.InteropServices;
   <Description>A useful library</Description>
   <Company>Contoso</Company>
   <Product>MyLibrary</Product>
-  <Copyright>Copyright © Contoso 2024</Copyright>
+  <Copyright>Copyright Â© Contoso 2024</Copyright>
   <Version>1.2.0</Version>
 </PropertyGroup>
 ```
 
-Delete `Properties\AssemblyInfo.cs` — the SDK auto-generates assembly attributes from these properties.
+Delete `Properties\AssemblyInfo.cs` â€” the SDK auto-generates assembly attributes from these properties.
 
 **Alternative:** if you prefer to keep `AssemblyInfo.cs`, disable auto-generation:
 
@@ -815,7 +815,7 @@ Delete `Properties\AssemblyInfo.cs` — the SDK auto-generates assembly attribut
 </PropertyGroup>
 ```
 
-### Step 5: Migrate packages.config → PackageReference
+### Step 5: Migrate packages.config â†’ PackageReference
 
 **BEFORE** (`packages.config`):
 
@@ -842,13 +842,13 @@ Delete `packages.config` after migration.
 
 **Migration options:**
 
-- **Visual Studio:** right-click `packages.config` → *Migrate packages.config to PackageReference*
+- **Visual Studio:** right-click `packages.config` â†’ *Migrate packages.config to PackageReference*
 - **CLI:** `dotnet migrate-packages-config` or manual conversion
-- **Binding redirects:** SDK-style projects auto-generate binding redirects — remove the `<runtime>` section from `app.config` if present
+- **Binding redirects:** SDK-style projects auto-generate binding redirects â€” remove the `<runtime>` section from `app.config` if present
 
 ### Step 6: Remove Unnecessary Boilerplate
 
-Delete all of the following — the SDK provides sensible defaults:
+Delete all of the following â€” the SDK provides sensible defaults:
 
 ```xml
 <!-- DELETE: SDK imports (replaced by Sdk attribute) -->
@@ -918,13 +918,13 @@ After migration, consider enabling modern C# features:
 </PropertyGroup>
 ```
 
-- `<Nullable>enable</Nullable>` — enables nullable reference type analysis
-- `<ImplicitUsings>enable</ImplicitUsings>` — auto-imports common namespaces (.NET 6+)
-- `<LangVersion>latest</LangVersion>` — uses the latest C# language version (or specify e.g. `12.0`)
+- `<Nullable>enable</Nullable>` â€” enables nullable reference type analysis
+- `<ImplicitUsings>enable</ImplicitUsings>` â€” auto-imports common namespaces (.NET 6+)
+- `<LangVersion>latest</LangVersion>` â€” uses the latest C# language version (or specify e.g. `12.0`)
 
 ## Complete Before/After Example
 
-**BEFORE** (legacy — 65 lines):
+**BEFORE** (legacy â€” 65 lines):
 
 ```xml
 <?xml version="1.0" encoding="utf-8"?>
@@ -981,7 +981,7 @@ After migration, consider enabling modern C# features:
 </Project>
 ```
 
-**AFTER** (SDK-style — 11 lines):
+**AFTER** (SDK-style â€” 11 lines):
 
 ```xml
 <Project Sdk="Microsoft.NET.Sdk">
@@ -1058,39 +1058,6 @@ After migration, consider enabling modern C# features:
 
 ## Central Package Management Migration
 
-Centralizes NuGet version management across a multi-project solution. See [https://learn.microsoft.com/en-us/nuget/consume-packages/central-package-management](https://learn.microsoft.com/en-us/nuget/consume-packages/central-package-management) for details.
-
-**Step 1:** Create `Directory.Packages.props` at the repository root with `<ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>` and `<PackageVersion>` items for all packages.
-
-**Step 2:** Remove `Version` from each project's `PackageReference`:
-
-```xml
-<!-- BEFORE -->
-<PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
-
-<!-- AFTER -->
-<PackageReference Include="Newtonsoft.Json" />
-```
-
-## Directory.Build Consolidation
-
-Identify properties repeated across multiple `.csproj` files and move them to shared files.
-
-**`Directory.Build.props`** (for properties — placed at repo or src root):
-
-```xml
-<Project>
-  <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
-    <Nullable>enable</Nullable>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-    <Company>Contoso</Company>
-    <Copyright>Copyright © Contoso 2024</Copyright>
-  </PropertyGroup>
-</Project>
-```
-
-**`Directory.Build.targets`** (for targets/t
+Centralizes NuGet version management across a multi-project solution. See [https://learn.microsoft.com/e
 
 [truncated]
