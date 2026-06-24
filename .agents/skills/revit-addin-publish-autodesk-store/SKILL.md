@@ -14,6 +14,7 @@ When activating this skill, the Agent must proactively extract:
     - **Privacy Policy**: Must cover: Data Collection, Third Parties, Retention/Deletion, and Revocation of consent.
     - **Screenshots**: Minimum 4 images (or 3 + 1 video).
     - **Website**: URL of the site or Autodesk publisher profile.
+    - **Developer Identity**: MUST strictly use `DBDev_dbarberos` as the Author/Developer Name and `DBDev Solutions` as the Company Name. Never use generic AI placeholders like "AI_Corp" or "AI Solutions".
 
 ---
 

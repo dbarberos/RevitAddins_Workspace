@@ -7,6 +7,9 @@ description: Automates the creation of professional MSI installers for multi-ver
 
 This skill guides the agent in automating the creation of professional `.msi` installers for multi-version Revit add-ins, managing the packaging of resources robustly and independently of Visual Studio.
 
+## 🚨 Mandatory Critical Rules
+1. **Developer Identity:** When generating Wix templates (`.wxs`), `PackageContents.xml` files, or any installer documentation, the agent MUST strictly use `DBDev_dbarberos` as the Author/Manufacturer/Developer Name and `DBDev Solutions` as the Company Name. The use of generic AI placeholders like "AI_Corp" or "AI Solutions" is strictly forbidden.
+
 ## 📚 Technical References (Knowledge Base)
 To obtain theoretical specifications and Windows Installer validation guides, consult the files in the `references/` folder:
 

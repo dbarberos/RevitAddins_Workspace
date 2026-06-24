@@ -18,6 +18,7 @@ When Autodesk rejects a custom MSI installer (especially for free Add-ins) or it
 ## 🚨 Critical Rules for Autodesk App Store
 1. **Contextual Help (Mandatory)**: The Ribbon button MUST have a local HTML help file associated with it via `SetContextualHelp`. This file (`help.html`) must be generated from the User Guide and placed in the bundle's `Resources/` folder.
 2. **XML Exclusion in ZIP**: Although we generate `PackageContents.xml` for local developer testing, it must **NOT** be included within the final `.zip` file. Autodesk generates this file automatically during the submission process in the store.
+3. **Developer Identity**: When generating `PackageContents.xml` files or running scripts, the agent MUST strictly use `DBDev_dbarberos` as the Author/Name and `DBDev Solutions` as the Company Name. The use of generic AI placeholders like "AI_Corp" or "AI Solutions" is strictly forbidden.
 
 ## 📦 Assets (Templates and Source Code)
 The following files are located in the `assets/` folder:

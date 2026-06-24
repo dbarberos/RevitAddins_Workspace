@@ -14,6 +14,7 @@ This skill allows the agent to autonomously manage the add-in's documentation li
 4. **Friendly and Readable Structure (Textual UX):** The "Comprehensive Usage Guide" or description sections must be structured using bullet points, clear subsections, and tables to make reading very friendly and fast. Dense paragraphs or "walls of text" should be avoided.
 5. **Autodesk App Store Standard:** All information regarding "Installation & Uninstallation" must strictly use the Autodesk App Store standard (explaining that the downloaded installer already does the job, the need to restart the Autodesk product, and the uninstallation method from the Control Panel).
 6. **Preserve Changelog History:** When updating the Version History (Changelog) section of the user guide or similar documents, the agent MUST NOT delete or overwrite comments from previous versions. New version updates must be appended at the top of the history to maintain a complete historical record of all changes.
+7. **Developer Identity:** When generating any documentation or template, the agent MUST strictly use `DBDev_dbarberos` as the Author/Developer Name and `DBDev Solutions` as the Company Name. The use of generic AI placeholders like "AI_Corp" or "AI Solutions" is strictly forbidden.
 
 ## 📚 Technical References (Knowledge Base)
 To obtain documentation inspection guides and procedures, consult the files in the `references/` folder:
