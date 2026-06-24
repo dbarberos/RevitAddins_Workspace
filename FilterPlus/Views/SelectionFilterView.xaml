@@ -238,7 +238,6 @@
                 <RowDefinition Height="Auto"/> <!-- Select Card -->
                 <RowDefinition Height="Auto"/> <!-- Add Checked Card -->
                 <RowDefinition Height="Auto"/> <!-- PreSelection Card 1 -->
-                <RowDefinition Height="Auto"/> <!-- PreSelection Card 2 -->
             </Grid.RowDefinitions>
 
             <!-- Card de Filtro -->
@@ -388,23 +387,18 @@
 
             <!-- Card 1 de PreSelection (Feature 1) -->
             <Border Grid.Row="3" Background="White" CornerRadius="8" Padding="15,10" Margin="0,0,0,10" BorderBrush="#e8e8e8" BorderThickness="1">
-                <Grid>
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
-                    </Grid.RowDefinitions>
-                    
-                    <TextBlock Grid.Row="0" Text="Saved Selections" FontWeight="500" Margin="0,0,0,10" Foreground="#333" FontSize="13"/>
+                <StackPanel>
+                    <TextBlock Text="Saved Selections" FontWeight="500" Margin="0,0,0,5" Foreground="#333" FontSize="13"/>
 
-                    <Grid Grid.Row="1">
+                    <Grid>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
                         
-                        <ComboBox Grid.Column="0" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                        <ComboBox Grid.Column="0" VerticalAlignment="Center" Padding="2" BorderBrush="#e0e0e0" BorderThickness="1"/>
                         
-                        <Button Grid.Column="1" Content="Apply" VerticalAlignment="Center" Padding="12,3" Background="#007ACC" Foreground="White" BorderThickness="0" Cursor="Hand">
+                        <Button Grid.Column="1" Content="Apply" Margin="10,0,0,0" VerticalAlignment="Center" Padding="12,3" Background="#007ACC" Foreground="White" BorderThickness="0" Cursor="Hand">
                             <Button.Resources>
                                 <Style TargetType="Border">
                                     <Setter Property="CornerRadius" Value="4"/>
@@ -412,11 +406,8 @@
                             </Button.Resources>
                         </Button>
                     </Grid>
-                </Grid>
+                </StackPanel>
             </Border>
-
-            <!-- Feature 2: Pre-Selection Button -->
-            <Button Grid.Row="4" Content="Pre-Selection" HorizontalAlignment="Left" Margin="0,0,0,10" Height="30" Padding="15,0" Cursor="Hand"/>
 
         </Grid>
 
@@ -452,6 +443,7 @@
                     </Border>
                 </StackPanel>
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Bottom">
+                    <Button Content="Pre-Selection" Margin="0,0,5,0" Height="30" Padding="15,0" Cursor="Hand"/>
                     <Button Content="Select in Revit" Command="{Binding PickElementsCommand}" Margin="0,0,5,0" Height="30" Cursor="Hand"/>
                     <Button Content="Clear" Command="{Binding ClearFiltersCommand}" Width="80" Margin="0,0,5,0" Height="30"/>
                     <Button Content="Apply Selection" Command="{Binding ApplyFilterCommand}" Width="120" Height="30" Background="#007ACC" Foreground="White" FontWeight="Bold" Margin="0"/>
