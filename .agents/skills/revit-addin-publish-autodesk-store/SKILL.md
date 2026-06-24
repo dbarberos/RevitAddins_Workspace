@@ -1,68 +1,68 @@
 # Skill: Autodesk App Store Publisher (Autoloader Format)
 
 **Version:** 1.2
-**Description:** Automatiza la creación del formato `.bundle` y el archivo `PackageContents.xml` requeridos para publicar Add-ins de Revit en la Autodesk App Store, cumpliendo con los estándares de rechazo de instaladores personalizados.
+**Description:** Automates the creation of the `.bundle` format and the `PackageContents.xml` file required to publish Revit Add-ins in the Autodesk App Store, complying with the standards for rejecting custom installers.
 
 ---
 
-## 🟢 1. Fase de Inspección y Metadatos
-Al activar este skill, el Agente debe extraer proactivamente:
-1.  **Metadatos Técnicos**: `AppName`, `Version`, `AddInId`, y `VendorId` desde los archivos `.csproj` y `.addin`.
-2.  **Rango de Versiones**: Identificar `SeriesMin` y `SeriesMax` analizando las referencias a la API de Revit.
-3.  **Checklist de Cumplimiento**:
-    - **App Description**: Debe tener un mínimo de **4000 caracteres**.
-    - **Privacy Policy**: Debe cubrir: Recolección de datos, Terceros, Retención/Borrado y Revocación de consentimiento.
-    - **Screenshots**: Mínimo 4 imágenes (o 3 + 1 video).
-    - **Website**: URL del sitio o perfil de publicador de Autodesk.
+## 🟢 1. Inspection and Metadata Phase
+When activating this skill, the Agent must proactively extract:
+1.  **Technical Metadata**: `AppName`, `Version`, `AddInId`, and `VendorId` from the `.csproj` and `.addin` files.
+2.  **Version Range**: Identify `SeriesMin` and `SeriesMax` by analyzing the Revit API references.
+3.  **Compliance Checklist**:
+    - **App Description**: Must have a minimum of **4000 characters**.
+    - **Privacy Policy**: Must cover: Data Collection, Third Parties, Retention/Deletion, and Revocation of consent.
+    - **Screenshots**: Minimum 4 images (or 3 + 1 video).
+    - **Website**: URL of the site or Autodesk publisher profile.
 
 ---
 
-## 🛠 2. Lógica de Empaquetado (.bundle)
+## 🛠 2. Packaging Logic (.bundle)
 
-### Paso A: Estructura Autoloader
-El Agente creará la carpeta `FilterPlusPublishPackage/FilterPlus.bundle/` con la siguiente jerarquía:
+### Step A: Autoloader Structure
+The Agent will create the `FilterPlusPublishPackage/FilterPlus.bundle/` folder with the following hierarchy:
 ```text
 FilterPlus.bundle/
-├── PackageContents.xml (Raíz del bundle)
+├── PackageContents.xml (Bundle Root)
 └── Contents/
-    ├── 2023/ (Subcarpetas por versión si las DLLs difieren)
+    ├── 2023/ (Version subfolders if DLLs differ)
     │   ├── FilterPlus.dll
     │   └── FilterPlus.addin
     ├── 2024/ ...
     └── Resources/
         ├── Icon16.png
         ├── Icon32.png
-        └── Help.html (Documentación convertida de Markdown)
+        └── Help.html (Documentation converted from Markdown)
 ```
 
-### Paso B: `PackageContents.xml`
-Aunque el script de empaquetado puede generar este XML para pruebas locales del desarrollador, **Regla Crítica**: El archivo `PackageContents.xml` **NO DEBE incluirse** dentro del archivo `.zip` final que se sube a la tienda. El portal de Autodesk genera este archivo automáticamente durante el proceso de sumisión en base a la información que se introduce en la web.
+### Step B: `PackageContents.xml`
+Although the packaging script can generate this XML for local developer testing, **Critical Rule**: The `PackageContents.xml` file **MUST NOT be included** within the final `.zip` file that is uploaded to the store. The Autodesk portal generates this file automatically during the submission process based on the information entered on the website.
 
-### Paso C: Integración de la Ayuda Contextual (F1)
-**Regla Crítica**: La aplicación debe tener obligatoriamente un archivo local `help.html` (generado a partir de la guía de usuario) y el botón del Ribbon debe apuntar a él usando el método `SetContextualHelp()` apuntando a `Resources/help.html`.
+### Step C: Contextual Help Integration (F1)
+**Critical Rule**: The application must mandatorily have a local `help.html` file (generated from the user guide) and the Ribbon button must point to it using the `SetContextualHelp()` method pointing to `Resources/help.html`.
 
-### Paso C: Modificación del Manifiesto `.addin`
-**Regla Crítica**: La etiqueta `<Assembly>` dentro del archivo `.addin` distribuido NO debe tener rutas absolutas ni carpetas. Debe apuntar directamente al archivo en la misma carpeta:
+### Step C: `.addin` Manifest Modification
+**Critical Rule**: The `<Assembly>` tag inside the distributed `.addin` file MUST NOT have absolute paths or folders. It must point directly to the file in the same folder:
 ` <Assembly>FilterPlus.dll</Assembly>`
 
 ---
 
-## 🛡 3. Reglas de Publicación (Anti-Rechazo)
+## 🛡 3. Publication Rules (Anti-Rejection)
 
-### 1. Reemplazo del Instalador Custom
-Autodesk prefiere el formato bundle porque su portal genera automáticamente el MSI final. 
-- **Acción**: Desactivar la generación de MSI propio a menos que el app requiera cambios en el Registro de Windows o dependencias externas complejas.
+### 1. Custom Installer Replacement
+Autodesk prefers the bundle format because its portal automatically generates the final MSI. 
+- **Action**: Disable the generation of a custom MSI unless the app requires changes to the Windows Registry or complex external dependencies.
 
-### 2. Política de Privacidad Interna
-El app debe incluir un link a la política de privacidad accesible desde la interfaz (ej. en el botón de Configuración o Ayuda).
+### 2. Internal Privacy Policy
+The app must include a link to the privacy policy accessible from the interface (e.g., in the Settings or Help button).
 
-### 3. Soporte Multiversión
-Si se detectan versiones desde Revit 2025+, el Agente debe advertir sobre el requisito de **.NET 8.0 Runtime** en la descripción del app.
+### 3. Multi-Version Support
+If versions from Revit 2025+ are detected, the Agent must warn about the requirement of the **.NET 8.0 Runtime** in the app description.
 
 ---
 
-## 📋 4. Flujo de Trabajo Final
-1.  **Generar**: Crear la carpeta de publicación con todos los archivos `.md` de cumplimiento.
-2.  **Validar**: Verificar que la descripción supere los 4000 caracteres.
-3.  **Documentar**: Convertir `Guia_Uso.md` a `Help.html` usando el motor de renderizado disponible.
-4.  **Empaquetar**: Instruir al usuario para comprimir SOLO la carpeta `.bundle` en un `.zip`.
+## 📋 4. Final Workflow
+1.  **Generate**: Create the publication folder with all compliance `.md` files.
+2.  **Validate**: Verify that the description exceeds 4000 characters.
+3.  **Document**: Convert `Guia_Uso.md` to `Help.html` using the available rendering engine.
+4.  **Package**: Instruct the user to compress ONLY the `.bundle` folder into a `.zip`.

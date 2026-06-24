@@ -1,32 +1,32 @@
-# Guía de Usuario: Estructura del Documento `User_Guide.md`
+# User Guide: Document Structure `User_Guide.md`
 
-Este asset define la estructura de secciones obligatoria y las reglas de formato para el manual técnico `User_Guide.md` del add-in.
+This asset defines the mandatory section structure and formatting rules for the add-in's `User_Guide.md` technical manual.
 
 ---
 
-## 1. Plantilla de Estructura de Documento
+## 1. Document Structure Template
 
 ```markdown
-# [Nombre del Add-in]
+# [Add-in Name]
 
-> **Versión Actual:** [X.X.X]  
-> **ID del Add-in (GUID):** `[GUID extraído del archivo .addin]`  
-
----
-
-## 1. Descripción General
-
-[Proporcionar un resumen ejecutivo del propósito del add-in, el problema que resuelve y el flujo principal.]
+> **Current Version:** [X.X.X]  
+> **Add-in ID (GUID):** `[GUID extracted from the .addin file]`  
 
 ---
 
-## 2. Requisitos y Compatibilidad
+## 1. General Description
+
+[Provide an executive summary of the add-in's purpose, the problem it solves, and the main workflow.]
+
+---
+
+## 2. Requirements and Compatibility
 
 > [!WARNING]
-> Este add-in requiere **Autodesk Revit 2021** o superior en sistemas Windows de 64 bits.
+> This add-in requires **Autodesk Revit 2021** or higher on 64-bit Windows systems.
 
-* **Plataforma**: .NET Framework 4.8 / .NET 8 (según la versión).
-* **Versiones de Revit Soportadas**: [Ej. 2023, 2024, 2025].
+* **Platform**: .NET Framework 4.8 / .NET 8 (depending on the version).
+* **Supported Revit Versions**: [E.g., 2023, 2024, 2025].
 
 ---
 
@@ -69,32 +69,34 @@ The add-in creates a custom tab containing the plugin panel.
 
 ---
 
-## 5. Historial de Versiones (Changelog)
+## 6. Version History (Changelog)
 
-### [Versión X.X.X] - [AAAA-MM-DD]
+<!-- CRITICAL: Do NOT delete previous version entries. Append new version blocks at the top of this section to maintain a complete historical record. -->
 
-#### Added (Añadido)
-- [Funcionalidad nueva 1 o comando inyectado.]
+### [Version X.X.X] - [YYYY-MM-DD]
 
-#### Changed (Modificado)
-- [Mejora o refactorización del código.]
+#### Added
+- [New functionality 1 or injected command.]
 
-#### Fixed (Corregido)
-- [Corrección de error de hilo, interfaz o API.]
+#### Changed
+- [Improvement or code refactoring.]
+
+#### Fixed
+- [Fix for thread, interface, or API error.]
 
 ---
 
-## 6. Soporte y Contacto
+## 7. Support and Contact
 
-Para reportar fallos, sugerencias o solicitar soporte comercial, contacta a:
-* **Desarrollador / Compañía**: [Tu Compañía / DBDev_dbarberos]
-* **Soporte**: [Email de soporte o canal de incidencias de Git]
+To report bugs, make suggestions, or request commercial support, please contact:
+* **Developer / Company**: [Your Company / DBDev_dbarberos]
+* **Support**: [Support email or Git issue channel]
 ```
 
 ---
 
-## 2. Reglas de Estilo y Formato
+## 2. Style and Formatting Rules
 
-1.  **Tablas Técnicas**: Usa tablas Markdown para organizar datos como compatibilidades de versiones, IDs de clientes o listas de comandos.
-2.  **Mensajes de Alerta**: Emplea bloques de aviso estilo GitHub (`> [!WARNING]`, `> [!NOTE]`) para destacar prerrequisitos de sistema, riesgos en el modelo de Revit o transacciones que no se pueden deshacer.
-3.  **Enlaces de Comandos**: Las clases ejecutoras de Revit (`FullClassName`) siempre deben ir formateadas como código `` `Clase` ``.
+1.  **Technical Tables**: Use Markdown tables to organize data like version compatibilities, client IDs, or command lists.
+2.  **Alert Messages**: Employ GitHub-style alert blocks (`> [!WARNING]`, `> [!NOTE]`) to highlight system prerequisites, risks to the Revit model, or irreversible transactions.
+3.  **Command Links**: Revit executor classes (`FullClassName`) must always be formatted as inline code `` `Class` ``.

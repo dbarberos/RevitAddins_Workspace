@@ -1,16 +1,16 @@
-# Revit Add-in & Script Generator — Agent Instructions (Doble Stack C# / Python)
+# Revit Add-in & Script Generator — Agent Instructions (Dual Stack C# / Python)
 
 ## 1. Objective
 
-Este agente genera y mantiene proyectos completos de **Autodesk Revit** utilizando una arquitectura de doble stack adaptada según las necesidades del desarrollador:
-1.  **Compiled Add-ins (C# 12):** Utilizando **.NET Framework 4.8** (Revit <= 2024) o **.NET 8** (Revit 2025+), bajo patrones MVVM y WPF.
-2.  **Dynamic Scripting (Python / IronPython):** Utilizando el ecosistema de **pyRevit** (para botones ligeros en Ribbon y formularios xaml de pyRevit) y **RevitPythonShell (RPS)** / **Dynamo** (para prototipos rápidos en consola).
+This agent generates and maintains complete **Autodesk Revit** projects using a dual-stack architecture adapted to the developer's needs:
+1.  **Compiled Add-ins (C# 12):** Using **.NET Framework 4.8** (Revit <= 2024) or **.NET 8** (Revit 2025+), under MVVM and WPF patterns.
+2.  **Dynamic Scripting (Python / IronPython):** Using the **pyRevit** ecosystem (for lightweight Ribbon buttons and pyRevit xaml forms) and **RevitPythonShell (RPS)** / **Dynamo** (for rapid console prototyping).
 
-El agente actúa como un arquitecto y desarrollador políglota especializado en la API de Revit que:
-- Crea add-ins de C# desde cero e inyecta componentes testeables.
-- Desarrolla extensiones, pushbuttons y lógica ágil en Python utilizando el framework de pyRevit.
-- Mantiene una separación estricta de lógica de negocio y API.
-- Genera y mantiene documentación técnica en `/docs` y preserva lecciones aprendidas en los skills del repositorio.
+The agent acts as a polyglot architect and developer specialized in the Revit API who:
+- Creates C# add-ins from scratch and injects testable components.
+- Develops extensions, pushbuttons, and agile logic in Python using the pyRevit framework.
+- Maintains a strict separation between business logic and the API.
+- Generates and maintains technical documentation in `/docs` and preserves lessons learned in the repository skills.
 
 ---
 
@@ -18,47 +18,47 @@ El agente actúa como un arquitecto y desarrollador políglota especializado en 
 
 | Input | Required | Description |
 |-------|----------|-------------|
-| **Add-in / Script Name** | ✅ | Nombre del componente en PascalCase. |
-| **Stack Tecnológico** | ✅ | C# (.NET 4.8 o .NET 8) o Python (pyRevit / RPS / Dynamo). |
-| **Commands / Actions** | ✅ | Funcionalidad a implementar (`IExternalCommand` en C# o `script.py` en pyRevit). |
-| **UI Structure** | Opcional | Requiere WPF Window (MVVM), pyRevit Forms, o ejecución directa? |
-| **Icons** | Opcional | Imágenes para botones en Ribbon (16x16 y 32x32 px). |
+| **Add-in / Script Name** | ✅ | Component name in PascalCase. |
+| **Tech Stack** | ✅ | C# (.NET 4.8 or .NET 8) or Python (pyRevit / RPS / Dynamo). |
+| **Commands / Actions** | ✅ | Functionality to implement (`IExternalCommand` in C# or `script.py` in pyRevit). |
+| **UI Structure** | Optional | Requires WPF Window (MVVM), pyRevit Forms, or direct execution? |
+| **Icons** | Optional | Images for Ribbon buttons (16x16 and 32x32 px). |
 
 ---
 
 ## 3. Agent Outputs
 
-### A. Estructura de Proyecto C# (Add-in Compilado)
+### A. C# Project Structure (Compiled Add-in)
 ```text
 {{Name}}/
-├── Application.cs              # IExternalApplication (Configuración de Ribbon)
-├── {{Name}}.csproj            # Proyecto .NET con referencias API Revit y Nice3point
-├── {{Name}}.addin             # Manifiesto XML para registro de Revit
+├── Application.cs              # IExternalApplication (Ribbon Configuration)
+├── {{Name}}.csproj            # .NET Project with Revit API and Nice3point references
+├── {{Name}}.addin             # XML Manifest for Revit registration
 ├── Commands/
-│   └── Cmd{{Action}}.cs         # Clases IExternalCommand
+│   └── Cmd{{Action}}.cs         # IExternalCommand classes
 ├── Services/
-│   └── {{Entity}}Service.cs    # Lógica de acceso a datos e interfaz
+│   └── {{Entity}}Service.cs    # Data access logic and interface
 ├── Models/
-│   └── {{Entity}}Model.cs      # Modelos de datos puros
+│   └── {{Entity}}Model.cs      # Pure data models
 ├── Views/                      # WPF XAML Windows
 │   └── {{Name}}View.xaml
-├── ViewModels/                 # Lógica de presentación de WPF (C# 12)
+├── ViewModels/                 # WPF Presentation Logic (C# 12)
 │   └── {{Name}}ViewModel.cs
 ├── Resources/
-│   └── Icons/                  # Recursos de Iconos (16x16 y 32x32)
-└── docs/                       # Documentación local e historial del add-in
+│   └── Icons/                  # Icon Resources (16x16 and 32x32)
+└── docs/                       # Local documentation and add-in history
 ```
 
-### B. Estructura de Extensión de pyRevit (Python Scripting)
+### B. pyRevit Extension Structure (Python Scripting)
 ```text
 {{Name}}.extension/
 ├── {{Category}}.tab/
 │   └── {{Panel}}.panel/
 │       └── {{Action}}.pushbutton/
-│           ├── icon.png        # Icono de 32x32 px para el botón
-│           ├── script.py       # Código fuente ejecutable de Python
-│           ├── ui.xaml         # (Opcional) Interfaz WPF cargada por pyRevit
-│           └── bundle.yaml     # Configuración y metadatos del botón
+│           ├── icon.png        # 32x32 px icon for the button
+│           ├── script.py       # Executable Python source code
+│           ├── ui.xaml         # (Optional) WPF UI loaded by pyRevit
+│           └── bundle.yaml     # Button configuration and metadata
 ```
 
 ---
@@ -66,24 +66,24 @@ El agente actúa como un arquitecto y desarrollador políglota especializado en 
 ## 4. Style Rules and Conventions
 
 ### C# / .NET Conventions
-- **C# 12:** Uso obligatorio de constructores primarios en ViewModels y coincidencia de patrones (pattern matching).
-- **ImplicitUsings:** Siempre habilitar `<ImplicitUsings>enable</ImplicitUsings>` en el `.csproj`.
-- **Inyección de Dependencias:** Inyectar siempre servicios mediante constructor; nunca instanciar en Comandos.
-- **Sin #region:** Mantener clases pequeñas y enfocadas.
+- **C# 12:** Mandatory use of primary constructors in ViewModels and pattern matching.
+- **ImplicitUsings:** Always enable `<ImplicitUsings>enable</ImplicitUsings>` in the `.csproj`.
+- **Dependency Injection:** Always inject services via constructor; never instantiate in Commands.
+- **No #region:** Keep classes small and focused.
 
 ### Python / pyRevit Conventions
-- **PEP 8:** Cumplir con estilo de sangrado de 4 espacios, nombres en `snake_case` para variables y funciones, y clases en `PascalCase`.
-- **Importación de Clases .NET:** Usar el módulo `clr` para cargar ensamblados de C# e importar namespaces de Revit safely:
+- **PEP 8:** Comply with 4-space indentation style, `snake_case` names for variables and functions, and `PascalCase` for classes.
+- **.NET Class Importation:** Use the `clr` module to load C# assemblies and import Revit namespaces safely:
   ```python
   import clr
   clr.AddReference('RevitAPI')
   from Autodesk.Revit.DB import FilteredElementCollector, BuiltInCategory
   ```
-- **Transacciones en pyRevit:** Utilizar la sintaxis nativa de contexto simplificada de pyRevit:
+- **Transactions in pyRevit:** Use pyRevit's native simplified context syntax:
   ```python
   from pyrevit import revit
-  with revit.Transaction("Nombre de la Acción"):
-      # Lógica de escritura en el modelo
+  with revit.Transaction("Action Name"):
+      # Model write logic
   ```
 
 ---
@@ -92,28 +92,28 @@ El agente actúa como un arquitecto y desarrollador políglota especializado en 
 
 ```
 ┌──────────────────────────────────────────────────────────────────────────┐
-│                             1. DIAGNÓSTICO                               │
-│              Determinar Stack: ¿C# (Add-in) o Python (pyRevit)?          │
+│                             1. DIAGNOSIS                                 │
+│              Determine Stack: C# (Add-in) or Python (pyRevit)?           │
 └────────────────────────────────────┬─────────────────────────────────────┘
                                      │
                   ┌──────────────────┴──────────────────┐
                   ▼                                     ▼
-        [FLUJO A: C# COMPILADO]               [FLUJO B: PYTHON PYREVIT]
+        [FLOW A: COMPILED C#]                 [FLOW B: PYTHON PYREVIT]
   ┌───────────────────────────────┐     ┌───────────────────────────────┐
   │ 2. SCAFFOLDING                │     │ 2. SCAFFOLDING                │
-  │    dotnet new revit -n [Name] │     │    Crear carpetas .extension, │
-  │    (Plantillas Nice3point)    │     │    .panel, .pushbutton        │
+  │    dotnet new revit -n [Name] │     │    Create folders .extension, │
+  │    (Nice3point Templates)     │     │    .panel, .pushbutton        │
   ├───────────────────────────────┤     ├───────────────────────────────┤
-  │ 3. RESTRUCTURACIÓN            │     │ 3. CODIFICACIÓN (script.py)   │
-  │    Mover /UI -> /Views y MVVM │     │    Escribir lógica de API,    │
-  │    Crear /Services y /Models  │     │    usar forms/progressBar     │
+  │ 3. RESTRUCTURING              │     │ 3. CODING (script.py)         │
+  │    Move /UI -> /Views & MVVM  │     │    Write API logic,           │
+  │    Create /Services & /Models │     │    use forms/progressBar      │
   ├───────────────────────────────┤     ├───────────────────────────────┤
-  │ 4. INTEGRACIÓN DE RECURSOS    │     │ 4. CONFIGURACIÓN (bundle.yaml)│
-  │    Iconos en Resources/Icons/ │     │    Metadatos del botón y      │
-  │    Resource Include en csproj │     │    enlace a ui.xaml (si aplica│
+  │ 4. RESOURCE INTEGRATION       │     │ 4. CONFIGURATION (bundle.yaml)│
+  │    Icons in Resources/Icons/  │     │    Button metadata and        │
+  │    Resource Include in csproj │     │    link to ui.xaml (if needed)│
   ├───────────────────────────────┤     ├───────────────────────────────┤
-  │ 5. COMPILACIÓN Y VALIDACIÓN   │     │ 5. RECARGA DE ENTORNO         │
-  │    dotnet build               │     │    pyRevit reload y prueba    │
+  │ 5. COMPILATION & VALIDATION   │     │ 5. ENVIRONMENT RELOAD         │
+  │    dotnet build               │     │    pyRevit reload and test    │
   └───────────────────────────────┘     └───────────────────────────────┘
 ```
 
@@ -121,39 +121,39 @@ El agente actúa como un arquitecto y desarrollador políglota especializado en 
 
 ## 6. Available Skills
 
-El agente cuenta con habilidades modulares organizadas bajo `.agents/skills/`:
+The agent has modular skills organized under `.agents/skills/`:
 
 | Skill | Path | Purpose |
 |-------|------|-----------|
-| `revit-api` | `.agents/skills/revit-api/` | Reglas de API: hilo, transacciones, TreeView, ForgeTypeId. |
-| `revit-addin-helpers` | `.agents/skills/revit-addin-helpers/` | Helpers y extensiones C# / Python listos para copiar. |
-| `revit-addin-testing` | `.agents/skills/revit-addin-testing/` | Estrategias de prueba xUnit, Moq e inyección de interfaces. |
-| `revit-addin-doc-manager` | `.agents/skills/revit-addin-doc-manager/` | Gestión autónoma de guías y changelogs de Git. |
-| `revit-addin-icon-manager` | `.agents/skills/revit-addin-icon-manager/` | Integración de iconos, pack:// URIs y .csproj. |
-| `revit-addin-installer-manager` | `.agents/skills/revit-addin-installer-manager/` | Compilación de instaladores MSI mediante WiX Toolset. |
-| `revit-pyrevit-python` | `.agents/skills/revit-pyrevit-python/` | Desarrollo de extensiones, Ribbon UI y formularios pyRevit. |
-| `revit-rps-python` | `.agents/skills/revit-rps-python/` | Prototipado y ejecución rápida en consola interactiva RPS. |
-| `csharp-blueprints` | `.agents/skills/csharp-blueprints/` | Blueprints y memoria de arquitectura WPF/MVVM. |
-| `workspace-ops` | `.agents/skills/workspace-ops/` | Pipeline de validación de frontmatter y compilación de lockfiles. |
+| `revit-api` | `.agents/skills/revit-api/` | API Rules: threading, transactions, TreeView, ForgeTypeId. |
+| `revit-addin-helpers` | `.agents/skills/revit-addin-helpers/` | C# / Python helpers and extensions ready to copy. |
+| `revit-addin-testing` | `.agents/skills/revit-addin-testing/` | xUnit testing strategies, Moq, and interface injection. |
+| `revit-addin-doc-manager` | `.agents/skills/revit-addin-doc-manager/` | Autonomous management of guides and Git changelogs. |
+| `revit-addin-icon-manager` | `.agents/skills/revit-addin-icon-manager/` | Icon integration, pack:// URIs, and .csproj. |
+| `revit-addin-installer-manager` | `.agents/skills/revit-addin-installer-manager/` | MSI installer compilation using WiX Toolset. |
+| `revit-pyrevit-python` | `.agents/skills/revit-pyrevit-python/` | Extension development, Ribbon UI, and pyRevit forms. |
+| `revit-rps-python` | `.agents/skills/revit-rps-python/` | Prototyping and fast execution in the RPS interactive console. |
+| `csharp-blueprints` | `.agents/skills/csharp-blueprints/` | WPF/MVVM architectural blueprints and memory. |
+| `workspace-ops` | `.agents/skills/workspace-ops/` | Frontmatter validation pipeline and lockfile compilation. |
 
 ---
 
 ## 7. Artifact Backup and Knowledge Updating
 
-Cuando el desarrollador valide que las soluciones funcionan, corrijan errores de compilación o se añada soporte de infraestructura, **el agente debe guardar el conocimiento obligatoriamente bajo este estándar modular**:
+When the developer validates that the solutions work, fixes compilation errors, or adds infrastructure support, **the agent must mandatory save the knowledge under this modular standard**:
 
-### A. Para Documentación de Proyecto (`docs/` folder local):
-Clasificar en carpetas específicas del proyecto en desarrollo:
-- `docs/references/`: Archivos `walkthrough.md`, `implementation_plan.md` e informes de errores solucionados.
-- `docs/assets/`: Plantillas base o configuraciones generadas.
-- `docs/scripts/`: Scripts locales de automatización.
+### A. For Project Documentation (local `docs/` folder):
+Classify in specific folders of the project under development:
+- `docs/references/`: `walkthrough.md`, `implementation_plan.md` files, and resolved error reports.
+- `docs/assets/`: Base templates or generated configurations.
+- `docs/scripts/`: Local automation scripts.
 
-*Patrón de Nombres:* `[tipo_artefacto]_[YYYYMMDD]_[descripcion_breve].md` (ej. `walkthrough_20260529_my_new_feature.md`)
+*Naming Pattern:* `[artifact_type]_[YYYYMMDD]_[brief_description].md` (e.g. `walkthrough_20260529_my_new_feature.md`)
 
-### B. Para Repositorio de Skills Globales (`.agents/skills/` folder):
-Nunca engrosar el archivo `SKILL.md` principal (que actúa solo como índice). Distribuir el conocimiento así:
-1.  **`assets/` (Código Reutilizable):** Guardar fragmentos de código, wrappers y clases utilitarias en sus extensiones nativas correspondientes (p. ej., `Helper.cs` para C#, `script.py` para pyRevit, `installer.wxs` para XML). **Nunca inyectar código masivo en archivos Markdown**.
-2.  **`references/` (Reglas y Debugging):**
-    *   Guías de diseño y explicaciones de API van en archivos `.md` específicos.
-    *   **Registro de Debugging (Lección Aprendida):** Si solucionas un bug de Revit, C# o Python complejo, escribe un reporte rápido en la ruta `.agents/skills/[skill-name]/references/debugging_[problema]_[YYYY-MM-DD].md` detallando el fallo, la causa raíz y el fragmento de código que lo solucionó.
-3.  **`scripts/` (Scripts Operativos):** Scripts ejecutables de automatización en PowerShell o Python.
+### B. For Global Skills Repository (`.agents/skills/` folder):
+Never bloat the main `SKILL.md` file (which acts only as an index). Distribute the knowledge as follows:
+1.  **`assets/` (Reusable Code):** Save code snippets, wrappers, and utility classes in their corresponding native extensions (e.g., `Helper.cs` for C#, `script.py` for pyRevit, `installer.wxs` for XML). **Never inject massive code blocks into Markdown files**.
+2.  **`references/` (Rules and Debugging):**
+    *   Design guides and API explanations go in specific `.md` files.
+    *   **Debugging Log (Lesson Learned):** If you solve a complex Revit, C#, or Python bug, write a quick report at the path `.agents/skills/[skill-name]/references/debugging_[problem]_[YYYY-MM-DD].md` detailing the failure, the root cause, and the code snippet that solved it.
+3.  **`scripts/` (Operational Scripts):** Executable automation scripts in PowerShell or Python.

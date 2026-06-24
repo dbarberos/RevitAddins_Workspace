@@ -5,36 +5,36 @@ description: Generates the Autodesk App Store .bundle folder structure and Packa
 
 # Revit AppStore Bundle
 
-Este skill estandariza y automatiza la generación de paquetes con formato `.bundle` listos para ser publicados en la **Autodesk App Store**.
+This skill standardizes and automates the generation of `.bundle` format packages ready to be published on the **Autodesk App Store**.
 
-Cuando Autodesk rechaza un instalador MSI personalizado (especialmente para Add-ins gratuitos) o se requiere cumplir con su formato estándar, es necesario entregar el complemento dentro de una estructura estandarizada conocida como "Bundle Format" que luego la tienda de Autodesk compila en sus propios instaladores.
+When Autodesk rejects a custom MSI installer (especially for free Add-ins) or it is required to comply with their standard format, it is necessary to deliver the add-in within a standardized structure known as "Bundle Format" which the Autodesk store then compiles into its own installers.
 
-## Propósito
-- Automatizar la creación de la carpeta `[AppName].bundle`.
-- Generar el archivo `PackageContents.xml` requerido, rellenado con la información del autor, versiones soportadas, y estructura de carga de Revit.
-- Copiar las librerías dinámicas (`.dll`) y el manifiesto (`.addin`) en las carpetas específicas por versión (`Contents/2024/`, etc.).
-- Comprimir la estructura en un archivo `.zip` listo para su subida al portal de desarrolladores de Autodesk.
+## Purpose
+- Automate the creation of the `[AppName].bundle` folder.
+- Generate the required `PackageContents.xml` file, populated with the author's information, supported versions, and Revit loading structure.
+- Copy the dynamic libraries (`.dll`) and the manifest (`.addin`) into the version-specific folders (`Contents/2024/`, etc.).
+- Compress the structure into a `.zip` file ready to be uploaded to the Autodesk Developer Portal.
 
-## 🚨 Reglas Críticas para Autodesk App Store
-1. **Contextual Help (Obligatorio)**: El botón del Ribbon DEBE tener asociado un archivo de ayuda local HTML mediante `SetContextualHelp`. Este archivo (`help.html`) se debe generar a partir del User Guide y ubicarse en la carpeta `Resources/` del bundle.
-2. **Exclusión del XML en ZIP**: Aunque generamos `PackageContents.xml` para pruebas locales del desarrollador, **NO** debe incluirse dentro del archivo `.zip` final. Autodesk genera este archivo automáticamente durante el proceso de sumisión en la tienda.
+## 🚨 Critical Rules for Autodesk App Store
+1. **Contextual Help (Mandatory)**: The Ribbon button MUST have a local HTML help file associated with it via `SetContextualHelp`. This file (`help.html`) must be generated from the User Guide and placed in the bundle's `Resources/` folder.
+2. **XML Exclusion in ZIP**: Although we generate `PackageContents.xml` for local developer testing, it must **NOT** be included within the final `.zip` file. Autodesk generates this file automatically during the submission process in the store.
 
-## 📦 Assets (Plantillas y Código Fuente)
-Los siguientes archivos se encuentran en la carpeta `assets/`:
-*   `assets/PackageContents.xml`: Plantilla base del manifiesto del Bundle que describe la compatibilidad, empresa y referencias a cargar.
+## 📦 Assets (Templates and Source Code)
+The following files are located in the `assets/` folder:
+*   `assets/PackageContents.xml`: Base template of the Bundle manifest describing compatibility, company, and references to load.
 
-## 🛠️ Scripts (Automatización)
-Para ejecutar este skill, utiliza el script PowerShell proveído en la carpeta `scripts/`.
+## 🛠️ Scripts (Automation)
+To execute this skill, use the provided PowerShell script in the `scripts/` folder.
 
 ### `scripts/build-bundle.ps1`
-**Uso típico:**
+**Typical usage:**
 ```powershell
-.\.agents\skills\revit-appstore-bundle\scripts\build-bundle.ps1 -AppName "FilterPlus" -Version "1.1.0" -Author "Tu Nombre" -Email "tu@email.com"
+.\.agents\skills\revit-appstore-bundle\scripts\build-bundle.ps1 -AppName "FilterPlus" -Version "1.1.0" -Author "Your Name" -Email "your@email.com"
 ```
-**Parámetros:**
-- `-AppName`: El nombre del Add-in (y de la carpeta resultante).
-- `-Version`: La versión actual (p. ej., `1.0.0`).
-- `-Author`: Nombre del desarrollador o compañía (p. ej., `DBDev_dbarberos`).
-- `-Email`: Correo de contacto del desarrollador.
+**Parameters:**
+- `-AppName`: The name of the Add-in (and the resulting folder).
+- `-Version`: The current version (e.g., `1.0.0`).
+- `-Author`: Developer or company name (e.g., `DBDev_dbarberos`).
+- `-Email`: Contact email of the developer.
 
-El script leerá las carpetas locales de compilación (`bin/Debug.R24`, `bin/Debug.R25`, etc.) y ensamblará el Bundle con las versiones que encuentre disponibles, creando finalmente un archivo zip.
+The script will read the local build folders (`bin/Debug.R24`, `bin/Debug.R25`, etc.) and assemble the Bundle with the available versions found, ultimately creating a zip file.

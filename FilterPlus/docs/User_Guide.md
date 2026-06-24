@@ -112,6 +112,7 @@ Click the Pick Elements button to temporarily hide the FilterPlus window and sel
 #### Fixed
 - Fixed the silent failure of the **Apply** button when triggering "Increase Checked" on "All Model" with an empty initial selection.
 - New elements identified by the expansion logic are now correctly injected and immediately displayed in the UI tree.
+- Resolved a critical UI freeze and infinite recursion issue during massive tree updates by properly suspending tree selection events (`IsBulkUpdating`) when applying expansion rules.
 
 ---
 

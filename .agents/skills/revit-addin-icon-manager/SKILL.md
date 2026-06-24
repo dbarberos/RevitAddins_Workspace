@@ -5,14 +5,14 @@ description: Automates the replacement of default icons in Revit projects with c
 
 # Revit Add-in Icon Manager (v2.0)
 
-Este skill automatiza la integración de iconos personalizados en add-ins de Revit, gestionando la preparación del archivo físico, la modificación del archivo XML `.csproj` del proyecto y la inyección de código C# de forma autónoma.
+This skill automates the integration of custom icons into Revit add-ins, autonomously managing physical file preparation, project `.csproj` XML file modification, and C# code injection.
 
-## 📚 Referencias Técnicas (Knowledge Base)
-Para obtener especificaciones técnicas detalladas y flujos de ejecución, consulta los archivos en la carpeta `references/`:
+## 📚 Technical References (Knowledge Base)
+For detailed technical specifications and execution flows, consult the files in the `references/` folder:
 
-*   `references/icon_loading_strategy.md`: Diagnóstico activo del entorno, organización por tamaños de imagen, esquemas de compilación de recursos en el proyecto `.csproj` y compatibilidad con pantallas de DPI variable y Temas Oscuros (Revit 2024+).
+*   `references/icon_loading_strategy.md`: Active environment diagnosis, image size organization, resource compilation schemes in the `.csproj` project, and compatibility with variable DPI screens and Dark Themes (Revit 2024+).
 
-## 📦 Assets (Plantillas y Ejemplos de Código C#)
-Los siguientes archivos se encuentran en la carpeta `assets/` y pueden inyectarse como helpers reusables:
+## 📦 Assets (Templates and C# Code Examples)
+The following files are located in the `assets/` folder and can be injected as reusable helpers:
 
-*   `assets/GetImageSource.cs`: Clase estática en C# y método utilitario para cargar y resolver imágenes desde la memoria del ensamblado incrustado utilizando la sintaxis de URIs `pack://application`.
+*   `assets/GetImageSource.cs`: Static C# class and utility method to load and resolve images from the embedded assembly memory using the `pack://application` URI syntax.

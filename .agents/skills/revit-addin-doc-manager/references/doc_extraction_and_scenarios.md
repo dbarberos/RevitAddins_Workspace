@@ -1,51 +1,51 @@
-# Procedimiento de Inspección de Código y Escenarios de Documentación
+# Code Inspection Procedure and Documentation Scenarios
 
-Este documento detalla las fases para la extracción de información técnica directamente del código fuente y los procedimientos de actuación del agente según el estado de la documentación en el proyecto.
-
----
-
-## 1. Fase de Inspección Automática (Extracción de la Verdad)
-
-Antes de realizar cambios o interactuar con el usuario, el agente debe inspeccionar el repositorio para recopilar los siguientes metadatos objetivos:
-
-### A. Versión del Proyecto:
-1.  Ejecuta `git describe --tags --abbrev=0` para leer la versión oficial actual (Tag de Git).
-2.  Si falla o no hay etiquetas, lee el archivo `Properties/AssemblyInfo.cs` para extraer el valor del atributo `[assembly: AssemblyVersion("...")]`.
-3.  Si no existe, lee el archivo `.csproj` para buscar las etiquetas XML `<Version>` o `<AssemblyVersion>`.
-
-### B. Identidad del Add-in:
-1.  Analiza el manifiesto `.addin` (Revit Manifest) para recuperar el `AddInId` (GUID), `FullClassName` y el `Text` que se muestra en la interfaz gráfica de Revit.
-
-### C. Detección de Funcionalidades (Features):
-1.  Busca y analiza todas las clases que implementen la interfaz `IExternalCommand` para identificar los comandos disponibles y deducir sus acciones a partir de los nombres y comentarios de código.
-
-### D. Revisión de Artefactos e Historial (Contexto Profundo):
-1.  Localiza y lee proactivamente los archivos `.md` de artefactos (walkthroughs, implementation plans, design guides) ubicados en `docs/references/` o en las carpetas de skills globales relevantes.
-2.  Utiliza estos artefactos para extraer cómo funcionan realmente las opciones y features del add-in, cómo se usan paso a paso, y cómo han evolucionado desde su origen hasta la actualización actual. Este paso es obligatorio para documentar correctamente los cambios funcionales de cada versión basándose en el estado previo.
+This document details the phases for extracting technical information directly from the source code and the agent's action procedures based on the state of the documentation in the project.
 
 ---
 
-## 2. Flujo de Trabajo por Escenarios
+## 1. Automatic Inspection Phase (Truth Extraction)
 
-### Escenario A: Si la Carpeta de Documentación `/docs` NO Existe
-1.  **Creación**: Crea una carpeta con nombre `/docs` en la raíz del proyecto.
-2.  **Generación Base**: Crea el archivo `User_Guide.md` conforme al estándar establecido. El contenido generado **DEBE ESTAR ÍNTEGRAMENTE EN INGLÉS**.
-3.  **Contenido Inicial**: Rellena automáticamente el documento utilizando la información técnica extraída en la **Fase de Inspección Automática** y la **Revisión de Artefactos**. Asegúrate de explicar cómo usar las diferentes opciones y features basándote en los artefactos leídos.
+Before making changes or interacting with the user, the agent must inspect the repository to collect the following objective metadata:
 
-### Escenario B: Si el Documento `User_Guide.md` YA Existe
-1.  **Comparación de Versión**: Compara la versión extraída de Git o el código con la última versión documentada en el historial del archivo.
-2.  **Actualización Holística y Silenciosa**:
-    *   Todo el contenido nuevo o actualizado **DEBE ESTAR EN INGLÉS**.
-    *   Si la versión del código es superior, actualiza el encabezado del archivo.
-    *   **Actualización de Guía Principal**: Revisa y reescribe la guía de uso de las opciones y funcionalidades para que refleje el comportamiento actual. Utiliza los artefactos `.md` para entender qué ha cambiado desde la versión anterior y asegúrate de que todos los puntos de la guía estén sincronizados desde el origen hasta la última actualización.
-    *   **Generación de Changelog**: Además de leer los commits (`git log [ultimo_tag]..HEAD --oneline`), extrae detalles de los artefactos para agrupar los cambios realizados bajo las secciones **Added**, **Changed** o **Fixed**. Registra una nueva entrada en el historial de versiones.
-    *   Si se detectan nuevas clases de comandos sin documentación, agrégalas a la sección de la guía con la etiqueta `[PENDING: Functional Description]`.
+### A. Project Version:
+1.  Run `git describe --tags --abbrev=0` to read the current official version (Git Tag).
+2.  If it fails or there are no tags, read the `Properties/AssemblyInfo.cs` file to extract the value of the `[assembly: AssemblyVersion("...")]` attribute.
+3.  If it doesn't exist, read the `.csproj` file to look for the `<Version>` or `<AssemblyVersion>` XML tags.
+
+### B. Add-in Identity:
+1.  Parse the `.addin` manifest (Revit Manifest) to retrieve the `AddInId` (GUID), `FullClassName`, and the `Text` displayed in the Revit GUI.
+
+### C. Feature Detection:
+1.  Search and analyze all classes that implement the `IExternalCommand` interface to identify available commands and deduce their actions from names and code comments.
+
+### D. Artifact and History Review (Deep Context):
+1.  Proactively locate and read the artifact `.md` files (walkthroughs, implementation plans, design guides) located in `docs/references/` or in the relevant global skills folders.
+2.  Use these artifacts to extract how the add-in's options and features actually work, how they are used step-by-step, and how they have evolved from their origin to the current update. This step is mandatory to correctly document the functional changes of each version based on the previous state.
 
 ---
 
-## 3. Criterios de Interrupción (Intervención Mínima)
+## 2. Scenario-Based Workflow
 
-El agente debe trabajar de forma 100% autónoma y silenciosa. Solo solicitará asistencia del desarrollador en estos tres casos extremos:
-1.  No se detecta ningún archivo `.csproj` o manifiesto `.addin` en el workspace.
-2.  Se detecta una clase de comando nueva pero no hay pistas o comentarios suficientes en el código para deducir su funcionalidad.
-3.  La información crítica de soporte o contacto del desarrollador está completamente ausente en todo el proyecto.
+### Scenario A: If the Documentation Folder `/docs` does NOT exist
+1.  **Creation**: Create a folder named `/docs` at the root of the project.
+2.  **Base Generation**: Create the `User_Guide.md` file according to the established standard. The generated content **MUST BE ENTIRELY IN ENGLISH**.
+3.  **Initial Content**: Automatically populate the document using the technical information extracted in the **Automatic Inspection Phase** and the **Artifact Review**. Make sure to explain how to use the different options and features based on the read artifacts.
+
+### Scenario B: If the `User_Guide.md` document ALREADY exists
+1.  **Version Comparison**: Compare the extracted version from Git or the code with the latest documented version in the file's history.
+2.  **Holistic and Silent Update**:
+    *   All new or updated content **MUST BE IN ENGLISH**.
+    *   If the code version is higher, update the file header.
+    *   **Main Guide Update**: Review and rewrite the usage guide for the options and functionalities to reflect the current behavior. Use the `.md` artifacts to understand what has changed since the previous version and ensure all guide points are synchronized from the origin to the latest update.
+    *   **Changelog Generation**: In addition to reading the commits (`git log [last_tag]..HEAD --oneline`), extract details from the artifacts to group the changes made under the **Added**, **Changed**, or **Fixed** sections. Record a new entry in the version history. **CRITICAL: Do NOT delete or overwrite previous version entries in the Changelog. Append new version blocks at the top of the version history to preserve a full historical record of all changes.**
+    *   If new command classes without documentation are detected, add them to the guide section with the tag `[PENDING: Functional Description]`.
+
+---
+
+## 3. Interruption Criteria (Minimal Intervention)
+
+The agent must work 100% autonomously and silently. It will only request developer assistance in these three extreme cases:
+1.  No `.csproj` file or `.addin` manifest is detected in the workspace.
+2.  A new command class is detected, but there are not enough clues or comments in the code to deduce its functionality.
+3.  Critical support or developer contact information is completely missing from the entire project.
