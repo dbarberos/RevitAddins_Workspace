@@ -15,6 +15,10 @@ Cuando Autodesk rechaza un instalador MSI personalizado (especialmente para Add-
 - Copiar las librerías dinámicas (`.dll`) y el manifiesto (`.addin`) en las carpetas específicas por versión (`Contents/2024/`, etc.).
 - Comprimir la estructura en un archivo `.zip` listo para su subida al portal de desarrolladores de Autodesk.
 
+## 🚨 Reglas Críticas para Autodesk App Store
+1. **Contextual Help (Obligatorio)**: El botón del Ribbon DEBE tener asociado un archivo de ayuda local HTML mediante `SetContextualHelp`. Este archivo (`help.html`) se debe generar a partir del User Guide y ubicarse en la carpeta `Resources/` del bundle.
+2. **Exclusión del XML en ZIP**: Aunque generamos `PackageContents.xml` para pruebas locales del desarrollador, **NO** debe incluirse dentro del archivo `.zip` final. Autodesk genera este archivo automáticamente durante el proceso de sumisión en la tienda.
+
 ## 📦 Assets (Plantillas y Código Fuente)
 Los siguientes archivos se encuentran en la carpeta `assets/`:
 *   `assets/PackageContents.xml`: Plantilla base del manifiesto del Bundle que describe la compatibilidad, empresa y referencias a cargar.

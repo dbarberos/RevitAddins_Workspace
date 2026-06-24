@@ -1,0 +1,187 @@
+[09:03:58.793] INFO: Addin Startup command started.
+[09:03:58.797] INFO: SelectionFilterViewModel initializing...
+[09:03:58.802] INFO: Initial selection retrieved: 1 elements.
+[09:03:58.803] INFO: Initial selection IDs count: 1
+[09:03:58.803] INFO: Pre-fetching CurrentSelection elements...
+[09:03:58.806] INFO: Querying Revit for scope: CurrentSelection...
+[09:03:58.856] INFO: Revit query finished. 1 valid elements found.
+[09:03:58.857] INFO: CurrentSelection: 1 elements.
+[09:03:58.857] INFO: Pre-fetching ElementsVisibleInView elements...
+[09:03:58.858] INFO: Querying Revit for scope: ElementsVisibleInView...
+[09:03:58.877] INFO: Revit query finished. 33 valid elements found.
+[09:03:58.877] INFO: ElementsVisibleInView: 33 elements.
+[09:03:58.877] INFO: Pre-fetching ElementsBelongingToView elements...
+[09:03:58.878] INFO: Querying Revit for scope: ElementsBelongingToView...
+[09:03:58.967] INFO: Revit query finished. 51 valid elements found.
+[09:03:58.967] INFO: ElementsBelongingToView: 51 elements.
+[09:03:58.967] INFO: Pre-fetching AllModelElements elements...
+[09:03:58.968] INFO: Querying Revit for scope: AllModelElements...
+[09:03:58.994] INFO: Revit query finished. 668 valid elements found.
+[09:03:58.994] INFO: AllModelElements: 668 elements (raw: 668).
+[09:03:58.998] INFO: BuildTree: 1 elements for scope CurrentSelection.
+[09:03:59.001] INFO: Updating filter dropdowns...
+[09:03:59.003] INFO: Building tree structure offline for 1 elements...
+[09:03:59.009] INFO: Applying selection state for 1 checked elements...
+[09:03:59.010] INFO: Swapping tree root directly. New total: 1
+[09:03:59.010] INFO: Tree built and swapped. 1 visible elements.
+[09:03:59.013] INFO: BuildTree completed.
+[09:03:59.013] INFO: ViewModel created. Showing window...
+[09:04:08.702] INFO: [ApplyIncreaseChecked] START. Current Scope in Select: CurrentSelection. _activeElements count: 1.
+[09:04:08.716] INFO: [ApplyIncreaseChecked] Checked elements in explorer tree: 1. IDs: 149153
+[09:04:08.723] INFO: [ApplyIncreaseChecked] Domain: All Model. Collector count: 3396.
+[09:04:08.727] INFO: [ApplyIncreaseChecked] Checked 'Same Category'. Accumulative targets: 12.
+[09:04:08.727] INFO: [ApplyIncreaseChecked] Final checked IDs unified (including other scopes): 12. IDs: 149153, 149063, 149095, 149124, 149192, 149666, 149689, 149714, 149802, 149892, 150015, 150104
+[09:04:08.728] INFO: [ApplyIncreaseChecked] Explorer tree currently has 1 active IDs.
+[09:04:08.730] INFO: [ApplyIncreaseChecked] Pre-fetched scopes unified cache has 668 elements.
+[09:04:08.730] INFO: [ApplyIncreaseChecked] Element 149063 found in pre-fetched cache. Injecting model.
+[09:04:08.731] INFO: [ApplyIncreaseChecked] Element 149095 found in pre-fetched cache. Injecting model.
+[09:04:08.731] INFO: [ApplyIncreaseChecked] Element 149124 found in pre-fetched cache. Injecting model.
+[09:04:08.731] INFO: [ApplyIncreaseChecked] Element 149153 is already in activeIds, skipping injection.
+[09:04:08.731] INFO: [ApplyIncreaseChecked] Element 149192 found in pre-fetched cache. Injecting model.
+[09:04:08.731] INFO: [ApplyIncreaseChecked] Element 149666 found in pre-fetched cache. Injecting model.
+[09:04:08.733] INFO: [ApplyIncreaseChecked] Element 149689 found in pre-fetched cache. Injecting model.
+[09:04:08.733] INFO: [ApplyIncreaseChecked] Element 149714 found in pre-fetched cache. Injecting model.
+[09:04:08.733] INFO: [ApplyIncreaseChecked] Element 149802 found in pre-fetched cache. Injecting model.
+[09:04:08.734] INFO: [ApplyIncreaseChecked] Element 149892 found in pre-fetched cache. Injecting model.
+[09:04:08.734] INFO: [ApplyIncreaseChecked] Element 150015 found in pre-fetched cache. Injecting model.
+[09:04:08.734] INFO: [ApplyIncreaseChecked] Element 150104 found in pre-fetched cache. Injecting model.
+[09:04:08.735] INFO: [ApplyIncreaseChecked] Injecting 11 elements into active elements list.
+[09:04:08.735] INFO: [ApplyIncreaseChecked] Updating _persistentCheckedIds to: 149153, 149063, 149095, 149124, 149192, 149666, 149689, 149714, 149802, 149892, 150015, 150104
+[09:04:08.735] INFO: [ApplyIncreaseChecked] Invoking BuildTree() now...
+[09:04:08.736] INFO: BuildTree: 12 elements for scope CurrentSelection.
+[09:04:08.737] INFO: Updating filter dropdowns...
+[09:04:08.737] INFO: Building tree structure offline for 12 elements...
+[09:04:08.737] INFO: Applying selection state for 12 checked elements...
+[09:04:08.738] INFO: Swapping tree root directly. New total: 12
+[09:04:08.740] INFO: Tree built and swapped. 12 visible elements.
+[09:04:08.740] INFO: BuildTree completed.
+[09:04:08.741] INFO: [ApplyIncreaseChecked] COMPLETE. Status: Increase applied. Total checked: 12. CheckedElementsCount: 12.
+[09:04:15.413] INFO: [ApplyIncreaseChecked] START. Current Scope in Select: CurrentSelection. _activeElements count: 12.
+[09:04:15.417] INFO: [ApplyIncreaseChecked] Checked elements in explorer tree: 12. IDs: 149063, 149095, 149124, 149153, 149192, 149666, 149689, 149714, 149802, 149892, 150015, 150104
+[09:04:15.421] INFO: [ApplyIncreaseChecked] Domain: All Model. Collector count: 3396.
+[09:04:15.424] INFO: [ApplyIncreaseChecked] Checked 'Same Category'. Accumulative targets: 12.
+[09:04:15.426] INFO: [ApplyIncreaseChecked] Checked exclusions. Final targets after purging: 10.
+[09:04:15.426] INFO: [ApplyIncreaseChecked] Final checked IDs unified (including other scopes): 10. IDs: 149063, 149095, 149124, 149666, 149689, 149714, 149802, 149892, 150015, 150104
+[09:04:15.427] INFO: [ApplyIncreaseChecked] Explorer tree currently has 12 active IDs.
+[09:04:15.428] INFO: [ApplyIncreaseChecked] Pre-fetched scopes unified cache has 668 elements.
+[09:04:15.428] INFO: [ApplyIncreaseChecked] Element 149063 is already in activeIds, skipping injection.
+[09:04:15.428] INFO: [ApplyIncreaseChecked] Element 149095 is already in activeIds, skipping injection.
+[09:04:15.429] INFO: [ApplyIncreaseChecked] Element 149124 is already in activeIds, skipping injection.
+[09:04:15.429] INFO: [ApplyIncreaseChecked] Element 149666 is already in activeIds, skipping injection.
+[09:04:15.429] INFO: [ApplyIncreaseChecked] Element 149689 is already in activeIds, skipping injection.
+[09:04:15.430] INFO: [ApplyIncreaseChecked] Element 149714 is already in activeIds, skipping injection.
+[09:04:15.430] INFO: [ApplyIncreaseChecked] Element 149802 is already in activeIds, skipping injection.
+[09:04:15.431] INFO: [ApplyIncreaseChecked] Element 149892 is already in activeIds, skipping injection.
+[09:04:15.431] INFO: [ApplyIncreaseChecked] Element 150015 is already in activeIds, skipping injection.
+[09:04:15.431] INFO: [ApplyIncreaseChecked] Element 150104 is already in activeIds, skipping injection.
+[09:04:15.432] INFO: [ApplyIncreaseChecked] No new elements needed to be injected.
+[09:04:15.432] INFO: [ApplyIncreaseChecked] Updating _persistentCheckedIds to: 149063, 149095, 149124, 149666, 149689, 149714, 149802, 149892, 150015, 150104
+[09:04:15.432] INFO: [ApplyIncreaseChecked] Invoking BuildTree() now...
+[09:04:15.433] INFO: BuildTree: 12 elements for scope CurrentSelection.
+[09:04:15.433] INFO: Updating filter dropdowns...
+[09:04:15.434] INFO: Building tree structure offline for 12 elements...
+[09:04:15.435] INFO: Applying selection state for 10 checked elements...
+[09:04:15.435] INFO: Swapping tree root directly. New total: 12
+[09:04:15.441] INFO: Tree built and swapped. 12 visible elements.
+[09:04:15.441] INFO: BuildTree completed.
+[09:04:15.442] INFO: [ApplyIncreaseChecked] COMPLETE. Status: Increase applied. Total checked: 10. CheckedElementsCount: 10.
+[09:04:21.362] INFO: Apply Selection: 10 IDs applied. CurrentSelection updated to 10 elements.
+[09:04:25.664] INFO: Scope switched to: ElementsVisibleInView. Rebuilding tree from pre-fetched data...
+[09:04:25.664] INFO: Active elements for scope ElementsVisibleInView: 33
+[09:04:25.665] INFO: BuildTree: 33 elements for scope ElementsVisibleInView.
+[09:04:25.666] INFO: Updating filter dropdowns...
+[09:04:25.666] INFO: Building tree structure offline for 33 elements...
+[09:04:25.667] INFO: Applying selection state for 10 checked elements...
+[09:04:25.667] INFO: Swapping tree root directly. New total: 33
+[09:04:25.673] INFO: Tree built and swapped. 33 visible elements.
+[09:04:25.673] INFO: BuildTree completed.
+[09:04:27.836] INFO: Scope switched to: CurrentSelection. Rebuilding tree from pre-fetched data...
+[09:04:27.836] INFO: Active elements for scope CurrentSelection: 10
+[09:04:27.837] INFO: BuildTree: 10 elements for scope CurrentSelection.
+[09:04:27.837] INFO: Updating filter dropdowns...
+[09:04:27.837] INFO: Building tree structure offline for 10 elements...
+[09:04:27.839] INFO: Applying selection state for 10 checked elements...
+[09:04:27.839] INFO: Swapping tree root directly. New total: 10
+[09:04:27.855] INFO: Tree built and swapped. 10 visible elements.
+[09:04:27.856] INFO: BuildTree completed.
+[09:04:42.277] INFO: [ApplyIncreaseChecked] START. Current Scope in Select: CurrentSelection. _activeElements count: 10.
+[09:04:42.281] INFO: [ApplyIncreaseChecked] Checked elements in explorer tree: 10. IDs: 149063, 149095, 149124, 149666, 149689, 149714, 149802, 149892, 150015, 150104
+[09:04:42.285] INFO: [ApplyIncreaseChecked] Domain: All Model. Collector count: 3396.
+[09:04:42.286] INFO: [ApplyIncreaseChecked] Checked 'Host of Element'. Accumulative targets: 0.
+[09:04:42.286] INFO: [ApplyIncreaseChecked] Final checked IDs unified (including other scopes): 0. IDs: 
+[09:04:42.286] INFO: [ApplyIncreaseChecked] Explorer tree currently has 10 active IDs.
+[09:04:42.287] INFO: [ApplyIncreaseChecked] Pre-fetched scopes unified cache has 668 elements.
+[09:04:42.287] INFO: [ApplyIncreaseChecked] No new elements needed to be injected.
+[09:04:42.287] INFO: [ApplyIncreaseChecked] Updating _persistentCheckedIds to: 
+[09:04:42.288] INFO: [ApplyIncreaseChecked] Invoking BuildTree() now...
+[09:04:42.288] INFO: BuildTree: 10 elements for scope CurrentSelection.
+[09:04:42.289] INFO: Updating filter dropdowns...
+[09:04:42.289] INFO: Building tree structure offline for 10 elements...
+[09:04:42.289] INFO: Swapping tree root directly. New total: 10
+[09:04:42.295] INFO: Tree built and swapped. 10 visible elements.
+[09:04:42.295] INFO: BuildTree completed.
+[09:04:42.295] INFO: [ApplyIncreaseChecked] COMPLETE. Status: Increase applied. Total checked: 0. CheckedElementsCount: 0.
+[09:04:46.238] INFO: [ApplyIncreaseChecked] START. Current Scope in Select: CurrentSelection. _activeElements count: 10.
+[09:04:46.243] INFO: [ApplyIncreaseChecked] Checked elements in explorer tree: 0. IDs: 
+[09:04:49.831] INFO: Apply Selection: 0 IDs applied. CurrentSelection updated to 0 elements.
+[09:05:00.955] INFO: Addin Startup command started.
+[09:05:00.956] INFO: SelectionFilterViewModel initializing...
+[09:05:00.956] INFO: Initial selection retrieved: 1 elements.
+[09:05:00.956] INFO: Initial selection IDs count: 1
+[09:05:00.956] INFO: Pre-fetching CurrentSelection elements...
+[09:05:00.957] INFO: Querying Revit for scope: CurrentSelection...
+[09:05:00.957] INFO: Revit query finished. 1 valid elements found.
+[09:05:00.957] INFO: CurrentSelection: 1 elements.
+[09:05:00.957] INFO: Pre-fetching ElementsVisibleInView elements...
+[09:05:00.958] INFO: Querying Revit for scope: ElementsVisibleInView...
+[09:05:00.961] INFO: Revit query finished. 33 valid elements found.
+[09:05:00.961] INFO: ElementsVisibleInView: 33 elements.
+[09:05:00.961] INFO: Pre-fetching ElementsBelongingToView elements...
+[09:05:00.962] INFO: Querying Revit for scope: ElementsBelongingToView...
+[09:05:00.999] INFO: Revit query finished. 51 valid elements found.
+[09:05:00.999] INFO: ElementsBelongingToView: 51 elements.
+[09:05:00.999] INFO: Pre-fetching AllModelElements elements...
+[09:05:00.999] INFO: Querying Revit for scope: AllModelElements...
+[09:05:01.022] INFO: Revit query finished. 668 valid elements found.
+[09:05:01.023] INFO: AllModelElements: 668 elements (raw: 668).
+[09:05:01.023] INFO: BuildTree: 1 elements for scope CurrentSelection.
+[09:05:01.023] INFO: Updating filter dropdowns...
+[09:05:01.023] INFO: Building tree structure offline for 1 elements...
+[09:05:01.024] INFO: Applying selection state for 1 checked elements...
+[09:05:01.024] INFO: Swapping tree root directly. New total: 1
+[09:05:01.024] INFO: Tree built and swapped. 1 visible elements.
+[09:05:01.025] INFO: BuildTree completed.
+[09:05:01.025] INFO: ViewModel created. Showing window...
+[09:05:16.733] INFO: [ApplyIncreaseChecked] START. Current Scope in Select: CurrentSelection. _activeElements count: 1.
+[09:05:16.736] INFO: [ApplyIncreaseChecked] Checked elements in explorer tree: 1. IDs: 149153
+[09:05:16.741] INFO: [ApplyIncreaseChecked] Domain: All Model. Collector count: 3396.
+[09:05:16.743] INFO: [ApplyIncreaseChecked] Checked 'Hosted Elements'. Accumulative targets: 4.
+[09:05:16.743] INFO: [ApplyIncreaseChecked] Final checked IDs unified (including other scopes): 4. IDs: 149392, 149400, 149414, 149477
+[09:05:16.745] INFO: [ApplyIncreaseChecked] Explorer tree currently has 1 active IDs.
+[09:05:16.745] INFO: [ApplyIncreaseChecked] Pre-fetched scopes unified cache has 668 elements.
+[09:05:16.745] INFO: [ApplyIncreaseChecked] Element 149392 found in pre-fetched cache. Injecting model.
+[09:05:16.746] INFO: [ApplyIncreaseChecked] Element 149400 found in pre-fetched cache. Injecting model.
+[09:05:16.746] INFO: [ApplyIncreaseChecked] Element 149414 found in pre-fetched cache. Injecting model.
+[09:05:16.746] INFO: [ApplyIncreaseChecked] Element 149477 found in pre-fetched cache. Injecting model.
+[09:05:16.746] INFO: [ApplyIncreaseChecked] Injecting 4 elements into active elements list.
+[09:05:16.747] INFO: [ApplyIncreaseChecked] Updating _persistentCheckedIds to: 149392, 149400, 149414, 149477
+[09:05:16.747] INFO: [ApplyIncreaseChecked] Invoking BuildTree() now...
+[09:05:16.747] INFO: BuildTree: 5 elements for scope CurrentSelection.
+[09:05:16.748] INFO: Updating filter dropdowns...
+[09:05:16.749] INFO: Building tree structure offline for 5 elements...
+[09:05:16.749] INFO: Applying selection state for 4 checked elements...
+[09:05:16.749] INFO: Swapping tree root directly. New total: 5
+[09:05:16.751] INFO: Tree built and swapped. 5 visible elements.
+[09:05:16.752] INFO: BuildTree completed.
+[09:05:16.752] INFO: [ApplyIncreaseChecked] COMPLETE. Status: Increase applied. Total checked: 4. CheckedElementsCount: 4.
+[09:05:21.309] INFO: Apply Selection: 4 IDs applied. CurrentSelection updated to 4 elements.
+[09:05:33.795] INFO: Apply Selection: 4 IDs applied. CurrentSelection updated to 4 elements.
+[09:05:42.029] INFO: BuildTree: 6 elements for scope CurrentSelection.
+[09:05:42.030] INFO: Updating filter dropdowns...
+[09:05:42.030] INFO: Building tree structure offline for 6 elements...
+[09:05:42.031] INFO: Applying selection state for 5 checked elements...
+[09:05:42.031] INFO: Swapping tree root directly. New total: 6
+[09:05:42.036] INFO: Tree built and swapped. 6 visible elements.
+[09:05:42.037] INFO: BuildTree completed.
+[09:05:46.485] INFO: Apply Selection: 5 IDs applied. CurrentSelection updated to 5 elements.
+[09:07:17.303] INFO: Apply Selection: 6 IDs applied. CurrentSelection updated to 6 elements.

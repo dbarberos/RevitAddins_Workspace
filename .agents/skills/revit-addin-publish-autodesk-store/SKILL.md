@@ -35,18 +35,11 @@ FilterPlus.bundle/
         └── Help.html (Documentación convertida de Markdown)
 ```
 
-### Paso B: Generación de `PackageContents.xml`
-El archivo debe seguir este esquema para evitar el rechazo por "Advance Steel":
-```xml
-<?xml version="1.0" encoding="utf-8" ?>
-<ApplicationPackage AppVersion="[Version]" Author="[VendorId]" AutodeskProduct="Revit" Name="[AppName]" SchemaVersion="1.0">
-    <CompanyDetails Email="[Email]" Name="[Vendor]" Url="[URL]"/>
-    <Components>
-        <RuntimeRequirements OS="Win64" Platform="Revit" SeriesMax="[Year]" SeriesMin="[Year]"/>
-        <ComponentEntry AppName="[AppName]" ModuleName="./Contents/[Year]/[AppName].addin" Version="[Version]"/>
-    </Components>
-</ApplicationPackage>
-```
+### Paso B: `PackageContents.xml`
+Aunque el script de empaquetado puede generar este XML para pruebas locales del desarrollador, **Regla Crítica**: El archivo `PackageContents.xml` **NO DEBE incluirse** dentro del archivo `.zip` final que se sube a la tienda. El portal de Autodesk genera este archivo automáticamente durante el proceso de sumisión en base a la información que se introduce en la web.
+
+### Paso C: Integración de la Ayuda Contextual (F1)
+**Regla Crítica**: La aplicación debe tener obligatoriamente un archivo local `help.html` (generado a partir de la guía de usuario) y el botón del Ribbon debe apuntar a él usando el método `SetContextualHelp()` apuntando a `Resources/help.html`.
 
 ### Paso C: Modificación del Manifiesto `.addin`
 **Regla Crítica**: La etiqueta `<Assembly>` dentro del archivo `.addin` distribuido NO debe tener rutas absolutas ni carpetas. Debe apuntar directamente al archivo en la misma carpeta:
