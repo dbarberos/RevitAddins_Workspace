@@ -53,9 +53,15 @@ public class Application : ExternalApplication
 
         if (panel != null)
         {
-            panel.AddPushButton<StartupCommand>("FilterPlus")
-                .SetImage("/FilterPlus;component/Resources/Icons/RibbonIcon16.png")
-                .SetLargeImage("/FilterPlus;component/Resources/Icons/RibbonIcon32.png");
+            var pushButton = panel.AddPushButton<StartupCommand>("FilterPlus");
+            pushButton.SetImage("/FilterPlus;component/Resources/Icons/RibbonIcon16.png");
+            pushButton.SetLargeImage("/FilterPlus;component/Resources/Icons/RibbonIcon32.png");
+            pushButton.ToolTip = "FilterPlus Hierarchical Explorer";
+            pushButton.LongDescription = "Advanced selection and filtering add-in for Revit. Allows asynchronous collection of elements, visualizing them in a Category/Family/Type/Instance tree, and refining selections through dynamic rules without freezing the UI.";
+
+            string helpPath = System.IO.Path.Combine(System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location), "Resources", "help.html");
+            ContextualHelp contextHelp = new ContextualHelp(ContextualHelpType.Url, helpPath);
+            pushButton.SetContextualHelp(contextHelp);
         }
 
 #if REVIT2025_OR_GREATER

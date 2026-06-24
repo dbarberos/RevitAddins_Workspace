@@ -1,0 +1,7 @@
+- [x] Update `revit-addin-publish-autodesk-store/SKILL.md` with generic protocol and checklist.
+- [x] Create `PrivacyPolicy.md` template.
+- [x] Create `Steps.md` workflow documentation.
+- [x] Ensure folder structure follows `<AddInName>PublishPackage` convention.
+- [x] Create `docs/` directory for artifact persistence.
+- [ ] Add untracked assets to Git.
+- [ ] Commit changes.

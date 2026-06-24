@@ -31,6 +31,11 @@ public class StartupCommand : ExternalCommand
             var pickElementsHandler = new PickElementsHandler(viewModel);
             var externalEvent = Autodesk.Revit.UI.ExternalEvent.Create(pickElementsHandler);
             viewModel.SetExternalEvent(externalEvent);
+
+            // Register generic external event for executing Actions on Revit UI thread
+            var genericActionHandler = new ActionEventHandler();
+            var genericExternalEvent = Autodesk.Revit.UI.ExternalEvent.Create(genericActionHandler);
+            viewModel.SetActionEventHandler(genericActionHandler, genericExternalEvent);
             
             LoggerService.LogInfo("ViewModel created. Showing window...");
 

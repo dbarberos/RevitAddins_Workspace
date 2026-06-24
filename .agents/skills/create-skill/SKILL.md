@@ -3,18 +3,18 @@ name: create-skill
 description: Scaffolds new agent skills for the RevitAddins_Workspace repository. Use when creating a new skill, generating SKILL.md files, or setting up skill directory structures. Handles frontmatter generation, section templates, and validation guidance for dual-stack (C#/Python) environments.
 ---
 
-# Create Skill — Guía de Creación y Andamiaje de Habilidades
+# Create Skill — AI Skill Creation and Scaffolding Guide
 
-Este skill asiste al agente en la creación y estructuración de nuevas habilidades de IA modulares, asegurando que cumplan con la topología unificada de doble stack del repositorio.
+This skill assists the agent in the creation and structuring of new modular AI skills, ensuring they comply with the unified dual-stack topology of the repository.
 
 ## When to Use
-- Al crear una habilidad nueva desde cero para expandir las capacidades del agente (p. ej., manipulación de PDFs, generación automática de documentación de Word, o integraciones de CI/CD).
-- Al estructurar y generar un archivo `SKILL.md` con su correspondiente bloque YAML de frontmatter.
-- Al configurar la jerarquía física de subcarpetas obligatorias para prevenir el engrosamiento del índice principal.
+- When creating a new skill from scratch to expand the agent's capabilities (e.g., PDF manipulation, automatic Word documentation generation, or CI/CD integrations).
+- When structuring and generating a `SKILL.md` file with its corresponding YAML frontmatter block.
+- When configuring the physical hierarchy of mandatory subfolders to prevent bloat in the main index.
 
 ## When Not to Use
-- Al modificar código fuente de skills ya existentes (edita directamente sus assets o referencias en su lugar).
-- Al configurar prompts de flujos de trabajo aislados (usa la carpeta `.agents/prompts/` en su lugar).
+- When modifying the source code of existing skills (edit their assets or references directly instead).
+- When configuring isolated workflow prompts (use the `.agents/prompts/` folder instead).
 
 ---
 
@@ -22,84 +22,84 @@ Este skill asiste al agente en la creación y estructuración de nuevas habilida
 
 | Input | Required | Description |
 |-------|----------|-------------|
-| **Skill name** | Sí | Nombre en minúsculas, alfanumérico y con guiones (p. ej., `pdf-generator`, `revit-clash-detector`). |
-| **Description** | Sí | Qué hace la habilidad y cuándo debe usarla el agente (1-1024 caracteres). |
-| **Purpose** | Sí | Un párrafo detallando el resultado y meta del skill. |
-| **Workflow** | Recomendado | Pasos numerados secuenciales con puntos de control (checkpoints). |
+| **Skill name** | Yes | Lowercase, alphanumeric, and dashed name (e.g., `pdf-generator`, `revit-clash-detector`). |
+| **Description** | Yes | What the skill does and when the agent should use it (1-1024 characters). |
+| **Purpose** | Yes | A paragraph detailing the result and goal of the skill. |
+| **Workflow** | Recommended | Sequential numbered steps with checkpoints. |
 
 ---
 
-## Workflow de Creación
+## Creation Workflow
 
-### Paso 1: Validación del Nombre del Skill
-Asegúrate de que el nombre:
-- Contenga únicamente letras minúsculas, números y guiones sencillos.
-- No comience ni termine con un guion.
-- Tenga una longitud de entre 1 y 64 caracteres.
+### Step 1: Skill Name Validation
+Ensure that the name:
+- Contains only lowercase letters, numbers, and single dashes.
+- Does not start or end with a dash.
+- Has a length between 1 and 64 characters.
 
-### Paso 2: Creación de la Estructura de Directorios
-Crea el directorio del skill bajo la ruta física unificada del repositorio:
+### Step 2: Directory Structure Creation
+Create the skill directory under the unified physical path of the repository:
 ```text
 .agents/skills/<skill-name>/
-├── SKILL.md         # Índice y manifiesto semántico principal del skill
-├── scripts/         # Scripts ejecutables auxiliares (PowerShell, Python, Bash)
-├── references/      # Guías técnicas, reglas de API y lecciones aprendidas de debugging
-└── assets/          # Código fuente reusable inyectable (.cs, .py, .wxs, .xml)
+├── SKILL.md         # Index and main semantic manifest of the skill
+├── scripts/         # Auxiliary executable scripts (PowerShell, Python, Bash)
+├── references/      # Technical guides, API rules, and debugging lessons learned
+└── assets/          # Injectable reusable source code (.cs, .py, .wxs, .xml)
 ```
 
 ---
 
-## 🛠️ Reglas Estrictas de Segregación de Contenido
+## 🛠️ Strict Content Segregation Rules
 
-### A. Guardado de Assets de Código (assets/):
-*   **Regla Obligatoria:** Todo código fuente o fragmento C# o Python reusable **debe** guardarse en su archivo físico con extensión nativa correspondiente (p. ej. `MyHelper.cs`, `script.py`, `Product.wxs`).
-*   **Prohibición:** Está estrictamente **prohibido** incrustar bloques de código extensos directamente dentro de `SKILL.md` o en archivos Markdown de `references/`. Esto mantiene los tokens de contexto en el nivel óptimo.
+### A. Saving Code Assets (assets/):
+*   **Mandatory Rule:** All source code or reusable C# or Python snippets **must** be saved in their physical file with the corresponding native extension (e.g., `MyHelper.cs`, `script.py`, `Product.wxs`).
+*   **Prohibition:** It is strictly **prohibited** to embed extensive code blocks directly within `SKILL.md` or in Markdown files under `references/`. This keeps context tokens at the optimal level.
 
-### B. Preservación de Lecciones de Depuración (references/):
-*   **Regla Obligatoria:** Cada vez que el agente solucione un error complejo de Revit API, un fallo de compilación de C# o un problema de ejecución en Python/pyRevit, **debe** documentar la resolución.
-*   **Formato de Archivo:** Crea un reporte Markdown rápido en la carpeta `references/` del skill bajo la nomenclatura:  
+### B. Preserving Debugging Lessons (references/):
+*   **Mandatory Rule:** Every time the agent solves a complex Revit API error, a C# compilation failure, or an execution problem in Python/pyRevit, it **must** document the resolution.
+*   **File Format:** Create a quick Markdown report in the skill's `references/` folder under the nomenclature:  
     `references/debugging_[keywords]_[YYYY-MM-DD].md`
-*   **Contenido Mínimo:**
-    1.  **Síntoma:** Qué error de consola o comportamiento anómalo se presentó.
-    2.  **Causa Raíz:** Por qué falló la API, transacción o hilo de Revit.
-    3.  **Solución:** Explicación técnica y fragmento de código corregido que solucionó el bug.
+*   **Minimum Content:**
+    1.  **Symptom:** What console error or anomalous behavior occurred.
+    2.  **Root Cause:** Why the API, transaction, or Revit thread failed.
+    3.  **Solution:** Technical explanation and corrected code snippet that solved the bug.
 
 ---
 
-## Plantilla Base para `SKILL.md`
+## Base Template for `SKILL.md`
 
-Todo nuevo archivo `SKILL.md` debe actuar únicamente como un **índice ligero de metadatos** estructurado bajo el siguiente formato:
+Every new `SKILL.md` file must act solely as a **lightweight metadata index** structured under the following format:
 
 ```markdown
 ---
 name: <skill-name>
-description: <1-1024 caracteres describiendo qué hace el skill y cuándo invocarlo>
+description: <1-1024 characters describing what the skill does and when to invoke it>
 ---
 
-# <Nombre del Skill>
+# <Skill Name>
 
-<Un párrafo conciso describiendo el propósito y resultado de este componente.>
+<A concise paragraph describing the purpose and outcome of this component.>
 
-## 📚 Referencias Técnicas (Knowledge Base)
-Consulta los siguientes archivos en la carpeta `references/` para obtener guías en profundidad:
+## 📚 Technical References (Knowledge Base)
+Check the following files in the `references/` folder for in-depth guides:
 
-*   `references/guia_tecnica.md`: Explicación conceptual del dominio del skill.
-*   `references/debugging_[problema]_[fecha].md`: Lecciones aprendidas e historial de fallos solucionados.
+*   `references/technical_guide.md`: Conceptual explanation of the skill's domain.
+*   `references/debugging_[problem]_[date].md`: Lessons learned and history of resolved bugs.
 
-## 📦 Assets (Plantillas y Código Fuente)
-Los siguientes archivos se encuentran en la carpeta `assets/` listos para inyectarse directamente en el proyecto:
+## 📦 Assets (Templates and Source Code)
+The following files are found in the `assets/` folder ready to be injected directly into the project:
 
-*   `assets/HelperClass.cs`: Clase base de soporte en C# (si aplica).
-*   `assets/utility_script.py`: Script base de soporte en Python (si aplica).
+*   `assets/HelperClass.cs`: Support base class in C# (if applicable).
+*   `assets/utility_script.py`: Support base script in Python (if applicable).
 ```
 
 ---
 
-## Lista de Verificación de Validación
+## Validation Checklist
 
-- [ ] El nombre del skill coincide exactamente con el nombre de su subcarpeta.
-- [ ] La descripción YAML es concisa, descriptiva y no excede los 1024 caracteres.
-- [ ] El archivo principal `SKILL.md` no excede las 50 líneas físicas (actúa únicamente como índice).
-- [ ] Las carpetas secundarias `references/`, `assets/` y `scripts/` existen físicamente.
-- [ ] No existen fragmentos de código inyectables incrustados en `SKILL.md`. Todo código reusable reside en `assets/` con sus respectivas extensiones de archivo nativas (`.cs`, `.py`).
-- [ ] Los reportes de resolución de errores se guardan bajo la nomenclatura `debugging_[keywords]_[YYYY-MM-DD].md`.
+- [ ] The skill name exactly matches the name of its subfolder.
+- [ ] The YAML description is concise, descriptive, and does not exceed 1024 characters.
+- [ ] The main `SKILL.md` file does not exceed 50 physical lines (acts only as an index).
+- [ ] The secondary folders `references/`, `assets/`, and `scripts/` physically exist.
+- [ ] There are no injectable code snippets embedded in `SKILL.md`. All reusable code resides in `assets/` with their respective native file extensions (`.cs`, `.py`).
+- [ ] Bug resolution reports are saved under the nomenclature `debugging_[keywords]_[YYYY-MM-DD].md`.

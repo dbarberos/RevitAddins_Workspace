@@ -3,20 +3,20 @@ name: revit-addin-testing
 description: Guide for testing Revit Add-ins — unit testing with API mocks, build validation, and testing strategies without a Revit instance. Use this when configuring CI/CD, setting up tests, or validating business logic independently of the Revit API.
 ---
 
-# Revit Add-in Testing — Índice de Contenidos
+# Revit Add-in Testing — Table of Contents
 
-Este skill proporciona directrices completas para el desarrollo y ejecución de pruebas en add-ins de Revit, optimizando la separación de lógica de negocio pura y la API.
+This skill provides comprehensive guidelines for developing and executing tests in Revit add-ins, optimizing the separation of pure business logic and the API.
 
-## 📚 Referencias Técnicas (Knowledge Base)
-Para obtener guías y metodologías de pruebas en profundidad, consulta los archivos en la carpeta `references/`:
+## 📚 Technical References (Knowledge Base)
+For in-depth testing guides and methodologies, consult the files in the `references/` folder:
 
-*   `references/testing_strategy.md`: El problema fundamental de la API headless, niveles de pruebas, validación mínima de build y reglas de comportamiento del agente.
-*   `references/test_project_setup.md`: Jerarquía física de carpetas del proyecto de pruebas y comandos de ejecución (`dotnet test`).
+*   `references/testing_strategy.md`: The fundamental problem of the headless API, testing levels, minimum build validation, and agent behavior rules.
+*   `references/test_project_setup.md`: Physical folder hierarchy of the test project and execution commands (`dotnet test`).
 
-## 📦 Assets (Plantillas y Ejemplos de Código)
-Los siguientes archivos se encuentran en la carpeta `assets/` y pueden inyectarse o utilizarse como guía en los proyectos:
+## 📦 Assets (Templates and Code Examples)
+The following files are located in the `assets/` folder and can be injected or used as a guide in projects:
 
-*   `assets/TestProjectTemplate.csproj`: Archivo base `.csproj` con referencias a xUnit, Moq y FluentAssertions para .NET 4.8 y .NET 8.
-*   `assets/TestableArchitectureExample.cs`: Ejemplo de código comparativo que demuestra cómo extraer código con inyección de dependencias para aislar la API de Revit.
-*   `assets/WallAnalysisServiceTests.cs`: Clase de prueba xUnit de ejemplo que valida la lógica de negocio de servicios agrupadores.
-*   `assets/HelperTests.cs`: Clase de prueba xUnit para helpers genéricos (como `OperationResult`).
+*   `assets/TestProjectTemplate.csproj`: Base `.csproj` file with references to xUnit, Moq, and FluentAssertions for .NET 4.8 and .NET 8.
+*   `assets/TestableArchitectureExample.cs`: Comparative code example demonstrating how to extract code with dependency injection to isolate the Revit API.
+*   `assets/WallAnalysisServiceTests.cs`: Example xUnit test class validating the business logic of grouping services.
+*   `assets/HelperTests.cs`: xUnit test class for generic helpers (such as `OperationResult`).

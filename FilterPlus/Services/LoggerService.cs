@@ -18,6 +18,22 @@ public static class LoggerService
         _uiDispatcher = dispatcher;
     }
 
+    private static readonly string LogFilePath = @"c:\Users\david.barbero\Documents\DOCUMENTOS\ALTEN\Workbench\RevitAddins_Workspace\RevitAddins_Workspace\debug_log.txt";
+
+    private static void WriteToFile(string entry, string stackTrace = null)
+    {
+        try
+        {
+            string content = entry + Environment.NewLine;
+            if (!string.IsNullOrEmpty(stackTrace))
+            {
+                content += stackTrace + Environment.NewLine;
+            }
+            System.IO.File.AppendAllText(LogFilePath, content);
+        }
+        catch { }
+    }
+
     public static void LogInfo(string message)
     {
         string timestamp = DateTime.Now.ToString("HH:mm:ss.fff");
@@ -32,6 +48,7 @@ public static class LoggerService
         }
         
         System.Diagnostics.Debug.WriteLine(entry);
+        WriteToFile(entry);
     }
 
     public static void LogError(string context, Exception ex)
@@ -47,17 +64,10 @@ public static class LoggerService
 
         System.Diagnostics.Debug.WriteLine(entry);
         System.Diagnostics.Debug.WriteLine(ex.StackTrace);
+        WriteToFile(entry, ex.StackTrace);
 
-        // Security Hardened TaskDialog
-        string userMessage = $"An error occurred in {context}. Please contact support.";
-        TaskDialog mainDialog = new TaskDialog("FilterPlus Error")
-        {
-            MainInstruction = "Unexpected Error",
-            MainContent = userMessage,
-            CommonButtons = TaskDialogCommonButtons.Close,
-            DefaultButton = TaskDialogResult.Close,
-            FooterText = "Check Debug Log for details"
-        };
-        mainDialog.Show();
+        // Use WPF MessageBox instead of Revit TaskDialog to prevent thread-safety crashes when called from WPF context
+        string userMessage = $"An error occurred in {context}: {ex.Message}\n\nCheck Debug Log for details.";
+        System.Windows.MessageBox.Show(userMessage, "FilterPlus Error", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
     }
 }

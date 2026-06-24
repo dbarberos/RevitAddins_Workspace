@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Guide - FilterPlus</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; max-width: 800px; margin: 0 auto; padding: 20px; background-color: #f9f9f9; }
+        h1, h2, h3 { color: #007ACC; }
+        .version { font-weight: bold; color: #666; margin-bottom: 20px; }
+        hr { border: 0; border-top: 1px solid #eee; margin: 20px 0; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; background: white; }
+        table th, table td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        table th { background-color: #f2f2f2; }
+        .note { background-color: #e7f3fe; border-left: 6px solid #2196F3; padding: 10px; margin: 15px 0; }
+        .warning { background-color: #ffffcc; border-left: 6px solid #ffeb3b; padding: 10px; margin: 15px 0; }
+        code { background-color: #f4f4f4; padding: 2px 4px; border-radius: 4px; }
+    </style>
+</head>
+<body>
+    <h1>User Guide - FilterPlus</h1>
+    <div class="version">
+        Current Version: 1.1.0<br>
+        Developer: DBDev / dbase_Architecture
+    </div>
+    <hr>
+
+    <h2>1. General Description</h2>
+    <p><strong>FilterPlus</strong> is an advanced add-in for Autodesk® Revit® designed to streamline the selection and filtering of elements in complex BIM projects. It offers <strong>full hierarchical navigation</strong> (Category > Family > Type > Element ID) and a dynamic organization system.</p>
+
+    <h2>2. Installation Instructions</h2>
+    <p>The add-in is distributed in the official Autodesk App Store format (Autoloader).</p>
+    <ol>
+        <li>Close all active Revit sessions.</li>
+        <li>Install the package provided by the App Store.</li>
+        <li>When opening Revit, if a security warning appears, select <strong>"Always Load"</strong>.</li>
+    </ol>
+    <div class="note">
+        <strong>NOTE:</strong> The installation is performed in the user profile (<code>%AppData%\Autodesk\ApplicationPlugins</code>).
+    </div>
+
+    <h2>3. Command and Feature Guide</h2>
+    <h3>3.1. Advanced Hierarchical Explorer</h3>
+    <p>The main interface allows granular element selection through a 5-level tree with <strong>Semantic Depth Memory</strong>, preserving your visual expansion level when switching views.</p>
+    
+    <h3>3.2. Dynamic Organization</h3>
+    <p>Instantly reorganize the hierarchy based on <strong>Phase</strong>, <strong>Level</strong>, or <strong>Workset</strong>.</p>
+
+    <h3>3.3. Intelligent Search Engine</h3>
+    <p>Support for <strong>Regex</strong>, logical <strong>OR</strong>, and name-only optimization mode.</p>
+
+    <h2>4. System Requirements</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Requirement</th>
+                <th>Detail</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Revit Versions</td>
+                <td>2023, 2024, 2025, 2026, 2027</td>
+            </tr>
+            <tr>
+                <td>Operating System</td>
+                <td>Windows 10 / 11 (64-bit)</td>
+            </tr>
+            <tr>
+                <td>Framework</td>
+                <td>.NET Framework 4.8 / .NET 8.0</td>
+            </tr>
+        </tbody>
+    </table>
+    <div class="warning">
+        <strong>WARNING:</strong> Revit 2025+ requires the .NET 8 runtime to be installed.
+    </div>
+
+    <hr>
+    <p><em>For technical support, contact: dbarberos@outlook.com</em></p>
+</body>
+</html>

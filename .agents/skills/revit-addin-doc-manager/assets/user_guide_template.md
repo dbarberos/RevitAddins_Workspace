@@ -1,79 +1,102 @@
-# Guía de Usuario: Estructura del Documento `User_Guide.md`
+# User Guide: Document Structure `User_Guide.md`
 
-Este asset define la estructura de secciones obligatoria y las reglas de formato para el manual técnico `User_Guide.md` del add-in.
+This asset defines the mandatory section structure and formatting rules for the add-in's `User_Guide.md` technical manual.
 
 ---
 
-## 1. Plantilla de Estructura de Documento
+## 1. Document Structure Template
 
 ```markdown
-# [Nombre del Add-in]
+# [Add-in Name]
 
-> **Versión Actual:** [X.X.X]  
-> **ID del Add-in (GUID):** `[GUID extraído del archivo .addin]`  
-
----
-
-## 1. Descripción General
-
-[Proporcionar un resumen ejecutivo del propósito del add-in, el problema que resuelve y el flujo principal.]
+> **Current Version:** [X.X.X]  
+> **Add-in ID (GUID):** `[GUID extracted from the .addin file]`  
 
 ---
 
-## 2. Requisitos y Compatibilidad
+## 1. General Description
+
+[Provide an executive summary of the add-in's purpose, the problem it solves, and the main workflow.]
+
+---
+
+## 2. Requirements and Compatibility
 
 > [!WARNING]
-> Este add-in requiere **Autodesk Revit 2021** o superior en sistemas Windows de 64 bits.
+> This add-in requires **Autodesk Revit 2021** or higher on 64-bit Windows systems.
 
-* **Plataforma**: .NET Framework 4.8 / .NET 8 (según la versión).
-* **Versiones de Revit Soportadas**: [Ej. 2023, 2024, 2025].
-
----
-
-## 3. Instrucciones de Instalación
-
-1.  Cierra todas las sesiones activas de Autodesk Revit.
-2.  Ejecuta el archivo instalador `.msi` o descomprime la carpeta `.bundle` en el directorio de complementos de Revit del usuario:
-    `%APPDATA%\Autodesk\Revit\Addins\[Año]\`
-3.  Inicia Revit. Si aparece el diálogo de seguridad, haz clic en **"Cargar siempre"** (Always Load).
+* **Platform**: .NET Framework 4.8 / .NET 8 (depending on the version).
+* **Supported Revit Versions**: [E.g., 2023, 2024, 2025].
 
 ---
 
-## 4. Guía de Comandos (Ribbon UI)
+## 3. Installation & Uninstallation
 
-| Comando / Botón | Clase Ejecutora (`FullClassName`) | Descripción Funcional y Uso |
-|-----------------|-----------------------------------|----------------------------|
-| **[Botón 1]** | `{{Namespace}}.Commands.Cmd[Action]` | [Explicación de qué hace al pulsarlo y qué parámetros o selecciones requiere.] |
-| **[Botón 2]** | `{{Namespace}}.Commands.Cmd[Action2]` | [Explicación del segundo botón...] |
+The installer that ran when you downloaded this plug-in from the Autodesk App Store has already installed the plug-in. You may need to restart the Autodesk product to activate the plug-in.
 
----
-
-## 5. Historial de Versiones (Changelog)
-
-### [Versión X.X.X] - [AAAA-MM-DD]
-
-#### Added (Añadido)
-- [Funcionalidad nueva 1 o comando inyectado.]
-
-#### Changed (Modificado)
-- [Mejora o refactorización del código.]
-
-#### Fixed (Corregido)
-- [Corrección de error de hilo, interfaz o API.]
+To uninstall this plug-in, exit the Autodesk product if you are currently running it, simply rerun the installer by downloading it again from the Autodesk App Store, and select the 'Uninstall' button, or you can uninstall it from 'Control Panel\\Programs\\Programs and Features' (Windows 10/11), just as you would uninstall any other application from your system.
 
 ---
 
-## 6. Soporte y Contacto
+## 4. Commands and Features Guide
 
-Para reportar fallos, sugerencias o solicitar soporte comercial, contacta a:
-* **Desarrollador / Compañía**: [Tu Compañía / DBDev_dbarberos]
-* **Soporte**: [Email de soporte o canal de incidencias de Git]
+### 4.1. Ribbon Panel Integration
+The add-in creates a custom tab containing the plugin panel.
+
+| Command | Function | Technical Class |
+|---------|----------|-----------------|
+| **[App Start]** | Initializes the Ribbon panel and the application. | `{{Namespace}}.Application` |
+| **[Command 1]** | [Functional description] | `{{Namespace}}.Commands.Cmd[Action]` |
+
+---
+
+## 5. Comprehensive Usage Guide
+
+### Main Interface / Explorer
+[Provide an overview of the main UI, the hierarchical tree, or core views.]
+
+### Scope and Filters
+[List the available scope toggles and grouping options using bullet points]
+- **Filter A**: Description.
+- **Filter B**: Description.
+
+### Advanced Logic and Tools
+[Explain search functionality, expansions, or specific features using clear bullet points and alerts]
+* **Constraint 1**: Description.
+* **Exclusion 1**: Description.
+> [!TIP]
+> **Pro-Tip**: Explain hidden gems or workflow optimizations.
+
+---
+
+## 6. Version History (Changelog)
+
+<!-- CRITICAL: Do NOT delete previous version entries. Append new version blocks at the top of this section to maintain a complete historical record. -->
+
+### [Version X.X.X] - [YYYY-MM-DD]
+
+#### Added
+- [New functionality 1 or injected command.]
+
+#### Changed
+- [Improvement or code refactoring.]
+
+#### Fixed
+- [Fix for thread, interface, or API error.]
+
+---
+
+## 7. Support and Contact
+
+To report bugs, make suggestions, or request commercial support, please contact:
+* **Developer / Company**: [Your Company / DBDev_dbarberos]
+* **Support**: [Support email or Git issue channel]
 ```
 
 ---
 
-## 2. Reglas de Estilo y Formato
+## 2. Style and Formatting Rules
 
-1.  **Tablas Técnicas**: Usa tablas Markdown para organizar datos como compatibilidades de versiones, IDs de clientes o listas de comandos.
-2.  **Mensajes de Alerta**: Emplea bloques de aviso estilo GitHub (`> [!WARNING]`, `> [!NOTE]`) para destacar prerrequisitos de sistema, riesgos en el modelo de Revit o transacciones que no se pueden deshacer.
-3.  **Enlaces de Comandos**: Las clases ejecutoras de Revit (`FullClassName`) siempre deben ir formateadas como código `` `Clase` ``.
+1.  **Technical Tables**: Use Markdown tables to organize data like version compatibilities, client IDs, or command lists.
+2.  **Alert Messages**: Employ GitHub-style alert blocks (`> [!WARNING]`, `> [!NOTE]`) to highlight system prerequisites, risks to the Revit model, or irreversible transactions.
+3.  **Command Links**: Revit executor classes (`FullClassName`) must always be formatted as inline code `` `Class` ``.

@@ -1,39 +1,39 @@
-# Reglas de Oro para un WXS Robusto en Entornos Windows Installer
+# Golden Rules for a Robust WXS in Windows Installer Environments
 
-Este documento detalla las directivas técnicas obligatorias al estructurar instaladores con **WiX Toolset v3.11+**, diseñadas específicamente para evitar errores de validación de Windows Installer (ICE) y garantizar desinstalaciones limpias en directorios `AppData` de usuario.
-
----
-
-## 1. Gestión de IDs y Símbolos Únicos
-*   **Regla**: Nunca permitas que WiX asigne identificadores automáticos a los archivos en instaladores de múltiples versiones.
-*   **Ejecución**: Cada archivo empaquetado debe tener un `Id` explícito y único que incluya el sufijo de su versión de Revit (p. ej., `Id="F_Dll24"`, `Id="F_Dll25"`). 
-*   **Razón**: Evita el error de compilación en WiX *"Duplicate symbol 'File:YourAddin.dll' found"* al compilar múltiples DLLs con el mismo nombre físico pero ubicadas en distintas subcarpetas de versión.
+This document details the mandatory technical directives when structuring installers with **WiX Toolset v3.11+**, specifically designed to avoid Windows Installer validation errors (ICE) and ensure clean uninstallations in user `AppData` directories.
 
 ---
 
-## 2. GUIDs Estáticos vs Automáticos
-*   **Regla**: Usa siempre GUIDs explícitos y fijos en cada `<Component>` (`Guid="NUEVO_GUID_AQUI-..."`). Evita utilizar el asterisco de generación automática (`Guid="*"`).
-*   **Razón**: El comodín automático de WiX falla al compilar componentes complejos que agrupan múltiples archivos o llaves de registro. Un GUID estático garantiza la estabilidad del ID de componente en el registro de Windows y evita problemas en futuras actualizaciones (*MajorUpgrade*).
+## 1. Management of IDs and Unique Symbols
+*   **Rule**: Never allow WiX to assign automatic identifiers to files in multi-version installers.
+*   **Execution**: Each packaged file must have an explicit and unique `Id` that includes the suffix of its Revit version (e.g., `Id="F_Dll24"`, `Id="F_Dll25"`). 
+*   **Reason**: Avoids the WiX compilation error *"Duplicate symbol 'File:YourAddin.dll' found"* when compiling multiple DLLs with the same physical name but located in different version subfolders.
 
 ---
 
-## 3. Validación de Seguridad de Windows (Normas ICE)
+## 2. Static vs Automatic GUIDs
+*   **Rule**: Always use explicit and fixed GUIDs in each `<Component>` (`Guid="NEW_GUID_HERE-..."`). Avoid using the automatic generation asterisk (`Guid="*"`).
+*   **Reason**: The WiX automatic wildcard fails when compiling complex components that group multiple files or registry keys. A static GUID guarantees the stability of the component ID in the Windows registry and avoids problems in future updates (*MajorUpgrade*).
 
-Al instalar archivos en `AppDataFolder` (instalación por usuario, sin privilegios elevados de administrador):
+---
 
-### A. ICE38 (Registry KeyPath en HKCU)
-*   **Regla**: Cada componente que instale archivos en la carpeta de usuario de Revit **debe** tener un `RegistryValue` en `HKCU` definido como su KeyPath principal (`KeyPath="yes"`). No utilices el archivo `.dll` o `.addin` directamente como KeyPath.
-*   **Ejemplo**:
+## 3. Windows Security Validation (ICE Rules)
+
+When installing files in `AppDataFolder` (per-user installation, without elevated administrator privileges):
+
+### A. ICE38 (Registry KeyPath in HKCU)
+*   **Rule**: Each component that installs files in the user's Revit folder **must** have a `RegistryValue` in `HKCU` defined as its main KeyPath (`KeyPath="yes"`). Do not use the `.dll` or `.addin` file directly as KeyPath.
+*   **Example**:
     ```xml
-    <Component Id="C_Dll24" Guid="[GUID-ESTATICO]" Directory="REVIT2024">
+    <Component Id="C_Dll24" Guid="[STATIC-GUID]" Directory="REVIT2024">
       <RegistryValue Root="HKCU" Key="Software\DBDev_dbarberos\FilterPlus\2024" Name="installed" Type="integer" Value="1" KeyPath="yes" />
       <File Id="F_Dll24" Name="FilterPlus.dll" Source="bin\Release.R24\FilterPlus\FilterPlus.dll" />
     </Component>
     ```
 
-### B. ICE64 (Remoción de Carpetas en Desinstalación)
-*   **Regla**: Cada directorio de la jerarquía de instalación de usuario (`Autodesk`, `Revit`, `Addins`, `2024`, etc.) debe incluir una instrucción de remoción `<RemoveFolder Id="..." On="uninstall"/>` enlazada a un componente del instalador.
-*   **Razón**: Garantiza que el desinstalador de Windows limpie las carpetas del complemento si quedan vacías, evitando advertencias de seguridad y directorios huérfanos.
+### B. ICE64 (Folder Removal on Uninstallation)
+*   **Rule**: Each directory in the user installation hierarchy (`Autodesk`, `Revit`, `Addins`, `2024`, etc.) must include a removal instruction `<RemoveFolder Id="..." On="uninstall"/>` linked to an installer component.
+*   **Reason**: Guarantees that the Windows uninstaller cleans up the add-in folders if they are left empty, avoiding security warnings and orphaned directories.
 
-### C. Componente de Limpieza Centralizado
-*   **Estrategia Recomendada**: Define un `ComponentGroup` con nombre `CleanupComponents` que agrupe exclusivamente las instrucciones de remoción `<RemoveFolder>` de los directorios superiores comunes de Revit, previniendo advertencias de validación ICE64 en los componentes de versión.
+### C. Centralized Cleanup Component
+*   **Recommended Strategy**: Define a `ComponentGroup` named `CleanupComponents` that exclusively groups the `<RemoveFolder>` removal instructions of the common upper Revit directories, preventing ICE64 validation warnings in the version components.

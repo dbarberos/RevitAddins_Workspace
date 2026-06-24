@@ -81,7 +81,7 @@ public partial class SelectionFilterViewModel : ObservableObject
     private List<string> _activeGroupings = new List<string>();
 
     [ObservableProperty] private SelectionScope _currentScope = SelectionScope.CurrentSelection;
-    private HashSet<Autodesk.Revit.DB.ElementId> _persistentCheckedIds = new();
+    private HashSet<Autodesk.Revit.DB.ElementId> _persistentCheckedIds = new(new ElementIdEqualityComparer());
 
     [RelayCommand]
     private void ExpandAll()
@@ -627,6 +627,12 @@ public partial class SelectionFilterViewModel : ObservableObject
         _pickElementsEvent = externalEvent;
     }
 
+    public void SetActionEventHandler(FilterPlus.Services.ActionEventHandler handler, Autodesk.Revit.UI.ExternalEvent externalEvent)
+    {
+        _actionHandler = handler;
+        _actionExternalEvent = externalEvent;
+    }
+
     [RelayCommand]
     private void PickElements()
     {
@@ -805,13 +811,26 @@ public partial class SelectionFilterViewModel : ObservableObject
         FilterText = string.Empty;
     }
 
+    private FilterPlus.Services.ActionEventHandler _actionHandler;
+    private Autodesk.Revit.UI.ExternalEvent _actionExternalEvent;
+
     [RelayCommand]
     private void ApplyIncreaseChecked()
     {
-        try
+        if (_actionHandler == null || _actionExternalEvent == null)
         {
-            TreeItemViewModel.IsBulkUpdating = true;
-            LoggerService.LogInfo($"[ApplyIncreaseChecked] START. Current Scope in Select: {CurrentScope}. _activeElements count: {(_activeElements?.Count ?? 0)}.");
+            LoggerService.LogError("ApplyIncreaseChecked", new System.InvalidOperationException("ActionEventHandler not initialized."));
+            return;
+        }
+
+        LoggerService.LogInfo($"[ApplyIncreaseChecked] START. Current Scope in Select: {CurrentScope}. _activeElements count: {(_activeElements?.Count ?? 0)}.");
+        StatusMessage = "Processing...";
+        
+        _actionHandler.Raise(() =>
+        {
+            try
+            {
+                TreeItemViewModel.IsBulkUpdating = true;
             
             // 1. Get currently checked ElementIds from the tree
             var currentCheckedIds = new List<Autodesk.Revit.DB.ElementId>();
@@ -856,12 +875,15 @@ public partial class SelectionFilterViewModel : ObservableObject
                 LoggerService.LogInfo($"[ApplyIncreaseChecked] Domain: All Model. Collector count: {domainElements.Count}.");
             }
             
-            var targetIds = new HashSet<Autodesk.Revit.DB.ElementId>();
+            var targetIds = new HashSet<Autodesk.Revit.DB.ElementId>(new ElementIdEqualityComparer());
             
             // 3. Apply WHAT rules
             if (IncreaseWhatSameCategory)
             {
-                var targetCatIds = sourceElements.Select(e => e.Category?.Id).Where(id => id != null).ToHashSet();
+                var targetCatIds = new HashSet<Autodesk.Revit.DB.ElementId>(
+                    sourceElements.Select(e => e.Category?.Id).Where(id => id != null),
+                    new ElementIdEqualityComparer()
+                );
                 foreach (var el in domainElements)
                 {
                     if (el.Category != null && targetCatIds.Contains(el.Category.Id))
@@ -872,7 +894,7 @@ public partial class SelectionFilterViewModel : ObservableObject
             if (IncreaseWhatSameFamily || IncreaseWhatSameType)
             {
                 var targetFamilyNames = new HashSet<string>();
-                var targetTypeIds = new HashSet<Autodesk.Revit.DB.ElementId>();
+                var targetTypeIds = new HashSet<Autodesk.Revit.DB.ElementId>(new ElementIdEqualityComparer());
                 
                 foreach (var el in sourceElements)
                 {
@@ -1050,10 +1072,13 @@ public partial class SelectionFilterViewModel : ObservableObject
             }
             
             // 4. Unify with current and other scopes
-            var activeElementIds = _activeElements?.Select(e => e.Id).ToHashSet() ?? new HashSet<Autodesk.Revit.DB.ElementId>();
+            var activeElementIds = new HashSet<Autodesk.Revit.DB.ElementId>(
+                _activeElements?.Select(e => e.Id) ?? System.Linq.Enumerable.Empty<Autodesk.Revit.DB.ElementId>(),
+                new ElementIdEqualityComparer()
+            );
             var idsFromOtherScopes = _persistentCheckedIds.Where(id => !activeElementIds.Contains(id)).ToList();
 
-            var finalCheckedIds = new HashSet<Autodesk.Revit.DB.ElementId>();
+            var finalCheckedIds = new HashSet<Autodesk.Revit.DB.ElementId>(new ElementIdEqualityComparer());
             if (IncreaseHowAddToCurrent)
             {
                 foreach (var id in currentCheckedIds) finalCheckedIds.Add(id);
@@ -1070,7 +1095,7 @@ public partial class SelectionFilterViewModel : ObservableObject
             // 5. Exclusions (UNSELECT ELEMENTS IF) - applies to the unified finalCheckedIds to purge the selection
             if (IncreaseUnselectBelongsToGroup || IncreaseUnselectBelongsToAssembly)
             {
-                var purgedCheckedIds = new HashSet<Autodesk.Revit.DB.ElementId>();
+                var purgedCheckedIds = new HashSet<Autodesk.Revit.DB.ElementId>(new ElementIdEqualityComparer());
                 foreach (var id in finalCheckedIds)
                 {
                     var el = doc.GetElement(id);
@@ -1094,7 +1119,10 @@ public partial class SelectionFilterViewModel : ObservableObject
             LoggerService.LogInfo($"[ApplyIncreaseChecked] Final checked IDs unified (including other scopes): {finalCheckedIds.Count}. IDs: {string.Join(", ", finalCheckedIds)}");
 
             // 6. Inject newly matched elements into _activeElements (if they aren't already in it)
-            var activeIds = _activeElements.Select(e => e.Id).ToHashSet();
+            var activeIds = new HashSet<Autodesk.Revit.DB.ElementId>(
+                _activeElements.Select(e => e.Id),
+                new ElementIdEqualityComparer()
+            );
             LoggerService.LogInfo($"[ApplyIncreaseChecked] Explorer tree currently has {activeIds.Count} active IDs.");
             
             // Build a unified dictionary of all pre-fetched element models for O(1) reuse
@@ -1104,7 +1132,7 @@ public partial class SelectionFilterViewModel : ObservableObject
                 .Concat(_currentSelectionElements)
                 .GroupBy(e => e.Id)
                 .Select(g => g.First())
-                .ToDictionary(e => e.Id);
+                .ToDictionary(e => e.Id, new ElementIdEqualityComparer());
                 
             LoggerService.LogInfo($"[ApplyIncreaseChecked] Pre-fetched scopes unified cache has {allKnownById.Count} elements.");
 
@@ -1176,7 +1204,8 @@ public partial class SelectionFilterViewModel : ObservableObject
         {
             TreeItemViewModel.IsBulkUpdating = false;
         }
-    }
+    }, _actionExternalEvent);
+}
 
     private void FilterNode(TreeItemViewModel node, string searchText, System.Text.RegularExpressions.Regex searchRegex, bool isEmpty)
     {
@@ -1243,5 +1272,24 @@ public partial class SelectionFilterViewModel : ObservableObject
         {
             FilterNode(child, searchText, searchRegex, isEmpty);
         }
+    }
+}
+
+/// <summary>
+/// Custom equality comparer for ElementId to prevent reference-equality issues in Revit API.
+/// </summary>
+public class ElementIdEqualityComparer : IEqualityComparer<Autodesk.Revit.DB.ElementId>
+{
+    public bool Equals(Autodesk.Revit.DB.ElementId x, Autodesk.Revit.DB.ElementId y)
+    {
+        if (x == null && y == null) return true;
+        if (x == null || y == null) return false;
+        return x.Value == y.Value;
+    }
+
+    public int GetHashCode(Autodesk.Revit.DB.ElementId obj)
+    {
+        if (obj == null) return 0;
+        return obj.Value.GetHashCode();
     }
 }

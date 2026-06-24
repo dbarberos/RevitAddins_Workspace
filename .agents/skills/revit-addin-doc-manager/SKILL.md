@@ -5,14 +5,23 @@ description: Autonomous management of documentation and versioning for Revit Add
 
 # Revit Add-in Documentation Skill (Autonomous Version)
 
-Este skill permite al agente gestionar el ciclo de vida de la documentación del add-in con autonomía, extrayendo la verdad técnica directamente del código fuente y los archivos de configuración del proyecto.
+This skill allows the agent to autonomously manage the add-in's documentation lifecycle, extracting technical truth directly from the source code and project configuration files.
 
-## 📚 Referencias Técnicas (Knowledge Base)
-Para obtener guías y procedimientos de inspección de documentación, consulta los archivos en la carpeta `references/`:
+## 🚨 Mandatory Critical Rules
+1. **English Language:** All generated information written to the `User_Guide.md` (or similar documents) **MUST be written in English**.
+2. **Historical Context and Artifacts:** To document how to use the options and features, the agent MUST NOT limit itself to looking at commits. **It must mandatorily read the `.md` artifact files** (e.g., in `docs/references/`) to extract the functionalities, uses, and evolution of each option.
+3. **Comprehensive Update:** The manual must be updated across all its points from its origin to the current version. If a previous function has been modified, the main usage guide must be rewritten to reflect its state in the new tag, using the previous context from the artifacts.
+4. **Friendly and Readable Structure (Textual UX):** The "Comprehensive Usage Guide" or description sections must be structured using bullet points, clear subsections, and tables to make reading very friendly and fast. Dense paragraphs or "walls of text" should be avoided.
+5. **Autodesk App Store Standard:** All information regarding "Installation & Uninstallation" must strictly use the Autodesk App Store standard (explaining that the downloaded installer already does the job, the need to restart the Autodesk product, and the uninstallation method from the Control Panel).
+6. **Preserve Changelog History:** When updating the Version History (Changelog) section of the user guide or similar documents, the agent MUST NOT delete or overwrite comments from previous versions. New version updates must be appended at the top of the history to maintain a complete historical record of all changes.
+7. **Developer Identity:** When generating any documentation or template, the agent MUST strictly use `DBDev_dbarberos` as the Author/Developer Name and `DBDev Solutions` as the Company Name. The use of generic AI placeholders like "AI_Corp" or "AI Solutions" is strictly forbidden.
 
-*   `references/doc_extraction_and_scenarios.md`: Procesos de inspección automática de código y flujos lógicos por escenarios.
+## 📚 Technical References (Knowledge Base)
+To obtain documentation inspection guides and procedures, consult the files in the `references/` folder:
 
-## 📦 Assets (Plantillas y Ejemplos de Documentación)
-Los siguientes archivos se encuentran en la carpeta `assets/` y definen las plantillas a inyectar:
+*   `references/doc_extraction_and_scenarios.md`: Automatic code inspection processes and logical flows by scenarios.
 
-*   `assets/user_guide_template.md`: Estructura estándar y reglas de formato para el archivo `User_Guide.md` del add-in.
+## 📦 Assets (Templates and Documentation Examples)
+The following files are found in the `assets/` folder and define the templates to be injected:
+
+*   `assets/user_guide_template.md`: Standard structure and formatting rules for the add-in's `User_Guide.md` file.

@@ -1,34 +1,34 @@
-# Arquitectura de Compilación: WiX Toolset vs Visual Studio
+# Build Architecture: WiX Toolset vs Visual Studio
 
-Este documento explica cómo es posible crear archivos `.msi` y compilar proyectos de C# sin utilizar Visual Studio, desmitificando el rol del IDE en el proceso de compilación y empaquetado de add-ins para Revit.
+This document explains how it is possible to create `.msi` files and compile C# projects without using Visual Studio, demystifying the IDE's role in the compilation and packaging process of Revit add-ins.
 
-## 1. Visual Studio es una Interfaz (IDE), no un Compilador
+## 1. Visual Studio is an Interface (IDE), not a Compiler
 
-Visual Studio actúa como una interfaz gráfica (IDE) para motores de compilación subyacentes (`MSBuild`, `.NET CLI`) y herramientas de empaquetado (como `WiX Toolset`). Cuando presionas el botón "Compilar" (Build) en Visual Studio, la interfaz gráfica simplemente orquesta la ejecución de herramientas de consola pasándoles los parámetros que has configurado visualmente.
+Visual Studio acts as a graphical user interface (IDE) for underlying build engines (`MSBuild`, `.NET CLI`) and packaging tools (like `WiX Toolset`). When you press the "Build" button in Visual Studio, the graphical interface simply orchestrates the execution of console tools by passing them the parameters you have visually configured.
 
-## 2. La compilación del código C# (`dotnet publish`)
+## 2. Compiling the C# Code (`dotnet publish`)
 
-Cuando compilas para múltiples versiones (2023 a 2027), Visual Studio lee tu archivo `.csproj` y envía las instrucciones a **MSBuild** (o a la interfaz moderna **.NET CLI**). 
-Al ejecutar en consola el comando `dotnet publish` y especificar la configuración (`Release.R23`, `Release.R24`, etc.), el comando lee el `.csproj` e invoca al compilador (Roslyn). El resultado son los mismos archivos `.dll` exactos que obtendrías al compilar desde Visual Studio.
+When you compile for multiple versions (2023 to 2027), Visual Studio reads your `.csproj` file and sends the instructions to **MSBuild** (or the modern **.NET CLI** interface). 
+By running the `dotnet publish` command in the console and specifying the configuration (`Release.R23`, `Release.R24`, etc.), the command reads the `.csproj` and invokes the compiler (Roslyn). The result is the exact same `.dll` files you would get when building from Visual Studio.
 
-## 3. La creación del MSI mediante WiX Toolset
+## 3. MSI Creation via WiX Toolset
 
-El archivo `.msi` no es un formato propio de Visual Studio, sino un instalador nativo de Windows (Windows Installer). Para construirlo a partir de código, se emplea el **WiX Toolset**. 
-Cuando instalas la extensión de WiX en Visual Studio, la interfaz simplemente crea un atajo para invocar a dos programas que ya vienen incluidos en el Toolset de WiX:
+The `.msi` file is not a proprietary Visual Studio format, but a native Windows installer (Windows Installer). To build it from code, the **WiX Toolset** is used. 
+When you install the WiX extension in Visual Studio, the interface simply creates a shortcut to invoke two programs that are already included in the WiX Toolset:
 
-*   **Candle.exe** (El compilador): Lee el código fuente XML (`Product.wxs`) y lo transforma en un archivo objeto (`.wixobj`).
-*   **Light.exe** (El enlazador/linker): Toma el `.wixobj`, recolecta los `.dll` de las carpetas correspondientes, comprime los archivos en un formato `.cab` interno y genera el archivo `.msi` final.
+*   **Candle.exe** (The compiler): Reads the XML source code (`Product.wxs`) and transforms it into an object file (`.wixobj`).
+*   **Light.exe** (The linker): Takes the `.wixobj`, collects the `.dll`s from the corresponding folders, compresses the files into an internal `.cab` format, and generates the final `.msi` file.
 
-Es posible ejecutar estas herramientas directamente desde la consola (por ejemplo, desde `C:\Program Files (x86)\WiX Toolset v3.14\bin\`) obteniendo el mismo `.msi` que generaría Visual Studio.
+It is possible to run these tools directly from the console (for example, from `C:\Program Files (x86)\WiX Toolset v3.14\bin\`) obtaining the same `.msi` that Visual Studio would generate.
 
-## 4. Condiciones de licencia, desinstalación y reparación
+## 4. License, Uninstallation, and Repair Conditions
 
-El comportamiento del instalador no se configura en Visual Studio, sino que reside íntegramente en el código del archivo `Product.wxs`:
+The installer's behavior is not configured in Visual Studio but resides entirely in the code of the `Product.wxs` file:
 
-*   **Licencia (EULA)**: Definida mediante variables de WiX, como `<WixVariable Id="WixUILicenseRtf" Value="Resources\License.rtf" />`. Al pasar por `light.exe`, WiX inyecta automáticamente la pantalla de licencia estándar (ej. `WixUI_Minimal`).
-*   **Desinstalación y Reparación**: Las reglas de cómo el MSI se desinstala de forma limpia sin dejar basura (reglas ICE64 e ICE38) están codificadas en las directivas `<RemoveFolder>` y en las llaves de registro de tu `.wxs`. Windows Installer lee esto desde el `.msi` generado y sabe exactamente qué hacer desde el Panel de Control de Windows.
-*   **Compatibilidad Multi-versión**: Las múltiples carpetas de Revit (2023, 2024...) están organizadas en los `ComponentGroup` dentro del `.wxs`. Al compilarlo, WiX empaqueta automáticamente los DLL adecuados en la ruta correcta.
+*   **License (EULA)**: Defined using WiX variables, such as `<WixVariable Id="WixUILicenseRtf" Value="Resources\License.rtf" />`. When passing through `light.exe`, WiX automatically injects the standard license screen (e.g., `WixUI_Minimal`).
+*   **Uninstallation and Repair**: The rules for how the MSI uninstalls cleanly without leaving garbage (ICE64 and ICE38 rules) are coded in the `<RemoveFolder>` directives and the registry keys of your `.wxs`. Windows Installer reads this from the generated `.msi` and knows exactly what to do from the Windows Control Panel.
+*   **Multi-version Compatibility**: The multiple Revit folders (2023, 2024...) are organized in the `ComponentGroup`s within the `.wxs`. When compiling it, WiX automatically packages the appropriate DLLs into the correct path.
 
-## Resumen y CI/CD
+## Summary and CI/CD
 
-Prescindir de Visual Studio y utilizar la línea de comandos es la base técnica de la **Integración Continua (CI/CD)**. Es el método estándar de la industria (utilizado en plataformas como GitHub Actions o Azure DevOps) para automatizar el proceso de tal modo que, cada vez que se sube un cambio al código, el `.msi` final se compile de manera impecable y lista para producción, sin requerir intervención humana en una interfaz gráfica.
+Dispensing with Visual Studio and using the command line is the technical foundation of **Continuous Integration (CI/CD)**. It is the industry-standard method (used on platforms like GitHub Actions or Azure DevOps) to automate the process so that, every time a change is pushed to the code, the final `.msi` is built flawlessly and ready for production, without requiring human intervention in a graphical interface.

@@ -29,6 +29,7 @@ For deep technical details, consult the following files in the `references/` fol
 - `references/revit_filtered_element_collector.md`: Mandatory guidelines for high-performance element selection, quick filters, and memory-saving iterations.
 - `references/revit_element_relations_and_connectivity.md`: Advanced navigation of element relationships, model groups, assemblies, 3D physical intersection filters, and MEP connector networks connectivity.
 - `references/revit_model_exploration_and_filtering.md`: Advanced querying scopes, safe loadable/system family type resolution, sequential phase sorting, and safe parameter index mining.
+- `references/debugging_wpf_thread_silent_crash_2026-06-23.md`: Debugging silent crashes when invoking strict API methods (like ActiveView or FilteredElementCollector) from WPF Modeless UI threads.
 
 # Agent Execution Flow
 1. When the user asks you to create a new Add-in, your first step MUST be to run `dotnet new revit -n [Name]`.

@@ -1,37 +1,37 @@
-# Configuración y Ejecución del Proyecto de Pruebas
+# Test Project Setup and Execution
 
-Este documento detalla la estructura física recomendada para un proyecto de pruebas unitarias de un add-in de Revit y los comandos para su ejecución automatizada.
+This document details the recommended physical structure for a unit testing project of a Revit add-in and the commands for its automated execution.
 
 ---
 
-## 1. Estructura de Carpetas Recomendada
+## 1. Recommended Folder Structure
 
-Es fundamental separar físicamente el proyecto de código del add-in y su correspondiente suite de pruebas. Sigue este patrón organizativo en el repositorio:
+It is fundamental to physically separate the add-in's code project and its corresponding test suite. Follow this organizational pattern in the repository:
 
 ```
 {{Name}}/
-├── {{Name}}.csproj          # Proyecto principal de la aplicación
+├── {{Name}}.csproj          # Main application project
 └── {{Name}}.Tests/
-    ├── {{Name}}.Tests.csproj # Proyecto de pruebas unitarias
+    ├── {{Name}}.Tests.csproj # Unit testing project
     ├── Services/
-    │   └── WallAnalysisServiceTests.cs # Pruebas unitarias de servicios
+    │   └── WallAnalysisServiceTests.cs # Service unit tests
     └── Helpers/
-        └── UnitHelperTests.cs          # Pruebas unitarias de extensiones/helpers
+        └── UnitHelperTests.cs          # Helper/extension unit tests
 ```
 
 ---
 
-## 2. Comandos de Consola para Ejecución de Pruebas
+## 2. Console Commands for Test Execution
 
-El agente y las herramientas de automatización de CI/CD pueden ejecutar las pruebas mediante los siguientes comandos nativos de la CLI de .NET:
+The agent and CI/CD automation tools can run the tests using the following native .NET CLI commands:
 
 ```powershell
-# 1. Ejecutar todas las pruebas del proyecto
+# 1. Run all tests in the project
 dotnet test {{Name}}.Tests/{{Name}}.Tests.csproj
 
-# 2. Ejecutar pruebas con salida e información detallada
+# 2. Run tests with output and detailed information
 dotnet test --verbosity normal
 
-# 3. Filtrar y ejecutar solo pruebas de una clase específica
+# 3. Filter and run only tests from a specific class
 dotnet test --filter "FullyQualifiedName~WallAnalysisServiceTests"
 ```

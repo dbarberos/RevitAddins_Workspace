@@ -1,36 +1,36 @@
-# Prompt: Andamiaje de Nuevos Comandos en Revit (C# / Python)
+# Prompt: Scaffolding New Commands in Revit (C# / Python)
 
-Este prompt estandariza el flujo secuencial paso a paso para crear un nuevo comando en Revit, ya sea utilizando código compilado C# o un script dinámico de pyRevit.
-
----
-
-## 🎯 Objetivo de la Tarea
-Crear e inyectar un nuevo comando que se integre a la interfaz Ribbon de Revit, aplicando inyección de interfaces para aislamiento del modelo y transacciones seguras.
+This prompt standardizes the step-by-step sequential flow to create a new command in Revit, whether using compiled C# code or a dynamic pyRevit script.
 
 ---
 
-## 🚀 Flujo Secuencial para Comandos C#
+## 🎯 Task Objective
+Create and inject a new command that integrates into the Revit Ribbon interface, applying interface injection for model isolation and safe transactions.
 
-### Paso 1: Definición del Servicio y Contrato (Inyección de Interfaces)
-*   Extrae la firma del método de la API a una interfaz pura en la carpeta `/Services/`:
+---
+
+## 🚀 Sequential Flow for C# Commands
+
+### Step 1: Service Definition and Contract (Interface Injection)
+*   Extract the API method signature to a pure interface in the `/Services/` folder:
     ```csharp
     public interface IMyFeatureService
     {
         IList<MyDataModel> ExecuteQuery();
     }
     ```
-*   Implementa el servicio real consumiendo la API de Revit.
+*   Implement the actual service consuming the Revit API.
 
-### Paso 2: Creación de la Clase Comando C#
-*   Crea un archivo `Cmd[Action][Entity].cs` en la carpeta `Commands/`.
-*   Aplica el atributo de transacciones manuales:
+### Step 2: C# Command Class Creation
+*   Create a `Cmd[Action][Entity].cs` file in the `Commands/` folder.
+*   Apply the manual transaction attribute:
     ```csharp
     [Transaction(TransactionMode.Manual)]
     public class CmdMyAction : IExternalCommand
     {
         private readonly IMyFeatureService _service;
         
-        // Constructor primario o por inyección de dependencias
+        // Primary constructor or via dependency injection
         public CmdMyAction(IMyFeatureService service)
         {
             _service = service;
@@ -38,42 +38,42 @@ Crear e inyectar un nuevo comando que se integre a la interfaz Ribbon de Revit, 
 
         public Result Execute(ExternalCommandData commandData, ref string message, ElementSet elements)
         {
-            // Ejecutar consulta o delegar a servicios
+            // Execute query or delegate to services
             return Result.Succeeded;
         }
     }
     ```
 
-### Paso 3: Enlace al Ribbon UI (`Application.cs`)
-*   Localiza la inicialización de la Ribbon en `OnStartup` de `Application.cs` e inyecta el botón correspondiente referenciando el `FullClassName` de la clase del comando.
+### Step 3: Ribbon UI Linking (`Application.cs`)
+*   Locate the Ribbon initialization in the `OnStartup` method of `Application.cs` and inject the corresponding button referencing the `FullClassName` of the command class.
 
 ---
 
-## 🚀 Flujo Secuencial para Scripts pyRevit (Python)
+## 🚀 Sequential Flow for pyRevit Scripts (Python)
 
-### Paso 1: Configurar la Jerarquía de Carpetas
-*   Crea la carpeta correspondiente bajo la extensión de pyRevit en el disco:
-    `MiModulo.extension > MiPanel.panel > MiAccion.pushbutton`
+### Step 1: Configure the Folder Hierarchy
+*   Create the corresponding folder under the pyRevit extension on disk:
+    `MyModule.extension > MyPanel.panel > MyAction.pushbutton`
 
-### Paso 2: Escribir el Manifiesto de Configuración (`bundle.yaml`)
-*   Crea el archivo `bundle.yaml` con metadatos descriptivos mínimos:
+### Step 2: Write the Configuration Manifest (`bundle.yaml`)
+*   Create the `bundle.yaml` file with minimal descriptive metadata:
     ```yaml
-    title: "Nombre Botón"
-    tooltip: "Breve descripción funcional de la macro al pasar el ratón."
+    title: "Button Name"
+    tooltip: "Brief functional description of the macro when hovering."
     ```
 
-### Paso 3: Escribir el Archivo de Lógica (`script.py`)
-*   Crea el archivo `script.py` inyectando la inicialización del contexto y el wrapper de transacciones de pyRevit:
+### Step 3: Write the Logic File (`script.py`)
+*   Create the `script.py` file injecting the pyRevit context initialization and transaction wrapper:
     ```python
     # -*- coding: utf-8 -*-
     from pyrevit import revit, DB, UI
     from pyrevit import forms
 
-    # Recuperar sesión activa
+    # Retrieve active session
     doc = revit.doc
 
-    # Envolver ejecuciones de escritura en transacciones nativas
-    with revit.Transaction("Nombre Acción"):
-        # Tu lógica de manipulación del modelo de Revit aquí
+    # Wrap write executions in native transactions
+    with revit.Transaction("Action Name"):
+        # Your Revit model manipulation logic here
         pass
     ```

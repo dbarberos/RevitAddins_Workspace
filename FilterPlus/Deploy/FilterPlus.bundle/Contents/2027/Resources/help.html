@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>FilterPlus User Guide</title>
+<style>
+body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 20px; line-height: 1.6; color: #333; max-width: 900px; margin: auto; }
+h1, h2, h3 { color: #005A9C; }
+code { background-color: #f4f4f4; padding: 2px 5px; border-radius: 3px; font-family: Consolas, monospace; }
+table { border-collapse: collapse; width: 100%; margin-bottom: 20px; }
+th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+th { background-color: #f2f2f2; }
+.alert { padding: 15px; margin-bottom: 20px; border: 1px solid transparent; border-radius: 4px; }
+.alert-warning { background-color: #fcf8e3; border-color: #faebcc; color: #8a6d3b; }
+.alert-info { background-color: #d9edf7; border-color: #bce8f1; color: #31708f; }
+</style>
+</head>
+<body>
+
+<h1>FilterPlus</h1>
+<p><strong>Current Version:</strong> v1.2.0<br/>
+<strong>Add-in ID (GUID):</strong> <code>A5265BB9-214C-4109-8DDC-DF1F6E4305B9</code></p>
+<hr>
+
+<h2>1. Overview</h2>
+<p><strong>FilterPlus</strong> is an advanced selection and filtering add-in for Autodesk Revit designed to overcome the limitations of the native project browser. It allows for the massive, asynchronous collection of elements, visualizing them in a virtualized Category/Family/Type/Instance tree, and refining selections through dynamic rules (Intersections, Group membership, View visibility) without freezing the UI.</p>
+<hr>
+
+<h2>2. Requirements and Compatibility</h2>
+<div class="alert alert-warning">
+<strong>WARNING:</strong> This add-in is compiled for multiple versions using the <code>Debug.R[XX]</code> and <code>Release.R[XX]</code> configurations.
+</div>
+<ul>
+<li><strong>Platform</strong>: .NET Framework 4.8 (Revit 2023, 2024) / .NET 8 (Revit 2025+).</li>
+<li><strong>Supported Revit Versions</strong>: 2023, 2024, 2025, 2026, 2027.</li>
+</ul>
+<hr>
+
+<h2>3. Installation & Uninstallation</h2>
+<p>The installer that ran when you downloaded this plug-in from the Autodesk App Store has already installed the plug-in. You may need to restart the Autodesk product to activate the plug-in.</p>
+<p>To uninstall this plug-in, exit the Autodesk product if you are currently running it, simply rerun the installer by downloading it again from the Autodesk App Store, and select the 'Uninstall' button, or you can uninstall it from 'Control Panel\Programs\Programs and Features' (Windows 10/11), just as you would uninstall any other application from your system.</p>
+<hr>
+
+<h2>4. Commands and Features Guide</h2>
+<h3>4.1. Ribbon Panel Integration</h3>
+<p>The add-in creates a custom tab containing the FilterPlus panel.</p>
+<table>
+<tr><th>Command</th><th>Function</th><th>Technical Class</th></tr>
+<tr><td><strong>FilterPlus</strong></td><td>Opens the main window for hierarchical selection and filtering.</td><td><code>FilterPlus.Application</code></td></tr>
+<tr><td><strong>(Context Menu)</strong></td><td>In Revit 2025+, FilterPlus integrates into the right-click menu for instant filtering.</td><td><code>FilterPlus.ViewModels.SelectionFilterViewModel</code></td></tr>
+</table>
+<hr>
+
+<h2>5. Comprehensive Usage Guide</h2>
+
+<h3>FilterPlus Hierarchical Explorer</h3>
+<p>The main FilterPlus application allows you to filter and navigate elements in your active selection or project. It constructs a dynamic hierarchical tree-view categorized by <strong>Category &gt; Family &gt; Type &gt; Instance (Element ID)</strong>. Unlike standard flat selection filters, it displays element counts at each level and allows you to select, check, or uncheck elements interactively, immediately synchronizing your choices with the active Revit selection.</p>
+
+<h3>Pre-Filtering (Dropdown Filters)</h3>
+<p>Filter and narrow down elements before selecting or displaying them. Dropdown controls at the top of the interface let you pre-filter elements based on:</p>
+<ul>
+<li><strong>Category</strong></li>
+<li><strong>Family</strong></li>
+<li><strong>Type</strong></li>
+<li><strong>Level</strong></li>
+<li><strong>Workset</strong></li>
+</ul>
+<p>By default, selecting "Todos" (All) displays all elements, while choosing a specific value isolates those elements within the tree structure.</p>
+
+<h3>Semantic Grouping & Sorting</h3>
+<p>You can dynamically restructure the explorer's hierarchy by grouping elements semantically. Toggle the grouping options on/off to sort elements by:</p>
+<ul>
+<li><strong>Phase</strong></li>
+<li><strong>Level</strong></li>
+<li><strong>Workset</strong></li>
+</ul>
+
+<h3>Element Scope Filters</h3>
+<p>Toggles at the top let you filter the active scope on the fly (Mutual exclusion logic):</p>
+<ul>
+<li><strong>3D Model Elements only</strong>: Hides 2D views, annotations, and system elements.</li>
+<li><strong>Annotation Elements only</strong>: Isolates text, dimensions, and detail items.</li>
+<li><strong>Has Bounding Box only</strong>: Filters elements to show only those possessing valid geometric boundaries.</li>
+</ul>
+
+<h3>Text Search & Regex System</h3>
+<p>Locate elements quickly by typing keywords in the search bar. You must click <strong>Apply</strong> to execute the search, which allows you to set the parameters calmly:</p>
+<ul>
+<li><strong>Search only by name</strong>: Limits matches strictly to element name strings.</li>
+<li><strong>Use Regex</strong>: Enables advanced Regular Expression pattern matching.</li>
+<li><strong>Use OR Logic</strong>: If active, new search matches are appended to the currently checked elements. If inactive (default), a new search resets the checks to only matching items.</li>
+</ul>
+
+<h3>Increase Checked (Expand Selection)</h3>
+<p>Expand your current selection based on advanced relational and geometric rules. You can toggle checkboxes under the "Increase Checked" section to find:</p>
+<ul>
+<li><strong>Same Category / Same Family / Same Type / Same Workset / Same MEP System</strong></li>
+<li><strong>Host of Element / Hosted Elements</strong></li>
+<li><strong>Nested Elements / Supercomponents</strong></li>
+<li><strong>Joined Elements / Intersecting Elements</strong></li>
+<li><strong>Group of Assembly</strong></li>
+<li><strong>Dependent Elements</strong></li>
+</ul>
+
+<h4>Expansion Constraints:</h4>
+<ul>
+<li><strong>Search Range (WHERE)</strong>: Limit expansion to the <strong>Entire Model</strong>, the <strong>Current View</strong>, or <strong>Visible in current view</strong>.</li>
+<li><strong>Result Output (HOW)</strong>: Choose to either <strong>Add to Current Selection</strong> or <strong>Select Only New Elements</strong>.</li>
+<li><strong>Exclusions (Unselect Elements If)</strong>: Automatically unselect/exclude elements that belong to Groups or Assemblies to prevent editing locked objects.</li>
+</ul>
+
+<div class="alert alert-info">
+<strong>TIP - Standalone Purge Mode:</strong> You do not need to check any "WHAT" rules to use the exclusion tool. If you want to clean your current selection to remove grouped items, simply check "Belongs to Group" and hit Apply. The system performs a global purge.
+</div>
+
+<h3>Interactive Element Picking (Pick in Revit)</h3>
+<p>Click the Pick Elements button to temporarily hide the FilterPlus window and select objects directly in the Revit viewport. Once selection is complete, the window automatically reappears, and the new elements are loaded into the tree view and checked.</p>
+<hr>
+
+<h2>6. Version History (Changelog)</h2>
+<h3>v1.2.0 - 2026-06-23</h3>
+<h4>Added</h4>
+<ul>
+<li><strong>"Visible in current view"</strong> scope in the WHERE section, providing an optimized filter for strictly visible items.</li>
+<li>Full support for WiX MSIs configured for Revit 2023–2027 under <code>DBDev_dbarberos</code>.</li>
+</ul>
+<h4>Changed</h4>
+<ul>
+<li><strong>Global Purge System:</strong> The "Unselect Elements If" exclusions now act upon the entire unified selection.</li>
+<li>Persistent selections (<code>_persistentCheckedIds</code>) are now safely merged and carried over when switching viewing scopes.</li>
+</ul>
+<h4>Fixed</h4>
+<ul>
+<li>Fixed the silent failure of the <strong>Apply</strong> button when triggering "Increase Checked" on "All Model" with an empty initial selection.</li>
+<li>New elements identified by the expansion logic are now correctly injected and immediately displayed in the UI tree.</li>
+<li>Resolved a critical UI freeze and infinite recursion issue during massive tree updates by properly suspending tree selection events (<code>IsBulkUpdating</code>) when applying expansion rules.</li>
+</ul>
+<hr>
+
+<h2>7. Support and Contact</h2>
+<p>For bug reports, feature requests, or commercial support, please contact:</p>
+<ul>
+<li><strong>Developer / Company</strong>: DBDev_dbarberos / DBDev Solutions</li>
+<li><strong>Support</strong>: dbarberos@outlook.com</li>
+</ul>
+
+</body>
+</html>

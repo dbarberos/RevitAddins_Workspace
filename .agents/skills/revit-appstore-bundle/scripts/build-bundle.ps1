@@ -16,11 +16,26 @@ $AssetsDir = Join-Path $ProjectDir "..\.agents\skills\revit-appstore-bundle\asse
 
 Write-Host "Building Autodesk App Store Bundle for $AppName v$Version..."
 
-# Clean previous
-if (Test-Path $DeployDir) {
-    Remove-Item -Path $DeployDir -Recurse -Force
+# Prepare Deploy and Archive directories
+if (-not (Test-Path $DeployDir)) {
+    New-Item -ItemType Directory -Path $DeployDir | Out-Null
 }
-New-Item -ItemType Directory -Path $DeployDir | Out-Null
+$ArchiveDir = Join-Path $DeployDir "Archive"
+if (-not (Test-Path $ArchiveDir)) {
+    New-Item -ItemType Directory -Path $ArchiveDir | Out-Null
+}
+
+# Archive any older zip files found in Deploy
+$OldZips = Get-ChildItem -Path $DeployDir -Filter "*.zip"
+foreach ($zip in $OldZips) {
+    # We move it to archive if it's not the one we are about to create
+    Move-Item -Path $zip.FullName -Destination $ArchiveDir -Force
+}
+
+# Clean ONLY the temporary staging bundle folder, not the whole Deploy dir
+if (Test-Path $BundlePath) {
+    Remove-Item -Path $BundlePath -Recurse -Force
+}
 New-Item -ItemType Directory -Path $BundlePath | Out-Null
 
 # Create basic Contents folder
@@ -73,6 +88,14 @@ foreach ($vDir in $VersionDirs) {
     
     # Copy all files from publish
     Copy-Item -Path "$PublishDir\*" -Destination $TargetVersionDir -Recurse -Force
+
+    # Ensure help.html is included in the version's Resources folder for Contextual Help
+    $TargetResourcesDir = Join-Path $TargetVersionDir "Resources"
+    if (-not (Test-Path $TargetResourcesDir)) { New-Item -ItemType Directory -Path $TargetResourcesDir | Out-Null }
+    $HelpSrc = Join-Path $ProjectDir "Resources\help.html"
+    if (Test-Path $HelpSrc) {
+        Copy-Item -Path $HelpSrc -Destination $TargetResourcesDir -Force
+    }
 
     # If the addin is in the version folder, move it to the correct path or leave it?
     # Actually, Autodesk requires the addin file inside the bundle.
@@ -141,9 +164,20 @@ if (Test-Path $ZipPath) { Remove-Item $ZipPath -Force }
 Write-Host "Waiting a moment to release file locks..."
 Start-Sleep -Seconds 3
 
-Write-Host "Zipping bundle..."
+# Temporarily move PackageContents.xml out of the bundle so it's not in the ZIP (Autodesk Store rule)
+$XmlTempPath = Join-Path $DeployDir "PackageContents.xml"
+if (Test-Path $XmlTargetPath) {
+    Move-Item -Path $XmlTargetPath -Destination $XmlTempPath -Force
+}
+
+Write-Host "Zipping bundle (without PackageContents.xml for App Store)..."
 Add-Type -AssemblyName System.IO.Compression.FileSystem
 [System.IO.Compression.ZipFile]::CreateFromDirectory($BundlePath, $ZipPath)
+
+# Move PackageContents.xml back so local testing still works
+if (Test-Path $XmlTempPath) {
+    Move-Item -Path $XmlTempPath -Destination $XmlTargetPath -Force
+}
 
 Write-Host "Bundle ZIP created at: $ZipPath"
 Write-Host "Done!"
