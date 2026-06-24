@@ -237,6 +237,8 @@
                 <RowDefinition Height="Auto"/> <!-- Filter Card -->
                 <RowDefinition Height="Auto"/> <!-- Select Card -->
                 <RowDefinition Height="Auto"/> <!-- Add Checked Card -->
+                <RowDefinition Height="Auto"/> <!-- PreSelection Card 1 -->
+                <RowDefinition Height="Auto"/> <!-- PreSelection Card 2 -->
             </Grid.RowDefinitions>
 
             <!-- Card de Filtro -->
@@ -383,6 +385,39 @@
                     </Button>
                 </Grid>
             </Border>
+
+            <!-- Card 1 de PreSelection (Feature 1) -->
+            <Border Grid.Row="3" Background="White" CornerRadius="8" Padding="15,10" Margin="0,0,0,10" BorderBrush="#e8e8e8" BorderThickness="1">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    
+                    <TextBlock Grid.Row="0" Text="Saved Selections" FontWeight="500" Margin="0,0,0,10" Foreground="#333" FontSize="13"/>
+
+                    <Grid Grid.Row="1">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        
+                        <ComboBox Grid.Column="0" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                        
+                        <Button Grid.Column="1" Content="Apply" VerticalAlignment="Center" Padding="12,3" Background="#007ACC" Foreground="White" BorderThickness="0" Cursor="Hand">
+                            <Button.Resources>
+                                <Style TargetType="Border">
+                                    <Setter Property="CornerRadius" Value="4"/>
+                                </Style>
+                            </Button.Resources>
+                        </Button>
+                    </Grid>
+                </Grid>
+            </Border>
+
+            <!-- Feature 2: Pre-Selection Button -->
+            <Button Grid.Row="4" Content="Pre-Selection" HorizontalAlignment="Left" Margin="0,0,0,10" Height="30" Padding="15,0" Cursor="Hand"/>
+
         </Grid>
 
         <!-- Pestaña Inferior de Estado/Aplicar -->
