@@ -9,6 +9,10 @@
         
         <Package InstallerVersion="200" Compressed="yes" InstallScope="perUser" />
         <MajorUpgrade DowngradeErrorMessage="A newer version of [ProductName] is already installed." />
+        
+        <Icon Id="AppIcon.ico" SourceFile="Resources\AppIcon.ico" />
+        <Property Id="ARPPRODUCTICON" Value="AppIcon.ico" />
+
         <MediaTemplate EmbedCab="yes" />
 
         <UIRef Id="WixUI_Minimal" />
