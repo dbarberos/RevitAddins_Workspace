@@ -395,16 +395,25 @@
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
-                        
-                        <ComboBox Grid.Column="0" VerticalAlignment="Center" Padding="2" BorderBrush="#e0e0e0" BorderThickness="1"/>
-                        
-                        <Button Grid.Column="1" Content="Apply" Margin="10,0,0,0" VerticalAlignment="Center" Padding="12,3" Background="#007ACC" Foreground="White" BorderThickness="0" Cursor="Hand">
-                            <Button.Resources>
-                                <Style TargetType="Border">
-                                    <Setter Property="CornerRadius" Value="4"/>
-                                </Style>
-                            </Button.Resources>
-                        </Button>
+
+                        <ComboBox Grid.Column="0" VerticalAlignment="Top" Padding="2" BorderBrush="#e0e0e0" BorderThickness="1" Margin="0,0,10,0"/>
+
+                        <StackPanel Grid.Column="1" VerticalAlignment="Top" HorizontalAlignment="Right">
+                            <Button Content="Save" Margin="0,0,0,5" Padding="12,3" Background="#007ACC" Foreground="White" BorderThickness="0" Cursor="Hand">
+                                <Button.Resources>
+                                    <Style TargetType="Border">
+                                        <Setter Property="CornerRadius" Value="4"/>
+                                    </Style>
+                                </Button.Resources>
+                            </Button>
+                            <Button Content="Apply" Margin="0,0,0,0" Padding="12,3" Background="#007ACC" Foreground="White" BorderThickness="0" Cursor="Hand">
+                                <Button.Resources>
+                                    <Style TargetType="Border">
+                                        <Setter Property="CornerRadius" Value="4"/>
+                                    </Style>
+                                </Button.Resources>
+                            </Button>
+                        </StackPanel>
                     </Grid>
                 </StackPanel>
             </Border>
