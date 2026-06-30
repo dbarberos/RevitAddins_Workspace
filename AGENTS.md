@@ -144,6 +144,7 @@ The agent has modular skills organized under `.agents/skills/`:
 | `revit-api` | `.agents/skills/revit-api/` | API Rules: threading, transactions, TreeView, ForgeTypeId. |
 | `revit-addin-helpers` | `.agents/skills/revit-addin-helpers/` | C# / Python helpers and extensions ready to copy. |
 | `revit-addin-testing` | `.agents/skills/revit-addin-testing/` | xUnit testing strategies, Moq, and interface injection. |
+| `revit-private-nuget-feed` | `.agents/skills/revit-private-nuget-feed/` | Private NuGet Feed: extract official Revit DLLs, build private NuGet feeds, configure nuget.config, version pinning, and CI/CD caching. |
 | `revit-addin-doc-manager` | `.agents/skills/revit-addin-doc-manager/` | Autonomous management of guides and Git changelogs. |
 | `revit-addin-icon-manager` | `.agents/skills/revit-addin-icon-manager/` | Icon integration, pack:// URIs, and .csproj. |
 | `revit-addin-installer-manager` | `.agents/skills/revit-addin-installer-manager/` | MSI installer compilation using WiX Toolset. |

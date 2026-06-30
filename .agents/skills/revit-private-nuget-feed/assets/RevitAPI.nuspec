@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2012/06/nuspec.xsd">
+  <metadata>
+    <id>Autodesk.Revit.API</id>
+    <version>2024.2.0</version>
+    <title>Autodesk Revit API Base Assemblies</title>
+    <authors>Autodesk</authors>
+    <owners>Autodesk</owners>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <description>Private NuGet package containing official Autodesk Revit API core assemblies (RevitAPI.dll, RevitAPIUI.dll, AdWindows.dll) for multi-version compilation.</description>
+    <copyright>Copyright © Autodesk</copyright>
+    <tags>Revit RevitAPI Autodesk BIM</tags>
+    <dependencies>
+      <!-- No external dependencies -->
+    </dependencies>
+  </metadata>
+  <files>
+    <!-- target lib/net48 for Revit 2019-2024 -->
+    <file src="lib/net48/RevitAPI.dll" target="lib/net48/RevitAPI.dll" />
+    <file src="lib/net48/RevitAPIUI.dll" target="lib/net48/RevitAPIUI.dll" />
+    <file src="lib/net48/AdWindows.dll" target="lib/net48/AdWindows.dll" />
+
+    <!-- target lib/net8.0 for Revit 2025+ -->
+    <file src="lib/net8.0/RevitAPI.dll" target="lib/net8.0/RevitAPI.dll" />
+    <file src="lib/net8.0/RevitAPIUI.dll" target="lib/net8.0/RevitAPIUI.dll" />
+    <file src="lib/net8.0/AdWindows.dll" target="lib/net8.0/AdWindows.dll" />
+  </files>
+</package>
