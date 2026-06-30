@@ -114,8 +114,24 @@ The agent acts as a polyglot architect and developer specialized in the Revit AP
   ├───────────────────────────────┤     ├───────────────────────────────┤
   │ 5. COMPILATION & VALIDATION   │     │ 5. ENVIRONMENT RELOAD         │
   │    dotnet build               │     │    pyRevit reload and test    │
-  └───────────────────────────────┘     └───────────────────────────────┘
+  └───────────────┬───────────────┘     └───────────────┬───────────────┘
+                  │                                     │
+                  └──────────────────┬──────────────────┘
+                                     ▼
+                      ┌───────────────────────────────┐
+                      │ 6. SECURITY AUDIT & HARDENING │
+                      │    (security-engineer Skill)  │
+                      └───────────────────────────────┘
 ```
+
+### 6. Security Audit & Hardening (Final Quality Gate)
+Before completing any task or feature implementation, the agent **must** perform a security review over the modified code using the rules from the `security-engineer` skill. Do not wait for explicit user requests to run this. Key tasks include:
+- **Zero-Trust File Access**: Sanitize file paths using custom validators to prevent Path Traversal (`../`).
+- **Secrets Encryption**: Avoid plain-text API keys or DB credentials; encrypt local config files with DPAPI (`System.Security.Cryptography.ProtectedData`).
+- **Input Validation**: Enforce validation rules on all user-facing inputs in WPF/TaskDialogs (e.g. using FluentValidation/Regex) to prevent injection and XXE.
+- **Safe Serialization**: Disable `TypeNameHandling` in Newtonsoft.Json or use `System.Text.Json` to prevent Remote Code Execution (RCE).
+- **Exception Logs**: Do not leak raw StackTraces to Revit TaskDialogs; wrap them in safe catch-loggers.
+- **Revit Transaction Safety**: Ensure all transactions are wrapped in `using` blocks to prevent database corruption.
 
 ---
 
@@ -134,6 +150,7 @@ The agent has modular skills organized under `.agents/skills/`:
 | `revit-pyrevit-python` | `.agents/skills/revit-pyrevit-python/` | Extension development, Ribbon UI, and pyRevit forms. |
 | `revit-rps-python` | `.agents/skills/revit-rps-python/` | Prototyping and fast execution in the RPS interactive console. |
 | `csharp-blueprints` | `.agents/skills/csharp-blueprints/` | WPF/MVVM architectural blueprints and memory. |
+| `security-engineer` | `.agents/skills/security-engineer/` | Secure Coding: DPAPI encryption, sanitization, serialization safety, input validation, secure transactions. |
 | `workspace-ops` | `.agents/skills/workspace-ops/` | Frontmatter validation pipeline and lockfile compilation. |
 
 ---
