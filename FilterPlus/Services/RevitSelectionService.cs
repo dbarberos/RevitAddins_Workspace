@@ -207,6 +207,130 @@ public class RevitSelectionService
             // Ignorar errores de lectura puntuales
         }
 
+        // System and Domain detection
+        string systemName = "N/A";
+        string systemClassification = "N/A";
+        string mepDomain = "N/A";
+        
+        try
+        {
+            var sysParam = el.get_Parameter(BuiltInParameter.RBS_SYSTEM_NAME_PARAM);
+            if (sysParam != null && sysParam.HasValue)
+            {
+                systemName = sysParam.AsString();
+            }
+
+            ConnectorManager cm = null;
+            if (el is FamilyInstance fi2 && fi2.MEPModel != null)
+            {
+                cm = fi2.MEPModel.ConnectorManager;
+            }
+            else if (el is MEPCurve mepCurve)
+            {
+                cm = mepCurve.ConnectorManager;
+            }
+
+            if (cm != null)
+            {
+                foreach (Connector conn in cm.Connectors)
+                {
+                    if (conn.MEPSystem != null)
+                    {
+                        if (string.IsNullOrEmpty(systemName) || systemName == "N/A") 
+                            systemName = conn.MEPSystem.Name;
+                            
+                        var sysType = _doc.GetElement(conn.MEPSystem.GetTypeId()) as MEPSystemType;
+                        if (sysType != null)
+                        {
+                            systemClassification = sysType.SystemClassification.ToString();
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+        catch
+        {
+            // Ignore system retrieval issues
+        }
+        
+        // Compute MEP Domain
+        if (el.Category != null)
+        {
+            string catLower = el.Category.Name.ToLowerInvariant();
+            if (catLower.Contains("duct") || catLower.Contains("air") || catLower.Contains("mechanical") || catLower.Contains("terminal"))
+            {
+                mepDomain = "Mechanical";
+            }
+            else if (catLower.Contains("pipe") || catLower.Contains("plumbing") || catLower.Contains("sprinkler"))
+            {
+                mepDomain = "Piping";
+            }
+            else if (catLower.Contains("fitting"))
+            {
+                if (catLower.Contains("pipe")) mepDomain = "Piping";
+                else if (catLower.Contains("duct")) mepDomain = "Mechanical";
+            }
+            else if (catLower.Contains("electrical") || catLower.Contains("lighting") || catLower.Contains("cable tray") || catLower.Contains("conduit") || catLower.Contains("wire") || catLower.Contains("switch"))
+            {
+                mepDomain = "Electrical";
+            }
+        }
+        
+        if (mepDomain == "N/A" && systemClassification != "N/A")
+        {
+            string sysClassLower = systemClassification.ToLowerInvariant();
+            if (sysClassLower.Contains("air") || sysClassLower.Contains("exhaust") || sysClassLower.Contains("supply") || sysClassLower.Contains("return"))
+                mepDomain = "Mechanical";
+            else if (sysClassLower.Contains("water") || sysClassLower.Contains("sanitary") || sysClassLower.Contains("hydronic") || sysClassLower.Contains("fire") || sysClassLower.Contains("otherpipe"))
+                mepDomain = "Piping";
+        }
+
+        // Zone detection
+        string zoneName = "N/A";
+        try
+        {
+            if (el is Autodesk.Revit.DB.Mechanical.Space space)
+            {
+                if (space.Zone != null) zoneName = space.Zone.Name;
+            }
+            else if (el is FamilyInstance fi3)
+            {
+                Phase activePhase = null;
+                var viewPhaseParam = _doc.ActiveView.get_Parameter(BuiltInParameter.VIEW_PHASE);
+                if (viewPhaseParam != null && viewPhaseParam.HasValue)
+                {
+                    var pId = viewPhaseParam.AsElementId();
+                    if (pId != ElementId.InvalidElementId)
+                        activePhase = _doc.GetElement(pId) as Phase;
+                }
+                
+                if (activePhase == null)
+                {
+                    activePhase = _doc.Phases.Cast<Phase>().LastOrDefault();
+                }
+
+                Autodesk.Revit.DB.Mechanical.Space sp = null;
+                if (activePhase != null)
+                {
+                    try { sp = fi3.get_Space(activePhase); } catch {}
+                }
+                if (sp == null)
+                {
+                    sp = fi3.Space;
+                }
+                
+                if (sp != null && sp.Zone != null)
+                {
+                    zoneName = sp.Zone.Name;
+                }
+            }
+        }
+        catch
+        {
+            // Ignore zone retrieval issues
+        }
+
         return new ElementModel
         {
             Id = el.Id,
@@ -215,6 +339,10 @@ public class RevitSelectionService
             TypeName = typeName,
             LevelName = levelName,
             WorksetName = worksetName,
+            SystemName = systemName,
+            SystemClassification = systemClassification,
+            MepDomain = mepDomain,
+            ZoneName = zoneName,
             IsModelElement = el.Category?.CategoryType == CategoryType.Model,
             IsAnnotation = el.Category?.CategoryType == CategoryType.Annotation,
             HasBoundingBox = el.get_BoundingBox(null) != null,

@@ -193,6 +193,76 @@ public partial class SelectionFilterViewModel : ObservableObject
         configView.ShowDialog();
     }
 
+    public List<ElementModel> AllModelElements => _allModelElements;
+    public List<ElementModel> ElementsVisibleInView => _elementsVisibleInViewElements;
+    public List<ElementModel> ElementsBelongingToView => _elementsBelongingToViewElements;
+
+    public List<ElementModel> GetActiveModelElements()
+    {
+        return _allModelElements
+            .Concat(_elementsVisibleInViewElements)
+            .Concat(_elementsBelongingToViewElements)
+            .Concat(_currentSelectionElements)
+            .GroupBy(e => e.Id)
+            .Select(g => g.First())
+            .ToList();
+    }
+
+    [RelayCommand]
+    private void OpenPreSelection()
+    {
+        try
+        {
+            LoggerService.LogInfo("Opening Pre-Selection window...");
+            Views.PreSelectionView preSelView = null;
+            var viewModel = new PreSelectionViewModel(this, () => preSelView?.Close());
+            
+            preSelView = new Views.PreSelectionView(viewModel);
+            
+            if (System.Windows.Application.Current != null)
+            {
+                var owner = System.Windows.Application.Current.Windows
+                    .OfType<System.Windows.Window>()
+                    .FirstOrDefault(w => w is Views.SelectionFilterView);
+                if (owner != null)
+                {
+                    preSelView.Owner = owner;
+                }
+            }
+            
+            LoggerService.LogInfo("Showing Pre-Selection dialog...");
+            preSelView.ShowDialog();
+        }
+        catch (Exception ex)
+        {
+            LoggerService.LogError("OpenPreSelection Command Error", ex);
+        }
+    }
+
+    public void ApplyPreSelection(HashSet<Autodesk.Revit.DB.ElementId> matchingIds, SelectionScope targetScope)
+    {
+        try
+        {
+            LoggerService.LogInfo($"[ApplyPreSelection] Applying matching IDs: {matchingIds.Count} on scope: {targetScope}");
+
+            _persistentCheckedIds = matchingIds;
+            CheckedElementsCount = _persistentCheckedIds.Count;
+
+            if (CurrentScope == targetScope)
+            {
+                BuildTree();
+            }
+            else
+            {
+                CurrentScope = targetScope;
+            }
+        }
+        catch (Exception ex)
+        {
+            LoggerService.LogError("ApplyPreSelection", ex);
+        }
+    }
+
     private bool _isRestoringState = false;
     private bool _isInitializing = false;
     private int _lastExpandedDepth = 0;

@@ -11,6 +11,11 @@ public class ElementModel
     public string LevelName { get; set; }
     public string WorksetName { get; set; }
     
+    public string SystemName { get; set; }
+    public string SystemClassification { get; set; }
+    public string MepDomain { get; set; }
+    public string ZoneName { get; set; }
+    
     // Metadata for advanced filtering
     public bool IsModelElement { get; set; }
     public bool IsAnnotation { get; set; }

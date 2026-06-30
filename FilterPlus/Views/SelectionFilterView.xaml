@@ -399,14 +399,14 @@
                         <ComboBox Grid.Column="0" VerticalAlignment="Top" Padding="2" BorderBrush="#e0e0e0" BorderThickness="1" Margin="0,0,10,0"/>
 
                         <StackPanel Grid.Column="1" VerticalAlignment="Top" HorizontalAlignment="Right">
-                            <Button Content="Save" Margin="0,0,0,5" Padding="12,3" Background="#007ACC" Foreground="White" BorderThickness="0" Cursor="Hand">
+                            <Button Content="Apply" Margin="0,0,0,5" Padding="12,3" Background="#007ACC" Foreground="White" BorderThickness="0" Cursor="Hand">
                                 <Button.Resources>
                                     <Style TargetType="Border">
                                         <Setter Property="CornerRadius" Value="4"/>
                                     </Style>
                                 </Button.Resources>
                             </Button>
-                            <Button Content="Apply" Margin="0,0,0,0" Padding="12,3" Background="#007ACC" Foreground="White" BorderThickness="0" Cursor="Hand">
+                            <Button Content="Save" Margin="0,0,0,0" Padding="12,3" Background="#007ACC" Foreground="White" BorderThickness="0" Cursor="Hand">
                                 <Button.Resources>
                                     <Style TargetType="Border">
                                         <Setter Property="CornerRadius" Value="4"/>
@@ -452,7 +452,7 @@
                     </Border>
                 </StackPanel>
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Bottom">
-                    <Button Content="Pre-Selection" Margin="0,0,5,0" Height="30" Padding="15,0" Cursor="Hand"/>
+                    <Button Content="Pre-Selection" Command="{Binding OpenPreSelectionCommand}" Margin="0,0,5,0" Height="30" Padding="15,0" Cursor="Hand"/>
                     <Button Content="Select in Revit" Command="{Binding PickElementsCommand}" Margin="0,0,5,0" Height="30" Cursor="Hand"/>
                     <Button Content="Clear" Command="{Binding ClearFiltersCommand}" Width="80" Margin="0,0,5,0" Height="30"/>
                     <Button Content="Apply Selection" Command="{Binding ApplyFilterCommand}" Width="120" Height="30" Background="#007ACC" Foreground="White" FontWeight="Bold" Margin="0"/>

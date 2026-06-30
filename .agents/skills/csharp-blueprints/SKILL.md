@@ -21,6 +21,9 @@ This directory contains the "technical memory" of the most complex C# components
 - [guide_visible_in_view_scope_filter_2026-06-22](references/guide_visible_in_view_scope_filter_2026-06-22.md): Pattern for adding a "Visible in current view" WHERE scope using the two-argument `FilteredElementCollector(doc, viewId)` overload.
 - [guide_unselect_elements_purge_pattern_2026-06-22](references/guide_unselect_elements_purge_pattern_2026-06-22.md): Design pattern for applying exclusion rules (group/assembly membership) as a global purge AFTER unification — enabling standalone purge mode with no WHAT rules.
 - [debugging_increase_checked_infinite_recursion_2026-06-24](references/debugging_increase_checked_infinite_recursion_2026-06-24.md): Root cause analysis for UI freezing during bulk selection updates due to missing `TreeItemViewModel.IsBulkUpdating` flag during external event execution.
+- [design_preselection_rules_builder_2026-06-26](references/design_preselection_rules_builder_2026-06-26.md): Architecture of the recursive Pre-Selection Rules Builder, dynamic observable sorting, and custom WPF vector UI emojis.
+- [debugging_preselection_apply_explorer_not_updating_2026-06-26](references/debugging_preselection_apply_explorer_not_updating_2026-06-26.md): Root cause analysis for Pre-Selection Apply button not updating the explorer tree due to bulk update locks and scope change events redundancy.
+
 
 ## 🔧 Assets (Reusable Code)
 
