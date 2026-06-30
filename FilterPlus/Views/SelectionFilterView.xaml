@@ -455,7 +455,19 @@
                     <Button Content="Pre-Selection" Command="{Binding OpenPreSelectionCommand}" Margin="0,0,5,0" Height="30" Padding="15,0" Cursor="Hand"/>
                     <Button Content="Select in Revit" Command="{Binding PickElementsCommand}" Margin="0,0,5,0" Height="30" Cursor="Hand"/>
                     <Button Content="Clear" Command="{Binding ClearFiltersCommand}" Width="80" Margin="0,0,5,0" Height="30"/>
-                    <Button Content="Apply Selection" Command="{Binding ApplyFilterCommand}" Width="120" Height="30" Background="#007ACC" Foreground="White" FontWeight="Bold" Margin="0"/>
+                    <Button Content="Apply Selection" Command="{Binding ApplyFilterCommand}" Width="120" Height="30" Margin="0">
+                        <Button.Style>
+                            <Style TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsSelectionDirty}" Value="True">
+                                        <Setter Property="Background" Value="#007ACC"/>
+                                        <Setter Property="Foreground" Value="White"/>
+                                        <Setter Property="FontWeight" Value="Bold"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Button.Style>
+                    </Button>
                 </StackPanel>
             </Grid>
         </Border>

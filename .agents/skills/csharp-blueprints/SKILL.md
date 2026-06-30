@@ -23,6 +23,7 @@ This directory contains the "technical memory" of the most complex C# components
 - [debugging_increase_checked_infinite_recursion_2026-06-24](references/debugging_increase_checked_infinite_recursion_2026-06-24.md): Root cause analysis for UI freezing during bulk selection updates due to missing `TreeItemViewModel.IsBulkUpdating` flag during external event execution.
 - [design_preselection_rules_builder_2026-06-26](references/design_preselection_rules_builder_2026-06-26.md): Architecture of the recursive Pre-Selection Rules Builder, dynamic observable sorting, and custom WPF vector UI emojis.
 - [debugging_preselection_apply_explorer_not_updating_2026-06-26](references/debugging_preselection_apply_explorer_not_updating_2026-06-26.md): Root cause analysis for Pre-Selection Apply button not updating the explorer tree due to bulk update locks and scope change events redundancy.
+- [debugging_wpf_isbulkupdating_scope_block_2026-06-30](references/debugging_wpf_isbulkupdating_scope_block_2026-06-30.md): Root cause analysis for UI TreeView failing to rebuild upon scope change due to an overly broad early exit check on `IsBulkUpdating` flag.
 
 
 ## 🔧 Assets (Reusable Code)

@@ -82,6 +82,8 @@ public partial class SelectionFilterViewModel : ObservableObject
 
     [ObservableProperty] private SelectionScope _currentScope = SelectionScope.CurrentSelection;
     private HashSet<Autodesk.Revit.DB.ElementId> _persistentCheckedIds = new(new ElementIdEqualityComparer());
+    private HashSet<Autodesk.Revit.DB.ElementId> _lastAppliedCheckedIds = new(new ElementIdEqualityComparer());
+    [ObservableProperty] private bool _isSelectionDirty;
 
     [RelayCommand]
     private void ExpandAll()
@@ -243,7 +245,7 @@ public partial class SelectionFilterViewModel : ObservableObject
     {
         try
         {
-            LoggerService.LogInfo($"[ApplyPreSelection] Applying matching IDs: {matchingIds.Count} on scope: {targetScope}");
+            LoggerService.LogInfo($"[ApplyPreSelection] Applying matching IDs: {matchingIds.Count} on scope: {targetScope}. IsBulkUpdating: {TreeItemViewModel.IsBulkUpdating}");
 
             _persistentCheckedIds = matchingIds;
             CheckedElementsCount = _persistentCheckedIds.Count;
@@ -256,6 +258,7 @@ public partial class SelectionFilterViewModel : ObservableObject
             {
                 CurrentScope = targetScope;
             }
+            LoggerService.LogInfo($"[ApplyPreSelection] Complete. Checked count is now {CheckedElementsCount}");
         }
         catch (Exception ex)
         {
@@ -277,6 +280,10 @@ public partial class SelectionFilterViewModel : ObservableObject
         {
             ApplyFilter();
         }
+        else
+        {
+            UpdateIsSelectionDirty();
+        }
     }
 
     /// <summary>
@@ -291,6 +298,8 @@ public partial class SelectionFilterViewModel : ObservableObject
         {
             // 1. Get initial selection IDs from Revit (safe: API context)
             _persistentCheckedIds = _selectionService.GetInitialSelectionIds();
+            _lastAppliedCheckedIds = new HashSet<Autodesk.Revit.DB.ElementId>(_persistentCheckedIds, new ElementIdEqualityComparer());
+            IsSelectionDirty = false;
             LoggerService.LogInfo($"Initial selection IDs count: {_persistentCheckedIds.Count}");
 
             // 2. Pre-fetch all scopes NOW (we are in Revit API thread)
@@ -326,8 +335,6 @@ public partial class SelectionFilterViewModel : ObservableObject
     /// </summary>
     partial void OnCurrentScopeChanged(SelectionScope value)
     {
-        if (TreeItemViewModel.IsBulkUpdating) return;
-
         try
         {
             LoggerService.LogInfo($"Scope switched to: {value}. Rebuilding tree from pre-fetched data...");
@@ -765,6 +772,26 @@ public partial class SelectionFilterViewModel : ObservableObject
         CheckedElementsCount = _persistentCheckedIds.Count;
     }
 
+    private void UpdateIsSelectionDirty()
+    {
+        if (_persistentCheckedIds.Count != _lastAppliedCheckedIds.Count)
+        {
+            IsSelectionDirty = true;
+            return;
+        }
+
+        foreach (var id in _persistentCheckedIds)
+        {
+            if (!_lastAppliedCheckedIds.Contains(id))
+            {
+                IsSelectionDirty = true;
+                return;
+            }
+        }
+
+        IsSelectionDirty = false;
+    }
+
     [RelayCommand]
     private void ApplyFilter()
     {
@@ -799,6 +826,9 @@ public partial class SelectionFilterViewModel : ObservableObject
                 $"Apply Selection: {_persistentCheckedIds.Count} IDs applied. " +
                 $"CurrentSelection updated to {_currentSelectionElements.Count} elements.");
 
+            _lastAppliedCheckedIds = new HashSet<Autodesk.Revit.DB.ElementId>(_persistentCheckedIds, new ElementIdEqualityComparer());
+            IsSelectionDirty = false;
+
             // Clear search text if it exists, without reverting the selection in the UI
             if (!string.IsNullOrEmpty(FilterText))
             {
@@ -823,8 +853,22 @@ public partial class SelectionFilterViewModel : ObservableObject
         SelectedType = "Todos";
         SelectedLevel = "Todos";
         SelectedWorkset = "Todos";
-        foreach(var node in RootNodes) node.IsChecked = false;
-        ApplyFilter();
+
+        TreeItemViewModel.IsBulkUpdating = true;
+        foreach (var node in RootNodes) node.IsChecked = false;
+        TreeItemViewModel.IsBulkUpdating = false;
+
+        _persistentCheckedIds.Clear();
+        CheckedElementsCount = 0;
+
+        if (IsLiveSelection)
+        {
+            ApplyFilter();
+        }
+        else
+        {
+            UpdateIsSelectionDirty();
+        }
     }
 
     [RelayCommand]

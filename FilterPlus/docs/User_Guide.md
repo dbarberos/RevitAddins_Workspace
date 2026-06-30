@@ -1,6 +1,6 @@
 # FilterPlus
 
-> **Current Version:** v1.2.0  
+> **Current Version:** v1.3.0  
 > **Add-in ID (GUID):** `A5265BB9-214C-4109-8DDC-DF1F6E4305B9`  
 
 ---
@@ -56,6 +56,13 @@ Filter and narrow down elements before selecting or displaying them. Dropdown co
 
 By default, selecting "Todos" (All) displays all elements, while choosing a specific value isolates those elements within the tree structure.
 
+### Pre-Selection Rules Filter (Rules & Sets)
+Filter elements dynamically using logical operators (AND/OR). Click the **Pre-Selection** icon to open the advanced query window:
+- **Scope Selection**: Toggle between **All Model Elements** or **Elements in View** (mutually exclusive) to define the selection source.
+- **Tree Logic (Sets & Rules)**: Add nested sets (logical operators) and rules to form complex queries (e.g., `(Category = Walls AND Level = Level 1) OR (Category = Doors)`).
+- **Supported Parameters**: Filter by Category, Level, MEP System, Zone, Workset, Phase, System Classification, and MEP Domain.
+- **Application**: Click **Apply** to run the query. The window will close, the selected scope will be checked in the main "Select" card, and the matching elements will be checked in the explorer tree.
+
 ### Semantic Grouping & Sorting
 You can dynamically restructure the explorer's hierarchy by grouping elements semantically. Toggle the grouping options on/off to sort elements by:
 - **Phase**
@@ -98,6 +105,20 @@ Click the Pick Elements button to temporarily hide the FilterPlus window and sel
 ---
 
 ## 6. Version History (Changelog)
+
+### v1.3.0 - 2026-06-30
+
+#### Added
+- **Pre-Selection Rules & Scope Builder**: A complete advanced query builder allowing users to define rules and nested sets using logical operators (AND/OR) to check elements in the tree explorer.
+- **Scope Exclusions in Pre-Selection**: Mutual exclusion logic for "All Model Elements" and "Elements in View" scope selectors inside the Pre-Selection window.
+- **Scope Syncing**: The chosen scope in the Pre-Selection window is automatically synchronized and checked in the main "Select" card when the filter is applied.
+
+#### Changed
+- **Apply Selection Button Visual Feedback**: The "Apply Selection" button now dynamically changes to Blue (`#007ACC`) when tree checkboxes are modified (by manual check/uncheck, Search filters, Pre-Selection, or "Increase Checked"), and resets to default gray once applied to Revit.
+- **Clear Button Flow**: The "Clear" button now unchecks all checkboxes and turns the "Apply Selection" button Blue, requiring a click on "Apply Selection" to commit the cleared selection to Revit (unless **On Live Selection** is active).
+
+#### Fixed
+- **Tree Explorer Rebuild on Scope Change**: Fixed a bug where switching scopes during pre-selection was blocked by the `IsBulkUpdating` flag, causing the elements tree to not update.
 
 ### v1.2.0 - 2026-06-23
 
