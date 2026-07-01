@@ -156,13 +156,13 @@
             <TextBlock Grid.Column="0" Text="Filter Rules" FontSize="14" FontWeight="Bold" Foreground="#333" VerticalAlignment="Center" Margin="0"/>
             
             <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
-                <CheckBox Content="All Model Elements" 
-                          IsChecked="{Binding IsAllModelElements, Mode=TwoWay}" 
-                          Margin="0,0,15,0" 
-                          VerticalAlignment="Center"/>
-                <CheckBox Content="Elements in View" 
-                          IsChecked="{Binding IsElementsInView, Mode=TwoWay}" 
-                          VerticalAlignment="Center"/>
+                <RadioButton Content="All Model Elements" 
+                             IsChecked="{Binding IsAllModelElements, Mode=TwoWay}" 
+                             Margin="0,0,15,0" 
+                             VerticalAlignment="Center"/>
+                <RadioButton Content="Elements in View" 
+                             IsChecked="{Binding IsElementsInView, Mode=TwoWay}" 
+                             VerticalAlignment="Center"/>
             </StackPanel>
         </Grid>
 

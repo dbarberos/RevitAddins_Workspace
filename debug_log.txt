@@ -6876,3 +6876,100 @@
 [12:38:16.385] INFO: [RuleSet #742] NotifyRuleValuesChanged: Refreshing value lists for all child rules.
 [12:38:16.385] INFO: [Rule #259] RefreshPropertiesList complete. SelectedProperty changed to default 'Categorías'
 [12:38:16.386] INFO: Showing Pre-Selection dialog...
+[12:45:01.406] INFO: [Rule #259] UpdateElements called. previousValue = '<Boceto>'
+[12:45:01.407] INFO: [Rule #259] UpdateAvailableValues: Calculating values for 'Categorías'
+[12:45:01.409] INFO: [Rule #259] UpdateAvailableValues: values changed. Clearing and adding 22 items.
+[12:45:01.409] INFO: [Rule #259] OnSelectedValueChanged: Value changed to ''. _isUpdatingAvailableValues=True
+[12:45:01.410] INFO: [Rule #259] UpdateAvailableValues complete.
+[12:45:01.410] INFO: [Rule #259] OnSelectedValueChanged: Value changed to '<Boceto>'. _isUpdatingAvailableValues=False
+[12:45:01.411] INFO: [Rule #259] OnSelectedValueChanged: Notifying parent values changed.
+[12:45:01.411] INFO: [RuleSet #742] NotifyRuleValuesChanged: Refreshing value lists for all child rules.
+[12:45:01.411] INFO: [Rule #259] RefreshValuesList called. prevValue = '<Boceto>'
+[12:45:01.412] INFO: [Rule #259] UpdateAvailableValues: Calculating values for 'Categorías'
+[12:45:01.413] INFO: [Rule #259] UpdateAvailableValues: values list is identical. Returning early.
+[12:45:01.413] INFO: [Rule #259] RefreshValuesList: SelectedValue set/restored to '<Boceto>' (was '<Boceto>')
+[12:45:01.414] INFO: [Rule #259] UpdateElements complete. SelectedValue is '<Boceto>'
+[12:45:02.613] INFO: [Rule #259] UpdateElements called. previousValue = '<Boceto>'
+[12:45:02.615] INFO: [Rule #259] UpdateAvailableValues: Calculating values for 'Categorías'
+[12:45:02.616] INFO: [Rule #259] UpdateAvailableValues: values changed. Clearing and adding 65 items.
+[12:45:02.617] INFO: [Rule #259] OnSelectedValueChanged: Value changed to ''. _isUpdatingAvailableValues=True
+[12:45:02.618] INFO: [Rule #259] UpdateAvailableValues complete.
+[12:45:02.618] INFO: [Rule #259] OnSelectedValueChanged: Value changed to '<Boceto>'. _isUpdatingAvailableValues=False
+[12:45:02.618] INFO: [Rule #259] OnSelectedValueChanged: Notifying parent values changed.
+[12:45:02.620] INFO: [RuleSet #742] NotifyRuleValuesChanged: Refreshing value lists for all child rules.
+[12:45:02.620] INFO: [Rule #259] RefreshValuesList called. prevValue = '<Boceto>'
+[12:45:02.620] INFO: [Rule #259] UpdateAvailableValues: Calculating values for 'Categorías'
+[12:45:02.621] INFO: [Rule #259] UpdateAvailableValues: values list is identical. Returning early.
+[12:45:02.623] INFO: [Rule #259] RefreshValuesList: SelectedValue set/restored to '<Boceto>' (was '<Boceto>')
+[12:45:02.623] INFO: [Rule #259] UpdateElements complete. SelectedValue is '<Boceto>'
+[13:00:48.084] INFO: Addin Startup command started.
+[13:00:48.086] INFO: SelectionFilterViewModel initializing...
+[13:00:48.092] INFO: Initial selection retrieved: 0 elements.
+[13:00:48.094] INFO: Initial selection IDs count: 0
+[13:00:48.095] INFO: Pre-fetching CurrentSelection elements...
+[13:00:48.098] INFO: Querying Revit for scope: CurrentSelection...
+[13:00:48.098] INFO: CurrentSelection: 0 elements.
+[13:00:48.098] INFO: Pre-fetching ElementsVisibleInView elements...
+[13:00:48.099] INFO: Querying Revit for scope: ElementsVisibleInView...
+[13:00:49.085] INFO: Revit query finished. 4815 valid elements found.
+[13:00:49.085] INFO: ElementsVisibleInView: 4815 elements.
+[13:00:49.086] INFO: Pre-fetching ElementsBelongingToView elements...
+[13:00:49.086] INFO: Querying Revit for scope: ElementsBelongingToView...
+[13:00:51.756] INFO: Revit query finished. 4992 valid elements found.
+[13:00:51.756] INFO: ElementsBelongingToView: 4992 elements.
+[13:00:51.757] INFO: Pre-fetching AllModelElements elements...
+[13:00:51.758] INFO: Querying Revit for scope: AllModelElements...
+[13:00:52.896] INFO: Revit query finished. 6834 valid elements found.
+[13:00:52.896] INFO: AllModelElements: 6834 elements (raw: 6834).
+[13:00:52.899] INFO: BuildTree: 0 elements for scope CurrentSelection.
+[13:00:52.902] INFO: Updating filter dropdowns...
+[13:00:52.903] INFO: Building tree structure offline for 0 elements...
+[13:00:52.908] INFO: Swapping tree root directly. New total: 0
+[13:00:52.908] INFO: Tree built and swapped. 0 visible elements.
+[13:00:52.912] INFO: BuildTree completed.
+[13:00:52.912] INFO: ViewModel created. Showing window...
+[13:00:56.964] INFO: Opening Pre-Selection window...
+[13:00:56.966] INFO: [Rule #971] Constructor called.
+[13:00:56.968] INFO: [Rule #971] RefreshPropertiesList: showFamilias=False, showTipos=False, currentSelection=''
+[13:00:56.968] INFO: [Rule #971] RefreshPropertiesList: properties changed. Clearing and rebuilding properties list.
+[13:00:56.969] INFO: [Rule #971] OnSelectedPropertyChanged: Property changed to 'Categorías'
+[13:00:56.971] INFO: [Rule #971] UpdateAvailableValues: Calculating values for 'Categorías'
+[13:00:56.972] INFO: [Rule #971] UpdateAvailableValues: values changed. Clearing and adding 65 items.
+[13:00:56.972] INFO: [Rule #971] UpdateAvailableValues complete.
+[13:00:56.973] INFO: [Rule #971] OnSelectedValueChanged: Value changed to '<Boceto>'. _isUpdatingAvailableValues=False
+[13:00:56.973] INFO: [Rule #971] OnSelectedValueChanged: Notifying parent values changed.
+[13:00:56.974] INFO: [RuleSet #147] NotifyRuleValuesChanged: Refreshing value lists for all child rules.
+[13:00:56.974] INFO: [Rule #971] OnSelectedPropertyChanged: SelectedValue initialized to default '<Boceto>'
+[13:00:56.974] INFO: [Rule #971] OnSelectedPropertyChanged: Triggering Parent.PruneDependentRules()
+[13:00:56.976] INFO: [RuleSet #147] PruneDependentRules check: hasCategory=False, hasFamily=False
+[13:00:56.977] INFO: [Rule #971] OnSelectedPropertyChanged: Notifying parent properties/values changed
+[13:00:56.978] INFO: [RuleSet #147] NotifyRulePropertiesChanged: Refreshing properties lists for all child rules.
+[13:00:56.978] INFO: [RuleSet #147] NotifyRuleValuesChanged: Refreshing value lists for all child rules.
+[13:00:56.979] INFO: [Rule #971] RefreshPropertiesList complete. SelectedProperty changed to default 'Categorías'
+[13:00:56.982] INFO: Showing Pre-Selection dialog...
+[13:00:59.281] INFO: [Rule #971] UpdateElements called. previousValue = '<Boceto>'
+[13:00:59.281] INFO: [Rule #971] UpdateAvailableValues: Calculating values for 'Categorías'
+[13:00:59.283] INFO: [Rule #971] UpdateAvailableValues: values changed. Clearing and adding 22 items.
+[13:00:59.284] INFO: [Rule #971] OnSelectedValueChanged: Value changed to ''. _isUpdatingAvailableValues=True
+[13:00:59.286] INFO: [Rule #971] UpdateAvailableValues complete.
+[13:00:59.286] INFO: [Rule #971] OnSelectedValueChanged: Value changed to '<Boceto>'. _isUpdatingAvailableValues=False
+[13:00:59.286] INFO: [Rule #971] OnSelectedValueChanged: Notifying parent values changed.
+[13:00:59.287] INFO: [RuleSet #147] NotifyRuleValuesChanged: Refreshing value lists for all child rules.
+[13:00:59.287] INFO: [Rule #971] RefreshValuesList called. prevValue = '<Boceto>'
+[13:00:59.287] INFO: [Rule #971] UpdateAvailableValues: Calculating values for 'Categorías'
+[13:00:59.288] INFO: [Rule #971] UpdateAvailableValues: values list is identical. Returning early.
+[13:00:59.288] INFO: [Rule #971] RefreshValuesList: SelectedValue set/restored to '<Boceto>' (was '<Boceto>')
+[13:00:59.289] INFO: [Rule #971] UpdateElements complete. SelectedValue is '<Boceto>'
+[13:01:00.409] INFO: [Rule #971] UpdateElements called. previousValue = '<Boceto>'
+[13:01:00.409] INFO: [Rule #971] UpdateAvailableValues: Calculating values for 'Categorías'
+[13:01:00.410] INFO: [Rule #971] UpdateAvailableValues: values changed. Clearing and adding 65 items.
+[13:01:00.411] INFO: [Rule #971] OnSelectedValueChanged: Value changed to ''. _isUpdatingAvailableValues=True
+[13:01:00.411] INFO: [Rule #971] UpdateAvailableValues complete.
+[13:01:00.413] INFO: [Rule #971] OnSelectedValueChanged: Value changed to '<Boceto>'. _isUpdatingAvailableValues=False
+[13:01:00.413] INFO: [Rule #971] OnSelectedValueChanged: Notifying parent values changed.
+[13:01:00.413] INFO: [RuleSet #147] NotifyRuleValuesChanged: Refreshing value lists for all child rules.
+[13:01:00.414] INFO: [Rule #971] RefreshValuesList called. prevValue = '<Boceto>'
+[13:01:00.414] INFO: [Rule #971] UpdateAvailableValues: Calculating values for 'Categorías'
+[13:01:00.415] INFO: [Rule #971] UpdateAvailableValues: values list is identical. Returning early.
+[13:01:00.415] INFO: [Rule #971] RefreshValuesList: SelectedValue set/restored to '<Boceto>' (was '<Boceto>')
+[13:01:00.416] INFO: [Rule #971] UpdateElements complete. SelectedValue is '<Boceto>'

@@ -1,6 +1,6 @@
 # FilterPlus
 
-> **Current Version:** v1.3.0  
+> **Current Version:** v1.3.1  
 > **Add-in ID (GUID):** `A5265BB9-214C-4109-8DDC-DF1F6E4305B9`  
 
 ---
@@ -58,7 +58,9 @@ By default, selecting "Todos" (All) displays all elements, while choosing a spec
 
 ### Pre-Selection Rules Filter (Rules & Sets)
 Filter elements dynamically using logical operators (AND/OR). Click the **Pre-Selection** icon to open the advanced query window:
-- **Scope Selection**: Toggle between **All Model Elements** or **Elements in View** (mutually exclusive) to define the selection source.
+- **Scope Selection**: Toggle between **All Model Elements** or **Elements in View** using round **RadioButtons** indicating visual mutual exclusivity.
+- **Rule Hierarchy & Constraints**: The dynamic dropdown parameters are subject to logical dependencies. "Familias" is only enabled and populated if a sibling "Categorías" rule is defined. "Tipos" is strictly enabled and populated if a sibling "Familias" rule is defined. The selectable values are dynamically filtered based on sibling selections.
+- **Cascading Deletion**: Modifying a parent rule's type or deleting it automatically prunes any dependent child rules (e.g., removing a Category rule automatically removes any associated Family/Type rules, and removing a Family rule automatically removes any associated Type rules).
 - **Tree Logic (Sets & Rules)**: Add nested sets (logical operators) and rules to form complex queries (e.g., `(Category = Walls AND Level = Level 1) OR (Category = Doors)`).
 - **Supported Parameters**: Filter by Category, Level, MEP System, Zone, Workset, Phase, System Classification, and MEP Domain.
 - **Application**: Click **Apply** to run the query. The window will close, the selected scope will be checked in the main "Select" card, and the matching elements will be checked in the explorer tree.
@@ -105,6 +107,16 @@ Click the Pick Elements button to temporarily hide the FilterPlus window and sel
 ---
 
 ## 6. Version History (Changelog)
+
+### v1.3.1 - 2026-07-01
+
+#### Added
+- **Scope RadioButtons in Pre-Selection**: Swapped square CheckBoxes for round RadioButtons in the Pre-Selection window's scope options, enhancing the visual clarity of mutual exclusivity.
+- **Dynamic Family & Type Binding & Cascading Deletion**:
+  - Implemented dynamic value list population on the very first load for initial rule setups (e.g. populating the Category dropdown immediately).
+  - Resolved WPF binding reset issues where property list changes cleared chosen sibling values.
+  - Implemented recursive rule pruning (cascading deletion) where deleting or changing a prerequisite rule (like Category or Family) automatically prunes dependent child rules (like Family or Type).
+- **Trace Logging**: Added detailed logs with Rule IDs and update states visible in the Debug Log window.
 
 ### v1.3.0 - 2026-06-30
 
