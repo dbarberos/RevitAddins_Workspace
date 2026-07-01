@@ -38,7 +38,12 @@ public partial class PreSelectionViewModel : ObservableObject
     private void RemoveRule(PreSelectionRule rule)
     {
         if (rule == null) return;
-        rule.Parent?.Children.Remove(rule);
+        LoggerService.LogInfo($"[PreSelectionViewModel] RemoveRule command triggered for rule #{rule.GetHashCode() % 1000:D3}.");
+        var parent = rule.Parent;
+        parent?.Children.Remove(rule);
+        parent?.PruneDependentRules();
+        parent?.NotifyRulePropertiesChanged();
+        parent?.NotifyRuleValuesChanged();
     }
 
     [RelayCommand]
@@ -182,6 +187,8 @@ public partial class PreSelectionViewModel : ObservableObject
         string propertyValue = rule.SelectedProperty switch
         {
             "Categorías" => element.CategoryName,
+            "Familias" => element.FamilyName,
+            "Tipos" => element.TypeName,
             "Niveles" => element.LevelName,
             "Sistemas" => element.SystemName,
             "Zonas" => element.ZoneName,

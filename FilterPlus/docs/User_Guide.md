@@ -110,6 +110,7 @@ Click the Pick Elements button to temporarily hide the FilterPlus window and sel
 
 #### Added
 - **Pre-Selection Rules & Scope Builder**: A complete advanced query builder allowing users to define rules and nested sets using logical operators (AND/OR) to check elements in the tree explorer.
+- **Dynamic Family & Type Parameters in Pre-Selection**: Added dynamic "Familias" and "Tipos" parameter rules. "Familias" is only selectable if a sibling "Categorías" rule is defined in the same set, and "Tipos" is strictly enabled by sibling "Familias" rules. Selectable values for families and types are filtered on the fly to match chosen sibling categories/families.
 - **Scope Exclusions in Pre-Selection**: Mutual exclusion logic for "All Model Elements" and "Elements in View" scope selectors inside the Pre-Selection window.
 - **Scope Syncing**: The chosen scope in the Pre-Selection window is automatically synchronized and checked in the main "Select" card when the filter is applied.
 
@@ -119,6 +120,7 @@ Click the Pick Elements button to temporarily hide the FilterPlus window and sel
 
 #### Fixed
 - **Tree Explorer Rebuild on Scope Change**: Fixed a bug where switching scopes during pre-selection was blocked by the `IsBulkUpdating` flag, causing the elements tree to not update.
+- **Pre-Selection Value Reset & Cascading Deletion**: Resolved a critical WPF ComboBox binding issue where modifying rules cleared previous category/family selections. Implemented cascading rule deletion to automatically clean up dependent rules (Family/Type) if their prerequisite category or family rules are deleted or changed.
 
 ### v1.2.0 - 2026-06-23
 
