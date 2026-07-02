@@ -8663,3 +8663,230 @@
 [13:30:42.667] INFO: [RuleSet #236] NotifyRuleValuesChanged: Refreshing value lists for all child rules.
 [13:30:42.667] INFO: [Rule #491] RefreshPropertiesList complete. SelectedProperty changed to default 'Categorías'
 [13:30:42.669] INFO: Showing Pre-Selection dialog...
+[14:00:15.462] INFO: Addin Startup command started.
+[14:00:15.469] INFO: SelectionFilterViewModel initializing...
+[14:00:15.476] INFO: Initial selection retrieved: 1 elements.
+[14:00:15.487] INFO: Initial selection IDs count: 1
+[14:00:15.487] INFO: Pre-fetching CurrentSelection elements...
+[14:00:15.491] INFO: Collecting elements for scope: CurrentSelection in doc: TEST (LinkInstance: None)...
+[14:00:15.533] INFO: CurrentSelection: 1 elements.
+[14:00:15.534] INFO: Pre-fetching ElementsVisibleInView elements...
+[14:00:15.534] INFO: Collecting elements for scope: ElementsVisibleInView in doc: TEST (LinkInstance: None)...
+[14:00:15.555] INFO: ElementsVisibleInView: 33 elements.
+[14:00:15.556] INFO: Pre-fetching ElementsBelongingToView elements...
+[14:00:15.556] INFO: Collecting elements for scope: ElementsBelongingToView in doc: TEST (LinkInstance: None)...
+[14:00:15.565] INFO: ElementsBelongingToView: 33 elements.
+[14:00:15.566] INFO: Pre-fetching AllModelElements elements...
+[14:00:15.566] INFO: Collecting elements for scope: AllModelElements in doc: TEST (LinkInstance: None)...
+[14:00:15.643] INFO: AllModelElements: 668 elements (raw: 668).
+[14:00:15.709] INFO: BuildTree: 1 elements for scope CurrentSelection.
+[14:00:15.711] INFO: Updating filter dropdowns...
+[14:00:15.714] INFO: Building tree structure offline for 1 elements...
+[14:00:15.720] INFO: Applying selection state for 1 checked elements...
+[14:00:15.722] INFO: Swapping tree root directly. New total: 1
+[14:00:15.722] INFO: Tree built and swapped. 1 visible elements.
+[14:00:15.732] INFO: BuildTree completed.
+[14:00:15.732] INFO: ViewModel created. Showing window...
+[14:00:39.842] INFO: Opening Pre-Selection window...
+[14:00:39.845] INFO: [Rule #221] Constructor called.
+[14:00:39.847] INFO: [Rule #221] RefreshPropertiesList: showFamilias=False, showTipos=False, currentSelection=''
+[14:00:39.847] INFO: [Rule #221] RefreshPropertiesList: properties changed. Clearing and rebuilding properties list.
+[14:00:39.849] INFO: [Rule #221] OnSelectedPropertyChanged: Property changed to 'Categorías'
+[14:00:39.851] INFO: [Rule #221] UpdateAvailableValues: Calculating values for 'Categorías'
+[14:00:39.853] INFO: [Rule #221] UpdateAvailableValues: values changed. Clearing and adding 42 items.
+[14:00:39.853] INFO: [Rule #221] UpdateAvailableValues complete.
+[14:00:39.854] INFO: [Rule #221] OnSelectedValueChanged: Value changed to '<Boceto>'. _isUpdatingAvailableValues=False
+[14:00:39.854] INFO: [Rule #221] OnSelectedValueChanged: Notifying parent values changed.
+[14:00:39.855] INFO: [RuleSet #265] NotifyRuleValuesChanged: Refreshing value lists for all child rules.
+[14:00:39.855] INFO: [Rule #221] OnSelectedPropertyChanged: SelectedValue initialized to default '<Boceto>'
+[14:00:39.855] INFO: [Rule #221] OnSelectedPropertyChanged: Triggering Parent.PruneDependentRules()
+[14:00:39.858] INFO: [RuleSet #265] PruneDependentRules check: hasCategory=False, hasFamily=False
+[14:00:39.858] INFO: [Rule #221] OnSelectedPropertyChanged: Notifying parent properties/values changed
+[14:00:39.859] INFO: [RuleSet #265] NotifyRulePropertiesChanged: Refreshing properties lists for all child rules.
+[14:00:39.859] INFO: [RuleSet #265] NotifyRuleValuesChanged: Refreshing value lists for all child rules.
+[14:00:39.860] INFO: [Rule #221] RefreshPropertiesList complete. SelectedProperty changed to default 'Categorías'
+[14:00:39.862] INFO: Showing Pre-Selection dialog...
+[14:05:36.857] INFO: Addin Startup command started.
+[14:05:36.863] INFO: SelectionFilterViewModel initializing...
+[14:05:36.870] INFO: Initial selection retrieved: 1 elements.
+[14:05:36.878] INFO: Initial selection IDs count: 1
+[14:05:36.878] INFO: Pre-fetching CurrentSelection elements...
+[14:05:36.883] INFO: Collecting elements for scope: CurrentSelection in doc: TEST (LinkInstance: None)...
+[14:05:36.922] INFO: CurrentSelection: 1 elements.
+[14:05:36.922] INFO: Pre-fetching ElementsVisibleInView elements...
+[14:05:36.923] INFO: Collecting elements for scope: ElementsVisibleInView in doc: TEST (LinkInstance: None)...
+[14:05:36.944] INFO: ElementsVisibleInView: 33 elements.
+[14:05:36.945] INFO: Pre-fetching ElementsBelongingToView elements...
+[14:05:36.945] INFO: Collecting elements for scope: ElementsBelongingToView in doc: TEST (LinkInstance: None)...
+[14:05:36.953] INFO: ElementsBelongingToView: 33 elements.
+[14:05:36.953] INFO: Pre-fetching AllModelElements elements...
+[14:05:36.954] INFO: Collecting elements for scope: AllModelElements in doc: TEST (LinkInstance: None)...
+[14:05:37.019] INFO: AllModelElements: 668 elements (raw: 668).
+[14:05:37.032] INFO: BuildTree: 1 elements for scope CurrentSelection.
+[14:05:37.035] INFO: Updating filter dropdowns...
+[14:05:37.037] INFO: Building tree structure offline for 1 elements...
+[14:05:37.042] INFO: Applying selection state for 1 checked elements...
+[14:05:37.044] INFO: Swapping tree root directly. New total: 1
+[14:05:37.045] INFO: Tree built and swapped. 1 visible elements.
+[14:05:37.053] INFO: BuildTree completed.
+[14:05:37.054] INFO: ViewModel created. Showing window...
+[14:05:41.702] INFO: Opening Pre-Selection window...
+[14:05:41.704] INFO: [Rule #350] Constructor called.
+[14:05:41.706] INFO: [Rule #350] RefreshPropertiesList: showFamilias=False, showTipos=False, currentSelection=''
+[14:05:41.707] INFO: [Rule #350] RefreshPropertiesList: properties changed. Clearing and rebuilding properties list.
+[14:05:41.708] INFO: [Rule #350] OnSelectedPropertyChanged: Property changed to 'Categorías'
+[14:05:41.709] INFO: [Rule #350] UpdateAvailableValues: Calculating values for 'Categorías'
+[14:05:41.710] INFO: [Rule #350] UpdateAvailableValues: values changed. Clearing and adding 42 items.
+[14:05:41.710] INFO: [Rule #350] UpdateAvailableValues complete.
+[14:05:41.711] INFO: [Rule #350] OnSelectedValueChanged: Value changed to '<Boceto>'. _isUpdatingAvailableValues=False
+[14:05:41.711] INFO: [Rule #350] OnSelectedValueChanged: Notifying parent values changed.
+[14:05:41.712] INFO: [RuleSet #973] NotifyRuleValuesChanged: Refreshing value lists for all child rules.
+[14:05:41.712] INFO: [Rule #350] OnSelectedPropertyChanged: SelectedValue initialized to default '<Boceto>'
+[14:05:41.712] INFO: [Rule #350] OnSelectedPropertyChanged: Triggering Parent.PruneDependentRules()
+[14:05:41.714] INFO: [RuleSet #973] PruneDependentRules check: hasCategory=False, hasFamily=False
+[14:05:41.715] INFO: [Rule #350] OnSelectedPropertyChanged: Notifying parent properties/values changed
+[14:05:41.715] INFO: [RuleSet #973] NotifyRulePropertiesChanged: Refreshing properties lists for all child rules.
+[14:05:41.715] INFO: [RuleSet #973] NotifyRuleValuesChanged: Refreshing value lists for all child rules.
+[14:05:41.716] INFO: [Rule #350] RefreshPropertiesList complete. SelectedProperty changed to default 'Categorías'
+[14:05:41.718] INFO: Showing Pre-Selection dialog...
+[14:05:59.892] INFO: Opening Pre-Selection window...
+[14:05:59.892] INFO: [Rule #082] Constructor called.
+[14:05:59.892] INFO: [Rule #082] RefreshPropertiesList: showFamilias=False, showTipos=False, currentSelection=''
+[14:05:59.893] INFO: [Rule #082] RefreshPropertiesList: properties changed. Clearing and rebuilding properties list.
+[14:05:59.894] INFO: [Rule #082] OnSelectedPropertyChanged: Property changed to 'Categorías'
+[14:05:59.894] INFO: [Rule #082] UpdateAvailableValues: Calculating values for 'Categorías'
+[14:05:59.895] INFO: [Rule #082] UpdateAvailableValues: values changed. Clearing and adding 42 items.
+[14:05:59.895] INFO: [Rule #082] UpdateAvailableValues complete.
+[14:05:59.895] INFO: [Rule #082] OnSelectedValueChanged: Value changed to '<Boceto>'. _isUpdatingAvailableValues=False
+[14:05:59.895] INFO: [Rule #082] OnSelectedValueChanged: Notifying parent values changed.
+[14:05:59.897] INFO: [RuleSet #695] NotifyRuleValuesChanged: Refreshing value lists for all child rules.
+[14:05:59.897] INFO: [Rule #082] OnSelectedPropertyChanged: SelectedValue initialized to default '<Boceto>'
+[14:05:59.898] INFO: [Rule #082] OnSelectedPropertyChanged: Triggering Parent.PruneDependentRules()
+[14:05:59.898] INFO: [RuleSet #695] PruneDependentRules check: hasCategory=False, hasFamily=False
+[14:05:59.899] INFO: [Rule #082] OnSelectedPropertyChanged: Notifying parent properties/values changed
+[14:05:59.899] INFO: [RuleSet #695] NotifyRulePropertiesChanged: Refreshing properties lists for all child rules.
+[14:05:59.899] INFO: [RuleSet #695] NotifyRuleValuesChanged: Refreshing value lists for all child rules.
+[14:05:59.900] INFO: [Rule #082] RefreshPropertiesList complete. SelectedProperty changed to default 'Categorías'
+[14:05:59.901] INFO: Showing Pre-Selection dialog...
+[16:20:20.984] INFO: Addin Startup command started.
+[16:20:20.991] INFO: SelectionFilterViewModel initializing...
+[16:20:20.999] INFO: Initial selection retrieved: 0 elements.
+[16:20:21.007] INFO: Initial selection IDs count: 0
+[16:20:21.007] INFO: Pre-fetching CurrentSelection elements...
+[16:20:21.011] INFO: Collecting elements for scope: CurrentSelection in doc: TEST (LinkInstance: None)...
+[16:20:21.012] INFO: CurrentSelection: 0 elements.
+[16:20:21.012] INFO: Pre-fetching ElementsVisibleInView elements...
+[16:20:21.013] INFO: Collecting elements for scope: ElementsVisibleInView in doc: TEST (LinkInstance: None)...
+[16:20:21.081] INFO: ElementsVisibleInView: 33 elements.
+[16:20:21.082] INFO: Pre-fetching ElementsBelongingToView elements...
+[16:20:21.082] INFO: Collecting elements for scope: ElementsBelongingToView in doc: TEST (LinkInstance: None)...
+[16:20:21.093] INFO: ElementsBelongingToView: 33 elements.
+[16:20:21.093] INFO: Pre-fetching AllModelElements elements...
+[16:20:21.094] INFO: Collecting elements for scope: AllModelElements in doc: TEST (LinkInstance: None)...
+[16:20:21.165] INFO: AllModelElements: 668 elements (raw: 668).
+[16:20:21.230] INFO: BuildTree: 0 elements for scope CurrentSelection.
+[16:20:21.234] INFO: Updating filter dropdowns...
+[16:20:21.237] INFO: Building tree structure offline for 0 elements...
+[16:20:21.243] INFO: Swapping tree root directly. New total: 0
+[16:20:21.244] INFO: Tree built and swapped. 0 visible elements.
+[16:20:21.254] INFO: BuildTree completed.
+[16:20:21.254] INFO: ViewModel created. Showing window...
+[16:20:24.996] INFO: Opening Pre-Selection window...
+[16:20:24.999] INFO: [Rule #566] Constructor called.
+[16:20:25.001] INFO: [Rule #566] RefreshPropertiesList: showFamilias=False, showTipos=False, currentSelection=''
+[16:20:25.002] INFO: [Rule #566] RefreshPropertiesList: properties changed. Clearing and rebuilding properties list.
+[16:20:25.003] INFO: [Rule #566] OnSelectedPropertyChanged: Property changed to 'Categorías'
+[16:20:25.005] INFO: [Rule #566] UpdateAvailableValues: Calculating values for 'Categorías'
+[16:20:25.006] INFO: [Rule #566] UpdateAvailableValues: values changed. Clearing and adding 42 items.
+[16:20:25.006] INFO: [Rule #566] UpdateAvailableValues complete.
+[16:20:25.006] INFO: [Rule #566] OnSelectedValueChanged: Value changed to '<Boceto>'. _isUpdatingAvailableValues=False
+[16:20:25.008] INFO: [Rule #566] OnSelectedValueChanged: Notifying parent values changed.
+[16:20:25.009] INFO: [RuleSet #187] NotifyRuleValuesChanged: Refreshing value lists for all child rules.
+[16:20:25.009] INFO: [Rule #566] OnSelectedPropertyChanged: SelectedValue initialized to default '<Boceto>'
+[16:20:25.010] INFO: [Rule #566] OnSelectedPropertyChanged: Triggering Parent.PruneDependentRules()
+[16:20:25.012] INFO: [RuleSet #187] PruneDependentRules check: hasCategory=False, hasFamily=False
+[16:20:25.012] INFO: [Rule #566] OnSelectedPropertyChanged: Notifying parent properties/values changed
+[16:20:25.013] INFO: [RuleSet #187] NotifyRulePropertiesChanged: Refreshing properties lists for all child rules.
+[16:20:25.013] INFO: [RuleSet #187] NotifyRuleValuesChanged: Refreshing value lists for all child rules.
+[16:20:25.013] INFO: [Rule #566] RefreshPropertiesList complete. SelectedProperty changed to default 'Categorías'
+[16:20:25.015] INFO: Showing Pre-Selection dialog...
+[17:20:49.026] INFO: Addin Startup command started.
+[17:20:49.034] INFO: SelectionFilterViewModel initializing...
+[17:20:49.045] INFO: Initial selection retrieved: 1 elements.
+[17:20:49.056] INFO: Initial selection IDs count: 1
+[17:20:49.056] INFO: Pre-fetching CurrentSelection elements...
+[17:20:49.063] INFO: Collecting elements for scope: CurrentSelection in doc: TEST (LinkInstance: None)...
+[17:20:49.123] INFO: CurrentSelection: 1 elements.
+[17:20:49.124] INFO: Pre-fetching ElementsVisibleInView elements...
+[17:20:49.124] INFO: Collecting elements for scope: ElementsVisibleInView in doc: TEST (LinkInstance: None)...
+[17:20:49.162] INFO: ElementsVisibleInView: 33 elements.
+[17:20:49.162] INFO: Pre-fetching ElementsBelongingToView elements...
+[17:20:49.164] INFO: Collecting elements for scope: ElementsBelongingToView in doc: TEST (LinkInstance: None)...
+[17:20:49.180] INFO: ElementsBelongingToView: 33 elements.
+[17:20:49.181] INFO: Pre-fetching AllModelElements elements...
+[17:20:49.181] INFO: Collecting elements for scope: AllModelElements in doc: TEST (LinkInstance: None)...
+[17:20:49.297] INFO: AllModelElements: 668 elements (raw: 668).
+[17:20:49.312] INFO: BuildTree: 1 elements for scope CurrentSelection.
+[17:20:49.315] INFO: Updating filter dropdowns...
+[17:20:49.318] INFO: Building tree structure offline for 1 elements...
+[17:20:49.326] INFO: Applying selection state for 1 checked elements...
+[17:20:49.330] INFO: Swapping tree root directly. New total: 1
+[17:20:49.330] INFO: Tree built and swapped. 1 visible elements.
+[17:20:49.343] INFO: BuildTree completed.
+[17:20:49.344] INFO: ViewModel created. Showing window...
+[17:22:01.421] INFO: Opening Pre-Selection window...
+[17:22:01.423] INFO: [Rule #069] Constructor called.
+[17:22:01.424] INFO: [Rule #069] RefreshPropertiesList: showFamilias=False, showTipos=False, currentSelection=''
+[17:22:01.425] INFO: [Rule #069] RefreshPropertiesList: properties changed. Clearing and rebuilding properties list.
+[17:22:01.426] INFO: [Rule #069] OnSelectedPropertyChanged: Property changed to 'Categorías'
+[17:22:01.427] INFO: [Rule #069] UpdateAvailableValues: Calculating values for 'Categorías'
+[17:22:01.428] INFO: [Rule #069] UpdateAvailableValues: values changed. Clearing and adding 42 items.
+[17:22:01.428] INFO: [Rule #069] UpdateAvailableValues complete.
+[17:22:01.429] INFO: [Rule #069] OnSelectedValueChanged: Value changed to '<Boceto>'. _isUpdatingAvailableValues=False
+[17:22:01.429] INFO: [Rule #069] OnSelectedValueChanged: Notifying parent values changed.
+[17:22:01.430] INFO: [RuleSet #032] NotifyRuleValuesChanged: Refreshing value lists for all child rules.
+[17:22:01.430] INFO: [Rule #069] OnSelectedPropertyChanged: SelectedValue initialized to default '<Boceto>'
+[17:22:01.430] INFO: [Rule #069] OnSelectedPropertyChanged: Triggering Parent.PruneDependentRules()
+[17:22:01.433] INFO: [RuleSet #032] PruneDependentRules check: hasCategory=False, hasFamily=False
+[17:22:01.434] INFO: [Rule #069] OnSelectedPropertyChanged: Notifying parent properties/values changed
+[17:22:01.435] INFO: [RuleSet #032] NotifyRulePropertiesChanged: Refreshing properties lists for all child rules.
+[17:22:01.435] INFO: [RuleSet #032] NotifyRuleValuesChanged: Refreshing value lists for all child rules.
+[17:22:01.435] INFO: [Rule #069] RefreshPropertiesList complete. SelectedProperty changed to default 'Categorías'
+[17:22:01.437] INFO: Showing Pre-Selection dialog...
+[17:22:18.692] INFO: [RuleSet #032] AddSet command triggered.
+[17:22:18.692] INFO: [Rule #279] Constructor called.
+[17:22:18.693] INFO: [Rule #279] RefreshPropertiesList: showFamilias=False, showTipos=False, currentSelection=''
+[17:22:18.693] INFO: [Rule #279] RefreshPropertiesList: properties changed. Clearing and rebuilding properties list.
+[17:22:18.693] INFO: [Rule #279] OnSelectedPropertyChanged: Property changed to 'Categorías'
+[17:22:18.693] INFO: [Rule #279] UpdateAvailableValues: Calculating values for 'Categorías'
+[17:22:18.694] INFO: [Rule #279] UpdateAvailableValues: values changed. Clearing and adding 42 items.
+[17:22:18.694] INFO: [Rule #279] UpdateAvailableValues complete.
+[17:22:18.694] INFO: [Rule #279] OnSelectedValueChanged: Value changed to '<Boceto>'. _isUpdatingAvailableValues=False
+[17:22:18.695] INFO: [Rule #279] OnSelectedValueChanged: Notifying parent values changed.
+[17:22:18.695] INFO: [RuleSet #649] NotifyRuleValuesChanged: Refreshing value lists for all child rules.
+[17:22:18.695] INFO: [Rule #279] OnSelectedPropertyChanged: SelectedValue initialized to default '<Boceto>'
+[17:22:18.696] INFO: [Rule #279] OnSelectedPropertyChanged: Triggering Parent.PruneDependentRules()
+[17:22:18.696] INFO: [RuleSet #649] PruneDependentRules check: hasCategory=False, hasFamily=False
+[17:22:18.696] INFO: [Rule #279] OnSelectedPropertyChanged: Notifying parent properties/values changed
+[17:22:18.697] INFO: [RuleSet #649] NotifyRulePropertiesChanged: Refreshing properties lists for all child rules.
+[17:22:18.697] INFO: [RuleSet #649] NotifyRuleValuesChanged: Refreshing value lists for all child rules.
+[17:22:18.697] INFO: [Rule #279] RefreshPropertiesList complete. SelectedProperty changed to default 'Categorías'
+[17:22:27.145] INFO: Opening Pre-Selection window...
+[17:22:27.145] INFO: [Rule #522] Constructor called.
+[17:22:27.146] INFO: [Rule #522] RefreshPropertiesList: showFamilias=False, showTipos=False, currentSelection=''
+[17:22:27.146] INFO: [Rule #522] RefreshPropertiesList: properties changed. Clearing and rebuilding properties list.
+[17:22:27.146] INFO: [Rule #522] OnSelectedPropertyChanged: Property changed to 'Categorías'
+[17:22:27.147] INFO: [Rule #522] UpdateAvailableValues: Calculating values for 'Categorías'
+[17:22:27.147] INFO: [Rule #522] UpdateAvailableValues: values changed. Clearing and adding 42 items.
+[17:22:27.147] INFO: [Rule #522] UpdateAvailableValues complete.
+[17:22:27.148] INFO: [Rule #522] OnSelectedValueChanged: Value changed to '<Boceto>'. _isUpdatingAvailableValues=False
+[17:22:27.148] INFO: [Rule #522] OnSelectedValueChanged: Notifying parent values changed.
+[17:22:27.148] INFO: [RuleSet #706] NotifyRuleValuesChanged: Refreshing value lists for all child rules.
+[17:22:27.148] INFO: [Rule #522] OnSelectedPropertyChanged: SelectedValue initialized to default '<Boceto>'
+[17:22:27.149] INFO: [Rule #522] OnSelectedPropertyChanged: Triggering Parent.PruneDependentRules()
+[17:22:27.149] INFO: [RuleSet #706] PruneDependentRules check: hasCategory=False, hasFamily=False
+[17:22:27.150] INFO: [Rule #522] OnSelectedPropertyChanged: Notifying parent properties/values changed
+[17:22:27.150] INFO: [RuleSet #706] NotifyRulePropertiesChanged: Refreshing properties lists for all child rules.
+[17:22:27.150] INFO: [RuleSet #706] NotifyRuleValuesChanged: Refreshing value lists for all child rules.
+[17:22:27.151] INFO: [Rule #522] RefreshPropertiesList complete. SelectedProperty changed to default 'Categorías'
+[17:22:27.152] INFO: Showing Pre-Selection dialog...

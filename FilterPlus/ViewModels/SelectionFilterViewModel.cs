@@ -86,7 +86,8 @@ public partial class SelectionFilterViewModel : ObservableObject
     [ObservableProperty] private bool _isSelectionDirty;
 
     [ObservableProperty] private ObservableCollection<RevitModelRepresentation> _availableModels = new();
-    [ObservableProperty] private RevitModelRepresentation _selectedModel;
+    public List<RevitModelRepresentation> SelectedModels { get; private set; } = new();
+    [ObservableProperty] private string _selectedModelsText;
 
     [RelayCommand]
     private void ExpandAll()
@@ -318,9 +319,13 @@ public partial class SelectionFilterViewModel : ObservableObject
                 }
             }
 
-            AvailableModels.Add(new RevitModelRepresentation("All Models", null, null));
-
-            _selectedModel = AvailableModels.FirstOrDefault();
+            // Default selection: Active Model
+            var initialModel = AvailableModels.FirstOrDefault();
+            if (initialModel != null)
+            {
+                SelectedModels.Add(initialModel);
+                SelectedModelsText = initialModel.DisplayName;
+            }
 
             // 1. Get initial selection IDs from Revit (safe: API context)
             var hostInitialIds = _selectionService.GetInitialSelectionIds();
@@ -331,19 +336,17 @@ public partial class SelectionFilterViewModel : ObservableObject
 
             // 2. Pre-fetch all scopes NOW (we are in Revit API thread)
             LoggerService.LogInfo("Pre-fetching CurrentSelection elements...");
-            _currentSelectionElements = _selectionService.GetAvailableElements(SelectionScope.CurrentSelection, SelectedModel);
+            _currentSelectionElements = _selectionService.GetAvailableElements(SelectionScope.CurrentSelection, SelectedModels);
             LoggerService.LogInfo($"CurrentSelection: {_currentSelectionElements.Count} elements.");
 
-            LoggerService.LogInfo("Pre-fetching ElementsVisibleInView elements...");
-            _elementsVisibleInViewElements = _selectionService.GetAvailableElements(SelectionScope.ElementsVisibleInView, SelectedModel);
+            // Add check to ensure we don't get null reference
+            _elementsVisibleInViewElements = _selectionService.GetAvailableElements(SelectionScope.ElementsVisibleInView, SelectedModels);
             LoggerService.LogInfo($"ElementsVisibleInView: {_elementsVisibleInViewElements.Count} elements.");
 
-            LoggerService.LogInfo("Pre-fetching ElementsBelongingToView elements...");
-            _elementsBelongingToViewElements = _selectionService.GetAvailableElements(SelectionScope.ElementsBelongingToView, SelectedModel);
+            _elementsBelongingToViewElements = _selectionService.GetAvailableElements(SelectionScope.ElementsBelongingToView, SelectedModels);
             LoggerService.LogInfo($"ElementsBelongingToView: {_elementsBelongingToViewElements.Count} elements.");
 
-            LoggerService.LogInfo("Pre-fetching AllModelElements elements...");
-            var allRaw = _selectionService.GetAvailableElements(SelectionScope.AllModelElements, SelectedModel);
+            var allRaw = _selectionService.GetAvailableElements(SelectionScope.AllModelElements, SelectedModels);
             _allModelElements = allRaw.Count > 10000 ? allRaw.Take(10000).ToList() : allRaw;
             LoggerService.LogInfo($"AllModelElements: {_allModelElements.Count} elements (raw: {allRaw.Count}).");
 
@@ -384,12 +387,61 @@ public partial class SelectionFilterViewModel : ObservableObject
         }
     }
 
-    partial void OnSelectedModelChanged(RevitModelRepresentation value)
+    [RelayCommand]
+    private void OpenModelSelection()
     {
-        if (value == null) return;
+        try
+        {
+            LoggerService.LogInfo("Opening Model Selection window...");
+            Views.ModelSelectionView view = null;
+            var viewModel = new ModelSelectionViewModel(AvailableModels.ToList(), SelectedModels, (selected) => 
+            {
+                ApplySelectedModels(selected);
+                view?.Close();
+            }, () => view?.Close());
+            
+            view = new Views.ModelSelectionView(viewModel);
+            
+            if (System.Windows.Application.Current != null)
+            {
+                var owner = System.Windows.Application.Current.Windows
+                    .OfType<System.Windows.Window>()
+                    .FirstOrDefault(w => w is Views.SelectionFilterView);
+                if (owner != null)
+                {
+                    view.Owner = owner;
+                }
+            }
+            
+            LoggerService.LogInfo("Showing Model Selection dialog...");
+            view.ShowDialog();
+        }
+        catch (Exception ex)
+        {
+            LoggerService.LogError("OpenModelSelection Command Error", ex);
+        }
+    }
+
+    public void ApplySelectedModels(List<RevitModelRepresentation> selected)
+    {
+        if (selected == null || !selected.Any()) return;
         if (_actionHandler == null || _actionExternalEvent == null) return;
 
-        LoggerService.LogInfo($"[OnSelectedModelChanged] Switching document context to: {value.DisplayName}");
+        // Save selected models list
+        SelectedModels.Clear();
+        SelectedModels.AddRange(selected);
+
+        // Update display text
+        if (SelectedModels.Count == 1)
+        {
+            SelectedModelsText = SelectedModels.First().DisplayName;
+        }
+        else
+        {
+            SelectedModelsText = $"Multiple models selected ({SelectedModels.Count})";
+        }
+
+        LoggerService.LogInfo($"[ApplySelectedModels] Switching context to: {SelectedModelsText}");
         StatusMessage = "Switching model context...";
         IsBusy = true;
 
@@ -405,12 +457,12 @@ public partial class SelectionFilterViewModel : ObservableObject
                 _persistentCheckedIds.Clear();
                 _lastAppliedCheckedIds.Clear();
                 
-                // Pre-fetch all scopes for the newly selected model document
-                _currentSelectionElements = _selectionService.GetAvailableElements(SelectionScope.CurrentSelection, value);
-                _elementsVisibleInViewElements = _selectionService.GetAvailableElements(SelectionScope.ElementsVisibleInView, value);
-                _elementsBelongingToViewElements = _selectionService.GetAvailableElements(SelectionScope.ElementsBelongingToView, value);
+                // Pre-fetch all scopes for the selected models combined
+                _currentSelectionElements = _selectionService.GetAvailableElements(SelectionScope.CurrentSelection, SelectedModels);
+                _elementsVisibleInViewElements = _selectionService.GetAvailableElements(SelectionScope.ElementsVisibleInView, SelectedModels);
+                _elementsBelongingToViewElements = _selectionService.GetAvailableElements(SelectionScope.ElementsBelongingToView, SelectedModels);
                 
-                var allRaw = _selectionService.GetAvailableElements(SelectionScope.AllModelElements, value);
+                var allRaw = _selectionService.GetAvailableElements(SelectionScope.AllModelElements, SelectedModels);
                 _allModelElements = allRaw.Count > 10000 ? allRaw.Take(10000).ToList() : allRaw;
 
                 // Sync active elements based on current scope
@@ -426,7 +478,7 @@ public partial class SelectionFilterViewModel : ObservableObject
                 // Rebuild the TreeView
                 BuildTree();
                 IsSelectionDirty = false;
-                StatusMessage = $"Ready ({value.DisplayName})";
+                StatusMessage = $"Ready ({SelectedModelsText})";
             }
             catch (Exception ex)
             {
@@ -1073,27 +1125,10 @@ public partial class SelectionFilterViewModel : ObservableObject
             
             // Get all active documents we want to expand selection in
             var docsToProcess = new List<(Document Document, RevitLinkInstance LinkInstance, ElementId LinkInstanceId)>();
-            if (SelectedModel?.DisplayName == "All Models")
+            foreach (var model in SelectedModels)
             {
-                docsToProcess.Add((doc, null, ElementId.InvalidElementId));
-                var linkCollector = new FilteredElementCollector(doc)
-                    .OfClass(typeof(RevitLinkInstance));
-                foreach (var el in linkCollector)
-                {
-                    if (el is RevitLinkInstance rli)
-                    {
-                        var ldoc = rli.GetLinkDocument();
-                        if (ldoc != null)
-                        {
-                            docsToProcess.Add((ldoc, rli, rli.Id));
-                        }
-                    }
-                }
-            }
-            else
-            {
-                var targetDoc = SelectedModel?.Document ?? doc;
-                var targetLink = SelectedModel?.LinkInstance;
+                var targetDoc = model.Document ?? doc;
+                var targetLink = model.LinkInstance;
                 docsToProcess.Add((targetDoc, targetLink, targetLink?.Id ?? ElementId.InvalidElementId));
             }
 

@@ -1,6 +1,6 @@
 # FilterPlus
 
-> **Current Version:** v1.4.0  
+> **Current Version:** v1.5.0  
 > **Add-in ID (GUID):** `A5265BB9-214C-4109-8DDC-DF1F6E4305B9`  
 
 ---
@@ -47,11 +47,13 @@ The add-in creates a custom tab containing the FilterPlus panel.
 The main FilterPlus application allows you to filter and navigate elements in your active selection or project. It constructs a dynamic hierarchical tree-view categorized by **Category > Family > Type > Instance (Element ID)**. Unlike standard flat selection filters, it displays element counts at each level and allows you to select, check, or uncheck elements interactively, immediately synchronizing your choices with the active Revit selection.
 
 ### Document and Linked Model Selector
-At the top of the main FilterPlus interface, a document selection dropdown allows you to choose the target model context:
-- **Active Document**: Restricts selection, tree hierarchy, pre-filtering, and rules to the host Revit file.
-- **Linked Documents**: Selecting a linked `.rvt` file shifts the explorer context to display, search, and pre-select elements belonging to that specific linked model.
-- **"All Models" (In All Models)**: Located at the bottom of the list, this option processes all operations (tree population, search, Logical rules, and "Increase Checked" expansions) across the host document and all linked documents simultaneously.
-- **Simultaneous Cross-Document Selection**: When applying selections or rule matches across multiple documents, FilterPlus creates appropriate coordinate-transformed link references. This allows Revit to highlight and select elements in both the host project and linked models at the same time in the viewport.
+At the top of the main FilterPlus interface, the document selection area allows you to choose the target model context:
+- **Selected Models Display**: A read-only text box wrapped in a primary blue (`#007ACC`) border displays the currently active filter scope (either the name of a single model, or a multiple model count like `"Multiple models selected (Count)"`).
+- **Select Button**: Clicking the `"Select"` button next to the display box opens the advanced `"Select model or models"` modal window.
+- **Active Model Default**: The host Revit document on which the add-in was executed is always checked and selected by default on startup.
+- **Select All Models**: A circular checkbox at the top of the selection window allows you to toggle all models (host + links) at once. When checked, the filtering processes all operations across all documents combined (same behavior as the previous `"All Models"` dropdown context).
+- **Individual Switches**: Users can use slide switches next to each model name to check or uncheck individual models. Unchecking any model deselects the "Select all models" option, and manually checking all models automatically checks the "Select all models" option.
+- **Simultaneous Cross-Document Selection**: When applying selections or rule matches across multiple selected models, FilterPlus creates appropriate coordinate-transformed link references (`CreateLinkReference`). This allows Revit to highlight and select elements in both the host project and linked models at the same time in the viewport.
 
 ### Pre-Filtering (Dropdown Filters)
 Filter and narrow down elements before selecting or displaying them. Dropdown controls at the top of the interface let you pre-filter elements based on:
@@ -114,6 +116,20 @@ Click the Pick Elements button to temporarily hide the FilterPlus window and sel
 ---
 
 ## 6. Version History (Changelog)
+
+### v1.5.0 - 2026-07-02
+
+#### Added
+- **Multi-Document Selection Window**:
+  - Replaced the top dropdown context selector with a read-only display box styled with a primary blue border (`#007ACC`) and a `"Select"` button.
+  - Developed the new modal window `"Select model or models"` to check or uncheck the host model and individual links.
+  - Implemented a circular toggle-all checkbox `"Select all models"` at the top of the list.
+  - Added bidirectional checking synchronization between the toggle-all checkbox and individual slide switches.
+  - Set the active model to be selected by default on startup.
+- **Unified Button Styling (Corner Radius)**:
+  - Applied a unified `CornerRadius="4"` to all main window buttons (`Pre-Selection`, `Select in Revit`, `Clear`, and `Apply Selection`).
+  - Applied the same `CornerRadius="4"` to the `Cancel` and `Apply` buttons in both `PreSelectionView` and `ModelSelectionView`.
+  - Configured `CornerRadius="4"` for the dynamic rule-building buttons (`Add Rule` and `Add Set`) within rule group templates.
 
 ### v1.4.0 - 2026-07-01
 

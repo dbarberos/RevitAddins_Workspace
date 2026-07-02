@@ -121,15 +121,25 @@
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <!-- DOCUMENT CONTEXT DROPDOWN -->
+        <!-- DOCUMENT CONTEXT DISPLAY AND SELECT -->
         <Border Grid.ColumnSpan="3" Grid.Row="0" Margin="0,0,0,10">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
                 <TextBlock Grid.Column="0" Text="Apply FilterPlus with:" VerticalAlignment="Center" FontWeight="SemiBold" Margin="0,0,10,0" Foreground="#333"/>
-                <ComboBox Grid.Column="1" ItemsSource="{Binding AvailableModels}" SelectedItem="{Binding SelectedModel}" DisplayMemberPath="DisplayName" Margin="0" VerticalAlignment="Center" Padding="6,4"/>
+                <Border Grid.Column="1" BorderBrush="#007ACC" BorderThickness="1.5" Background="White" CornerRadius="4" Padding="8,5" VerticalAlignment="Center" Margin="0,0,10,0">
+                    <TextBlock Text="{Binding SelectedModelsText}" VerticalAlignment="Center" Foreground="#333" FontWeight="Normal"/>
+                </Border>
+                <Button Grid.Column="2" Content="Select" Command="{Binding OpenModelSelectionCommand}" Width="80" Height="30" Margin="0" VerticalAlignment="Center" Cursor="Hand">
+                    <Button.Resources>
+                        <Style TargetType="Border">
+                            <Setter Property="CornerRadius" Value="4"/>
+                        </Style>
+                    </Button.Resources>
+                </Button>
             </Grid>
         </Border>
 
@@ -465,15 +475,33 @@
                     </Border>
                 </StackPanel>
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Bottom">
-                    <StackPanel.Resources>
-                        <Style TargetType="Border">
-                            <Setter Property="CornerRadius" Value="4"/>
-                        </Style>
-                    </StackPanel.Resources>
-                    <Button Content="Pre-Selection" Command="{Binding OpenPreSelectionCommand}" Margin="0,0,5,0" Height="30" Padding="15,0" Cursor="Hand"/>
-                    <Button Content="Select in Revit" Command="{Binding PickElementsCommand}" Margin="0,0,5,0" Height="30" Cursor="Hand"/>
-                    <Button Content="Clear" Command="{Binding ClearFiltersCommand}" Width="80" Margin="0,0,5,0" Height="30"/>
+                    <Button Content="Pre-Selection" Command="{Binding OpenPreSelectionCommand}" Margin="0,0,5,0" Height="30" Padding="15,0" Cursor="Hand">
+                        <Button.Resources>
+                            <Style TargetType="Border">
+                                <Setter Property="CornerRadius" Value="4"/>
+                            </Style>
+                        </Button.Resources>
+                    </Button>
+                    <Button Content="Select in Revit" Command="{Binding PickElementsCommand}" Margin="0,0,5,0" Height="30" Cursor="Hand">
+                        <Button.Resources>
+                            <Style TargetType="Border">
+                                <Setter Property="CornerRadius" Value="4"/>
+                            </Style>
+                        </Button.Resources>
+                    </Button>
+                    <Button Content="Clear" Command="{Binding ClearFiltersCommand}" Width="80" Margin="0,0,5,0" Height="30">
+                        <Button.Resources>
+                            <Style TargetType="Border">
+                                <Setter Property="CornerRadius" Value="4"/>
+                            </Style>
+                        </Button.Resources>
+                    </Button>
                     <Button Content="Apply Selection" Command="{Binding ApplyFilterCommand}" Width="120" Height="30" Margin="0">
+                        <Button.Resources>
+                            <Style TargetType="Border">
+                                <Setter Property="CornerRadius" Value="4"/>
+                            </Style>
+                        </Button.Resources>
                         <Button.Style>
                             <Style TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
                                 <Style.Triggers>

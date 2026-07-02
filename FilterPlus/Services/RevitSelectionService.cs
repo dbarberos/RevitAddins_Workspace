@@ -36,42 +36,26 @@ public class RevitSelectionService
         return ids;
     }
 
-    public List<ElementModel> GetAvailableElements(SelectionScope scope, RevitModelRepresentation selectedModel = null)
+    public List<ElementModel> GetAvailableElements(SelectionScope scope, IEnumerable<RevitModelRepresentation> selectedModels)
     {
-        bool isAllModels = selectedModel != null && selectedModel.DisplayName == "All Models";
-
-        if (!isAllModels)
+        var result = new List<ElementModel>();
+        if (selectedModels == null || !selectedModels.Any())
         {
-            Document doc = selectedModel?.Document ?? _doc;
-            RevitLinkInstance linkInstance = selectedModel?.LinkInstance;
-            return GetAvailableElementsForDoc(scope, doc, linkInstance);
+            LoggerService.LogInfo($"[GetAvailableElements] No models specified. Defaulting to host document elements.");
+            return GetAvailableElementsForDoc(scope, _doc, null);
         }
-        else
+
+        LoggerService.LogInfo($"Querying Revit for scope: {scope} on {selectedModels.Count()} models combined...");
+        foreach (var model in selectedModels)
         {
-            LoggerService.LogInfo($"Querying Revit for scope: {scope} on ALL models combined...");
-            // 1. Get host elements
-            var result = GetAvailableElementsForDoc(scope, _doc, null);
-
-            // 2. Get elements from all loaded links
-            var linkCollector = new FilteredElementCollector(_doc)
-                .OfClass(typeof(RevitLinkInstance));
-
-            foreach (var el in linkCollector)
-            {
-                if (el is RevitLinkInstance linkInst)
-                {
-                    var linkedDoc = linkInst.GetLinkDocument();
-                    if (linkedDoc != null)
-                    {
-                        var linkedElements = GetAvailableElementsForDoc(scope, linkedDoc, linkInst);
-                        result.AddRange(linkedElements);
-                    }
-                }
-            }
-
-            LoggerService.LogInfo($"Querying ALL models complete. Total elements found: {result.Count}");
-            return result;
+            Document doc = model.Document ?? _doc;
+            RevitLinkInstance linkInstance = model.LinkInstance;
+            var elements = GetAvailableElementsForDoc(scope, doc, linkInstance);
+            result.AddRange(elements);
         }
+
+        LoggerService.LogInfo($"Querying selected models complete. Total elements found: {result.Count}");
+        return result;
     }
 
     private List<ElementModel> GetAvailableElementsForDoc(SelectionScope scope, Document doc, RevitLinkInstance linkInstance)
