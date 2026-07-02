@@ -165,14 +165,13 @@
 
         <!-- Footer -->
         <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right">
+            <StackPanel.Resources>
+                <Style TargetType="Border">
+                    <Setter Property="CornerRadius" Value="4"/>
+                </Style>
+            </StackPanel.Resources>
             <Button Content="Cancel" Command="{Binding CancelCommand}" Padding="15,5" Margin="0,0,10,0"/>
-            <Button Content="Apply" Command="{Binding ApplyCommand}" Padding="15,5" Background="#007ACC" Foreground="White" BorderThickness="0" FontWeight="Bold" Cursor="Hand">
-                <Button.Resources>
-                    <Style TargetType="Border">
-                        <Setter Property="CornerRadius" Value="4"/>
-                    </Style>
-                </Button.Resources>
-            </Button>
+            <Button Content="Apply" Command="{Binding ApplyCommand}" Padding="15,5" Background="#007ACC" Foreground="White" BorderThickness="0" FontWeight="Bold" Cursor="Hand"/>
         </StackPanel>
     </Grid>
 </Window>
