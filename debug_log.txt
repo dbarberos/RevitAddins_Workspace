@@ -8564,3 +8564,22 @@
 [13:11:29.688] INFO: [RuleSet #968] NotifyRuleValuesChanged: Refreshing value lists for all child rules.
 [13:11:29.688] INFO: [Rule #648] RefreshPropertiesList complete. SelectedProperty changed to default 'Categorías'
 [13:11:29.691] INFO: Showing Pre-Selection dialog...
+[13:13:39.311] INFO: Opening Pre-Selection window...
+[13:13:39.312] INFO: [Rule #770] Constructor called.
+[13:13:39.312] INFO: [Rule #770] RefreshPropertiesList: showFamilias=False, showTipos=False, currentSelection=''
+[13:13:39.312] INFO: [Rule #770] RefreshPropertiesList: properties changed. Clearing and rebuilding properties list.
+[13:13:39.313] INFO: [Rule #770] OnSelectedPropertyChanged: Property changed to 'Categorías'
+[13:13:39.313] INFO: [Rule #770] UpdateAvailableValues: Calculating values for 'Categorías'
+[13:13:39.314] INFO: [Rule #770] UpdateAvailableValues: values changed. Clearing and adding 42 items.
+[13:13:39.314] INFO: [Rule #770] UpdateAvailableValues complete.
+[13:13:39.314] INFO: [Rule #770] OnSelectedValueChanged: Value changed to '<Boceto>'. _isUpdatingAvailableValues=False
+[13:13:39.315] INFO: [Rule #770] OnSelectedValueChanged: Notifying parent values changed.
+[13:13:39.316] INFO: [RuleSet #342] NotifyRuleValuesChanged: Refreshing value lists for all child rules.
+[13:13:39.316] INFO: [Rule #770] OnSelectedPropertyChanged: SelectedValue initialized to default '<Boceto>'
+[13:13:39.316] INFO: [Rule #770] OnSelectedPropertyChanged: Triggering Parent.PruneDependentRules()
+[13:13:39.317] INFO: [RuleSet #342] PruneDependentRules check: hasCategory=False, hasFamily=False
+[13:13:39.317] INFO: [Rule #770] OnSelectedPropertyChanged: Notifying parent properties/values changed
+[13:13:39.317] INFO: [RuleSet #342] NotifyRulePropertiesChanged: Refreshing properties lists for all child rules.
+[13:13:39.318] INFO: [RuleSet #342] NotifyRuleValuesChanged: Refreshing value lists for all child rules.
+[13:13:39.318] INFO: [Rule #770] RefreshPropertiesList complete. SelectedProperty changed to default 'Categorías'
+[13:13:39.320] INFO: Showing Pre-Selection dialog...
