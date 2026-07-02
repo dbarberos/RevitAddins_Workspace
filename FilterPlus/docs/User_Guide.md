@@ -125,6 +125,13 @@ Click the Pick Elements button to temporarily hide the FilterPlus window and sel
   - Adapted the explorer tree view, logical Pre-Selection rules, search, and "Increase Checked" algorithms to run in multi-model loops when "All Models" is active.
 - **Visual Loader Overlay Optimization**:
   - Fixed a WPF dispatcher thread rendering bug that caused the loading spinner overlay to not show up (or only briefly show at the end of the load cycle) when changing model contexts, building trees, or performing massive queries. We force immediate visual layout updating by pumping the Dispatcher queue at Background priority when setting IsBusy = true.
+- **Right Column Scrollbar Support**:
+  - Wrapped the right column panel in a ScrollViewer to make all card configurations accessible when the window height is reduced.
+  - Used WPF's FlowDirection mirroring trick (`FlowDirection="RightToLeft"` on the ScrollViewer, and `FlowDirection="LeftToRight"` on its child Grid) to position the scrollbar on the left edge of the right column, substituting the static gray vertical line separator.
+  - Configured `VerticalScrollBarVisibility="Visible"` to permanently reserve the scrollbar space, ensuring that the width of the cards remains perfectly consistent and never shifts or jumps, matching the styling behavior of the left tree explorer scrollbar.
+- **Top Row Header Layout Simplification**:
+  - Removed the white background card container from the top document context selector to integrate it seamlessly with the main window background.
+  - Reduced its height and updated the title to `"Apply FilterPlus with:"` for better user clarity.
 
 ### v1.3.1 - 2026-07-01
 

@@ -4,7 +4,7 @@
 
 1. **WPF ComboBox binding loss of selected value**: When modifying logical Pre-Selection rules (like choosing a Category or Family), WPF's ComboBox binding automatically triggered updates that cleared sibling/child values or threw selection-changed exceptions.
 2. **Revit multi-document selection coordination collisions**: Attempting to track elements from host and linked models using raw `ElementId`s led to collisions (duplicate IDs across documents) and silent failures when applying selections in the Revit viewport.
-3. **UI Thread Blocking Overlay Visibility**: Setting `IsBusy = true` was immediately followed by raising Revit external events or running synchronous CPU-intensive tree builds. This blocked the main thread before WPF's dispatcher had a chance to render the visibility change, preventing the loading overlay from appearing.
+3. **UI Thread Blocking Overlay & Animation Freeze**: Setting `IsBusy = true` was immediately followed by raising Revit external events or running synchronous CPU-intensive tree builds. This blocked the main thread before WPF's dispatcher had a chance to render the visibility change, preventing the loading overlay from appearing. Furthermore, any active WPF Storyboard animations (like spinner rotations or indeterminate progress bars) were shown frozen because the UI thread was completely occupied by the synchronous operations, preventing new frames from rendering.
 
 ---
 
@@ -12,7 +12,7 @@
 
 1. **ComboBox resets**: Sibling list property updates (e.g. changing the list of families available based on a new category) dynamically reset WPF binding targets to `null` because the old value was briefly not found in the newly-generated list.
 2. **Element ID Collisions**: In Revit, `ElementId` values are only unique inside a specific `Document`. When loading elements from linked files, matching elements on ID alone caused target conflicts, resulting in checked elements disappearing or mapping to wrong items in the explorer tree.
-3. **Main Thread Blocking**: Revit and modeless WPF windows share the same single-threaded main execution context. Raising external events or building trees immediately blocks execution, meaning visual state changes (like showing a spinner overlay) queued on the Dispatcher are never drawn if the state is toggled back to `false` at the end of the blocking block.
+3. **Main Thread Blocking & Animation Freeze**: Revit and modeless WPF windows share the same single-threaded main execution context. Raising external events or building trees immediately blocks execution. Visual state changes (like showing a spinner overlay) queued on the Dispatcher are never drawn unless pumped. Additionally, because WPF animations (Storyboards/DoubleAnimations) require continuous UI thread loops to update property values and redraw frames, they freeze entirely while a synchronous Revit API or tree rebuilding block executes.
 
 ---
 
@@ -48,12 +48,13 @@ Select all references simultaneously:
 _uiDoc.Selection.SetReferences(refs);
 ```
 
-### 3. Pump WPF Dispatcher before Blocking Tasks
-Force a synchronous UI layout update and render pass by pumping the thread's Dispatcher queue at `Background` priority immediately after setting `IsBusy = true`:
-```csharp
-IsBusy = true;
-System.Windows.Threading.Dispatcher.CurrentDispatcher.Invoke(
-    System.Windows.Threading.DispatcherPriority.Background,
-    new Action(delegate { }));
-```
-This processes all layout/render messages before executing any heavy synchronous tree-building or external event pre-fetching callbacks, ensuring the spinner overlay is visible during long operations.
+### 3. Pump Dispatcher & Static Status Card Design
+*   **Dispatcher Pump**: Force a synchronous UI layout update and render pass by pumping the thread's Dispatcher queue at `Background` priority immediately after setting `IsBusy = true`:
+    ```csharp
+    IsBusy = true;
+    System.Windows.Threading.Dispatcher.CurrentDispatcher.Invoke(
+        System.Windows.Threading.DispatcherPriority.Background,
+        new Action(delegate { }));
+    ```
+    This processes the visibility change of the loading overlay before executing the heavy synchronous blocks.
+*   **Static Status Card**: Since Storyboard animations cannot render while the UI thread is blocked, do not use spinning SVGs or indeterminate progress bars. Instead, design a static, compact status card. Bind its text to a dynamic `StatusMessage` (e.g. *"Switching model context..."*, *"Rebuilding tree explorer..."*) to give the user immediate visual feedback of the current task. This behaves reliably, looks highly professional, and prevents the add-in from appearing crashed or frozen.

@@ -28,6 +28,12 @@ I have successfully implemented the requested support for selecting, pre-selecti
   - Converted `Apply()` pre-selection rules to map and return `ElementSelectionKey` collections, ensuring rule-based pre-selection operates correctly across all active documents.
 - **[MODIFY] [PickElementsHandler.cs](file:///c:/Users/david.barbero/Documents/DOCUMENTOS/ALTEN/Workbench/RevitAddins_Workspace/RevitAddins_Workspace/FilterPlus/Services/PickElementsHandler.cs)**:
   - Adjusted interactive picking elements processing to output and load selections as composite `ElementSelectionKey`s.
+- **[MODIFY] [SelectionFilterView.xaml](file:///c:/Users/david.barbero/Documents/DOCUMENTOS/ALTEN/Workbench/RevitAddins_Workspace/RevitAddins_Workspace/FilterPlus/Views/SelectionFilterView.xaml)**:
+  - Removed the fixed gray visual separator `GridSplitter` at Column 1.
+  - Wrapped the right column panel in a `ScrollViewer` and set `FlowDirection="RightToLeft"` on it (with `FlowDirection="LeftToRight"` on the child `Grid`) to position its vertical scrollbar on the left edge.
+  - Configured `VerticalScrollBarVisibility="Visible"` to permanently reserve the scrollbar space, keeping card widths consistent and preventing any visual shifting.
+  - Adjusted Grid column definitions to add a clean 10px spacing in Column 1 and expanded Column 2 width to 365px to cleanly accommodate the scrollbar.
+  - Simplified the top row document context selector by stripping its card styling (background, border, padding) and updating its text to `"Apply FilterPlus with:"` for cleaner integration with the main layout.
 
 ---
 
