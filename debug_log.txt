@@ -6973,3 +6973,1386 @@
 [13:01:00.415] INFO: [Rule #971] UpdateAvailableValues: values list is identical. Returning early.
 [13:01:00.415] INFO: [Rule #971] RefreshValuesList: SelectedValue set/restored to '<Boceto>' (was '<Boceto>')
 [13:01:00.416] INFO: [Rule #971] UpdateElements complete. SelectedValue is '<Boceto>'
+[13:28:20.915] INFO: Addin Startup command started.
+[13:28:20.921] INFO: SelectionFilterViewModel initializing...
+[13:28:20.934] INFO: Initial selection retrieved: 1 elements.
+[13:28:20.939] INFO: Initial selection IDs count: 1
+[13:28:20.940] INFO: Pre-fetching CurrentSelection elements...
+[13:28:20.946] INFO: Querying Revit for scope: CurrentSelection...
+[13:28:21.092] INFO: Revit query finished. 1 valid elements found.
+[13:28:21.093] INFO: CurrentSelection: 1 elements.
+[13:28:21.094] INFO: Pre-fetching ElementsVisibleInView elements...
+[13:28:21.094] INFO: Querying Revit for scope: ElementsVisibleInView...
+[13:28:22.568] INFO: Revit query finished. 4811 valid elements found.
+[13:28:22.570] INFO: ElementsVisibleInView: 4811 elements.
+[13:28:22.570] INFO: Pre-fetching ElementsBelongingToView elements...
+[13:28:22.571] INFO: Querying Revit for scope: ElementsBelongingToView...
+[13:28:23.987] INFO: Revit query finished. 4988 valid elements found.
+[13:28:23.987] INFO: ElementsBelongingToView: 4988 elements.
+[13:28:23.988] INFO: Pre-fetching AllModelElements elements...
+[13:28:23.988] INFO: Querying Revit for scope: AllModelElements...
+[13:28:25.774] INFO: Revit query finished. 6834 valid elements found.
+[13:28:25.775] INFO: AllModelElements: 6834 elements (raw: 6834).
+[13:28:25.777] INFO: BuildTree: 1 elements for scope CurrentSelection.
+[13:28:25.784] INFO: Updating filter dropdowns...
+[13:28:25.787] INFO: Building tree structure offline for 1 elements...
+[13:28:25.795] INFO: Applying selection state for 1 checked elements...
+[13:28:25.797] INFO: Swapping tree root directly. New total: 1
+[13:28:25.797] INFO: Tree built and swapped. 1 visible elements.
+[13:28:25.802] INFO: BuildTree completed.
+[13:28:25.803] INFO: ViewModel created. Showing window...
+[13:45:13.017] INFO: Addin Startup command started.
+[13:45:13.020] INFO: SelectionFilterViewModel initializing...
+[13:45:13.030] INFO: Initial selection retrieved: 0 elements.
+[13:45:13.032] INFO: Initial selection IDs count: 0
+[13:45:13.033] INFO: Pre-fetching CurrentSelection elements...
+[13:45:13.036] INFO: Querying Revit for scope: CurrentSelection on document: Snowdon Towers Sample HVAC...
+[13:45:13.037] INFO: CurrentSelection: 0 elements.
+[13:45:13.037] INFO: Pre-fetching ElementsVisibleInView elements...
+[13:45:13.038] INFO: Querying Revit for scope: ElementsVisibleInView on document: Snowdon Towers Sample HVAC...
+[13:45:14.049] INFO: Revit query finished. 4815 valid elements found.
+[13:45:14.050] INFO: ElementsVisibleInView: 4815 elements.
+[13:45:14.050] INFO: Pre-fetching ElementsBelongingToView elements...
+[13:45:14.050] INFO: Querying Revit for scope: ElementsBelongingToView on document: Snowdon Towers Sample HVAC...
+[13:45:16.125] INFO: Revit query finished. 4815 valid elements found.
+[13:45:16.126] INFO: ElementsBelongingToView: 4815 elements.
+[13:45:16.126] INFO: Pre-fetching AllModelElements elements...
+[13:45:16.126] INFO: Querying Revit for scope: AllModelElements on document: Snowdon Towers Sample HVAC...
+[13:45:17.433] INFO: Revit query finished. 6834 valid elements found.
+[13:45:17.433] INFO: AllModelElements: 6834 elements (raw: 6834).
+[13:45:17.435] INFO: BuildTree: 0 elements for scope CurrentSelection.
+[13:45:17.438] INFO: Updating filter dropdowns...
+[13:45:17.440] INFO: Building tree structure offline for 0 elements...
+[13:45:17.443] INFO: Swapping tree root directly. New total: 0
+[13:45:17.444] INFO: Tree built and swapped. 0 visible elements.
+[13:45:17.447] INFO: BuildTree completed.
+[13:45:17.447] INFO: ViewModel created. Showing window...
+[13:45:32.483] INFO: [OnSelectedModelChanged] Switching document context to: Link: Snowdon Towers Sample Electrical.rvt : 6 : ubicación <No compartido>
+[13:45:32.511] INFO: Querying Revit for scope: CurrentSelection on document: Snowdon Towers Sample Electrical...
+[13:45:32.512] INFO: Querying Revit for scope: ElementsVisibleInView on document: Snowdon Towers Sample Electrical...
+[13:45:32.906] INFO: Revit query finished. 1243 valid elements found.
+[13:45:32.906] INFO: Querying Revit for scope: ElementsBelongingToView on document: Snowdon Towers Sample Electrical...
+[13:45:33.140] INFO: Revit query finished. 1243 valid elements found.
+[13:45:33.140] INFO: Querying Revit for scope: AllModelElements on document: Snowdon Towers Sample Electrical...
+[13:45:34.227] INFO: Revit query finished. 7545 valid elements found.
+[13:45:34.228] INFO: BuildTree: 0 elements for scope CurrentSelection.
+[13:45:34.229] INFO: Updating filter dropdowns...
+[13:45:34.229] INFO: Building tree structure offline for 0 elements...
+[13:45:34.230] INFO: Swapping tree root directly. New total: 0
+[13:45:34.231] INFO: Tree built and swapped. 0 visible elements.
+[13:45:34.231] INFO: BuildTree completed.
+[13:45:36.214] INFO: Scope switched to: AllModelElements. Rebuilding tree from pre-fetched data...
+[13:45:36.214] INFO: Active elements for scope AllModelElements: 7545
+[13:45:36.215] INFO: BuildTree: 7545 elements for scope AllModelElements.
+[13:45:36.215] INFO: Updating filter dropdowns...
+[13:45:36.225] INFO: Building tree structure offline for 7545 elements...
+[13:45:36.253] INFO: Swapping tree root directly. New total: 7545
+[13:45:36.255] INFO: Tree built and swapped. 7545 visible elements.
+[13:45:36.259] INFO: BuildTree completed.
+[13:46:09.188] INFO: Opening Pre-Selection window...
+[13:46:09.191] INFO: [Rule #044] Constructor called.
+[13:46:09.194] INFO: [Rule #044] RefreshPropertiesList: showFamilias=False, showTipos=False, currentSelection=''
+[13:46:09.194] INFO: [Rule #044] RefreshPropertiesList: properties changed. Clearing and rebuilding properties list.
+[13:46:09.194] INFO: [Rule #044] OnSelectedPropertyChanged: Property changed to 'Categorías'
+[13:46:09.197] INFO: [Rule #044] UpdateAvailableValues: Calculating values for 'Categorías'
+[13:46:09.200] INFO: [Rule #044] UpdateAvailableValues: values changed. Clearing and adding 86 items.
+[13:46:09.200] INFO: [Rule #044] UpdateAvailableValues complete.
+[13:46:09.201] INFO: [Rule #044] OnSelectedValueChanged: Value changed to '<Boceto>'. _isUpdatingAvailableValues=False
+[13:46:09.202] INFO: [Rule #044] OnSelectedValueChanged: Notifying parent values changed.
+[13:46:09.202] INFO: [RuleSet #077] NotifyRuleValuesChanged: Refreshing value lists for all child rules.
+[13:46:09.202] INFO: [Rule #044] OnSelectedPropertyChanged: SelectedValue initialized to default '<Boceto>'
+[13:46:09.203] INFO: [Rule #044] OnSelectedPropertyChanged: Triggering Parent.PruneDependentRules()
+[13:46:09.205] INFO: [RuleSet #077] PruneDependentRules check: hasCategory=False, hasFamily=False
+[13:46:09.205] INFO: [Rule #044] OnSelectedPropertyChanged: Notifying parent properties/values changed
+[13:46:09.206] INFO: [RuleSet #077] NotifyRulePropertiesChanged: Refreshing properties lists for all child rules.
+[13:46:09.206] INFO: [RuleSet #077] NotifyRuleValuesChanged: Refreshing value lists for all child rules.
+[13:46:09.206] INFO: [Rule #044] RefreshPropertiesList complete. SelectedProperty changed to default 'Categorías'
+[13:46:09.209] INFO: Showing Pre-Selection dialog...
+[13:46:23.850] INFO: [Rule #044] OnSelectedValueChanged: Value changed to 'Equipos eléctricos'. _isUpdatingAvailableValues=False
+[13:46:23.850] INFO: [Rule #044] OnSelectedValueChanged: Notifying parent values changed.
+[13:46:23.850] INFO: [RuleSet #077] NotifyRuleValuesChanged: Refreshing value lists for all child rules.
+[13:46:23.851] INFO: [Rule #044] RefreshValuesList called. prevValue = 'Equipos eléctricos'
+[13:46:23.851] INFO: [Rule #044] UpdateAvailableValues: Calculating values for 'Categorías'
+[13:46:23.852] INFO: [Rule #044] UpdateAvailableValues: values list is identical. Returning early.
+[13:46:23.853] INFO: [Rule #044] RefreshValuesList: SelectedValue set/restored to 'Equipos eléctricos' (was 'Equipos eléctricos')
+[13:46:25.975] INFO: [ApplyPreSelection] Applying matching IDs: 200 on scope: AllModelElements. IsBulkUpdating: False
+[13:46:25.976] INFO: BuildTree: 7545 elements for scope AllModelElements.
+[13:46:25.977] INFO: Updating filter dropdowns...
+[13:46:25.986] INFO: Building tree structure offline for 7545 elements...
+[13:46:26.008] INFO: Applying selection state for 200 checked elements...
+[13:46:26.010] INFO: Swapping tree root directly. New total: 7545
+[13:46:26.022] INFO: Tree built and swapped. 7545 visible elements.
+[13:46:26.031] INFO: BuildTree completed.
+[13:46:26.031] INFO: [ApplyPreSelection] Complete. Checked count is now 200
+[13:46:34.421] INFO: Apply Selection: 200 IDs applied. CurrentSelection updated to 200 elements.
+[13:48:43.053] INFO: Apply Selection: 24 IDs applied. CurrentSelection updated to 24 elements.
+[13:48:57.591] INFO: [OnSelectedModelChanged] Switching document context to: Active Model: Snowdon Towers Sample HVAC
+[13:48:57.614] INFO: Querying Revit for scope: CurrentSelection on document: Snowdon Towers Sample HVAC...
+[13:48:57.614] INFO: Querying Revit for scope: ElementsVisibleInView on document: Snowdon Towers Sample HVAC...
+[13:48:58.684] INFO: Revit query finished. 4810 valid elements found.
+[13:48:58.685] INFO: Querying Revit for scope: ElementsBelongingToView on document: Snowdon Towers Sample HVAC...
+[13:49:00.031] INFO: Revit query finished. 4810 valid elements found.
+[13:49:00.031] INFO: Querying Revit for scope: AllModelElements on document: Snowdon Towers Sample HVAC...
+[13:49:01.201] INFO: Revit query finished. 6834 valid elements found.
+[13:49:01.202] INFO: BuildTree: 6834 elements for scope AllModelElements.
+[13:49:01.203] INFO: Updating filter dropdowns...
+[13:49:01.210] INFO: Building tree structure offline for 6834 elements...
+[13:49:01.230] INFO: Swapping tree root directly. New total: 6834
+[13:49:01.246] INFO: Tree built and swapped. 6834 visible elements.
+[13:49:01.250] INFO: BuildTree completed.
+[13:49:10.168] INFO: Opening Pre-Selection window...
+[13:49:10.168] INFO: [Rule #566] Constructor called.
+[13:49:10.169] INFO: [Rule #566] RefreshPropertiesList: showFamilias=False, showTipos=False, currentSelection=''
+[13:49:10.169] INFO: [Rule #566] RefreshPropertiesList: properties changed. Clearing and rebuilding properties list.
+[13:49:10.169] INFO: [Rule #566] OnSelectedPropertyChanged: Property changed to 'Categorías'
+[13:49:10.169] INFO: [Rule #566] UpdateAvailableValues: Calculating values for 'Categorías'
+[13:49:10.171] INFO: [Rule #566] UpdateAvailableValues: values changed. Clearing and adding 65 items.
+[13:49:10.171] INFO: [Rule #566] UpdateAvailableValues complete.
+[13:49:10.171] INFO: [Rule #566] OnSelectedValueChanged: Value changed to '<Boceto>'. _isUpdatingAvailableValues=False
+[13:49:10.172] INFO: [Rule #566] OnSelectedValueChanged: Notifying parent values changed.
+[13:49:10.172] INFO: [RuleSet #638] NotifyRuleValuesChanged: Refreshing value lists for all child rules.
+[13:49:10.172] INFO: [Rule #566] OnSelectedPropertyChanged: SelectedValue initialized to default '<Boceto>'
+[13:49:10.173] INFO: [Rule #566] OnSelectedPropertyChanged: Triggering Parent.PruneDependentRules()
+[13:49:10.173] INFO: [RuleSet #638] PruneDependentRules check: hasCategory=False, hasFamily=False
+[13:49:10.173] INFO: [Rule #566] OnSelectedPropertyChanged: Notifying parent properties/values changed
+[13:49:10.174] INFO: [RuleSet #638] NotifyRulePropertiesChanged: Refreshing properties lists for all child rules.
+[13:49:10.175] INFO: [RuleSet #638] NotifyRuleValuesChanged: Refreshing value lists for all child rules.
+[13:49:10.175] INFO: [Rule #566] RefreshPropertiesList complete. SelectedProperty changed to default 'Categorías'
+[13:49:10.176] INFO: Showing Pre-Selection dialog...
+[13:49:19.639] INFO: [Rule #566] OnSelectedValueChanged: Value changed to 'Conductos'. _isUpdatingAvailableValues=False
+[13:49:19.640] INFO: [Rule #566] OnSelectedValueChanged: Notifying parent values changed.
+[13:49:19.640] INFO: [RuleSet #638] NotifyRuleValuesChanged: Refreshing value lists for all child rules.
+[13:49:19.640] INFO: [Rule #566] RefreshValuesList called. prevValue = 'Conductos'
+[13:49:19.641] INFO: [Rule #566] UpdateAvailableValues: Calculating values for 'Categorías'
+[13:49:19.642] INFO: [Rule #566] UpdateAvailableValues: values list is identical. Returning early.
+[13:49:19.642] INFO: [Rule #566] RefreshValuesList: SelectedValue set/restored to 'Conductos' (was 'Conductos')
+[13:49:20.985] INFO: [ApplyPreSelection] Applying matching IDs: 1053 on scope: AllModelElements. IsBulkUpdating: False
+[13:49:20.986] INFO: BuildTree: 6834 elements for scope AllModelElements.
+[13:49:20.987] INFO: Updating filter dropdowns...
+[13:49:20.996] INFO: Building tree structure offline for 6834 elements...
+[13:49:21.027] INFO: Applying selection state for 1053 checked elements...
+[13:49:21.029] INFO: Swapping tree root directly. New total: 6834
+[13:49:21.043] INFO: Tree built and swapped. 6834 visible elements.
+[13:49:21.046] INFO: BuildTree completed.
+[13:49:21.047] INFO: [ApplyPreSelection] Complete. Checked count is now 1053
+[13:49:24.800] INFO: Apply Selection: 1053 IDs applied. CurrentSelection updated to 1053 elements.
+[18:10:19.960] INFO: Addin Startup command started.
+[18:10:19.970] INFO: SelectionFilterViewModel initializing...
+[18:10:19.994] INFO: Initial selection retrieved: 0 elements.
+[18:10:20.004] INFO: Initial selection IDs count: 0
+[18:10:20.005] INFO: Pre-fetching CurrentSelection elements...
+[18:10:20.010] INFO: Collecting elements for scope: CurrentSelection in doc: 2510000094_KRN_ARQ_G_00 (LinkInstance: None)...
+[18:10:20.010] INFO: CurrentSelection: 0 elements.
+[18:10:20.011] INFO: Pre-fetching ElementsVisibleInView elements...
+[18:10:20.011] INFO: Collecting elements for scope: ElementsVisibleInView in doc: 2510000094_KRN_ARQ_G_00 (LinkInstance: None)...
+[18:10:20.114] INFO: ElementsVisibleInView: 7 elements.
+[18:10:20.114] INFO: Pre-fetching ElementsBelongingToView elements...
+[18:10:20.115] INFO: Collecting elements for scope: ElementsBelongingToView in doc: 2510000094_KRN_ARQ_G_00 (LinkInstance: None)...
+[18:10:20.123] INFO: ElementsBelongingToView: 7 elements.
+[18:10:20.123] INFO: Pre-fetching AllModelElements elements...
+[18:10:20.124] INFO: Collecting elements for scope: AllModelElements in doc: 2510000094_KRN_ARQ_G_00 (LinkInstance: None)...
+[18:10:28.918] INFO: AllModelElements: 10000 elements (raw: 63160).
+[18:10:28.920] INFO: BuildTree: 0 elements for scope CurrentSelection.
+[18:10:28.923] INFO: Updating filter dropdowns...
+[18:10:28.925] INFO: Building tree structure offline for 0 elements...
+[18:10:28.931] INFO: Swapping tree root directly. New total: 0
+[18:10:28.954] INFO: Tree built and swapped. 0 visible elements.
+[18:10:28.965] INFO: BuildTree completed.
+[18:10:28.965] INFO: ViewModel created. Showing window...
+[18:10:58.203] INFO: [OnSelectedModelChanged] Switching document context to: All Models
+[18:10:58.227] INFO: Querying Revit for scope: CurrentSelection on ALL models combined...
+[18:10:58.228] INFO: Collecting elements for scope: CurrentSelection in doc: 2510000094_KRN_ARQ_G_00 (LinkInstance: None)...
+[18:10:58.231] INFO: Collecting elements for scope: CurrentSelection in doc: 2510000094_KRN_STR_G_01 (LinkInstance: 2510000094_KRN_STR_G_01.rvt : 5 : ubicación <No compartido>)...
+[18:10:58.232] INFO: Collecting elements for scope: CurrentSelection in doc: 2510000094_KRN_ARQ_G_03 (LinkInstance: 2510000094_KRN_ARQ_G_03.rvt : 6 : ubicación <No compartido>)...
+[18:10:58.233] INFO: Collecting elements for scope: CurrentSelection in doc: 2510000094_KRN_ARQ_G_01 (LinkInstance: 2510000094_KRN_ARQ_G_01.rvt : 9 : ubicación Interno)...
+[18:10:58.234] INFO: Collecting elements for scope: CurrentSelection in doc: 2510000094_KRN_STR_G_03 (LinkInstance: 2510000094_KRN_STR_G_03.rvt : 10 : ubicación <No compartido>)...
+[18:10:58.235] INFO: Collecting elements for scope: CurrentSelection in doc: 2510000094_KRN_COOR_G (LinkInstance: 2510000094_KRN_COOR_G.rvt : 11 : ubicación <No compartido>)...
+[18:10:58.238] INFO: Collecting elements for scope: CurrentSelection in doc: 2510000094_KRN_URB_G (LinkInstance: 2510000094_KRN_URB_G.rvt : 12 : ubicación Interno)...
+[18:10:58.238] INFO: Collecting elements for scope: CurrentSelection in doc: 2510000094_KRN_STR_G_04 (LinkInstance: 2510000094_KRN_STR_G_04.rvt : 13 : ubicación Interno)...
+[18:10:58.239] INFO: Collecting elements for scope: CurrentSelection in doc: 2510000094_KRN_ARQ_G_04 (LinkInstance: 2510000094_KRN_ARQ_G_04.rvt : 14 : ubicación Interno)...
+[18:10:58.239] INFO: Collecting elements for scope: CurrentSelection in doc: 2510000094_KRN_ARQ_G_02 (LinkInstance: 2510000094_KRN_ARQ_G_02.rvt : 15 : ubicación Interno)...
+[18:10:58.247] INFO: Collecting elements for scope: CurrentSelection in doc: 7CU_rev06.ifc (LinkInstance: 2510000094_KRN_STR_G_01.rvt : 7CU_rev06.ifc.rvt : 29 : ubicación <No compartido>)...
+[18:10:58.248] INFO: Collecting elements for scope: CurrentSelection in doc: 7CU_rev04_Oficinas Sede.ifc (LinkInstance: 2510000094_KRN_STR_G_03.rvt : 7CU_rev04_Oficinas Sede.ifc.rvt : 24 : ubicación <No compartido>)...
+[18:10:58.252] INFO: Querying ALL models complete. Total elements found: 0
+[18:10:58.252] INFO: Querying Revit for scope: ElementsVisibleInView on ALL models combined...
+[18:10:58.253] INFO: Collecting elements for scope: ElementsVisibleInView in doc: 2510000094_KRN_ARQ_G_00 (LinkInstance: None)...
+[18:10:58.256] INFO: Collecting elements for scope: ElementsVisibleInView in doc: 2510000094_KRN_STR_G_01 (LinkInstance: 2510000094_KRN_STR_G_01.rvt : 5 : ubicación <No compartido>)...
+[18:10:59.070] INFO: Collecting elements for scope: ElementsVisibleInView in doc: 2510000094_KRN_ARQ_G_03 (LinkInstance: 2510000094_KRN_ARQ_G_03.rvt : 6 : ubicación <No compartido>)...
+[18:11:00.516] INFO: Collecting elements for scope: ElementsVisibleInView in doc: 2510000094_KRN_ARQ_G_01 (LinkInstance: 2510000094_KRN_ARQ_G_01.rvt : 9 : ubicación Interno)...
+[18:11:01.828] INFO: Collecting elements for scope: ElementsVisibleInView in doc: 2510000094_KRN_STR_G_03 (LinkInstance: 2510000094_KRN_STR_G_03.rvt : 10 : ubicación <No compartido>)...
+[18:11:02.360] INFO: Collecting elements for scope: ElementsVisibleInView in doc: 2510000094_KRN_COOR_G (LinkInstance: 2510000094_KRN_COOR_G.rvt : 11 : ubicación <No compartido>)...
+[18:11:02.754] INFO: Collecting elements for scope: ElementsVisibleInView in doc: 2510000094_KRN_URB_G (LinkInstance: 2510000094_KRN_URB_G.rvt : 12 : ubicación Interno)...
+[18:11:04.097] INFO: Collecting elements for scope: ElementsVisibleInView in doc: 2510000094_KRN_STR_G_04 (LinkInstance: 2510000094_KRN_STR_G_04.rvt : 13 : ubicación Interno)...
+[18:11:04.304] INFO: Collecting elements for scope: ElementsVisibleInView in doc: 2510000094_KRN_ARQ_G_04 (LinkInstance: 2510000094_KRN_ARQ_G_04.rvt : 14 : ubicación Interno)...
+[18:11:05.306] INFO: Collecting elements for scope: ElementsVisibleInView in doc: 2510000094_KRN_ARQ_G_02 (LinkInstance: 2510000094_KRN_ARQ_G_02.rvt : 15 : ubicación Interno)...
+[18:11:06.005] INFO: Collecting elements for scope: ElementsVisibleInView in doc: 7CU_rev06.ifc (LinkInstance: 2510000094_KRN_STR_G_01.rvt : 7CU_rev06.ifc.rvt : 29 : ubicación <No compartido>)...
+[18:11:06.127] INFO: Collecting elements for scope: ElementsVisibleInView in doc: 7CU_rev04_Oficinas Sede.ifc (LinkInstance: 2510000094_KRN_STR_G_03.rvt : 7CU_rev04_Oficinas Sede.ifc.rvt : 24 : ubicación <No compartido>)...
+[18:11:06.244] INFO: Querying ALL models complete. Total elements found: 4093
+[18:11:06.244] INFO: Querying Revit for scope: ElementsBelongingToView on ALL models combined...
+[18:11:06.245] INFO: Collecting elements for scope: ElementsBelongingToView in doc: 2510000094_KRN_ARQ_G_00 (LinkInstance: None)...
+[18:11:06.251] INFO: Collecting elements for scope: ElementsBelongingToView in doc: 2510000094_KRN_STR_G_01 (LinkInstance: 2510000094_KRN_STR_G_01.rvt : 5 : ubicación <No compartido>)...
+[18:11:06.351] INFO: Collecting elements for scope: ElementsBelongingToView in doc: 2510000094_KRN_ARQ_G_03 (LinkInstance: 2510000094_KRN_ARQ_G_03.rvt : 6 : ubicación <No compartido>)...
+[18:11:06.514] INFO: Collecting elements for scope: ElementsBelongingToView in doc: 2510000094_KRN_ARQ_G_01 (LinkInstance: 2510000094_KRN_ARQ_G_01.rvt : 9 : ubicación Interno)...
+[18:11:06.630] INFO: Collecting elements for scope: ElementsBelongingToView in doc: 2510000094_KRN_STR_G_03 (LinkInstance: 2510000094_KRN_STR_G_03.rvt : 10 : ubicación <No compartido>)...
+[18:11:06.665] INFO: Collecting elements for scope: ElementsBelongingToView in doc: 2510000094_KRN_COOR_G (LinkInstance: 2510000094_KRN_COOR_G.rvt : 11 : ubicación <No compartido>)...
+[18:11:06.703] INFO: Collecting elements for scope: ElementsBelongingToView in doc: 2510000094_KRN_URB_G (LinkInstance: 2510000094_KRN_URB_G.rvt : 12 : ubicación Interno)...
+[18:11:07.003] INFO: Collecting elements for scope: ElementsBelongingToView in doc: 2510000094_KRN_STR_G_04 (LinkInstance: 2510000094_KRN_STR_G_04.rvt : 13 : ubicación Interno)...
+[18:11:07.026] INFO: Collecting elements for scope: ElementsBelongingToView in doc: 2510000094_KRN_ARQ_G_04 (LinkInstance: 2510000094_KRN_ARQ_G_04.rvt : 14 : ubicación Interno)...
+[18:11:07.285] INFO: Collecting elements for scope: ElementsBelongingToView in doc: 2510000094_KRN_ARQ_G_02 (LinkInstance: 2510000094_KRN_ARQ_G_02.rvt : 15 : ubicación Interno)...
+[18:11:07.353] INFO: Collecting elements for scope: ElementsBelongingToView in doc: 7CU_rev06.ifc (LinkInstance: 2510000094_KRN_STR_G_01.rvt : 7CU_rev06.ifc.rvt : 29 : ubicación <No compartido>)...
+[18:11:07.364] INFO: Collecting elements for scope: ElementsBelongingToView in doc: 7CU_rev04_Oficinas Sede.ifc (LinkInstance: 2510000094_KRN_STR_G_03.rvt : 7CU_rev04_Oficinas Sede.ifc.rvt : 24 : ubicación <No compartido>)...
+[18:11:07.388] INFO: Querying ALL models complete. Total elements found: 4093
+[18:11:07.388] INFO: Querying Revit for scope: AllModelElements on ALL models combined...
+[18:11:07.389] INFO: Collecting elements for scope: AllModelElements in doc: 2510000094_KRN_ARQ_G_00 (LinkInstance: None)...
+[18:11:13.674] INFO: Collecting elements for scope: AllModelElements in doc: 2510000094_KRN_STR_G_01 (LinkInstance: 2510000094_KRN_STR_G_01.rvt : 5 : ubicación <No compartido>)...
+[18:11:14.598] INFO: Collecting elements for scope: AllModelElements in doc: 2510000094_KRN_ARQ_G_03 (LinkInstance: 2510000094_KRN_ARQ_G_03.rvt : 6 : ubicación <No compartido>)...
+[18:11:17.119] INFO: Collecting elements for scope: AllModelElements in doc: 2510000094_KRN_ARQ_G_01 (LinkInstance: 2510000094_KRN_ARQ_G_01.rvt : 9 : ubicación Interno)...
+[18:11:18.757] INFO: Collecting elements for scope: AllModelElements in doc: 2510000094_KRN_STR_G_03 (LinkInstance: 2510000094_KRN_STR_G_03.rvt : 10 : ubicación <No compartido>)...
+[18:11:19.142] INFO: Collecting elements for scope: AllModelElements in doc: 2510000094_KRN_COOR_G (LinkInstance: 2510000094_KRN_COOR_G.rvt : 11 : ubicación <No compartido>)...
+[18:11:19.360] INFO: Collecting elements for scope: AllModelElements in doc: 2510000094_KRN_URB_G (LinkInstance: 2510000094_KRN_URB_G.rvt : 12 : ubicación Interno)...
+[18:11:20.775] INFO: Collecting elements for scope: AllModelElements in doc: 2510000094_KRN_STR_G_04 (LinkInstance: 2510000094_KRN_STR_G_04.rvt : 13 : ubicación Interno)...
+[18:11:20.940] INFO: Collecting elements for scope: AllModelElements in doc: 2510000094_KRN_ARQ_G_04 (LinkInstance: 2510000094_KRN_ARQ_G_04.rvt : 14 : ubicación Interno)...
+[18:11:21.656] INFO: Collecting elements for scope: AllModelElements in doc: 2510000094_KRN_ARQ_G_02 (LinkInstance: 2510000094_KRN_ARQ_G_02.rvt : 15 : ubicación Interno)...
+[18:11:22.294] INFO: Collecting elements for scope: AllModelElements in doc: 7CU_rev06.ifc (LinkInstance: 2510000094_KRN_STR_G_01.rvt : 7CU_rev06.ifc.rvt : 29 : ubicación <No compartido>)...
+[18:11:22.581] INFO: Collecting elements for scope: AllModelElements in doc: 7CU_rev04_Oficinas Sede.ifc (LinkInstance: 2510000094_KRN_STR_G_03.rvt : 7CU_rev04_Oficinas Sede.ifc.rvt : 24 : ubicación <No compartido>)...
+[18:11:22.737] INFO: Querying ALL models complete. Total elements found: 142052
+[18:11:22.738] INFO: BuildTree: 0 elements for scope CurrentSelection.
+[18:11:22.739] INFO: Updating filter dropdowns...
+[18:11:22.740] INFO: Building tree structure offline for 0 elements...
+[18:11:22.740] INFO: Swapping tree root directly. New total: 0
+[18:11:22.742] INFO: Tree built and swapped. 0 visible elements.
+[18:11:22.742] INFO: BuildTree completed.
+[18:11:22.759] INFO: Scope switched to: AllModelElements. Rebuilding tree from pre-fetched data...
+[18:11:22.759] INFO: Active elements for scope AllModelElements: 10000
+[18:11:22.760] INFO: BuildTree: 10000 elements for scope AllModelElements.
+[18:11:22.761] INFO: Updating filter dropdowns...
+[18:11:22.777] INFO: Building tree structure offline for 10000 elements...
+[18:11:22.844] INFO: Swapping tree root directly. New total: 10000
+[18:11:22.844] INFO: Tree built and swapped. 10000 visible elements.
+[18:11:22.855] INFO: BuildTree completed.
+[18:11:28.616] INFO: [OnSelectedModelChanged] Switching document context to: Link: 2510000094_KRN_URB_G.rvt : 12 : ubicación Interno
+[18:11:28.665] INFO: Collecting elements for scope: CurrentSelection in doc: 2510000094_KRN_URB_G (LinkInstance: 2510000094_KRN_URB_G.rvt : 12 : ubicación Interno)...
+[18:11:28.666] INFO: Collecting elements for scope: ElementsVisibleInView in doc: 2510000094_KRN_URB_G (LinkInstance: 2510000094_KRN_URB_G.rvt : 12 : ubicación Interno)...
+[18:11:28.902] INFO: Collecting elements for scope: ElementsBelongingToView in doc: 2510000094_KRN_URB_G (LinkInstance: 2510000094_KRN_URB_G.rvt : 12 : ubicación Interno)...
+[18:11:29.180] INFO: Collecting elements for scope: AllModelElements in doc: 2510000094_KRN_URB_G (LinkInstance: 2510000094_KRN_URB_G.rvt : 12 : ubicación Interno)...
+[18:11:30.506] INFO: BuildTree: 10000 elements for scope AllModelElements.
+[18:11:30.508] INFO: Updating filter dropdowns...
+[18:11:30.518] INFO: Building tree structure offline for 10000 elements...
+[18:11:30.567] INFO: Swapping tree root directly. New total: 10000
+[18:11:30.581] INFO: Tree built and swapped. 10000 visible elements.
+[18:11:30.589] INFO: BuildTree completed.
+[18:11:33.753] INFO: [OnSelectedModelChanged] Switching document context to: Link: 2510000094_KRN_ARQ_G_01.rvt : 9 : ubicación Interno
+[18:11:33.780] INFO: Collecting elements for scope: CurrentSelection in doc: 2510000094_KRN_ARQ_G_01 (LinkInstance: 2510000094_KRN_ARQ_G_01.rvt : 9 : ubicación Interno)...
+[18:11:33.780] INFO: Collecting elements for scope: ElementsVisibleInView in doc: 2510000094_KRN_ARQ_G_01 (LinkInstance: 2510000094_KRN_ARQ_G_01.rvt : 9 : ubicación Interno)...
+[18:11:33.865] INFO: Collecting elements for scope: ElementsBelongingToView in doc: 2510000094_KRN_ARQ_G_01 (LinkInstance: 2510000094_KRN_ARQ_G_01.rvt : 9 : ubicación Interno)...
+[18:11:33.969] INFO: Collecting elements for scope: AllModelElements in doc: 2510000094_KRN_ARQ_G_01 (LinkInstance: 2510000094_KRN_ARQ_G_01.rvt : 9 : ubicación Interno)...
+[18:11:35.397] INFO: BuildTree: 10000 elements for scope AllModelElements.
+[18:11:35.398] INFO: Updating filter dropdowns...
+[18:11:35.412] INFO: Building tree structure offline for 10000 elements...
+[18:11:35.466] INFO: Swapping tree root directly. New total: 10000
+[18:11:35.480] INFO: Tree built and swapped. 10000 visible elements.
+[18:11:35.485] INFO: BuildTree completed.
+[18:11:38.337] INFO: [OnSelectedModelChanged] Switching document context to: All Models
+[18:11:38.385] INFO: Querying Revit for scope: CurrentSelection on ALL models combined...
+[18:11:38.386] INFO: Collecting elements for scope: CurrentSelection in doc: 2510000094_KRN_ARQ_G_00 (LinkInstance: None)...
+[18:11:38.390] INFO: Collecting elements for scope: CurrentSelection in doc: 2510000094_KRN_STR_G_01 (LinkInstance: 2510000094_KRN_STR_G_01.rvt : 5 : ubicación <No compartido>)...
+[18:11:38.392] INFO: Collecting elements for scope: CurrentSelection in doc: 2510000094_KRN_ARQ_G_03 (LinkInstance: 2510000094_KRN_ARQ_G_03.rvt : 6 : ubicación <No compartido>)...
+[18:11:38.393] INFO: Collecting elements for scope: CurrentSelection in doc: 2510000094_KRN_ARQ_G_01 (LinkInstance: 2510000094_KRN_ARQ_G_01.rvt : 9 : ubicación Interno)...
+[18:11:38.393] INFO: Collecting elements for scope: CurrentSelection in doc: 2510000094_KRN_STR_G_03 (LinkInstance: 2510000094_KRN_STR_G_03.rvt : 10 : ubicación <No compartido>)...
+[18:11:38.395] INFO: Collecting elements for scope: CurrentSelection in doc: 2510000094_KRN_COOR_G (LinkInstance: 2510000094_KRN_COOR_G.rvt : 11 : ubicación <No compartido>)...
+[18:11:38.397] INFO: Collecting elements for scope: CurrentSelection in doc: 2510000094_KRN_URB_G (LinkInstance: 2510000094_KRN_URB_G.rvt : 12 : ubicación Interno)...
+[18:11:38.398] INFO: Collecting elements for scope: CurrentSelection in doc: 2510000094_KRN_STR_G_04 (LinkInstance: 2510000094_KRN_STR_G_04.rvt : 13 : ubicación Interno)...
+[18:11:38.398] INFO: Collecting elements for scope: CurrentSelection in doc: 2510000094_KRN_ARQ_G_04 (LinkInstance: 2510000094_KRN_ARQ_G_04.rvt : 14 : ubicación Interno)...
+[18:11:38.399] INFO: Collecting elements for scope: CurrentSelection in doc: 2510000094_KRN_ARQ_G_02 (LinkInstance: 2510000094_KRN_ARQ_G_02.rvt : 15 : ubicación Interno)...
+[18:11:38.408] INFO: Collecting elements for scope: CurrentSelection in doc: 7CU_rev06.ifc (LinkInstance: 2510000094_KRN_STR_G_01.rvt : 7CU_rev06.ifc.rvt : 29 : ubicación <No compartido>)...
+[18:11:38.409] INFO: Collecting elements for scope: CurrentSelection in doc: 7CU_rev04_Oficinas Sede.ifc (LinkInstance: 2510000094_KRN_STR_G_03.rvt : 7CU_rev04_Oficinas Sede.ifc.rvt : 24 : ubicación <No compartido>)...
+[18:11:38.414] INFO: Querying ALL models complete. Total elements found: 0
+[18:11:38.414] INFO: Querying Revit for scope: ElementsVisibleInView on ALL models combined...
+[18:11:38.415] INFO: Collecting elements for scope: ElementsVisibleInView in doc: 2510000094_KRN_ARQ_G_00 (LinkInstance: None)...
+[18:11:38.420] INFO: Collecting elements for scope: ElementsVisibleInView in doc: 2510000094_KRN_STR_G_01 (LinkInstance: 2510000094_KRN_STR_G_01.rvt : 5 : ubicación <No compartido>)...
+[18:11:38.500] INFO: Collecting elements for scope: ElementsVisibleInView in doc: 2510000094_KRN_ARQ_G_03 (LinkInstance: 2510000094_KRN_ARQ_G_03.rvt : 6 : ubicación <No compartido>)...
+[18:11:38.630] INFO: Collecting elements for scope: ElementsVisibleInView in doc: 2510000094_KRN_ARQ_G_01 (LinkInstance: 2510000094_KRN_ARQ_G_01.rvt : 9 : ubicación Interno)...
+[18:11:38.732] INFO: Collecting elements for scope: ElementsVisibleInView in doc: 2510000094_KRN_STR_G_03 (LinkInstance: 2510000094_KRN_STR_G_03.rvt : 10 : ubicación <No compartido>)...
+[18:11:38.771] INFO: Collecting elements for scope: ElementsVisibleInView in doc: 2510000094_KRN_COOR_G (LinkInstance: 2510000094_KRN_COOR_G.rvt : 11 : ubicación <No compartido>)...
+[18:11:38.795] INFO: Collecting elements for scope: ElementsVisibleInView in doc: 2510000094_KRN_URB_G (LinkInstance: 2510000094_KRN_URB_G.rvt : 12 : ubicación Interno)...
+[18:11:39.088] INFO: Collecting elements for scope: ElementsVisibleInView in doc: 2510000094_KRN_STR_G_04 (LinkInstance: 2510000094_KRN_STR_G_04.rvt : 13 : ubicación Interno)...
+[18:11:39.128] INFO: Collecting elements for scope: ElementsVisibleInView in doc: 2510000094_KRN_ARQ_G_04 (LinkInstance: 2510000094_KRN_ARQ_G_04.rvt : 14 : ubicación Interno)...
+[18:11:39.364] INFO: Collecting elements for scope: ElementsVisibleInView in doc: 2510000094_KRN_ARQ_G_02 (LinkInstance: 2510000094_KRN_ARQ_G_02.rvt : 15 : ubicación Interno)...
+[18:11:39.437] INFO: Collecting elements for scope: ElementsVisibleInView in doc: 7CU_rev06.ifc (LinkInstance: 2510000094_KRN_STR_G_01.rvt : 7CU_rev06.ifc.rvt : 29 : ubicación <No compartido>)...
+[18:11:39.448] INFO: Collecting elements for scope: ElementsVisibleInView in doc: 7CU_rev04_Oficinas Sede.ifc (LinkInstance: 2510000094_KRN_STR_G_03.rvt : 7CU_rev04_Oficinas Sede.ifc.rvt : 24 : ubicación <No compartido>)...
+[18:11:39.459] INFO: Querying ALL models complete. Total elements found: 4093
+[18:11:39.460] INFO: Querying Revit for scope: ElementsBelongingToView on ALL models combined...
+[18:11:39.461] INFO: Collecting elements for scope: ElementsBelongingToView in doc: 2510000094_KRN_ARQ_G_00 (LinkInstance: None)...
+[18:11:39.469] INFO: Collecting elements for scope: ElementsBelongingToView in doc: 2510000094_KRN_STR_G_01 (LinkInstance: 2510000094_KRN_STR_G_01.rvt : 5 : ubicación <No compartido>)...
+[18:11:39.552] INFO: Collecting elements for scope: ElementsBelongingToView in doc: 2510000094_KRN_ARQ_G_03 (LinkInstance: 2510000094_KRN_ARQ_G_03.rvt : 6 : ubicación <No compartido>)...
+[18:11:39.693] INFO: Collecting elements for scope: ElementsBelongingToView in doc: 2510000094_KRN_ARQ_G_01 (LinkInstance: 2510000094_KRN_ARQ_G_01.rvt : 9 : ubicación Interno)...
+[18:11:39.794] INFO: Collecting elements for scope: ElementsBelongingToView in doc: 2510000094_KRN_STR_G_03 (LinkInstance: 2510000094_KRN_STR_G_03.rvt : 10 : ubicación <No compartido>)...
+[18:11:39.827] INFO: Collecting elements for scope: ElementsBelongingToView in doc: 2510000094_KRN_COOR_G (LinkInstance: 2510000094_KRN_COOR_G.rvt : 11 : ubicación <No compartido>)...
+[18:11:39.852] INFO: Collecting elements for scope: ElementsBelongingToView in doc: 2510000094_KRN_URB_G (LinkInstance: 2510000094_KRN_URB_G.rvt : 12 : ubicación Interno)...
+[18:11:40.162] INFO: Collecting elements for scope: ElementsBelongingToView in doc: 2510000094_KRN_STR_G_04 (LinkInstance: 2510000094_KRN_STR_G_04.rvt : 13 : ubicación Interno)...
+[18:11:40.191] INFO: Collecting elements for scope: ElementsBelongingToView in doc: 2510000094_KRN_ARQ_G_04 (LinkInstance: 2510000094_KRN_ARQ_G_04.rvt : 14 : ubicación Interno)...
+[18:11:40.445] INFO: Collecting elements for scope: ElementsBelongingToView in doc: 2510000094_KRN_ARQ_G_02 (LinkInstance: 2510000094_KRN_ARQ_G_02.rvt : 15 : ubicación Interno)...
+[18:11:40.514] INFO: Collecting elements for scope: ElementsBelongingToView in doc: 7CU_rev06.ifc (LinkInstance: 2510000094_KRN_STR_G_01.rvt : 7CU_rev06.ifc.rvt : 29 : ubicación <No compartido>)...
+[18:11:40.531] INFO: Collecting elements for scope: ElementsBelongingToView in doc: 7CU_rev04_Oficinas Sede.ifc (LinkInstance: 2510000094_KRN_STR_G_03.rvt : 7CU_rev04_Oficinas Sede.ifc.rvt : 24 : ubicación <No compartido>)...
+[18:11:40.543] INFO: Querying ALL models complete. Total elements found: 4093
+[18:11:40.543] INFO: Querying Revit for scope: AllModelElements on ALL models combined...
+[18:11:40.544] INFO: Collecting elements for scope: AllModelElements in doc: 2510000094_KRN_ARQ_G_00 (LinkInstance: None)...
+[18:11:45.825] INFO: Collecting elements for scope: AllModelElements in doc: 2510000094_KRN_STR_G_01 (LinkInstance: 2510000094_KRN_STR_G_01.rvt : 5 : ubicación <No compartido>)...
+[18:11:46.633] INFO: Collecting elements for scope: AllModelElements in doc: 2510000094_KRN_ARQ_G_03 (LinkInstance: 2510000094_KRN_ARQ_G_03.rvt : 6 : ubicación <No compartido>)...
+[18:11:49.067] INFO: Collecting elements for scope: AllModelElements in doc: 2510000094_KRN_ARQ_G_01 (LinkInstance: 2510000094_KRN_ARQ_G_01.rvt : 9 : ubicación Interno)...
+[18:11:50.526] INFO: Collecting elements for scope: AllModelElements in doc: 2510000094_KRN_STR_G_03 (LinkInstance: 2510000094_KRN_STR_G_03.rvt : 10 : ubicación <No compartido>)...
+[18:11:50.844] INFO: Collecting elements for scope: AllModelElements in doc: 2510000094_KRN_COOR_G (LinkInstance: 2510000094_KRN_COOR_G.rvt : 11 : ubicación <No compartido>)...
+[18:11:51.058] INFO: Collecting elements for scope: AllModelElements in doc: 2510000094_KRN_URB_G (LinkInstance: 2510000094_KRN_URB_G.rvt : 12 : ubicación Interno)...
+[18:11:52.453] INFO: Collecting elements for scope: AllModelElements in doc: 2510000094_KRN_STR_G_04 (LinkInstance: 2510000094_KRN_STR_G_04.rvt : 13 : ubicación Interno)...
+[18:11:52.600] INFO: Collecting elements for scope: AllModelElements in doc: 2510000094_KRN_ARQ_G_04 (LinkInstance: 2510000094_KRN_ARQ_G_04.rvt : 14 : ubicación Interno)...
+[18:11:53.259] INFO: Collecting elements for scope: AllModelElements in doc: 2510000094_KRN_ARQ_G_02 (LinkInstance: 2510000094_KRN_ARQ_G_02.rvt : 15 : ubicación Interno)...
+[18:11:53.886] INFO: Collecting elements for scope: AllModelElements in doc: 7CU_rev06.ifc (LinkInstance: 2510000094_KRN_STR_G_01.rvt : 7CU_rev06.ifc.rvt : 29 : ubicación <No compartido>)...
+[18:11:54.157] INFO: Collecting elements for scope: AllModelElements in doc: 7CU_rev04_Oficinas Sede.ifc (LinkInstance: 2510000094_KRN_STR_G_03.rvt : 7CU_rev04_Oficinas Sede.ifc.rvt : 24 : ubicación <No compartido>)...
+[18:11:54.331] INFO: Querying ALL models complete. Total elements found: 142052
+[18:11:54.332] INFO: BuildTree: 10000 elements for scope AllModelElements.
+[18:11:54.333] INFO: Updating filter dropdowns...
+[18:11:54.346] INFO: Building tree structure offline for 10000 elements...
+[18:11:54.401] INFO: Swapping tree root directly. New total: 10000
+[18:11:54.425] INFO: Tree built and swapped. 10000 visible elements.
+[18:11:54.431] INFO: BuildTree completed.
+[18:11:57.680] INFO: [OnSelectedModelChanged] Switching document context to: Link: 2510000094_KRN_STR_G_01.rvt : 5 : ubicación <No compartido>
+[18:11:57.733] INFO: Collecting elements for scope: CurrentSelection in doc: 2510000094_KRN_STR_G_01 (LinkInstance: 2510000094_KRN_STR_G_01.rvt : 5 : ubicación <No compartido>)...
+[18:11:57.733] INFO: Collecting elements for scope: ElementsVisibleInView in doc: 2510000094_KRN_STR_G_01 (LinkInstance: 2510000094_KRN_STR_G_01.rvt : 5 : ubicación <No compartido>)...
+[18:11:57.802] INFO: Collecting elements for scope: ElementsBelongingToView in doc: 2510000094_KRN_STR_G_01 (LinkInstance: 2510000094_KRN_STR_G_01.rvt : 5 : ubicación <No compartido>)...
+[18:11:57.872] INFO: Collecting elements for scope: AllModelElements in doc: 2510000094_KRN_STR_G_01 (LinkInstance: 2510000094_KRN_STR_G_01.rvt : 5 : ubicación <No compartido>)...
+[18:11:58.790] INFO: BuildTree: 7420 elements for scope AllModelElements.
+[18:11:58.791] INFO: Updating filter dropdowns...
+[18:11:58.803] INFO: Building tree structure offline for 7420 elements...
+[18:11:58.840] INFO: Swapping tree root directly. New total: 7420
+[18:11:58.857] INFO: Tree built and swapped. 7420 visible elements.
+[18:11:58.865] INFO: BuildTree completed.
+[18:12:01.000] INFO: [OnSelectedModelChanged] Switching document context to: Active Model: 2510000094_KRN_ARQ_G_00
+[18:12:01.040] INFO: Collecting elements for scope: CurrentSelection in doc: 2510000094_KRN_ARQ_G_00 (LinkInstance: None)...
+[18:12:01.040] INFO: Collecting elements for scope: ElementsVisibleInView in doc: 2510000094_KRN_ARQ_G_00 (LinkInstance: None)...
+[18:12:01.042] INFO: Collecting elements for scope: ElementsBelongingToView in doc: 2510000094_KRN_ARQ_G_00 (LinkInstance: None)...
+[18:12:01.044] INFO: Collecting elements for scope: AllModelElements in doc: 2510000094_KRN_ARQ_G_00 (LinkInstance: None)...
+[18:12:06.863] INFO: BuildTree: 10000 elements for scope AllModelElements.
+[18:12:06.864] INFO: Updating filter dropdowns...
+[18:12:06.893] INFO: Building tree structure offline for 10000 elements...
+[18:12:06.939] INFO: Swapping tree root directly. New total: 10000
+[18:12:06.953] INFO: Tree built and swapped. 10000 visible elements.
+[18:12:06.958] INFO: BuildTree completed.
+[18:12:10.000] INFO: [OnSelectedModelChanged] Switching document context to: Link: 2510000094_KRN_URB_G.rvt : 12 : ubicación Interno
+[18:12:10.031] INFO: Collecting elements for scope: CurrentSelection in doc: 2510000094_KRN_URB_G (LinkInstance: 2510000094_KRN_URB_G.rvt : 12 : ubicación Interno)...
+[18:12:10.032] INFO: Collecting elements for scope: ElementsVisibleInView in doc: 2510000094_KRN_URB_G (LinkInstance: 2510000094_KRN_URB_G.rvt : 12 : ubicación Interno)...
+[18:12:10.311] INFO: Collecting elements for scope: ElementsBelongingToView in doc: 2510000094_KRN_URB_G (LinkInstance: 2510000094_KRN_URB_G.rvt : 12 : ubicación Interno)...
+[18:12:10.592] INFO: Collecting elements for scope: AllModelElements in doc: 2510000094_KRN_URB_G (LinkInstance: 2510000094_KRN_URB_G.rvt : 12 : ubicación Interno)...
+[18:12:11.938] INFO: BuildTree: 10000 elements for scope AllModelElements.
+[18:12:11.939] INFO: Updating filter dropdowns...
+[18:12:11.948] INFO: Building tree structure offline for 10000 elements...
+[18:12:12.000] INFO: Swapping tree root directly. New total: 10000
+[18:12:12.018] INFO: Tree built and swapped. 10000 visible elements.
+[18:12:12.023] INFO: BuildTree completed.
+[18:12:14.600] INFO: [OnSelectedModelChanged] Switching document context to: Active Model: 2510000094_KRN_ARQ_G_00
+[18:12:14.642] INFO: Collecting elements for scope: CurrentSelection in doc: 2510000094_KRN_ARQ_G_00 (LinkInstance: None)...
+[18:12:14.643] INFO: Collecting elements for scope: ElementsVisibleInView in doc: 2510000094_KRN_ARQ_G_00 (LinkInstance: None)...
+[18:12:14.645] INFO: Collecting elements for scope: ElementsBelongingToView in doc: 2510000094_KRN_ARQ_G_00 (LinkInstance: None)...
+[18:12:14.647] INFO: Collecting elements for scope: AllModelElements in doc: 2510000094_KRN_ARQ_G_00 (LinkInstance: None)...
+[18:12:26.677] INFO: BuildTree: 10000 elements for scope AllModelElements.
+[18:12:26.679] INFO: Updating filter dropdowns...
+[18:12:26.700] INFO: Building tree structure offline for 10000 elements...
+[18:12:26.787] INFO: Swapping tree root directly. New total: 10000
+[18:12:26.821] INFO: Tree built and swapped. 10000 visible elements.
+[18:12:26.834] INFO: BuildTree completed.
+[09:06:18.405] INFO: Addin Startup command started.
+[09:06:18.413] INFO: SelectionFilterViewModel initializing...
+[09:06:18.426] INFO: Initial selection retrieved: 0 elements.
+[09:06:18.434] INFO: Initial selection IDs count: 0
+[09:06:18.434] INFO: Pre-fetching CurrentSelection elements...
+[09:06:18.439] INFO: Collecting elements for scope: CurrentSelection in doc: Snowdon Towers Sample HVAC (LinkInstance: None)...
+[09:06:18.439] INFO: CurrentSelection: 0 elements.
+[09:06:18.440] INFO: Pre-fetching ElementsVisibleInView elements...
+[09:06:18.440] INFO: Collecting elements for scope: ElementsVisibleInView in doc: Snowdon Towers Sample HVAC (LinkInstance: None)...
+[09:06:19.622] INFO: ElementsVisibleInView: 4811 elements.
+[09:06:19.622] INFO: Pre-fetching ElementsBelongingToView elements...
+[09:06:19.623] INFO: Collecting elements for scope: ElementsBelongingToView in doc: Snowdon Towers Sample HVAC (LinkInstance: None)...
+[09:06:22.476] INFO: ElementsBelongingToView: 4811 elements.
+[09:06:22.477] INFO: Pre-fetching AllModelElements elements...
+[09:06:22.477] INFO: Collecting elements for scope: AllModelElements in doc: Snowdon Towers Sample HVAC (LinkInstance: None)...
+[09:06:23.760] INFO: AllModelElements: 6834 elements (raw: 6834).
+[09:06:23.786] INFO: BuildTree: 0 elements for scope CurrentSelection.
+[09:06:23.789] INFO: Updating filter dropdowns...
+[09:06:23.791] INFO: Building tree structure offline for 0 elements...
+[09:06:23.795] INFO: Swapping tree root directly. New total: 0
+[09:06:23.796] INFO: Tree built and swapped. 0 visible elements.
+[09:06:23.804] INFO: BuildTree completed.
+[09:06:23.805] INFO: ViewModel created. Showing window...
+[09:06:42.489] INFO: Scope switched to: AllModelElements. Rebuilding tree from pre-fetched data...
+[09:06:42.489] INFO: Active elements for scope AllModelElements: 6834
+[09:06:42.536] INFO: BuildTree: 6834 elements for scope AllModelElements.
+[09:06:42.537] INFO: Updating filter dropdowns...
+[09:06:42.548] INFO: Building tree structure offline for 6834 elements...
+[09:06:42.573] INFO: Swapping tree root directly. New total: 6834
+[09:06:42.574] INFO: Tree built and swapped. 6834 visible elements.
+[09:06:42.580] INFO: BuildTree completed.
+[09:06:45.430] INFO: [OnSelectedModelChanged] Switching document context to: All Models
+[09:06:45.473] INFO: Querying Revit for scope: CurrentSelection on ALL models combined...
+[09:06:45.473] INFO: Collecting elements for scope: CurrentSelection in doc: Snowdon Towers Sample HVAC (LinkInstance: None)...
+[09:06:45.475] INFO: Collecting elements for scope: CurrentSelection in doc: Snowdon Towers Sample Architectural (LinkInstance: Snowdon Towers Sample Architectural.rvt : Architecture : ubicación <No compartido>)...
+[09:06:45.475] INFO: Collecting elements for scope: CurrentSelection in doc: Snowdon Towers Sample Structural (LinkInstance: Snowdon Towers Sample Structural.rvt : Structure : ubicación <No compartido>)...
+[09:06:45.476] INFO: Collecting elements for scope: CurrentSelection in doc: Snowdon Towers Sample Facades (LinkInstance: Snowdon Towers Sample Facades.rvt : Facade : ubicación <No compartido>)...
+[09:06:45.476] INFO: Collecting elements for scope: CurrentSelection in doc: Snowdon Towers Sample Plumbing (LinkInstance: Snowdon Towers Sample Plumbing.rvt : 4 : ubicación <No compartido>)...
+[09:06:45.477] INFO: Collecting elements for scope: CurrentSelection in doc: Snowdon Towers Sample Electrical (LinkInstance: Snowdon Towers Sample Electrical.rvt : 6 : ubicación <No compartido>)...
+[09:06:45.479] INFO: Collecting elements for scope: CurrentSelection in doc: Snowdon Towers Sample Site (LinkInstance: Snowdon Towers Sample Site.rvt : 7 : ubicación <No compartido>)...
+[09:06:45.480] INFO: Querying ALL models complete. Total elements found: 0
+[09:06:45.480] INFO: Querying Revit for scope: ElementsVisibleInView on ALL models combined...
+[09:06:45.480] INFO: Collecting elements for scope: ElementsVisibleInView in doc: Snowdon Towers Sample HVAC (LinkInstance: None)...
+[09:06:46.468] INFO: Collecting elements for scope: ElementsVisibleInView in doc: Snowdon Towers Sample Architectural (LinkInstance: Snowdon Towers Sample Architectural.rvt : Architecture : ubicación <No compartido>)...
+[09:06:47.219] INFO: Collecting elements for scope: ElementsVisibleInView in doc: Snowdon Towers Sample Structural (LinkInstance: Snowdon Towers Sample Structural.rvt : Structure : ubicación <No compartido>)...
+[09:06:47.394] INFO: Collecting elements for scope: ElementsVisibleInView in doc: Snowdon Towers Sample Facades (LinkInstance: Snowdon Towers Sample Facades.rvt : Facade : ubicación <No compartido>)...
+[09:06:47.476] INFO: Collecting elements for scope: ElementsVisibleInView in doc: Snowdon Towers Sample Plumbing (LinkInstance: Snowdon Towers Sample Plumbing.rvt : 4 : ubicación <No compartido>)...
+[09:06:48.296] INFO: Collecting elements for scope: ElementsVisibleInView in doc: Snowdon Towers Sample Electrical (LinkInstance: Snowdon Towers Sample Electrical.rvt : 6 : ubicación <No compartido>)...
+[09:06:48.713] INFO: Collecting elements for scope: ElementsVisibleInView in doc: Snowdon Towers Sample Site (LinkInstance: Snowdon Towers Sample Site.rvt : 7 : ubicación <No compartido>)...
+[09:06:48.750] INFO: Querying ALL models complete. Total elements found: 12866
+[09:06:48.751] INFO: Querying Revit for scope: ElementsBelongingToView on ALL models combined...
+[09:06:48.751] INFO: Collecting elements for scope: ElementsBelongingToView in doc: Snowdon Towers Sample HVAC (LinkInstance: None)...
+[09:06:49.846] INFO: Collecting elements for scope: ElementsBelongingToView in doc: Snowdon Towers Sample Architectural (LinkInstance: Snowdon Towers Sample Architectural.rvt : Architecture : ubicación <No compartido>)...
+[09:06:50.542] INFO: Collecting elements for scope: ElementsBelongingToView in doc: Snowdon Towers Sample Structural (LinkInstance: Snowdon Towers Sample Structural.rvt : Structure : ubicación <No compartido>)...
+[09:06:50.656] INFO: Collecting elements for scope: ElementsBelongingToView in doc: Snowdon Towers Sample Facades (LinkInstance: Snowdon Towers Sample Facades.rvt : Facade : ubicación <No compartido>)...
+[09:06:50.680] INFO: Collecting elements for scope: ElementsBelongingToView in doc: Snowdon Towers Sample Plumbing (LinkInstance: Snowdon Towers Sample Plumbing.rvt : 4 : ubicación <No compartido>)...
+[09:06:51.440] INFO: Collecting elements for scope: ElementsBelongingToView in doc: Snowdon Towers Sample Electrical (LinkInstance: Snowdon Towers Sample Electrical.rvt : 6 : ubicación <No compartido>)...
+[09:06:51.665] INFO: Collecting elements for scope: ElementsBelongingToView in doc: Snowdon Towers Sample Site (LinkInstance: Snowdon Towers Sample Site.rvt : 7 : ubicación <No compartido>)...
+[09:06:51.709] INFO: Querying ALL models complete. Total elements found: 12866
+[09:06:51.710] INFO: Querying Revit for scope: AllModelElements on ALL models combined...
+[09:06:51.710] INFO: Collecting elements for scope: AllModelElements in doc: Snowdon Towers Sample HVAC (LinkInstance: None)...
+[09:06:52.867] INFO: Collecting elements for scope: AllModelElements in doc: Snowdon Towers Sample Architectural (LinkInstance: Snowdon Towers Sample Architectural.rvt : Architecture : ubicación <No compartido>)...
+[09:06:56.069] INFO: Collecting elements for scope: AllModelElements in doc: Snowdon Towers Sample Structural (LinkInstance: Snowdon Towers Sample Structural.rvt : Structure : ubicación <No compartido>)...
+[09:06:56.758] INFO: Collecting elements for scope: AllModelElements in doc: Snowdon Towers Sample Facades (LinkInstance: Snowdon Towers Sample Facades.rvt : Facade : ubicación <No compartido>)...
+[09:06:56.935] INFO: Collecting elements for scope: AllModelElements in doc: Snowdon Towers Sample Plumbing (LinkInstance: Snowdon Towers Sample Plumbing.rvt : 4 : ubicación <No compartido>)...
+[09:06:59.555] INFO: Collecting elements for scope: AllModelElements in doc: Snowdon Towers Sample Electrical (LinkInstance: Snowdon Towers Sample Electrical.rvt : 6 : ubicación <No compartido>)...
+[09:07:01.072] INFO: Collecting elements for scope: AllModelElements in doc: Snowdon Towers Sample Site (LinkInstance: Snowdon Towers Sample Site.rvt : 7 : ubicación <No compartido>)...
+[09:07:01.222] INFO: Querying ALL models complete. Total elements found: 63957
+[09:07:01.314] INFO: BuildTree: 10000 elements for scope AllModelElements.
+[09:07:01.315] INFO: Updating filter dropdowns...
+[09:07:01.324] INFO: Building tree structure offline for 10000 elements...
+[09:07:01.354] INFO: Swapping tree root directly. New total: 10000
+[09:07:01.367] INFO: Tree built and swapped. 10000 visible elements.
+[09:07:01.388] INFO: BuildTree completed.
+[09:07:04.410] INFO: [OnSelectedModelChanged] Switching document context to: Link: Snowdon Towers Sample Electrical.rvt : 6 : ubicación <No compartido>
+[09:07:04.449] INFO: Collecting elements for scope: CurrentSelection in doc: Snowdon Towers Sample Electrical (LinkInstance: Snowdon Towers Sample Electrical.rvt : 6 : ubicación <No compartido>)...
+[09:07:04.449] INFO: Collecting elements for scope: ElementsVisibleInView in doc: Snowdon Towers Sample Electrical (LinkInstance: Snowdon Towers Sample Electrical.rvt : 6 : ubicación <No compartido>)...
+[09:07:04.674] INFO: Collecting elements for scope: ElementsBelongingToView in doc: Snowdon Towers Sample Electrical (LinkInstance: Snowdon Towers Sample Electrical.rvt : 6 : ubicación <No compartido>)...
+[09:07:04.917] INFO: Collecting elements for scope: AllModelElements in doc: Snowdon Towers Sample Electrical (LinkInstance: Snowdon Towers Sample Electrical.rvt : 6 : ubicación <No compartido>)...
+[09:07:06.172] INFO: BuildTree: 7545 elements for scope AllModelElements.
+[09:07:06.173] INFO: Updating filter dropdowns...
+[09:07:06.185] INFO: Building tree structure offline for 7545 elements...
+[09:07:06.214] INFO: Swapping tree root directly. New total: 7545
+[09:07:06.229] INFO: Tree built and swapped. 7545 visible elements.
+[09:07:06.235] INFO: BuildTree completed.
+[09:07:14.121] INFO: [OnSelectedModelChanged] Switching document context to: Link: Snowdon Towers Sample Structural.rvt : Structure : ubicación <No compartido>
+[09:07:14.150] INFO: Collecting elements for scope: CurrentSelection in doc: Snowdon Towers Sample Structural (LinkInstance: Snowdon Towers Sample Structural.rvt : Structure : ubicación <No compartido>)...
+[09:07:14.150] INFO: Collecting elements for scope: ElementsVisibleInView in doc: Snowdon Towers Sample Structural (LinkInstance: Snowdon Towers Sample Structural.rvt : Structure : ubicación <No compartido>)...
+[09:07:14.250] INFO: Collecting elements for scope: ElementsBelongingToView in doc: Snowdon Towers Sample Structural (LinkInstance: Snowdon Towers Sample Structural.rvt : Structure : ubicación <No compartido>)...
+[09:07:14.360] INFO: Collecting elements for scope: AllModelElements in doc: Snowdon Towers Sample Structural (LinkInstance: Snowdon Towers Sample Structural.rvt : Structure : ubicación <No compartido>)...
+[09:07:15.058] INFO: BuildTree: 5343 elements for scope AllModelElements.
+[09:07:15.059] INFO: Updating filter dropdowns...
+[09:07:15.065] INFO: Building tree structure offline for 5343 elements...
+[09:07:15.086] INFO: Swapping tree root directly. New total: 5343
+[09:07:15.099] INFO: Tree built and swapped. 5343 visible elements.
+[09:07:15.103] INFO: BuildTree completed.
+[09:07:17.217] INFO: [OnSelectedModelChanged] Switching document context to: Link: Snowdon Towers Sample Architectural.rvt : Architecture : ubicación <No compartido>
+[09:07:17.262] INFO: Collecting elements for scope: CurrentSelection in doc: Snowdon Towers Sample Architectural (LinkInstance: Snowdon Towers Sample Architectural.rvt : Architecture : ubicación <No compartido>)...
+[09:07:17.263] INFO: Collecting elements for scope: ElementsVisibleInView in doc: Snowdon Towers Sample Architectural (LinkInstance: Snowdon Towers Sample Architectural.rvt : Architecture : ubicación <No compartido>)...
+[09:07:17.770] INFO: Collecting elements for scope: ElementsBelongingToView in doc: Snowdon Towers Sample Architectural (LinkInstance: Snowdon Towers Sample Architectural.rvt : Architecture : ubicación <No compartido>)...
+[09:07:18.239] INFO: Collecting elements for scope: AllModelElements in doc: Snowdon Towers Sample Architectural (LinkInstance: Snowdon Towers Sample Architectural.rvt : Architecture : ubicación <No compartido>)...
+[09:07:22.299] INFO: BuildTree: 10000 elements for scope AllModelElements.
+[09:07:22.301] INFO: Updating filter dropdowns...
+[09:07:22.322] INFO: Building tree structure offline for 10000 elements...
+[09:07:22.445] INFO: Swapping tree root directly. New total: 10000
+[09:07:22.473] INFO: Tree built and swapped. 10000 visible elements.
+[09:07:22.481] INFO: BuildTree completed.
+[09:16:18.795] INFO: Addin Startup command started.
+[09:16:18.800] INFO: SelectionFilterViewModel initializing...
+[09:16:18.810] INFO: Initial selection retrieved: 0 elements.
+[09:16:18.816] INFO: Initial selection IDs count: 0
+[09:16:18.817] INFO: Pre-fetching CurrentSelection elements...
+[09:16:18.821] INFO: Collecting elements for scope: CurrentSelection in doc: Snowdon Towers Sample HVAC (LinkInstance: None)...
+[09:16:18.822] INFO: CurrentSelection: 0 elements.
+[09:16:18.822] INFO: Pre-fetching ElementsVisibleInView elements...
+[09:16:18.822] INFO: Collecting elements for scope: ElementsVisibleInView in doc: Snowdon Towers Sample HVAC (LinkInstance: None)...
+[09:16:20.406] INFO: ElementsVisibleInView: 4815 elements.
+[09:16:20.407] INFO: Pre-fetching ElementsBelongingToView elements...
+[09:16:20.407] INFO: Collecting elements for scope: ElementsBelongingToView in doc: Snowdon Towers Sample HVAC (LinkInstance: None)...
+[09:16:22.813] INFO: ElementsBelongingToView: 4815 elements.
+[09:16:22.813] INFO: Pre-fetching AllModelElements elements...
+[09:16:22.814] INFO: Collecting elements for scope: AllModelElements in doc: Snowdon Towers Sample HVAC (LinkInstance: None)...
+[09:16:24.086] INFO: AllModelElements: 6834 elements (raw: 6834).
+[09:16:24.121] INFO: BuildTree: 0 elements for scope CurrentSelection.
+[09:16:24.124] INFO: Updating filter dropdowns...
+[09:16:24.126] INFO: Building tree structure offline for 0 elements...
+[09:16:24.130] INFO: Swapping tree root directly. New total: 0
+[09:16:24.130] INFO: Tree built and swapped. 0 visible elements.
+[09:16:24.138] INFO: BuildTree completed.
+[09:16:24.139] INFO: ViewModel created. Showing window...
+[09:16:30.272] INFO: Scope switched to: AllModelElements. Rebuilding tree from pre-fetched data...
+[09:16:30.273] INFO: Active elements for scope AllModelElements: 6834
+[09:16:30.322] INFO: BuildTree: 6834 elements for scope AllModelElements.
+[09:16:30.324] INFO: Updating filter dropdowns...
+[09:16:30.333] INFO: Building tree structure offline for 6834 elements...
+[09:16:30.356] INFO: Swapping tree root directly. New total: 6834
+[09:16:30.357] INFO: Tree built and swapped. 6834 visible elements.
+[09:16:30.363] INFO: BuildTree completed.
+[09:16:32.622] INFO: [OnSelectedModelChanged] Switching document context to: All Models
+[09:16:32.673] INFO: Querying Revit for scope: CurrentSelection on ALL models combined...
+[09:16:32.674] INFO: Collecting elements for scope: CurrentSelection in doc: Snowdon Towers Sample HVAC (LinkInstance: None)...
+[09:16:32.675] INFO: Collecting elements for scope: CurrentSelection in doc: Snowdon Towers Sample Architectural (LinkInstance: Snowdon Towers Sample Architectural.rvt : Architecture : ubicación <No compartido>)...
+[09:16:32.675] INFO: Collecting elements for scope: CurrentSelection in doc: Snowdon Towers Sample Structural (LinkInstance: Snowdon Towers Sample Structural.rvt : Structure : ubicación <No compartido>)...
+[09:16:32.676] INFO: Collecting elements for scope: CurrentSelection in doc: Snowdon Towers Sample Facades (LinkInstance: Snowdon Towers Sample Facades.rvt : Facade : ubicación <No compartido>)...
+[09:16:32.676] INFO: Collecting elements for scope: CurrentSelection in doc: Snowdon Towers Sample Plumbing (LinkInstance: Snowdon Towers Sample Plumbing.rvt : 4 : ubicación <No compartido>)...
+[09:16:32.676] INFO: Collecting elements for scope: CurrentSelection in doc: Snowdon Towers Sample Electrical (LinkInstance: Snowdon Towers Sample Electrical.rvt : 6 : ubicación <No compartido>)...
+[09:16:32.678] INFO: Collecting elements for scope: CurrentSelection in doc: Snowdon Towers Sample Site (LinkInstance: Snowdon Towers Sample Site.rvt : 7 : ubicación <No compartido>)...
+[09:16:32.678] INFO: Querying ALL models complete. Total elements found: 0
+[09:16:32.678] INFO: Querying Revit for scope: ElementsVisibleInView on ALL models combined...
+[09:16:32.679] INFO: Collecting elements for scope: ElementsVisibleInView in doc: Snowdon Towers Sample HVAC (LinkInstance: None)...
+[09:16:33.630] INFO: Collecting elements for scope: ElementsVisibleInView in doc: Snowdon Towers Sample Architectural (LinkInstance: Snowdon Towers Sample Architectural.rvt : Architecture : ubicación <No compartido>)...
+[09:16:34.403] INFO: Collecting elements for scope: ElementsVisibleInView in doc: Snowdon Towers Sample Structural (LinkInstance: Snowdon Towers Sample Structural.rvt : Structure : ubicación <No compartido>)...
+[09:16:34.558] INFO: Collecting elements for scope: ElementsVisibleInView in doc: Snowdon Towers Sample Facades (LinkInstance: Snowdon Towers Sample Facades.rvt : Facade : ubicación <No compartido>)...
+[09:16:34.636] INFO: Collecting elements for scope: ElementsVisibleInView in doc: Snowdon Towers Sample Plumbing (LinkInstance: Snowdon Towers Sample Plumbing.rvt : 4 : ubicación <No compartido>)...
+[09:16:35.420] INFO: Collecting elements for scope: ElementsVisibleInView in doc: Snowdon Towers Sample Electrical (LinkInstance: Snowdon Towers Sample Electrical.rvt : 6 : ubicación <No compartido>)...
+[09:16:35.846] INFO: Collecting elements for scope: ElementsVisibleInView in doc: Snowdon Towers Sample Site (LinkInstance: Snowdon Towers Sample Site.rvt : 7 : ubicación <No compartido>)...
+[09:16:35.880] INFO: Querying ALL models complete. Total elements found: 12870
+[09:16:35.880] INFO: Querying Revit for scope: ElementsBelongingToView on ALL models combined...
+[09:16:35.881] INFO: Collecting elements for scope: ElementsBelongingToView in doc: Snowdon Towers Sample HVAC (LinkInstance: None)...
+[09:16:36.972] INFO: Collecting elements for scope: ElementsBelongingToView in doc: Snowdon Towers Sample Architectural (LinkInstance: Snowdon Towers Sample Architectural.rvt : Architecture : ubicación <No compartido>)...
+[09:16:37.704] INFO: Collecting elements for scope: ElementsBelongingToView in doc: Snowdon Towers Sample Structural (LinkInstance: Snowdon Towers Sample Structural.rvt : Structure : ubicación <No compartido>)...
+[09:16:37.834] INFO: Collecting elements for scope: ElementsBelongingToView in doc: Snowdon Towers Sample Facades (LinkInstance: Snowdon Towers Sample Facades.rvt : Facade : ubicación <No compartido>)...
+[09:16:37.857] INFO: Collecting elements for scope: ElementsBelongingToView in doc: Snowdon Towers Sample Plumbing (LinkInstance: Snowdon Towers Sample Plumbing.rvt : 4 : ubicación <No compartido>)...
+[09:16:38.617] INFO: Collecting elements for scope: ElementsBelongingToView in doc: Snowdon Towers Sample Electrical (LinkInstance: Snowdon Towers Sample Electrical.rvt : 6 : ubicación <No compartido>)...
+[09:16:38.870] INFO: Collecting elements for scope: ElementsBelongingToView in doc: Snowdon Towers Sample Site (LinkInstance: Snowdon Towers Sample Site.rvt : 7 : ubicación <No compartido>)...
+[09:16:38.893] INFO: Querying ALL models complete. Total elements found: 12870
+[09:16:38.893] INFO: Querying Revit for scope: AllModelElements on ALL models combined...
+[09:16:38.893] INFO: Collecting elements for scope: AllModelElements in doc: Snowdon Towers Sample HVAC (LinkInstance: None)...
+[09:16:40.047] INFO: Collecting elements for scope: AllModelElements in doc: Snowdon Towers Sample Architectural (LinkInstance: Snowdon Towers Sample Architectural.rvt : Architecture : ubicación <No compartido>)...
+[09:16:43.098] INFO: Collecting elements for scope: AllModelElements in doc: Snowdon Towers Sample Structural (LinkInstance: Snowdon Towers Sample Structural.rvt : Structure : ubicación <No compartido>)...
+[09:16:43.776] INFO: Collecting elements for scope: AllModelElements in doc: Snowdon Towers Sample Facades (LinkInstance: Snowdon Towers Sample Facades.rvt : Facade : ubicación <No compartido>)...
+[09:16:43.968] INFO: Collecting elements for scope: AllModelElements in doc: Snowdon Towers Sample Plumbing (LinkInstance: Snowdon Towers Sample Plumbing.rvt : 4 : ubicación <No compartido>)...
+[09:16:46.617] INFO: Collecting elements for scope: AllModelElements in doc: Snowdon Towers Sample Electrical (LinkInstance: Snowdon Towers Sample Electrical.rvt : 6 : ubicación <No compartido>)...
+[09:16:47.787] INFO: Collecting elements for scope: AllModelElements in doc: Snowdon Towers Sample Site (LinkInstance: Snowdon Towers Sample Site.rvt : 7 : ubicación <No compartido>)...
+[09:16:47.985] INFO: Querying ALL models complete. Total elements found: 63957
+[09:16:48.062] INFO: BuildTree: 10000 elements for scope AllModelElements.
+[09:16:48.063] INFO: Updating filter dropdowns...
+[09:16:48.081] INFO: Building tree structure offline for 10000 elements...
+[09:16:48.153] INFO: Swapping tree root directly. New total: 10000
+[09:16:48.175] INFO: Tree built and swapped. 10000 visible elements.
+[09:16:48.218] INFO: BuildTree completed.
+[09:16:54.372] INFO: Opening Pre-Selection window...
+[09:16:54.374] INFO: [Rule #756] Constructor called.
+[09:16:54.376] INFO: [Rule #756] RefreshPropertiesList: showFamilias=False, showTipos=False, currentSelection=''
+[09:16:54.376] INFO: [Rule #756] RefreshPropertiesList: properties changed. Clearing and rebuilding properties list.
+[09:16:54.377] INFO: [Rule #756] OnSelectedPropertyChanged: Property changed to 'Categorías'
+[09:16:54.379] INFO: [Rule #756] UpdateAvailableValues: Calculating values for 'Categorías'
+[09:16:54.380] INFO: [Rule #756] UpdateAvailableValues: values changed. Clearing and adding 117 items.
+[09:16:54.380] INFO: [Rule #756] UpdateAvailableValues complete.
+[09:16:54.381] INFO: [Rule #756] OnSelectedValueChanged: Value changed to '<Boceto de escalera/rampa: centro de descansillo>'. _isUpdatingAvailableValues=False
+[09:16:54.381] INFO: [Rule #756] OnSelectedValueChanged: Notifying parent values changed.
+[09:16:54.382] INFO: [RuleSet #627] NotifyRuleValuesChanged: Refreshing value lists for all child rules.
+[09:16:54.382] INFO: [Rule #756] OnSelectedPropertyChanged: SelectedValue initialized to default '<Boceto de escalera/rampa: centro de descansillo>'
+[09:16:54.382] INFO: [Rule #756] OnSelectedPropertyChanged: Triggering Parent.PruneDependentRules()
+[09:16:54.384] INFO: [RuleSet #627] PruneDependentRules check: hasCategory=False, hasFamily=False
+[09:16:54.384] INFO: [Rule #756] OnSelectedPropertyChanged: Notifying parent properties/values changed
+[09:16:54.384] INFO: [RuleSet #627] NotifyRulePropertiesChanged: Refreshing properties lists for all child rules.
+[09:16:54.386] INFO: [RuleSet #627] NotifyRuleValuesChanged: Refreshing value lists for all child rules.
+[09:16:54.386] INFO: [Rule #756] RefreshPropertiesList complete. SelectedProperty changed to default 'Categorías'
+[09:16:54.389] INFO: Showing Pre-Selection dialog...
+[09:17:06.991] INFO: [Rule #756] OnSelectedValueChanged: Value changed to 'Conductos'. _isUpdatingAvailableValues=False
+[09:17:06.991] INFO: [Rule #756] OnSelectedValueChanged: Notifying parent values changed.
+[09:17:06.991] INFO: [RuleSet #627] NotifyRuleValuesChanged: Refreshing value lists for all child rules.
+[09:17:06.993] INFO: [Rule #756] RefreshValuesList called. prevValue = 'Conductos'
+[09:17:06.993] INFO: [Rule #756] UpdateAvailableValues: Calculating values for 'Categorías'
+[09:17:06.995] INFO: [Rule #756] UpdateAvailableValues: values list is identical. Returning early.
+[09:17:06.995] INFO: [Rule #756] RefreshValuesList: SelectedValue set/restored to 'Conductos' (was 'Conductos')
+[09:17:08.607] INFO: [RuleSet #627] AddRule command triggered.
+[09:17:08.608] INFO: [Rule #008] Constructor called.
+[09:17:08.609] INFO: [Rule #008] RefreshPropertiesList: showFamilias=True, showTipos=False, currentSelection=''
+[09:17:08.609] INFO: [Rule #008] RefreshPropertiesList: properties changed. Clearing and rebuilding properties list.
+[09:17:08.610] INFO: [Rule #008] OnSelectedPropertyChanged: Property changed to 'Categorías'
+[09:17:08.610] INFO: [Rule #008] UpdateAvailableValues: Calculating values for 'Categorías'
+[09:17:08.611] INFO: [Rule #008] UpdateAvailableValues: values changed. Clearing and adding 117 items.
+[09:17:08.612] INFO: [Rule #008] UpdateAvailableValues complete.
+[09:17:08.612] INFO: [Rule #008] OnSelectedValueChanged: Value changed to '<Boceto de escalera/rampa: centro de descansillo>'. _isUpdatingAvailableValues=False
+[09:17:08.612] INFO: [Rule #008] OnSelectedValueChanged: Notifying parent values changed.
+[09:17:08.613] INFO: [RuleSet #627] NotifyRuleValuesChanged: Refreshing value lists for all child rules.
+[09:17:08.613] INFO: [Rule #756] RefreshValuesList called. prevValue = 'Conductos'
+[09:17:08.613] INFO: [Rule #756] UpdateAvailableValues: Calculating values for 'Categorías'
+[09:17:08.615] INFO: [Rule #756] UpdateAvailableValues: values list is identical. Returning early.
+[09:17:08.615] INFO: [Rule #756] RefreshValuesList: SelectedValue set/restored to 'Conductos' (was 'Conductos')
+[09:17:08.616] INFO: [Rule #008] OnSelectedPropertyChanged: SelectedValue initialized to default '<Boceto de escalera/rampa: centro de descansillo>'
+[09:17:08.616] INFO: [Rule #008] OnSelectedPropertyChanged: Triggering Parent.PruneDependentRules()
+[09:17:08.617] INFO: [RuleSet #627] PruneDependentRules check: hasCategory=True, hasFamily=False
+[09:17:08.617] INFO: [Rule #008] OnSelectedPropertyChanged: Notifying parent properties/values changed
+[09:17:08.618] INFO: [RuleSet #627] NotifyRulePropertiesChanged: Refreshing properties lists for all child rules.
+[09:17:08.618] INFO: [Rule #756] RefreshPropertiesList: showFamilias=False, showTipos=False, currentSelection='Categorías'
+[09:17:08.619] INFO: [Rule #756] RefreshPropertiesList: properties list is identical. Returning early.
+[09:17:08.619] INFO: [RuleSet #627] NotifyRuleValuesChanged: Refreshing value lists for all child rules.
+[09:17:08.620] INFO: [Rule #756] RefreshValuesList called. prevValue = 'Conductos'
+[09:17:08.620] INFO: [Rule #756] UpdateAvailableValues: Calculating values for 'Categorías'
+[09:17:08.621] INFO: [Rule #756] UpdateAvailableValues: values list is identical. Returning early.
+[09:17:08.622] INFO: [Rule #756] RefreshValuesList: SelectedValue set/restored to 'Conductos' (was 'Conductos')
+[09:17:08.622] INFO: [Rule #008] RefreshPropertiesList complete. SelectedProperty changed to default 'Categorías'
+[09:17:08.623] INFO: [RuleSet #627] NotifyRulePropertiesChanged: Refreshing properties lists for all child rules.
+[09:17:08.623] INFO: [Rule #756] RefreshPropertiesList: showFamilias=True, showTipos=False, currentSelection='Categorías'
+[09:17:08.624] INFO: [Rule #756] RefreshPropertiesList: properties changed. Clearing and rebuilding properties list.
+[09:17:08.628] INFO: [Rule #756] OnSelectedPropertyChanged: Ignored change to '' because _isUpdatingProperties is true.
+[09:17:08.630] INFO: [Rule #756] OnSelectedPropertyChanged: Ignored change to 'Categorías' because _isUpdatingProperties is true.
+[09:17:08.631] INFO: [Rule #756] RefreshPropertiesList complete. SelectedProperty restored to 'Categorías'
+[09:17:08.631] INFO: [Rule #008] RefreshPropertiesList: showFamilias=True, showTipos=False, currentSelection='Categorías'
+[09:17:08.631] INFO: [Rule #008] RefreshPropertiesList: properties list is identical. Returning early.
+[09:17:08.632] INFO: [RuleSet #627] NotifyRuleValuesChanged: Refreshing value lists for all child rules.
+[09:17:08.632] INFO: [Rule #756] RefreshValuesList called. prevValue = 'Conductos'
+[09:17:08.632] INFO: [Rule #756] UpdateAvailableValues: Calculating values for 'Categorías'
+[09:17:08.634] INFO: [Rule #756] UpdateAvailableValues: values list is identical. Returning early.
+[09:17:08.635] INFO: [Rule #756] RefreshValuesList: SelectedValue set/restored to 'Conductos' (was 'Conductos')
+[09:17:08.635] INFO: [Rule #008] RefreshValuesList called. prevValue = '<Boceto de escalera/rampa: centro de descansillo>'
+[09:17:08.635] INFO: [Rule #008] UpdateAvailableValues: Calculating values for 'Categorías'
+[09:17:08.637] INFO: [Rule #008] UpdateAvailableValues: values list is identical. Returning early.
+[09:17:08.637] INFO: [Rule #008] RefreshValuesList: SelectedValue set/restored to '<Boceto de escalera/rampa: centro de descansillo>' (was '<Boceto de escalera/rampa: centro de descansillo>')
+[09:17:10.646] INFO: [Rule #008] OnSelectedPropertyChanged: Property changed to 'Familias'
+[09:17:10.647] INFO: [Rule #008] UpdateAvailableValues: Calculating values for 'Familias'
+[09:17:10.649] INFO: [Rule #008] GetFamiliesFilteredBySiblings: Sibling Category filter count: 1
+[09:17:10.650] INFO: [Rule #008] UpdateAvailableValues: values changed. Clearing and adding 2 items.
+[09:17:10.651] INFO: [Rule #008] OnSelectedValueChanged: Value changed to ''. _isUpdatingAvailableValues=True
+[09:17:10.652] INFO: [Rule #008] UpdateAvailableValues complete.
+[09:17:10.652] INFO: [Rule #008] OnSelectedValueChanged: Value changed to 'Conducto rectangular'. _isUpdatingAvailableValues=False
+[09:17:10.652] INFO: [Rule #008] OnSelectedValueChanged: Notifying parent values changed.
+[09:17:10.652] INFO: [RuleSet #627] NotifyRuleValuesChanged: Refreshing value lists for all child rules.
+[09:17:10.653] INFO: [Rule #756] RefreshValuesList called. prevValue = 'Conductos'
+[09:17:10.653] INFO: [Rule #756] UpdateAvailableValues: Calculating values for 'Categorías'
+[09:17:10.654] INFO: [Rule #756] UpdateAvailableValues: values list is identical. Returning early.
+[09:17:10.655] INFO: [Rule #756] RefreshValuesList: SelectedValue set/restored to 'Conductos' (was 'Conductos')
+[09:17:10.655] INFO: [Rule #008] RefreshValuesList called. prevValue = 'Conducto rectangular'
+[09:17:10.655] INFO: [Rule #008] UpdateAvailableValues: Calculating values for 'Familias'
+[09:17:10.656] INFO: [Rule #008] GetFamiliesFilteredBySiblings: Sibling Category filter count: 1
+[09:17:10.657] INFO: [Rule #008] UpdateAvailableValues: values list is identical. Returning early.
+[09:17:10.657] INFO: [Rule #008] RefreshValuesList: SelectedValue set/restored to 'Conducto rectangular' (was 'Conducto rectangular')
+[09:17:10.658] INFO: [Rule #008] OnSelectedPropertyChanged: SelectedValue initialized to default 'Conducto rectangular'
+[09:17:10.659] INFO: [Rule #008] OnSelectedPropertyChanged: Triggering Parent.PruneDependentRules()
+[09:17:10.659] INFO: [RuleSet #627] PruneDependentRules check: hasCategory=True, hasFamily=True
+[09:17:10.659] INFO: [Rule #008] OnSelectedPropertyChanged: Notifying parent properties/values changed
+[09:17:10.660] INFO: [RuleSet #627] NotifyRulePropertiesChanged: Refreshing properties lists for all child rules.
+[09:17:10.660] INFO: [Rule #756] RefreshPropertiesList: showFamilias=False, showTipos=True, currentSelection='Categorías'
+[09:17:10.661] INFO: [Rule #756] RefreshPropertiesList: properties changed. Clearing and rebuilding properties list.
+[09:17:10.662] INFO: [Rule #756] OnSelectedPropertyChanged: Ignored change to '' because _isUpdatingProperties is true.
+[09:17:10.662] INFO: [Rule #756] OnSelectedPropertyChanged: Ignored change to 'Categorías' because _isUpdatingProperties is true.
+[09:17:10.663] INFO: [Rule #756] RefreshPropertiesList complete. SelectedProperty restored to 'Categorías'
+[09:17:10.663] INFO: [Rule #008] RefreshPropertiesList: showFamilias=True, showTipos=False, currentSelection='Familias'
+[09:17:10.664] INFO: [Rule #008] RefreshPropertiesList: properties list is identical. Returning early.
+[09:17:10.664] INFO: [RuleSet #627] NotifyRuleValuesChanged: Refreshing value lists for all child rules.
+[09:17:10.664] INFO: [Rule #756] RefreshValuesList called. prevValue = 'Conductos'
+[09:17:10.664] INFO: [Rule #756] UpdateAvailableValues: Calculating values for 'Categorías'
+[09:17:10.666] INFO: [Rule #756] UpdateAvailableValues: values list is identical. Returning early.
+[09:17:10.666] INFO: [Rule #756] RefreshValuesList: SelectedValue set/restored to 'Conductos' (was 'Conductos')
+[09:17:10.667] INFO: [Rule #008] RefreshValuesList called. prevValue = 'Conducto rectangular'
+[09:17:10.667] INFO: [Rule #008] UpdateAvailableValues: Calculating values for 'Familias'
+[09:17:10.668] INFO: [Rule #008] GetFamiliesFilteredBySiblings: Sibling Category filter count: 1
+[09:17:10.669] INFO: [Rule #008] UpdateAvailableValues: values list is identical. Returning early.
+[09:17:10.669] INFO: [Rule #008] RefreshValuesList: SelectedValue set/restored to 'Conducto rectangular' (was 'Conducto rectangular')
+[09:17:15.438] INFO: [RuleSet #627] AddRule command triggered.
+[09:17:15.439] INFO: [Rule #133] Constructor called.
+[09:17:15.439] INFO: [Rule #133] RefreshPropertiesList: showFamilias=True, showTipos=True, currentSelection=''
+[09:17:15.440] INFO: [Rule #133] RefreshPropertiesList: properties changed. Clearing and rebuilding properties list.
+[09:17:15.441] INFO: [Rule #133] OnSelectedPropertyChanged: Property changed to 'Categorías'
+[09:17:15.441] INFO: [Rule #133] UpdateAvailableValues: Calculating values for 'Categorías'
+[09:17:15.442] INFO: [Rule #133] UpdateAvailableValues: values changed. Clearing and adding 117 items.
+[09:17:15.442] INFO: [Rule #133] UpdateAvailableValues complete.
+[09:17:15.443] INFO: [Rule #133] OnSelectedValueChanged: Value changed to '<Boceto de escalera/rampa: centro de descansillo>'. _isUpdatingAvailableValues=False
+[09:17:15.443] INFO: [Rule #133] OnSelectedValueChanged: Notifying parent values changed.
+[09:17:15.443] INFO: [RuleSet #627] NotifyRuleValuesChanged: Refreshing value lists for all child rules.
+[09:17:15.443] INFO: [Rule #756] RefreshValuesList called. prevValue = 'Conductos'
+[09:17:15.444] INFO: [Rule #756] UpdateAvailableValues: Calculating values for 'Categorías'
+[09:17:15.445] INFO: [Rule #756] UpdateAvailableValues: values list is identical. Returning early.
+[09:17:15.445] INFO: [Rule #756] RefreshValuesList: SelectedValue set/restored to 'Conductos' (was 'Conductos')
+[09:17:15.445] INFO: [Rule #008] RefreshValuesList called. prevValue = 'Conducto rectangular'
+[09:17:15.446] INFO: [Rule #008] UpdateAvailableValues: Calculating values for 'Familias'
+[09:17:15.446] INFO: [Rule #008] GetFamiliesFilteredBySiblings: Sibling Category filter count: 1
+[09:17:15.447] INFO: [Rule #008] UpdateAvailableValues: values list is identical. Returning early.
+[09:17:15.448] INFO: [Rule #008] RefreshValuesList: SelectedValue set/restored to 'Conducto rectangular' (was 'Conducto rectangular')
+[09:17:15.448] INFO: [Rule #133] OnSelectedPropertyChanged: SelectedValue initialized to default '<Boceto de escalera/rampa: centro de descansillo>'
+[09:17:15.449] INFO: [Rule #133] OnSelectedPropertyChanged: Triggering Parent.PruneDependentRules()
+[09:17:15.449] INFO: [RuleSet #627] PruneDependentRules check: hasCategory=True, hasFamily=True
+[09:17:15.449] INFO: [Rule #133] OnSelectedPropertyChanged: Notifying parent properties/values changed
+[09:17:15.450] INFO: [RuleSet #627] NotifyRulePropertiesChanged: Refreshing properties lists for all child rules.
+[09:17:15.450] INFO: [Rule #756] RefreshPropertiesList: showFamilias=False, showTipos=True, currentSelection='Categorías'
+[09:17:15.450] INFO: [Rule #756] RefreshPropertiesList: properties list is identical. Returning early.
+[09:17:15.451] INFO: [Rule #008] RefreshPropertiesList: showFamilias=True, showTipos=False, currentSelection='Familias'
+[09:17:15.451] INFO: [Rule #008] RefreshPropertiesList: properties list is identical. Returning early.
+[09:17:15.451] INFO: [RuleSet #627] NotifyRuleValuesChanged: Refreshing value lists for all child rules.
+[09:17:15.452] INFO: [Rule #756] RefreshValuesList called. prevValue = 'Conductos'
+[09:17:15.452] INFO: [Rule #756] UpdateAvailableValues: Calculating values for 'Categorías'
+[09:17:15.454] INFO: [Rule #756] UpdateAvailableValues: values list is identical. Returning early.
+[09:17:15.454] INFO: [Rule #756] RefreshValuesList: SelectedValue set/restored to 'Conductos' (was 'Conductos')
+[09:17:15.454] INFO: [Rule #008] RefreshValuesList called. prevValue = 'Conducto rectangular'
+[09:17:15.455] INFO: [Rule #008] UpdateAvailableValues: Calculating values for 'Familias'
+[09:17:15.455] INFO: [Rule #008] GetFamiliesFilteredBySiblings: Sibling Category filter count: 1
+[09:17:15.456] INFO: [Rule #008] UpdateAvailableValues: values list is identical. Returning early.
+[09:17:15.456] INFO: [Rule #008] RefreshValuesList: SelectedValue set/restored to 'Conducto rectangular' (was 'Conducto rectangular')
+[09:17:15.456] INFO: [Rule #133] RefreshPropertiesList complete. SelectedProperty changed to default 'Categorías'
+[09:17:15.457] INFO: [RuleSet #627] NotifyRulePropertiesChanged: Refreshing properties lists for all child rules.
+[09:17:15.457] INFO: [Rule #756] RefreshPropertiesList: showFamilias=True, showTipos=True, currentSelection='Categorías'
+[09:17:15.457] INFO: [Rule #756] RefreshPropertiesList: properties changed. Clearing and rebuilding properties list.
+[09:17:15.458] INFO: [Rule #756] OnSelectedPropertyChanged: Ignored change to '' because _isUpdatingProperties is true.
+[09:17:15.459] INFO: [Rule #756] OnSelectedPropertyChanged: Ignored change to 'Categorías' because _isUpdatingProperties is true.
+[09:17:15.459] INFO: [Rule #756] RefreshPropertiesList complete. SelectedProperty restored to 'Categorías'
+[09:17:15.459] INFO: [Rule #008] RefreshPropertiesList: showFamilias=True, showTipos=False, currentSelection='Familias'
+[09:17:15.460] INFO: [Rule #008] RefreshPropertiesList: properties list is identical. Returning early.
+[09:17:15.460] INFO: [Rule #133] RefreshPropertiesList: showFamilias=True, showTipos=True, currentSelection='Categorías'
+[09:17:15.460] INFO: [Rule #133] RefreshPropertiesList: properties list is identical. Returning early.
+[09:17:15.461] INFO: [RuleSet #627] NotifyRuleValuesChanged: Refreshing value lists for all child rules.
+[09:17:15.461] INFO: [Rule #756] RefreshValuesList called. prevValue = 'Conductos'
+[09:17:15.461] INFO: [Rule #756] UpdateAvailableValues: Calculating values for 'Categorías'
+[09:17:15.462] INFO: [Rule #756] UpdateAvailableValues: values list is identical. Returning early.
+[09:17:15.462] INFO: [Rule #756] RefreshValuesList: SelectedValue set/restored to 'Conductos' (was 'Conductos')
+[09:17:15.462] INFO: [Rule #008] RefreshValuesList called. prevValue = 'Conducto rectangular'
+[09:17:15.464] INFO: [Rule #008] UpdateAvailableValues: Calculating values for 'Familias'
+[09:17:15.464] INFO: [Rule #008] GetFamiliesFilteredBySiblings: Sibling Category filter count: 2
+[09:17:15.465] INFO: [Rule #008] UpdateAvailableValues: values list is identical. Returning early.
+[09:17:15.465] INFO: [Rule #008] RefreshValuesList: SelectedValue set/restored to 'Conducto rectangular' (was 'Conducto rectangular')
+[09:17:15.465] INFO: [Rule #133] RefreshValuesList called. prevValue = '<Boceto de escalera/rampa: centro de descansillo>'
+[09:17:15.466] INFO: [Rule #133] UpdateAvailableValues: Calculating values for 'Categorías'
+[09:17:15.467] INFO: [Rule #133] UpdateAvailableValues: values list is identical. Returning early.
+[09:17:15.468] INFO: [Rule #133] RefreshValuesList: SelectedValue set/restored to '<Boceto de escalera/rampa: centro de descansillo>' (was '<Boceto de escalera/rampa: centro de descansillo>')
+[09:17:21.381] INFO: [Rule #133] OnSelectedPropertyChanged: Property changed to 'Tipos'
+[09:17:21.381] INFO: [Rule #133] UpdateAvailableValues: Calculating values for 'Tipos'
+[09:17:21.382] INFO: [Rule #133] GetTypesFilteredBySiblings: Sibling Family filter count: 1
+[09:17:21.384] INFO: [Rule #133] UpdateAvailableValues: values changed. Clearing and adding 1 items.
+[09:17:21.388] INFO: [Rule #133] OnSelectedValueChanged: Value changed to ''. _isUpdatingAvailableValues=True
+[09:17:21.389] INFO: [Rule #133] UpdateAvailableValues complete.
+[09:17:21.389] INFO: [Rule #133] OnSelectedValueChanged: Value changed to 'Mitered Elbows / Taps'. _isUpdatingAvailableValues=False
+[09:17:21.389] INFO: [Rule #133] OnSelectedValueChanged: Notifying parent values changed.
+[09:17:21.390] INFO: [RuleSet #627] NotifyRuleValuesChanged: Refreshing value lists for all child rules.
+[09:17:21.390] INFO: [Rule #756] RefreshValuesList called. prevValue = 'Conductos'
+[09:17:21.390] INFO: [Rule #756] UpdateAvailableValues: Calculating values for 'Categorías'
+[09:17:21.392] INFO: [Rule #756] UpdateAvailableValues: values list is identical. Returning early.
+[09:17:21.392] INFO: [Rule #756] RefreshValuesList: SelectedValue set/restored to 'Conductos' (was 'Conductos')
+[09:17:21.393] INFO: [Rule #008] RefreshValuesList called. prevValue = 'Conducto rectangular'
+[09:17:21.393] INFO: [Rule #008] UpdateAvailableValues: Calculating values for 'Familias'
+[09:17:21.393] INFO: [Rule #008] GetFamiliesFilteredBySiblings: Sibling Category filter count: 1
+[09:17:21.394] INFO: [Rule #008] UpdateAvailableValues: values list is identical. Returning early.
+[09:17:21.394] INFO: [Rule #008] RefreshValuesList: SelectedValue set/restored to 'Conducto rectangular' (was 'Conducto rectangular')
+[09:17:21.395] INFO: [Rule #133] RefreshValuesList called. prevValue = 'Mitered Elbows / Taps'
+[09:17:21.395] INFO: [Rule #133] UpdateAvailableValues: Calculating values for 'Tipos'
+[09:17:21.395] INFO: [Rule #133] GetTypesFilteredBySiblings: Sibling Family filter count: 1
+[09:17:21.396] INFO: [Rule #133] UpdateAvailableValues: values list is identical. Returning early.
+[09:17:21.396] INFO: [Rule #133] RefreshValuesList: SelectedValue set/restored to 'Mitered Elbows / Taps' (was 'Mitered Elbows / Taps')
+[09:17:21.398] INFO: [Rule #133] OnSelectedPropertyChanged: SelectedValue initialized to default 'Mitered Elbows / Taps'
+[09:17:21.398] INFO: [Rule #133] OnSelectedPropertyChanged: Triggering Parent.PruneDependentRules()
+[09:17:21.399] INFO: [RuleSet #627] PruneDependentRules check: hasCategory=True, hasFamily=True
+[09:17:21.399] INFO: [Rule #133] OnSelectedPropertyChanged: Notifying parent properties/values changed
+[09:17:21.399] INFO: [RuleSet #627] NotifyRulePropertiesChanged: Refreshing properties lists for all child rules.
+[09:17:21.400] INFO: [Rule #756] RefreshPropertiesList: showFamilias=False, showTipos=True, currentSelection='Categorías'
+[09:17:21.400] INFO: [Rule #756] RefreshPropertiesList: properties changed. Clearing and rebuilding properties list.
+[09:17:21.400] INFO: [Rule #756] OnSelectedPropertyChanged: Ignored change to '' because _isUpdatingProperties is true.
+[09:17:21.401] INFO: [Rule #756] OnSelectedPropertyChanged: Ignored change to 'Categorías' because _isUpdatingProperties is true.
+[09:17:21.402] INFO: [Rule #756] RefreshPropertiesList complete. SelectedProperty restored to 'Categorías'
+[09:17:21.402] INFO: [Rule #008] RefreshPropertiesList: showFamilias=True, showTipos=False, currentSelection='Familias'
+[09:17:21.402] INFO: [Rule #008] RefreshPropertiesList: properties list is identical. Returning early.
+[09:17:21.403] INFO: [Rule #133] RefreshPropertiesList: showFamilias=True, showTipos=True, currentSelection='Tipos'
+[09:17:21.403] INFO: [Rule #133] RefreshPropertiesList: properties list is identical. Returning early.
+[09:17:21.403] INFO: [RuleSet #627] NotifyRuleValuesChanged: Refreshing value lists for all child rules.
+[09:17:21.404] INFO: [Rule #756] RefreshValuesList called. prevValue = 'Conductos'
+[09:17:21.404] INFO: [Rule #756] UpdateAvailableValues: Calculating values for 'Categorías'
+[09:17:21.406] INFO: [Rule #756] UpdateAvailableValues: values list is identical. Returning early.
+[09:17:21.406] INFO: [Rule #756] RefreshValuesList: SelectedValue set/restored to 'Conductos' (was 'Conductos')
+[09:17:21.406] INFO: [Rule #008] RefreshValuesList called. prevValue = 'Conducto rectangular'
+[09:17:21.407] INFO: [Rule #008] UpdateAvailableValues: Calculating values for 'Familias'
+[09:17:21.407] INFO: [Rule #008] GetFamiliesFilteredBySiblings: Sibling Category filter count: 1
+[09:17:21.408] INFO: [Rule #008] UpdateAvailableValues: values list is identical. Returning early.
+[09:17:21.408] INFO: [Rule #008] RefreshValuesList: SelectedValue set/restored to 'Conducto rectangular' (was 'Conducto rectangular')
+[09:17:21.408] INFO: [Rule #133] RefreshValuesList called. prevValue = 'Mitered Elbows / Taps'
+[09:17:21.409] INFO: [Rule #133] UpdateAvailableValues: Calculating values for 'Tipos'
+[09:17:21.409] INFO: [Rule #133] GetTypesFilteredBySiblings: Sibling Family filter count: 1
+[09:17:21.410] INFO: [Rule #133] UpdateAvailableValues: values list is identical. Returning early.
+[09:17:21.410] INFO: [Rule #133] RefreshValuesList: SelectedValue set/restored to 'Mitered Elbows / Taps' (was 'Mitered Elbows / Taps')
+[09:17:24.789] INFO: [PreSelectionViewModel] RemoveRule command triggered for rule #133.
+[09:17:24.793] INFO: [RuleSet #627] PruneDependentRules check: hasCategory=True, hasFamily=True
+[09:17:24.793] INFO: [RuleSet #627] NotifyRulePropertiesChanged: Refreshing properties lists for all child rules.
+[09:17:24.793] INFO: [Rule #756] RefreshPropertiesList: showFamilias=False, showTipos=True, currentSelection='Categorías'
+[09:17:24.794] INFO: [Rule #756] RefreshPropertiesList: properties list is identical. Returning early.
+[09:17:24.794] INFO: [Rule #008] RefreshPropertiesList: showFamilias=True, showTipos=False, currentSelection='Familias'
+[09:17:24.795] INFO: [Rule #008] RefreshPropertiesList: properties list is identical. Returning early.
+[09:17:24.795] INFO: [RuleSet #627] NotifyRuleValuesChanged: Refreshing value lists for all child rules.
+[09:17:24.796] INFO: [Rule #756] RefreshValuesList called. prevValue = 'Conductos'
+[09:17:24.796] INFO: [Rule #756] UpdateAvailableValues: Calculating values for 'Categorías'
+[09:17:24.797] INFO: [Rule #756] UpdateAvailableValues: values list is identical. Returning early.
+[09:17:24.798] INFO: [Rule #756] RefreshValuesList: SelectedValue set/restored to 'Conductos' (was 'Conductos')
+[09:17:24.798] INFO: [Rule #008] RefreshValuesList called. prevValue = 'Conducto rectangular'
+[09:17:24.798] INFO: [Rule #008] UpdateAvailableValues: Calculating values for 'Familias'
+[09:17:24.799] INFO: [Rule #008] GetFamiliesFilteredBySiblings: Sibling Category filter count: 1
+[09:17:24.800] INFO: [Rule #008] UpdateAvailableValues: values list is identical. Returning early.
+[09:17:24.800] INFO: [Rule #008] RefreshValuesList: SelectedValue set/restored to 'Conducto rectangular' (was 'Conducto rectangular')
+[09:17:27.060] INFO: [RuleSet #627] AddRule command triggered.
+[09:17:27.061] INFO: [Rule #829] Constructor called.
+[09:17:27.061] INFO: [Rule #829] RefreshPropertiesList: showFamilias=True, showTipos=True, currentSelection=''
+[09:17:27.061] INFO: [Rule #829] RefreshPropertiesList: properties changed. Clearing and rebuilding properties list.
+[09:17:27.062] INFO: [Rule #829] OnSelectedPropertyChanged: Property changed to 'Categorías'
+[09:17:27.062] INFO: [Rule #829] UpdateAvailableValues: Calculating values for 'Categorías'
+[09:17:27.063] INFO: [Rule #829] UpdateAvailableValues: values changed. Clearing and adding 117 items.
+[09:17:27.064] INFO: [Rule #829] UpdateAvailableValues complete.
+[09:17:27.064] INFO: [Rule #829] OnSelectedValueChanged: Value changed to '<Boceto de escalera/rampa: centro de descansillo>'. _isUpdatingAvailableValues=False
+[09:17:27.065] INFO: [Rule #829] OnSelectedValueChanged: Notifying parent values changed.
+[09:17:27.065] INFO: [RuleSet #627] NotifyRuleValuesChanged: Refreshing value lists for all child rules.
+[09:17:27.065] INFO: [Rule #756] RefreshValuesList called. prevValue = 'Conductos'
+[09:17:27.066] INFO: [Rule #756] UpdateAvailableValues: Calculating values for 'Categorías'
+[09:17:27.067] INFO: [Rule #756] UpdateAvailableValues: values list is identical. Returning early.
+[09:17:27.067] INFO: [Rule #756] RefreshValuesList: SelectedValue set/restored to 'Conductos' (was 'Conductos')
+[09:17:27.068] INFO: [Rule #008] RefreshValuesList called. prevValue = 'Conducto rectangular'
+[09:17:27.068] INFO: [Rule #008] UpdateAvailableValues: Calculating values for 'Familias'
+[09:17:27.068] INFO: [Rule #008] GetFamiliesFilteredBySiblings: Sibling Category filter count: 1
+[09:17:27.070] INFO: [Rule #008] UpdateAvailableValues: values list is identical. Returning early.
+[09:17:27.070] INFO: [Rule #008] RefreshValuesList: SelectedValue set/restored to 'Conducto rectangular' (was 'Conducto rectangular')
+[09:17:27.070] INFO: [Rule #829] OnSelectedPropertyChanged: SelectedValue initialized to default '<Boceto de escalera/rampa: centro de descansillo>'
+[09:17:27.071] INFO: [Rule #829] OnSelectedPropertyChanged: Triggering Parent.PruneDependentRules()
+[09:17:27.071] INFO: [RuleSet #627] PruneDependentRules check: hasCategory=True, hasFamily=True
+[09:17:27.071] INFO: [Rule #829] OnSelectedPropertyChanged: Notifying parent properties/values changed
+[09:17:27.072] INFO: [RuleSet #627] NotifyRulePropertiesChanged: Refreshing properties lists for all child rules.
+[09:17:27.072] INFO: [Rule #756] RefreshPropertiesList: showFamilias=False, showTipos=True, currentSelection='Categorías'
+[09:17:27.072] INFO: [Rule #756] RefreshPropertiesList: properties list is identical. Returning early.
+[09:17:27.073] INFO: [Rule #008] RefreshPropertiesList: showFamilias=True, showTipos=False, currentSelection='Familias'
+[09:17:27.073] INFO: [Rule #008] RefreshPropertiesList: properties list is identical. Returning early.
+[09:17:27.073] INFO: [RuleSet #627] NotifyRuleValuesChanged: Refreshing value lists for all child rules.
+[09:17:27.074] INFO: [Rule #756] RefreshValuesList called. prevValue = 'Conductos'
+[09:17:27.074] INFO: [Rule #756] UpdateAvailableValues: Calculating values for 'Categorías'
+[09:17:27.076] INFO: [Rule #756] UpdateAvailableValues: values list is identical. Returning early.
+[09:17:27.076] INFO: [Rule #756] RefreshValuesList: SelectedValue set/restored to 'Conductos' (was 'Conductos')
+[09:17:27.077] INFO: [Rule #008] RefreshValuesList called. prevValue = 'Conducto rectangular'
+[09:17:27.077] INFO: [Rule #008] UpdateAvailableValues: Calculating values for 'Familias'
+[09:17:27.078] INFO: [Rule #008] GetFamiliesFilteredBySiblings: Sibling Category filter count: 1
+[09:17:27.078] INFO: [Rule #008] UpdateAvailableValues: values list is identical. Returning early.
+[09:17:27.079] INFO: [Rule #008] RefreshValuesList: SelectedValue set/restored to 'Conducto rectangular' (was 'Conducto rectangular')
+[09:17:27.079] INFO: [Rule #829] RefreshPropertiesList complete. SelectedProperty changed to default 'Categorías'
+[09:17:27.080] INFO: [RuleSet #627] NotifyRulePropertiesChanged: Refreshing properties lists for all child rules.
+[09:17:27.080] INFO: [Rule #756] RefreshPropertiesList: showFamilias=True, showTipos=True, currentSelection='Categorías'
+[09:17:27.080] INFO: [Rule #756] RefreshPropertiesList: properties changed. Clearing and rebuilding properties list.
+[09:17:27.081] INFO: [Rule #756] OnSelectedPropertyChanged: Ignored change to '' because _isUpdatingProperties is true.
+[09:17:27.081] INFO: [Rule #756] OnSelectedPropertyChanged: Ignored change to 'Categorías' because _isUpdatingProperties is true.
+[09:17:27.082] INFO: [Rule #756] RefreshPropertiesList complete. SelectedProperty restored to 'Categorías'
+[09:17:27.082] INFO: [Rule #008] RefreshPropertiesList: showFamilias=True, showTipos=False, currentSelection='Familias'
+[09:17:27.083] INFO: [Rule #008] RefreshPropertiesList: properties list is identical. Returning early.
+[09:17:27.083] INFO: [Rule #829] RefreshPropertiesList: showFamilias=True, showTipos=True, currentSelection='Categorías'
+[09:17:27.083] INFO: [Rule #829] RefreshPropertiesList: properties list is identical. Returning early.
+[09:17:27.084] INFO: [RuleSet #627] NotifyRuleValuesChanged: Refreshing value lists for all child rules.
+[09:17:27.084] INFO: [Rule #756] RefreshValuesList called. prevValue = 'Conductos'
+[09:17:27.085] INFO: [Rule #756] UpdateAvailableValues: Calculating values for 'Categorías'
+[09:17:27.086] INFO: [Rule #756] UpdateAvailableValues: values list is identical. Returning early.
+[09:17:27.087] INFO: [Rule #756] RefreshValuesList: SelectedValue set/restored to 'Conductos' (was 'Conductos')
+[09:17:27.087] INFO: [Rule #008] RefreshValuesList called. prevValue = 'Conducto rectangular'
+[09:17:27.088] INFO: [Rule #008] UpdateAvailableValues: Calculating values for 'Familias'
+[09:17:27.088] INFO: [Rule #008] GetFamiliesFilteredBySiblings: Sibling Category filter count: 2
+[09:17:27.089] INFO: [Rule #008] UpdateAvailableValues: values list is identical. Returning early.
+[09:17:27.090] INFO: [Rule #008] RefreshValuesList: SelectedValue set/restored to 'Conducto rectangular' (was 'Conducto rectangular')
+[09:17:27.093] INFO: [Rule #829] RefreshValuesList called. prevValue = '<Boceto de escalera/rampa: centro de descansillo>'
+[09:17:27.093] INFO: [Rule #829] UpdateAvailableValues: Calculating values for 'Categorías'
+[09:17:27.095] INFO: [Rule #829] UpdateAvailableValues: values list is identical. Returning early.
+[09:17:27.095] INFO: [Rule #829] RefreshValuesList: SelectedValue set/restored to '<Boceto de escalera/rampa: centro de descansillo>' (was '<Boceto de escalera/rampa: centro de descansillo>')
+[09:17:28.643] INFO: [Rule #829] OnSelectedPropertyChanged: Property changed to 'Tipos'
+[09:17:28.643] INFO: [Rule #829] UpdateAvailableValues: Calculating values for 'Tipos'
+[09:17:28.644] INFO: [Rule #829] GetTypesFilteredBySiblings: Sibling Family filter count: 1
+[09:17:28.645] INFO: [Rule #829] UpdateAvailableValues: values changed. Clearing and adding 1 items.
+[09:17:28.645] INFO: [Rule #829] OnSelectedValueChanged: Value changed to ''. _isUpdatingAvailableValues=True
+[09:17:28.646] INFO: [Rule #829] UpdateAvailableValues complete.
+[09:17:28.646] INFO: [Rule #829] OnSelectedValueChanged: Value changed to 'Mitered Elbows / Taps'. _isUpdatingAvailableValues=False
+[09:17:28.647] INFO: [Rule #829] OnSelectedValueChanged: Notifying parent values changed.
+[09:17:28.647] INFO: [RuleSet #627] NotifyRuleValuesChanged: Refreshing value lists for all child rules.
+[09:17:28.648] INFO: [Rule #756] RefreshValuesList called. prevValue = 'Conductos'
+[09:17:28.648] INFO: [Rule #756] UpdateAvailableValues: Calculating values for 'Categorías'
+[09:17:28.649] INFO: [Rule #756] UpdateAvailableValues: values list is identical. Returning early.
+[09:17:28.649] INFO: [Rule #756] RefreshValuesList: SelectedValue set/restored to 'Conductos' (was 'Conductos')
+[09:17:28.649] INFO: [Rule #008] RefreshValuesList called. prevValue = 'Conducto rectangular'
+[09:17:28.650] INFO: [Rule #008] UpdateAvailableValues: Calculating values for 'Familias'
+[09:17:28.650] INFO: [Rule #008] GetFamiliesFilteredBySiblings: Sibling Category filter count: 1
+[09:17:28.651] INFO: [Rule #008] UpdateAvailableValues: values list is identical. Returning early.
+[09:17:28.652] INFO: [Rule #008] RefreshValuesList: SelectedValue set/restored to 'Conducto rectangular' (was 'Conducto rectangular')
+[09:17:28.652] INFO: [Rule #829] RefreshValuesList called. prevValue = 'Mitered Elbows / Taps'
+[09:17:28.653] INFO: [Rule #829] UpdateAvailableValues: Calculating values for 'Tipos'
+[09:17:28.653] INFO: [Rule #829] GetTypesFilteredBySiblings: Sibling Family filter count: 1
+[09:17:28.654] INFO: [Rule #829] UpdateAvailableValues: values list is identical. Returning early.
+[09:17:28.654] INFO: [Rule #829] RefreshValuesList: SelectedValue set/restored to 'Mitered Elbows / Taps' (was 'Mitered Elbows / Taps')
+[09:17:28.655] INFO: [Rule #829] OnSelectedPropertyChanged: SelectedValue initialized to default 'Mitered Elbows / Taps'
+[09:17:28.655] INFO: [Rule #829] OnSelectedPropertyChanged: Triggering Parent.PruneDependentRules()
+[09:17:28.655] INFO: [RuleSet #627] PruneDependentRules check: hasCategory=True, hasFamily=True
+[09:17:28.656] INFO: [Rule #829] OnSelectedPropertyChanged: Notifying parent properties/values changed
+[09:17:28.656] INFO: [RuleSet #627] NotifyRulePropertiesChanged: Refreshing properties lists for all child rules.
+[09:17:28.657] INFO: [Rule #756] RefreshPropertiesList: showFamilias=False, showTipos=True, currentSelection='Categorías'
+[09:17:28.657] INFO: [Rule #756] RefreshPropertiesList: properties changed. Clearing and rebuilding properties list.
+[09:17:28.658] INFO: [Rule #756] OnSelectedPropertyChanged: Ignored change to '' because _isUpdatingProperties is true.
+[09:17:28.659] INFO: [Rule #756] OnSelectedPropertyChanged: Ignored change to 'Categorías' because _isUpdatingProperties is true.
+[09:17:28.659] INFO: [Rule #756] RefreshPropertiesList complete. SelectedProperty restored to 'Categorías'
+[09:17:28.660] INFO: [Rule #008] RefreshPropertiesList: showFamilias=True, showTipos=False, currentSelection='Familias'
+[09:17:28.660] INFO: [Rule #008] RefreshPropertiesList: properties list is identical. Returning early.
+[09:17:28.660] INFO: [Rule #829] RefreshPropertiesList: showFamilias=True, showTipos=True, currentSelection='Tipos'
+[09:17:28.660] INFO: [Rule #829] RefreshPropertiesList: properties list is identical. Returning early.
+[09:17:28.661] INFO: [RuleSet #627] NotifyRuleValuesChanged: Refreshing value lists for all child rules.
+[09:17:28.661] INFO: [Rule #756] RefreshValuesList called. prevValue = 'Conductos'
+[09:17:28.661] INFO: [Rule #756] UpdateAvailableValues: Calculating values for 'Categorías'
+[09:17:28.663] INFO: [Rule #756] UpdateAvailableValues: values list is identical. Returning early.
+[09:17:28.663] INFO: [Rule #756] RefreshValuesList: SelectedValue set/restored to 'Conductos' (was 'Conductos')
+[09:17:28.664] INFO: [Rule #008] RefreshValuesList called. prevValue = 'Conducto rectangular'
+[09:17:28.664] INFO: [Rule #008] UpdateAvailableValues: Calculating values for 'Familias'
+[09:17:28.664] INFO: [Rule #008] GetFamiliesFilteredBySiblings: Sibling Category filter count: 1
+[09:17:28.665] INFO: [Rule #008] UpdateAvailableValues: values list is identical. Returning early.
+[09:17:28.666] INFO: [Rule #008] RefreshValuesList: SelectedValue set/restored to 'Conducto rectangular' (was 'Conducto rectangular')
+[09:17:28.666] INFO: [Rule #829] RefreshValuesList called. prevValue = 'Mitered Elbows / Taps'
+[09:17:28.667] INFO: [Rule #829] UpdateAvailableValues: Calculating values for 'Tipos'
+[09:17:28.667] INFO: [Rule #829] GetTypesFilteredBySiblings: Sibling Family filter count: 1
+[09:17:28.668] INFO: [Rule #829] UpdateAvailableValues: values list is identical. Returning early.
+[09:17:28.668] INFO: [Rule #829] RefreshValuesList: SelectedValue set/restored to 'Mitered Elbows / Taps' (was 'Mitered Elbows / Taps')
+[09:17:30.651] INFO: [PreSelectionViewModel] RemoveRule command triggered for rule #008.
+[09:17:30.654] INFO: [RuleSet #627] PruneDependentRules check: hasCategory=True, hasFamily=False
+[09:17:30.654] INFO: [RuleSet #627] PruneDependentRules: Removing invalid dependent rule (SelectedProperty=Tipos)
+[09:17:30.655] INFO: [RuleSet #627] PruneDependentRules check: hasCategory=True, hasFamily=False
+[09:17:30.656] INFO: [RuleSet #627] NotifyRulePropertiesChanged: Refreshing properties lists for all child rules.
+[09:17:30.656] INFO: [Rule #756] RefreshPropertiesList: showFamilias=False, showTipos=False, currentSelection='Categorías'
+[09:17:30.656] INFO: [Rule #756] RefreshPropertiesList: properties changed. Clearing and rebuilding properties list.
+[09:17:30.657] INFO: [Rule #756] OnSelectedPropertyChanged: Ignored change to '' because _isUpdatingProperties is true.
+[09:17:30.658] INFO: [Rule #756] OnSelectedPropertyChanged: Ignored change to 'Categorías' because _isUpdatingProperties is true.
+[09:17:30.658] INFO: [Rule #756] RefreshPropertiesList complete. SelectedProperty restored to 'Categorías'
+[09:17:30.658] INFO: [RuleSet #627] NotifyRuleValuesChanged: Refreshing value lists for all child rules.
+[09:17:30.659] INFO: [Rule #756] RefreshValuesList called. prevValue = 'Conductos'
+[09:17:30.659] INFO: [Rule #756] UpdateAvailableValues: Calculating values for 'Categorías'
+[09:17:30.660] INFO: [Rule #756] UpdateAvailableValues: values list is identical. Returning early.
+[09:17:30.662] INFO: [Rule #756] RefreshValuesList: SelectedValue set/restored to 'Conductos' (was 'Conductos')
+[09:17:32.498] INFO: [RuleSet #627] AddRule command triggered.
+[09:17:32.499] INFO: [Rule #554] Constructor called.
+[09:17:32.500] INFO: [Rule #554] RefreshPropertiesList: showFamilias=True, showTipos=False, currentSelection=''
+[09:17:32.500] INFO: [Rule #554] RefreshPropertiesList: properties changed. Clearing and rebuilding properties list.
+[09:17:32.500] INFO: [Rule #554] OnSelectedPropertyChanged: Property changed to 'Categorías'
+[09:17:32.500] INFO: [Rule #554] UpdateAvailableValues: Calculating values for 'Categorías'
+[09:17:32.502] INFO: [Rule #554] UpdateAvailableValues: values changed. Clearing and adding 117 items.
+[09:17:32.512] INFO: [Rule #554] UpdateAvailableValues complete.
+[09:17:32.513] INFO: [Rule #554] OnSelectedValueChanged: Value changed to '<Boceto de escalera/rampa: centro de descansillo>'. _isUpdatingAvailableValues=False
+[09:17:32.513] INFO: [Rule #554] OnSelectedValueChanged: Notifying parent values changed.
+[09:17:32.513] INFO: [RuleSet #627] NotifyRuleValuesChanged: Refreshing value lists for all child rules.
+[09:17:32.513] INFO: [Rule #756] RefreshValuesList called. prevValue = 'Conductos'
+[09:17:32.514] INFO: [Rule #756] UpdateAvailableValues: Calculating values for 'Categorías'
+[09:17:32.515] INFO: [Rule #756] UpdateAvailableValues: values list is identical. Returning early.
+[09:17:32.515] INFO: [Rule #756] RefreshValuesList: SelectedValue set/restored to 'Conductos' (was 'Conductos')
+[09:17:32.515] INFO: [Rule #554] OnSelectedPropertyChanged: SelectedValue initialized to default '<Boceto de escalera/rampa: centro de descansillo>'
+[09:17:32.516] INFO: [Rule #554] OnSelectedPropertyChanged: Triggering Parent.PruneDependentRules()
+[09:17:32.516] INFO: [RuleSet #627] PruneDependentRules check: hasCategory=True, hasFamily=False
+[09:17:32.517] INFO: [Rule #554] OnSelectedPropertyChanged: Notifying parent properties/values changed
+[09:17:32.517] INFO: [RuleSet #627] NotifyRulePropertiesChanged: Refreshing properties lists for all child rules.
+[09:17:32.517] INFO: [Rule #756] RefreshPropertiesList: showFamilias=False, showTipos=False, currentSelection='Categorías'
+[09:17:32.519] INFO: [Rule #756] RefreshPropertiesList: properties list is identical. Returning early.
+[09:17:32.519] INFO: [RuleSet #627] NotifyRuleValuesChanged: Refreshing value lists for all child rules.
+[09:17:32.520] INFO: [Rule #756] RefreshValuesList called. prevValue = 'Conductos'
+[09:17:32.520] INFO: [Rule #756] UpdateAvailableValues: Calculating values for 'Categorías'
+[09:17:32.521] INFO: [Rule #756] UpdateAvailableValues: values list is identical. Returning early.
+[09:17:32.521] INFO: [Rule #756] RefreshValuesList: SelectedValue set/restored to 'Conductos' (was 'Conductos')
+[09:17:32.522] INFO: [Rule #554] RefreshPropertiesList complete. SelectedProperty changed to default 'Categorías'
+[09:17:32.522] INFO: [RuleSet #627] NotifyRulePropertiesChanged: Refreshing properties lists for all child rules.
+[09:17:32.522] INFO: [Rule #756] RefreshPropertiesList: showFamilias=True, showTipos=False, currentSelection='Categorías'
+[09:17:32.523] INFO: [Rule #756] RefreshPropertiesList: properties changed. Clearing and rebuilding properties list.
+[09:17:32.523] INFO: [Rule #756] OnSelectedPropertyChanged: Ignored change to '' because _isUpdatingProperties is true.
+[09:17:32.535] INFO: [Rule #756] OnSelectedPropertyChanged: Ignored change to 'Categorías' because _isUpdatingProperties is true.
+[09:17:32.536] INFO: [Rule #756] RefreshPropertiesList complete. SelectedProperty restored to 'Categorías'
+[09:17:32.536] INFO: [Rule #554] RefreshPropertiesList: showFamilias=True, showTipos=False, currentSelection='Categorías'
+[09:17:32.537] INFO: [Rule #554] RefreshPropertiesList: properties list is identical. Returning early.
+[09:17:32.537] INFO: [RuleSet #627] NotifyRuleValuesChanged: Refreshing value lists for all child rules.
+[09:17:32.537] INFO: [Rule #756] RefreshValuesList called. prevValue = 'Conductos'
+[09:17:32.537] INFO: [Rule #756] UpdateAvailableValues: Calculating values for 'Categorías'
+[09:17:32.538] INFO: [Rule #756] UpdateAvailableValues: values list is identical. Returning early.
+[09:17:32.539] INFO: [Rule #756] RefreshValuesList: SelectedValue set/restored to 'Conductos' (was 'Conductos')
+[09:17:32.539] INFO: [Rule #554] RefreshValuesList called. prevValue = '<Boceto de escalera/rampa: centro de descansillo>'
+[09:17:32.539] INFO: [Rule #554] UpdateAvailableValues: Calculating values for 'Categorías'
+[09:17:32.541] INFO: [Rule #554] UpdateAvailableValues: values list is identical. Returning early.
+[09:17:32.541] INFO: [Rule #554] RefreshValuesList: SelectedValue set/restored to '<Boceto de escalera/rampa: centro de descansillo>' (was '<Boceto de escalera/rampa: centro de descansillo>')
+[09:17:35.122] INFO: [Rule #554] OnSelectedPropertyChanged: Property changed to 'Familias'
+[09:17:35.122] INFO: [Rule #554] UpdateAvailableValues: Calculating values for 'Familias'
+[09:17:35.122] INFO: [Rule #554] GetFamiliesFilteredBySiblings: Sibling Category filter count: 1
+[09:17:35.123] INFO: [Rule #554] UpdateAvailableValues: values changed. Clearing and adding 2 items.
+[09:17:35.124] INFO: [Rule #554] OnSelectedValueChanged: Value changed to ''. _isUpdatingAvailableValues=True
+[09:17:35.124] INFO: [Rule #554] UpdateAvailableValues complete.
+[09:17:35.125] INFO: [Rule #554] OnSelectedValueChanged: Value changed to 'Conducto rectangular'. _isUpdatingAvailableValues=False
+[09:17:35.125] INFO: [Rule #554] OnSelectedValueChanged: Notifying parent values changed.
+[09:17:35.125] INFO: [RuleSet #627] NotifyRuleValuesChanged: Refreshing value lists for all child rules.
+[09:17:35.125] INFO: [Rule #756] RefreshValuesList called. prevValue = 'Conductos'
+[09:17:35.126] INFO: [Rule #756] UpdateAvailableValues: Calculating values for 'Categorías'
+[09:17:35.127] INFO: [Rule #756] UpdateAvailableValues: values list is identical. Returning early.
+[09:17:35.127] INFO: [Rule #756] RefreshValuesList: SelectedValue set/restored to 'Conductos' (was 'Conductos')
+[09:17:35.127] INFO: [Rule #554] RefreshValuesList called. prevValue = 'Conducto rectangular'
+[09:17:35.128] INFO: [Rule #554] UpdateAvailableValues: Calculating values for 'Familias'
+[09:17:35.129] INFO: [Rule #554] GetFamiliesFilteredBySiblings: Sibling Category filter count: 1
+[09:17:35.130] INFO: [Rule #554] UpdateAvailableValues: values list is identical. Returning early.
+[09:17:35.130] INFO: [Rule #554] RefreshValuesList: SelectedValue set/restored to 'Conducto rectangular' (was 'Conducto rectangular')
+[09:17:35.131] INFO: [Rule #554] OnSelectedPropertyChanged: SelectedValue initialized to default 'Conducto rectangular'
+[09:17:35.131] INFO: [Rule #554] OnSelectedPropertyChanged: Triggering Parent.PruneDependentRules()
+[09:17:35.131] INFO: [RuleSet #627] PruneDependentRules check: hasCategory=True, hasFamily=True
+[09:17:35.131] INFO: [Rule #554] OnSelectedPropertyChanged: Notifying parent properties/values changed
+[09:17:35.132] INFO: [RuleSet #627] NotifyRulePropertiesChanged: Refreshing properties lists for all child rules.
+[09:17:35.132] INFO: [Rule #756] RefreshPropertiesList: showFamilias=False, showTipos=True, currentSelection='Categorías'
+[09:17:35.132] INFO: [Rule #756] RefreshPropertiesList: properties changed. Clearing and rebuilding properties list.
+[09:17:35.139] INFO: [Rule #756] OnSelectedPropertyChanged: Ignored change to '' because _isUpdatingProperties is true.
+[09:17:35.156] INFO: [Rule #756] OnSelectedPropertyChanged: Ignored change to 'Categorías' because _isUpdatingProperties is true.
+[09:17:35.157] INFO: [Rule #756] RefreshPropertiesList complete. SelectedProperty restored to 'Categorías'
+[09:17:35.157] INFO: [Rule #554] RefreshPropertiesList: showFamilias=True, showTipos=False, currentSelection='Familias'
+[09:17:35.157] INFO: [Rule #554] RefreshPropertiesList: properties list is identical. Returning early.
+[09:17:35.158] INFO: [RuleSet #627] NotifyRuleValuesChanged: Refreshing value lists for all child rules.
+[09:17:35.159] INFO: [Rule #756] RefreshValuesList called. prevValue = 'Conductos'
+[09:17:35.159] INFO: [Rule #756] UpdateAvailableValues: Calculating values for 'Categorías'
+[09:17:35.160] INFO: [Rule #756] UpdateAvailableValues: values list is identical. Returning early.
+[09:17:35.160] INFO: [Rule #756] RefreshValuesList: SelectedValue set/restored to 'Conductos' (was 'Conductos')
+[09:17:35.161] INFO: [Rule #554] RefreshValuesList called. prevValue = 'Conducto rectangular'
+[09:17:35.161] INFO: [Rule #554] UpdateAvailableValues: Calculating values for 'Familias'
+[09:17:35.161] INFO: [Rule #554] GetFamiliesFilteredBySiblings: Sibling Category filter count: 1
+[09:17:35.162] INFO: [Rule #554] UpdateAvailableValues: values list is identical. Returning early.
+[09:17:35.162] INFO: [Rule #554] RefreshValuesList: SelectedValue set/restored to 'Conducto rectangular' (was 'Conducto rectangular')
+[09:17:36.794] INFO: [RuleSet #627] AddRule command triggered.
+[09:17:36.795] INFO: [Rule #232] Constructor called.
+[09:17:36.795] INFO: [Rule #232] RefreshPropertiesList: showFamilias=True, showTipos=True, currentSelection=''
+[09:17:36.795] INFO: [Rule #232] RefreshPropertiesList: properties changed. Clearing and rebuilding properties list.
+[09:17:36.796] INFO: [Rule #232] OnSelectedPropertyChanged: Property changed to 'Categorías'
+[09:17:36.796] INFO: [Rule #232] UpdateAvailableValues: Calculating values for 'Categorías'
+[09:17:36.798] INFO: [Rule #232] UpdateAvailableValues: values changed. Clearing and adding 117 items.
+[09:17:36.798] INFO: [Rule #232] UpdateAvailableValues complete.
+[09:17:36.798] INFO: [Rule #232] OnSelectedValueChanged: Value changed to '<Boceto de escalera/rampa: centro de descansillo>'. _isUpdatingAvailableValues=False
+[09:17:36.799] INFO: [Rule #232] OnSelectedValueChanged: Notifying parent values changed.
+[09:17:36.799] INFO: [RuleSet #627] NotifyRuleValuesChanged: Refreshing value lists for all child rules.
+[09:17:36.799] INFO: [Rule #756] RefreshValuesList called. prevValue = 'Conductos'
+[09:17:36.799] INFO: [Rule #756] UpdateAvailableValues: Calculating values for 'Categorías'
+[09:17:36.801] INFO: [Rule #756] UpdateAvailableValues: values list is identical. Returning early.
+[09:17:36.801] INFO: [Rule #756] RefreshValuesList: SelectedValue set/restored to 'Conductos' (was 'Conductos')
+[09:17:36.802] INFO: [Rule #554] RefreshValuesList called. prevValue = 'Conducto rectangular'
+[09:17:36.802] INFO: [Rule #554] UpdateAvailableValues: Calculating values for 'Familias'
+[09:17:36.803] INFO: [Rule #554] GetFamiliesFilteredBySiblings: Sibling Category filter count: 1
+[09:17:36.803] INFO: [Rule #554] UpdateAvailableValues: values list is identical. Returning early.
+[09:17:36.804] INFO: [Rule #554] RefreshValuesList: SelectedValue set/restored to 'Conducto rectangular' (was 'Conducto rectangular')
+[09:17:36.804] INFO: [Rule #232] OnSelectedPropertyChanged: SelectedValue initialized to default '<Boceto de escalera/rampa: centro de descansillo>'
+[09:17:36.805] INFO: [Rule #232] OnSelectedPropertyChanged: Triggering Parent.PruneDependentRules()
+[09:17:36.805] INFO: [RuleSet #627] PruneDependentRules check: hasCategory=True, hasFamily=True
+[09:17:36.805] INFO: [Rule #232] OnSelectedPropertyChanged: Notifying parent properties/values changed
+[09:17:36.805] INFO: [RuleSet #627] NotifyRulePropertiesChanged: Refreshing properties lists for all child rules.
+[09:17:36.806] INFO: [Rule #756] RefreshPropertiesList: showFamilias=False, showTipos=True, currentSelection='Categorías'
+[09:17:36.806] INFO: [Rule #756] RefreshPropertiesList: properties list is identical. Returning early.
+[09:17:36.807] INFO: [Rule #554] RefreshPropertiesList: showFamilias=True, showTipos=False, currentSelection='Familias'
+[09:17:36.807] INFO: [Rule #554] RefreshPropertiesList: properties list is identical. Returning early.
+[09:17:36.807] INFO: [RuleSet #627] NotifyRuleValuesChanged: Refreshing value lists for all child rules.
+[09:17:36.808] INFO: [Rule #756] RefreshValuesList called. prevValue = 'Conductos'
+[09:17:36.808] INFO: [Rule #756] UpdateAvailableValues: Calculating values for 'Categorías'
+[09:17:36.809] INFO: [Rule #756] UpdateAvailableValues: values list is identical. Returning early.
+[09:17:36.810] INFO: [Rule #756] RefreshValuesList: SelectedValue set/restored to 'Conductos' (was 'Conductos')
+[09:17:36.810] INFO: [Rule #554] RefreshValuesList called. prevValue = 'Conducto rectangular'
+[09:17:36.810] INFO: [Rule #554] UpdateAvailableValues: Calculating values for 'Familias'
+[09:17:36.811] INFO: [Rule #554] GetFamiliesFilteredBySiblings: Sibling Category filter count: 1
+[09:17:36.811] INFO: [Rule #554] UpdateAvailableValues: values list is identical. Returning early.
+[09:17:36.812] INFO: [Rule #554] RefreshValuesList: SelectedValue set/restored to 'Conducto rectangular' (was 'Conducto rectangular')
+[09:17:36.813] INFO: [Rule #232] RefreshPropertiesList complete. SelectedProperty changed to default 'Categorías'
+[09:17:36.813] INFO: [RuleSet #627] NotifyRulePropertiesChanged: Refreshing properties lists for all child rules.
+[09:17:36.813] INFO: [Rule #756] RefreshPropertiesList: showFamilias=True, showTipos=True, currentSelection='Categorías'
+[09:17:36.814] INFO: [Rule #756] RefreshPropertiesList: properties changed. Clearing and rebuilding properties list.
+[09:17:36.814] INFO: [Rule #756] OnSelectedPropertyChanged: Ignored change to '' because _isUpdatingProperties is true.
+[09:17:36.815] INFO: [Rule #756] OnSelectedPropertyChanged: Ignored change to 'Categorías' because _isUpdatingProperties is true.
+[09:17:36.815] INFO: [Rule #756] RefreshPropertiesList complete. SelectedProperty restored to 'Categorías'
+[09:17:36.816] INFO: [Rule #554] RefreshPropertiesList: showFamilias=True, showTipos=False, currentSelection='Familias'
+[09:17:36.816] INFO: [Rule #554] RefreshPropertiesList: properties list is identical. Returning early.
+[09:17:36.817] INFO: [Rule #232] RefreshPropertiesList: showFamilias=True, showTipos=True, currentSelection='Categorías'
+[09:17:36.817] INFO: [Rule #232] RefreshPropertiesList: properties list is identical. Returning early.
+[09:17:36.818] INFO: [RuleSet #627] NotifyRuleValuesChanged: Refreshing value lists for all child rules.
+[09:17:36.818] INFO: [Rule #756] RefreshValuesList called. prevValue = 'Conductos'
+[09:17:36.818] INFO: [Rule #756] UpdateAvailableValues: Calculating values for 'Categorías'
+[09:17:36.820] INFO: [Rule #756] UpdateAvailableValues: values list is identical. Returning early.
+[09:17:36.820] INFO: [Rule #756] RefreshValuesList: SelectedValue set/restored to 'Conductos' (was 'Conductos')
+[09:17:36.820] INFO: [Rule #554] RefreshValuesList called. prevValue = 'Conducto rectangular'
+[09:17:36.822] INFO: [Rule #554] UpdateAvailableValues: Calculating values for 'Familias'
+[09:17:36.822] INFO: [Rule #554] GetFamiliesFilteredBySiblings: Sibling Category filter count: 2
+[09:17:36.824] INFO: [Rule #554] UpdateAvailableValues: values list is identical. Returning early.
+[09:17:36.824] INFO: [Rule #554] RefreshValuesList: SelectedValue set/restored to 'Conducto rectangular' (was 'Conducto rectangular')
+[09:17:36.824] INFO: [Rule #232] RefreshValuesList called. prevValue = '<Boceto de escalera/rampa: centro de descansillo>'
+[09:17:36.824] INFO: [Rule #232] UpdateAvailableValues: Calculating values for 'Categorías'
+[09:17:36.825] INFO: [Rule #232] UpdateAvailableValues: values list is identical. Returning early.
+[09:17:36.825] INFO: [Rule #232] RefreshValuesList: SelectedValue set/restored to '<Boceto de escalera/rampa: centro de descansillo>' (was '<Boceto de escalera/rampa: centro de descansillo>')
+[09:17:38.576] INFO: [Rule #232] OnSelectedPropertyChanged: Property changed to 'Tipos'
+[09:17:38.578] INFO: [Rule #232] UpdateAvailableValues: Calculating values for 'Tipos'
+[09:17:38.578] INFO: [Rule #232] GetTypesFilteredBySiblings: Sibling Family filter count: 1
+[09:17:38.579] INFO: [Rule #232] UpdateAvailableValues: values changed. Clearing and adding 1 items.
+[09:17:38.579] INFO: [Rule #232] OnSelectedValueChanged: Value changed to ''. _isUpdatingAvailableValues=True
+[09:17:38.580] INFO: [Rule #232] UpdateAvailableValues complete.
+[09:17:38.581] INFO: [Rule #232] OnSelectedValueChanged: Value changed to 'Mitered Elbows / Taps'. _isUpdatingAvailableValues=False
+[09:17:38.581] INFO: [Rule #232] OnSelectedValueChanged: Notifying parent values changed.
+[09:17:38.582] INFO: [RuleSet #627] NotifyRuleValuesChanged: Refreshing value lists for all child rules.
+[09:17:38.582] INFO: [Rule #756] RefreshValuesList called. prevValue = 'Conductos'
+[09:17:38.582] INFO: [Rule #756] UpdateAvailableValues: Calculating values for 'Categorías'
+[09:17:38.583] INFO: [Rule #756] UpdateAvailableValues: values list is identical. Returning early.
+[09:17:38.584] INFO: [Rule #756] RefreshValuesList: SelectedValue set/restored to 'Conductos' (was 'Conductos')
+[09:17:38.584] INFO: [Rule #554] RefreshValuesList called. prevValue = 'Conducto rectangular'
+[09:17:38.584] INFO: [Rule #554] UpdateAvailableValues: Calculating values for 'Familias'
+[09:17:38.585] INFO: [Rule #554] GetFamiliesFilteredBySiblings: Sibling Category filter count: 1
+[09:17:38.586] INFO: [Rule #554] UpdateAvailableValues: values list is identical. Returning early.
+[09:17:38.587] INFO: [Rule #554] RefreshValuesList: SelectedValue set/restored to 'Conducto rectangular' (was 'Conducto rectangular')
+[09:17:38.587] INFO: [Rule #232] RefreshValuesList called. prevValue = 'Mitered Elbows / Taps'
+[09:17:38.588] INFO: [Rule #232] UpdateAvailableValues: Calculating values for 'Tipos'
+[09:17:38.588] INFO: [Rule #232] GetTypesFilteredBySiblings: Sibling Family filter count: 1
+[09:17:38.590] INFO: [Rule #232] UpdateAvailableValues: values list is identical. Returning early.
+[09:17:38.591] INFO: [Rule #232] RefreshValuesList: SelectedValue set/restored to 'Mitered Elbows / Taps' (was 'Mitered Elbows / Taps')
+[09:17:38.591] INFO: [Rule #232] OnSelectedPropertyChanged: SelectedValue initialized to default 'Mitered Elbows / Taps'
+[09:17:38.592] INFO: [Rule #232] OnSelectedPropertyChanged: Triggering Parent.PruneDependentRules()
+[09:17:38.592] INFO: [RuleSet #627] PruneDependentRules check: hasCategory=True, hasFamily=True
+[09:17:38.592] INFO: [Rule #232] OnSelectedPropertyChanged: Notifying parent properties/values changed
+[09:17:38.592] INFO: [RuleSet #627] NotifyRulePropertiesChanged: Refreshing properties lists for all child rules.
+[09:17:38.593] INFO: [Rule #756] RefreshPropertiesList: showFamilias=False, showTipos=True, currentSelection='Categorías'
+[09:17:38.593] INFO: [Rule #756] RefreshPropertiesList: properties changed. Clearing and rebuilding properties list.
+[09:17:38.593] INFO: [Rule #756] OnSelectedPropertyChanged: Ignored change to '' because _isUpdatingProperties is true.
+[09:17:38.594] INFO: [Rule #756] OnSelectedPropertyChanged: Ignored change to 'Categorías' because _isUpdatingProperties is true.
+[09:17:38.595] INFO: [Rule #756] RefreshPropertiesList complete. SelectedProperty restored to 'Categorías'
+[09:17:38.595] INFO: [Rule #554] RefreshPropertiesList: showFamilias=True, showTipos=False, currentSelection='Familias'
+[09:17:38.595] INFO: [Rule #554] RefreshPropertiesList: properties list is identical. Returning early.
+[09:17:38.596] INFO: [Rule #232] RefreshPropertiesList: showFamilias=True, showTipos=True, currentSelection='Tipos'
+[09:17:38.596] INFO: [Rule #232] RefreshPropertiesList: properties list is identical. Returning early.
+[09:17:38.596] INFO: [RuleSet #627] NotifyRuleValuesChanged: Refreshing value lists for all child rules.
+[09:17:38.597] INFO: [Rule #756] RefreshValuesList called. prevValue = 'Conductos'
+[09:17:38.597] INFO: [Rule #756] UpdateAvailableValues: Calculating values for 'Categorías'
+[09:17:38.599] INFO: [Rule #756] UpdateAvailableValues: values list is identical. Returning early.
+[09:17:38.599] INFO: [Rule #756] RefreshValuesList: SelectedValue set/restored to 'Conductos' (was 'Conductos')
+[09:17:38.600] INFO: [Rule #554] RefreshValuesList called. prevValue = 'Conducto rectangular'
+[09:17:38.600] INFO: [Rule #554] UpdateAvailableValues: Calculating values for 'Familias'
+[09:17:38.600] INFO: [Rule #554] GetFamiliesFilteredBySiblings: Sibling Category filter count: 1
+[09:17:38.601] INFO: [Rule #554] UpdateAvailableValues: values list is identical. Returning early.
+[09:17:38.602] INFO: [Rule #554] RefreshValuesList: SelectedValue set/restored to 'Conducto rectangular' (was 'Conducto rectangular')
+[09:17:38.602] INFO: [Rule #232] RefreshValuesList called. prevValue = 'Mitered Elbows / Taps'
+[09:17:38.602] INFO: [Rule #232] UpdateAvailableValues: Calculating values for 'Tipos'
+[09:17:38.603] INFO: [Rule #232] GetTypesFilteredBySiblings: Sibling Family filter count: 1
+[09:17:38.604] INFO: [Rule #232] UpdateAvailableValues: values list is identical. Returning early.
+[09:17:38.604] INFO: [Rule #232] RefreshValuesList: SelectedValue set/restored to 'Mitered Elbows / Taps' (was 'Mitered Elbows / Taps')
+[09:17:40.722] INFO: [RuleSet #627] AddRule command triggered.
+[09:17:40.723] INFO: [Rule #052] Constructor called.
+[09:17:40.723] INFO: [Rule #052] RefreshPropertiesList: showFamilias=True, showTipos=True, currentSelection=''
+[09:17:40.723] INFO: [Rule #052] RefreshPropertiesList: properties changed. Clearing and rebuilding properties list.
+[09:17:40.724] INFO: [Rule #052] OnSelectedPropertyChanged: Property changed to 'Categorías'
+[09:17:40.724] INFO: [Rule #052] UpdateAvailableValues: Calculating values for 'Categorías'
+[09:17:40.725] INFO: [Rule #052] UpdateAvailableValues: values changed. Clearing and adding 117 items.
+[09:17:40.725] INFO: [Rule #052] UpdateAvailableValues complete.
+[09:17:40.726] INFO: [Rule #052] OnSelectedValueChanged: Value changed to '<Boceto de escalera/rampa: centro de descansillo>'. _isUpdatingAvailableValues=False
+[09:17:40.726] INFO: [Rule #052] OnSelectedValueChanged: Notifying parent values changed.
+[09:17:40.726] INFO: [RuleSet #627] NotifyRuleValuesChanged: Refreshing value lists for all child rules.
+[09:17:40.726] INFO: [Rule #756] RefreshValuesList called. prevValue = 'Conductos'
+[09:17:40.726] INFO: [Rule #756] UpdateAvailableValues: Calculating values for 'Categorías'
+[09:17:40.727] INFO: [Rule #756] UpdateAvailableValues: values list is identical. Returning early.
+[09:17:40.728] INFO: [Rule #756] RefreshValuesList: SelectedValue set/restored to 'Conductos' (was 'Conductos')
+[09:17:40.728] INFO: [Rule #554] RefreshValuesList called. prevValue = 'Conducto rectangular'
+[09:17:40.728] INFO: [Rule #554] UpdateAvailableValues: Calculating values for 'Familias'
+[09:17:40.728] INFO: [Rule #554] GetFamiliesFilteredBySiblings: Sibling Category filter count: 1
+[09:17:40.729] INFO: [Rule #554] UpdateAvailableValues: values list is identical. Returning early.
+[09:17:40.729] INFO: [Rule #554] RefreshValuesList: SelectedValue set/restored to 'Conducto rectangular' (was 'Conducto rectangular')
+[09:17:40.730] INFO: [Rule #232] RefreshValuesList called. prevValue = 'Mitered Elbows / Taps'
+[09:17:40.730] INFO: [Rule #232] UpdateAvailableValues: Calculating values for 'Tipos'
+[09:17:40.730] INFO: [Rule #232] GetTypesFilteredBySiblings: Sibling Family filter count: 1
+[09:17:40.731] INFO: [Rule #232] UpdateAvailableValues: values list is identical. Returning early.
+[09:17:40.731] INFO: [Rule #232] RefreshValuesList: SelectedValue set/restored to 'Mitered Elbows / Taps' (was 'Mitered Elbows / Taps')
+[09:17:40.732] INFO: [Rule #052] OnSelectedPropertyChanged: SelectedValue initialized to default '<Boceto de escalera/rampa: centro de descansillo>'
+[09:17:40.732] INFO: [Rule #052] OnSelectedPropertyChanged: Triggering Parent.PruneDependentRules()
+[09:17:40.733] INFO: [RuleSet #627] PruneDependentRules check: hasCategory=True, hasFamily=True
+[09:17:40.733] INFO: [Rule #052] OnSelectedPropertyChanged: Notifying parent properties/values changed
+[09:17:40.734] INFO: [RuleSet #627] NotifyRulePropertiesChanged: Refreshing properties lists for all child rules.
+[09:17:40.734] INFO: [Rule #756] RefreshPropertiesList: showFamilias=False, showTipos=True, currentSelection='Categorías'
+[09:17:40.734] INFO: [Rule #756] RefreshPropertiesList: properties list is identical. Returning early.
+[09:17:40.734] INFO: [Rule #554] RefreshPropertiesList: showFamilias=True, showTipos=False, currentSelection='Familias'
+[09:17:40.735] INFO: [Rule #554] RefreshPropertiesList: properties list is identical. Returning early.
+[09:17:40.735] INFO: [Rule #232] RefreshPropertiesList: showFamilias=True, showTipos=True, currentSelection='Tipos'
+[09:17:40.735] INFO: [Rule #232] RefreshPropertiesList: properties list is identical. Returning early.
+[09:17:40.736] INFO: [RuleSet #627] NotifyRuleValuesChanged: Refreshing value lists for all child rules.
+[09:17:40.736] INFO: [Rule #756] RefreshValuesList called. prevValue = 'Conductos'
+[09:17:40.736] INFO: [Rule #756] UpdateAvailableValues: Calculating values for 'Categorías'
+[09:17:40.738] INFO: [Rule #756] UpdateAvailableValues: values list is identical. Returning early.
+[09:17:40.738] INFO: [Rule #756] RefreshValuesList: SelectedValue set/restored to 'Conductos' (was 'Conductos')
+[09:17:40.739] INFO: [Rule #554] RefreshValuesList called. prevValue = 'Conducto rectangular'
+[09:17:40.739] INFO: [Rule #554] UpdateAvailableValues: Calculating values for 'Familias'
+[09:17:40.739] INFO: [Rule #554] GetFamiliesFilteredBySiblings: Sibling Category filter count: 1
+[09:17:40.740] INFO: [Rule #554] UpdateAvailableValues: values list is identical. Returning early.
+[09:17:40.740] INFO: [Rule #554] RefreshValuesList: SelectedValue set/restored to 'Conducto rectangular' (was 'Conducto rectangular')
+[09:17:40.740] INFO: [Rule #232] RefreshValuesList called. prevValue = 'Mitered Elbows / Taps'
+[09:17:40.740] INFO: [Rule #232] UpdateAvailableValues: Calculating values for 'Tipos'
+[09:17:40.741] INFO: [Rule #232] GetTypesFilteredBySiblings: Sibling Family filter count: 1
+[09:17:40.741] INFO: [Rule #232] UpdateAvailableValues: values list is identical. Returning early.
+[09:17:40.742] INFO: [Rule #232] RefreshValuesList: SelectedValue set/restored to 'Mitered Elbows / Taps' (was 'Mitered Elbows / Taps')
+[09:17:40.742] INFO: [Rule #052] RefreshPropertiesList complete. SelectedProperty changed to default 'Categorías'
+[09:17:40.742] INFO: [RuleSet #627] NotifyRulePropertiesChanged: Refreshing properties lists for all child rules.
+[09:17:40.742] INFO: [Rule #756] RefreshPropertiesList: showFamilias=True, showTipos=True, currentSelection='Categorías'
+[09:17:40.743] INFO: [Rule #756] RefreshPropertiesList: properties changed. Clearing and rebuilding properties list.
+[09:17:40.743] INFO: [Rule #756] OnSelectedPropertyChanged: Ignored change to '' because _isUpdatingProperties is true.
+[09:17:40.744] INFO: [Rule #756] OnSelectedPropertyChanged: Ignored change to 'Categorías' because _isUpdatingProperties is true.
+[09:17:40.745] INFO: [Rule #756] RefreshPropertiesList complete. SelectedProperty restored to 'Categorías'
+[09:17:40.745] INFO: [Rule #554] RefreshPropertiesList: showFamilias=True, showTipos=False, currentSelection='Familias'
+[09:17:40.745] INFO: [Rule #554] RefreshPropertiesList: properties list is identical. Returning early.
+[09:17:40.745] INFO: [Rule #232] RefreshPropertiesList: showFamilias=True, showTipos=True, currentSelection='Tipos'
+[09:17:40.745] INFO: [Rule #232] RefreshPropertiesList: properties list is identical. Returning early.
+[09:17:40.747] INFO: [Rule #052] RefreshPropertiesList: showFamilias=True, showTipos=True, currentSelection='Categorías'
+[09:17:40.747] INFO: [Rule #052] RefreshPropertiesList: properties list is identical. Returning early.
+[09:17:40.747] INFO: [RuleSet #627] NotifyRuleValuesChanged: Refreshing value lists for all child rules.
+[09:17:40.747] INFO: [Rule #756] RefreshValuesList called. prevValue = 'Conductos'
+[09:17:40.747] INFO: [Rule #756] UpdateAvailableValues: Calculating values for 'Categorías'
+[09:17:40.749] INFO: [Rule #756] UpdateAvailableValues: values list is identical. Returning early.
+[09:17:40.749] INFO: [Rule #756] RefreshValuesList: SelectedValue set/restored to 'Conductos' (was 'Conductos')
+[09:17:40.750] INFO: [Rule #554] RefreshValuesList called. prevValue = 'Conducto rectangular'
+[09:17:40.750] INFO: [Rule #554] UpdateAvailableValues: Calculating values for 'Familias'
+[09:17:40.750] INFO: [Rule #554] GetFamiliesFilteredBySiblings: Sibling Category filter count: 2
+[09:17:40.752] INFO: [Rule #554] UpdateAvailableValues: values list is identical. Returning early.
+[09:17:40.753] INFO: [Rule #554] RefreshValuesList: SelectedValue set/restored to 'Conducto rectangular' (was 'Conducto rectangular')
+[09:17:40.753] INFO: [Rule #232] RefreshValuesList called. prevValue = 'Mitered Elbows / Taps'
+[09:17:40.753] INFO: [Rule #232] UpdateAvailableValues: Calculating values for 'Tipos'
+[09:17:40.753] INFO: [Rule #232] GetTypesFilteredBySiblings: Sibling Family filter count: 1
+[09:17:40.754] INFO: [Rule #232] UpdateAvailableValues: values list is identical. Returning early.
+[09:17:40.754] INFO: [Rule #232] RefreshValuesList: SelectedValue set/restored to 'Mitered Elbows / Taps' (was 'Mitered Elbows / Taps')
+[09:17:40.755] INFO: [Rule #052] RefreshValuesList called. prevValue = '<Boceto de escalera/rampa: centro de descansillo>'
+[09:17:40.755] INFO: [Rule #052] UpdateAvailableValues: Calculating values for 'Categorías'
+[09:17:40.756] INFO: [Rule #052] UpdateAvailableValues: values list is identical. Returning early.
+[09:17:40.756] INFO: [Rule #052] RefreshValuesList: SelectedValue set/restored to '<Boceto de escalera/rampa: centro de descansillo>' (was '<Boceto de escalera/rampa: centro de descansillo>')
+[09:17:46.760] INFO: [Rule #052] OnSelectedPropertyChanged: Property changed to 'System Classification'
+[09:17:46.760] INFO: [Rule #052] UpdateAvailableValues: Calculating values for 'System Classification'
+[09:17:46.761] INFO: [Rule #052] UpdateAvailableValues: values changed. Clearing and adding 3 items.
+[09:17:46.762] INFO: [Rule #052] OnSelectedValueChanged: Value changed to ''. _isUpdatingAvailableValues=True
+[09:17:46.763] INFO: [Rule #052] UpdateAvailableValues complete.
+[09:17:46.763] INFO: [Rule #052] OnSelectedValueChanged: Value changed to 'ExhaustAir'. _isUpdatingAvailableValues=False
+[09:17:46.763] INFO: [Rule #052] OnSelectedValueChanged: Notifying parent values changed.
+[09:17:46.763] INFO: [RuleSet #627] NotifyRuleValuesChanged: Refreshing value lists for all child rules.
+[09:17:46.764] INFO: [Rule #756] RefreshValuesList called. prevValue = 'Conductos'
+[09:17:46.764] INFO: [Rule #756] UpdateAvailableValues: Calculating values for 'Categorías'
+[09:17:46.765] INFO: [Rule #756] UpdateAvailableValues: values list is identical. Returning early.
+[09:17:46.765] INFO: [Rule #756] RefreshValuesList: SelectedValue set/restored to 'Conductos' (was 'Conductos')
+[09:17:46.765] INFO: [Rule #554] RefreshValuesList called. prevValue = 'Conducto rectangular'
+[09:17:46.766] INFO: [Rule #554] UpdateAvailableValues: Calculating values for 'Familias'
+[09:17:46.766] INFO: [Rule #554] GetFamiliesFilteredBySiblings: Sibling Category filter count: 1
+[09:17:46.767] INFO: [Rule #554] UpdateAvailableValues: values list is identical. Returning early.
+[09:17:46.768] INFO: [Rule #554] RefreshValuesList: SelectedValue set/restored to 'Conducto rectangular' (was 'Conducto rectangular')
+[09:17:46.768] INFO: [Rule #232] RefreshValuesList called. prevValue = 'Mitered Elbows / Taps'
+[09:17:46.768] INFO: [Rule #232] UpdateAvailableValues: Calculating values for 'Tipos'
+[09:17:46.768] INFO: [Rule #232] GetTypesFilteredBySiblings: Sibling Family filter count: 1
+[09:17:46.769] INFO: [Rule #232] UpdateAvailableValues: values list is identical. Returning early.
+[09:17:46.769] INFO: [Rule #232] RefreshValuesList: SelectedValue set/restored to 'Mitered Elbows / Taps' (was 'Mitered Elbows / Taps')
+[09:17:46.769] INFO: [Rule #052] RefreshValuesList called. prevValue = 'ExhaustAir'
+[09:17:46.770] INFO: [Rule #052] UpdateAvailableValues: Calculating values for 'System Classification'
+[09:17:46.771] INFO: [Rule #052] UpdateAvailableValues: values list is identical. Returning early.
+[09:17:46.771] INFO: [Rule #052] RefreshValuesList: SelectedValue set/restored to 'ExhaustAir' (was 'ExhaustAir')
+[09:17:46.772] INFO: [Rule #052] OnSelectedPropertyChanged: SelectedValue initialized to default 'ExhaustAir'
+[09:17:46.772] INFO: [Rule #052] OnSelectedPropertyChanged: Triggering Parent.PruneDependentRules()
+[09:17:46.773] INFO: [RuleSet #627] PruneDependentRules check: hasCategory=True, hasFamily=True
+[09:17:46.773] INFO: [Rule #052] OnSelectedPropertyChanged: Notifying parent properties/values changed
+[09:17:46.774] INFO: [RuleSet #627] NotifyRulePropertiesChanged: Refreshing properties lists for all child rules.
+[09:17:46.774] INFO: [Rule #756] RefreshPropertiesList: showFamilias=False, showTipos=True, currentSelection='Categorías'
+[09:17:46.775] INFO: [Rule #756] RefreshPropertiesList: properties changed. Clearing and rebuilding properties list.
+[09:17:46.775] INFO: [Rule #756] OnSelectedPropertyChanged: Ignored change to '' because _isUpdatingProperties is true.
+[09:17:46.776] INFO: [Rule #756] OnSelectedPropertyChanged: Ignored change to 'Categorías' because _isUpdatingProperties is true.
+[09:17:46.777] INFO: [Rule #756] RefreshPropertiesList complete. SelectedProperty restored to 'Categorías'
+[09:17:46.777] INFO: [Rule #554] RefreshPropertiesList: showFamilias=True, showTipos=False, currentSelection='Familias'
+[09:17:46.777] INFO: [Rule #554] RefreshPropertiesList: properties list is identical. Returning early.
+[09:17:46.778] INFO: [Rule #232] RefreshPropertiesList: showFamilias=True, showTipos=True, currentSelection='Tipos'
+[09:17:46.778] INFO: [Rule #232] RefreshPropertiesList: properties list is identical. Returning early.
+[09:17:46.778] INFO: [Rule #052] RefreshPropertiesList: showFamilias=True, showTipos=True, currentSelection='System Classification'
+[09:17:46.779] INFO: [Rule #052] RefreshPropertiesList: properties list is identical. Returning early.
+[09:17:46.779] INFO: [RuleSet #627] NotifyRuleValuesChanged: Refreshing value lists for all child rules.
+[09:17:46.780] INFO: [Rule #756] RefreshValuesList called. prevValue = 'Conductos'
+[09:17:46.780] INFO: [Rule #756] UpdateAvailableValues: Calculating values for 'Categorías'
+[09:17:46.782] INFO: [Rule #756] UpdateAvailableValues: values list is identical. Returning early.
+[09:17:46.783] INFO: [Rule #756] RefreshValuesList: SelectedValue set/restored to 'Conductos' (was 'Conductos')
+[09:17:46.783] INFO: [Rule #554] RefreshValuesList called. prevValue = 'Conducto rectangular'
+[09:17:46.784] INFO: [Rule #554] UpdateAvailableValues: Calculating values for 'Familias'
+[09:17:46.784] INFO: [Rule #554] GetFamiliesFilteredBySiblings: Sibling Category filter count: 1
+[09:17:46.785] INFO: [Rule #554] UpdateAvailableValues: values list is identical. Returning early.
+[09:17:46.786] INFO: [Rule #554] RefreshValuesList: SelectedValue set/restored to 'Conducto rectangular' (was 'Conducto rectangular')
+[09:17:46.786] INFO: [Rule #232] RefreshValuesList called. prevValue = 'Mitered Elbows / Taps'
+[09:17:46.787] INFO: [Rule #232] UpdateAvailableValues: Calculating values for 'Tipos'
+[09:17:46.787] INFO: [Rule #232] GetTypesFilteredBySiblings: Sibling Family filter count: 1
+[09:17:46.788] INFO: [Rule #232] UpdateAvailableValues: values list is identical. Returning early.
+[09:17:46.788] INFO: [Rule #232] RefreshValuesList: SelectedValue set/restored to 'Mitered Elbows / Taps' (was 'Mitered Elbows / Taps')
+[09:17:46.789] INFO: [Rule #052] RefreshValuesList called. prevValue = 'ExhaustAir'
+[09:17:46.789] INFO: [Rule #052] UpdateAvailableValues: Calculating values for 'System Classification'
+[09:17:46.790] INFO: [Rule #052] UpdateAvailableValues: values list is identical. Returning early.
+[09:17:46.790] INFO: [Rule #052] RefreshValuesList: SelectedValue set/restored to 'ExhaustAir' (was 'ExhaustAir')
+[09:17:50.217] INFO: [Rule #052] OnSelectedValueChanged: Value changed to 'SupplyAir'. _isUpdatingAvailableValues=False
+[09:17:50.217] INFO: [Rule #052] OnSelectedValueChanged: Notifying parent values changed.
+[09:17:50.217] INFO: [RuleSet #627] NotifyRuleValuesChanged: Refreshing value lists for all child rules.
+[09:17:50.217] INFO: [Rule #756] RefreshValuesList called. prevValue = 'Conductos'
+[09:17:50.218] INFO: [Rule #756] UpdateAvailableValues: Calculating values for 'Categorías'
+[09:17:50.219] INFO: [Rule #756] UpdateAvailableValues: values list is identical. Returning early.
+[09:17:50.220] INFO: [Rule #756] RefreshValuesList: SelectedValue set/restored to 'Conductos' (was 'Conductos')
+[09:17:50.220] INFO: [Rule #554] RefreshValuesList called. prevValue = 'Conducto rectangular'
+[09:17:50.220] INFO: [Rule #554] UpdateAvailableValues: Calculating values for 'Familias'
+[09:17:50.220] INFO: [Rule #554] GetFamiliesFilteredBySiblings: Sibling Category filter count: 1
+[09:17:50.221] INFO: [Rule #554] UpdateAvailableValues: values list is identical. Returning early.
+[09:17:50.221] INFO: [Rule #554] RefreshValuesList: SelectedValue set/restored to 'Conducto rectangular' (was 'Conducto rectangular')
+[09:17:50.222] INFO: [Rule #232] RefreshValuesList called. prevValue = 'Mitered Elbows / Taps'
+[09:17:50.222] INFO: [Rule #232] UpdateAvailableValues: Calculating values for 'Tipos'
+[09:17:50.222] INFO: [Rule #232] GetTypesFilteredBySiblings: Sibling Family filter count: 1
+[09:17:50.223] INFO: [Rule #232] UpdateAvailableValues: values list is identical. Returning early.
+[09:17:50.223] INFO: [Rule #232] RefreshValuesList: SelectedValue set/restored to 'Mitered Elbows / Taps' (was 'Mitered Elbows / Taps')
+[09:17:50.223] INFO: [Rule #052] RefreshValuesList called. prevValue = 'SupplyAir'
+[09:17:50.224] INFO: [Rule #052] UpdateAvailableValues: Calculating values for 'System Classification'
+[09:17:50.224] INFO: [Rule #052] UpdateAvailableValues: values list is identical. Returning early.
+[09:17:50.224] INFO: [Rule #052] RefreshValuesList: SelectedValue set/restored to 'SupplyAir' (was 'SupplyAir')
+[09:17:55.089] INFO: [ApplyPreSelection] Applying matching keys: 2043 on scope: AllModelElements. IsBulkUpdating: False
+[09:17:55.120] INFO: BuildTree: 10000 elements for scope AllModelElements.
+[09:17:55.121] INFO: Updating filter dropdowns...
+[09:17:55.130] INFO: Building tree structure offline for 10000 elements...
+[09:17:55.157] INFO: Applying selection state for 2043 checked elements...
+[09:17:55.164] INFO: Swapping tree root directly. New total: 10000
+[09:17:55.179] INFO: Tree built and swapped. 10000 visible elements.
+[09:17:55.187] INFO: BuildTree completed.
+[09:17:55.188] INFO: [ApplyPreSelection] Complete. Checked count is now 2043
+[09:18:23.692] INFO: Apply Selection: 2043 elements applied. CurrentSelection updated to 2043 elements.
+[09:18:33.320] INFO: [OnSelectedModelChanged] Switching document context to: Active Model: Snowdon Towers Sample HVAC
+[09:18:33.378] INFO: Collecting elements for scope: CurrentSelection in doc: Snowdon Towers Sample HVAC (LinkInstance: None)...
+[09:18:34.700] INFO: Collecting elements for scope: ElementsVisibleInView in doc: Snowdon Towers Sample HVAC (LinkInstance: None)...
+[09:18:36.932] INFO: Collecting elements for scope: ElementsBelongingToView in doc: Snowdon Towers Sample HVAC (LinkInstance: None)...
+[09:18:38.216] INFO: Collecting elements for scope: AllModelElements in doc: Snowdon Towers Sample HVAC (LinkInstance: None)...
+[09:18:39.433] INFO: BuildTree: 6834 elements for scope AllModelElements.
+[09:18:39.440] INFO: Updating filter dropdowns...
+[09:18:39.449] INFO: Building tree structure offline for 6834 elements...
+[09:18:39.490] INFO: Swapping tree root directly. New total: 6834
+[09:18:39.501] INFO: Tree built and swapped. 6834 visible elements.
+[09:18:39.505] INFO: BuildTree completed.
+[09:18:48.517] INFO: Opening Pre-Selection window...
+[09:18:48.518] INFO: [Rule #246] Constructor called.
+[09:18:48.518] INFO: [Rule #246] RefreshPropertiesList: showFamilias=False, showTipos=False, currentSelection=''
+[09:18:48.519] INFO: [Rule #246] RefreshPropertiesList: properties changed. Clearing and rebuilding properties list.
+[09:18:48.519] INFO: [Rule #246] OnSelectedPropertyChanged: Property changed to 'Categorías'
+[09:18:48.520] INFO: [Rule #246] UpdateAvailableValues: Calculating values for 'Categorías'
+[09:18:48.521] INFO: [Rule #246] UpdateAvailableValues: values changed. Clearing and adding 65 items.
+[09:18:48.521] INFO: [Rule #246] UpdateAvailableValues complete.
+[09:18:48.522] INFO: [Rule #246] OnSelectedValueChanged: Value changed to '<Boceto>'. _isUpdatingAvailableValues=False
+[09:18:48.522] INFO: [Rule #246] OnSelectedValueChanged: Notifying parent values changed.
+[09:18:48.522] INFO: [RuleSet #901] NotifyRuleValuesChanged: Refreshing value lists for all child rules.
+[09:18:48.522] INFO: [Rule #246] OnSelectedPropertyChanged: SelectedValue initialized to default '<Boceto>'
+[09:18:48.523] INFO: [Rule #246] OnSelectedPropertyChanged: Triggering Parent.PruneDependentRules()
+[09:18:48.523] INFO: [RuleSet #901] PruneDependentRules check: hasCategory=False, hasFamily=False
+[09:18:48.523] INFO: [Rule #246] OnSelectedPropertyChanged: Notifying parent properties/values changed
+[09:18:48.524] INFO: [RuleSet #901] NotifyRulePropertiesChanged: Refreshing properties lists for all child rules.
+[09:18:48.524] INFO: [RuleSet #901] NotifyRuleValuesChanged: Refreshing value lists for all child rules.
+[09:18:48.524] INFO: [Rule #246] RefreshPropertiesList complete. SelectedProperty changed to default 'Categorías'
+[09:18:48.526] INFO: Showing Pre-Selection dialog...
+[09:19:00.746] INFO: [Rule #246] OnSelectedValueChanged: Value changed to 'Materiales'. _isUpdatingAvailableValues=False
+[09:19:00.747] INFO: [Rule #246] OnSelectedValueChanged: Notifying parent values changed.
+[09:19:00.747] INFO: [RuleSet #901] NotifyRuleValuesChanged: Refreshing value lists for all child rules.
+[09:19:00.748] INFO: [Rule #246] RefreshValuesList called. prevValue = 'Materiales'
+[09:19:00.748] INFO: [Rule #246] UpdateAvailableValues: Calculating values for 'Categorías'
+[09:19:00.750] INFO: [Rule #246] UpdateAvailableValues: values list is identical. Returning early.
+[09:19:00.750] INFO: [Rule #246] RefreshValuesList: SelectedValue set/restored to 'Materiales' (was 'Materiales')
+[09:19:04.658] INFO: [Rule #246] OnSelectedValueChanged: Value changed to 'Niveles'. _isUpdatingAvailableValues=False
+[09:19:04.658] INFO: [Rule #246] OnSelectedValueChanged: Notifying parent values changed.
+[09:19:04.659] INFO: [RuleSet #901] NotifyRuleValuesChanged: Refreshing value lists for all child rules.
+[09:19:04.659] INFO: [Rule #246] RefreshValuesList called. prevValue = 'Niveles'
+[09:19:04.659] INFO: [Rule #246] UpdateAvailableValues: Calculating values for 'Categorías'
+[09:19:04.661] INFO: [Rule #246] UpdateAvailableValues: values list is identical. Returning early.
+[09:19:04.661] INFO: [Rule #246] RefreshValuesList: SelectedValue set/restored to 'Niveles' (was 'Niveles')
+[09:19:05.820] INFO: [ApplyPreSelection] Applying matching keys: 11 on scope: AllModelElements. IsBulkUpdating: False
+[09:19:05.854] INFO: BuildTree: 6834 elements for scope AllModelElements.
+[09:19:05.855] INFO: Updating filter dropdowns...
+[09:19:05.862] INFO: Building tree structure offline for 6834 elements...
+[09:19:05.881] INFO: Applying selection state for 11 checked elements...
+[09:19:05.883] INFO: Swapping tree root directly. New total: 6834
+[09:19:05.903] INFO: Tree built and swapped. 6834 visible elements.
+[09:19:05.906] INFO: BuildTree completed.
+[09:19:05.906] INFO: [ApplyPreSelection] Complete. Checked count is now 11
+[09:19:26.791] INFO: [ApplyIncreaseChecked] START. Current Scope in Select: AllModelElements. _activeElements count: 6834.
+[09:19:26.869] INFO: [ApplyIncreaseChecked] Checked elements in explorer tree: 1.
+[09:19:26.923] INFO: [ApplyIncreaseChecked] Checked 'Same Family/Type' for Snowdon Towers Sample HVAC. Targets: 11.
+[09:19:26.938] INFO: [ApplyIncreaseChecked] Invoking BuildTree() now...
+[09:19:27.009] INFO: BuildTree: 6834 elements for scope AllModelElements.
+[09:19:27.010] INFO: Updating filter dropdowns...
+[09:19:27.017] INFO: Building tree structure offline for 6834 elements...
+[09:19:27.045] INFO: Applying selection state for 11 checked elements...
+[09:19:27.048] INFO: Swapping tree root directly. New total: 6834
+[09:19:27.064] INFO: Tree built and swapped. 6834 visible elements.
+[09:19:27.069] INFO: BuildTree completed.
+[09:19:27.070] INFO: [ApplyIncreaseChecked] COMPLETE. Status: Increase applied. Total checked: 11. CheckedElementsCount: 11.

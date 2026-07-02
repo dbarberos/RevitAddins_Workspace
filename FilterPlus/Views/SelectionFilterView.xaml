@@ -116,12 +116,25 @@
             <ColumnDefinition Width="350"/> <!-- Filtros y Selección (Ampliado para evitar recorte) -->
         </Grid.ColumnDefinitions>
         <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
+        <!-- DOCUMENT CONTEXT DROPDOWN -->
+        <Border Grid.ColumnSpan="3" Grid.Row="0" Background="White" CornerRadius="8" Padding="15,10" Margin="0,0,0,15" BorderBrush="#e8e8e8" BorderThickness="1">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Column="0" Text="Revit Document Context:" VerticalAlignment="Center" FontWeight="SemiBold" Margin="0,0,10,0" Foreground="#333"/>
+                <ComboBox Grid.Column="1" ItemsSource="{Binding AvailableModels}" SelectedItem="{Binding SelectedModel}" DisplayMemberPath="DisplayName" Margin="0" VerticalAlignment="Center" Padding="6,4"/>
+            </Grid>
+        </Border>
+
         <!-- COLUMNA IZQUIERDA: EXPLORADOR JERÁRQUICO -->
-        <Grid Grid.Column="0" Grid.Row="0" Margin="0,0,10,0">
+        <Grid Grid.Column="0" Grid.Row="1" Margin="0,0,10,0">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="*"/>
@@ -228,10 +241,10 @@
             </TreeView>
         </Grid>
 
-        <GridSplitter Grid.Column="1" Grid.Row="0" Width="5" HorizontalAlignment="Stretch" Background="#EEE" Margin="0,0,5,0" />
+        <GridSplitter Grid.Column="1" Grid.Row="1" Width="5" HorizontalAlignment="Stretch" Background="#EEE" Margin="0,0,5,0" />
 
         <!-- COLUMNA DERECHA: SELECCIÓN Y FILTROS -->
-        <Grid Grid.Column="2" Grid.Row="0" Grid.IsSharedSizeScope="True">
+        <Grid Grid.Column="2" Grid.Row="1" Grid.IsSharedSizeScope="True">
 
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/> <!-- Filter Card -->
@@ -421,7 +434,7 @@
         </Grid>
 
         <!-- Pestaña Inferior de Estado/Aplicar -->
-        <Border Grid.ColumnSpan="3" Grid.Row="1" Background="#f1f1f1" Padding="15" Margin="-15,10,-15,-15">
+        <Border Grid.ColumnSpan="3" Grid.Row="2" Background="#f1f1f1" Padding="15" Margin="-15,10,-15,-15">
             <Grid>
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Left" VerticalAlignment="Bottom">
                     <Button Command="{Binding OpenConfigurationCommand}" Margin="0,0,10,0" VerticalAlignment="Bottom" Cursor="Hand" ToolTip="Configuration">
@@ -473,36 +486,16 @@
         </Border>
 
         <!-- Loading Overlay -->
-        <Grid Grid.ColumnSpan="3" Grid.RowSpan="2" Background="#A0FFFFFF" 
+        <Grid Grid.ColumnSpan="3" Grid.RowSpan="2" Background="#70FFFFFF" 
               Visibility="{Binding IsBusy, Converter={StaticResource BoolToVis}}" 
               Margin="-15">
-            <Border Background="White" CornerRadius="12" Padding="30" HorizontalAlignment="Center" VerticalAlignment="Center" BorderBrush="#e8e8e8" BorderThickness="1">
+            <Border Background="White" CornerRadius="8" Padding="25,18" HorizontalAlignment="Center" VerticalAlignment="Center" BorderBrush="#007ACC" BorderThickness="1.5">
                 <Border.Effect>
-                    <DropShadowEffect BlurRadius="15" Direction="-90" RenderingBias="Quality" ShadowDepth="2" Opacity="0.1"/>
+                    <DropShadowEffect BlurRadius="12" Direction="-90" RenderingBias="Quality" ShadowDepth="1" Opacity="0.12"/>
                 </Border.Effect>
-                <StackPanel>
-                    <Viewbox Width="40" Height="40" HorizontalAlignment="Center">
-                        <Path Fill="#007ACC" Data="M12,4V2A10,10 0 0,0 2,12H4A8,8 0 0,1 12,4Z">
-                            <Path.RenderTransform>
-                                <RotateTransform x:Name="SpinnerTransform" CenterX="12" CenterY="12" Angle="0"/>
-                            </Path.RenderTransform>
-                            <Path.Triggers>
-                                <EventTrigger RoutedEvent="Loaded">
-                                    <BeginStoryboard>
-                                        <Storyboard>
-                                            <DoubleAnimation Storyboard.TargetName="SpinnerTransform" 
-                                                             Storyboard.TargetProperty="Angle" 
-                                                             From="0" To="360" 
-                                                             Duration="0:0:1" 
-                                                             RepeatBehavior="Forever"/>
-                                        </Storyboard>
-                                    </BeginStoryboard>
-                                </EventTrigger>
-                            </Path.Triggers>
-                        </Path>
-                    </Viewbox>
-                    <TextBlock Text="Loading Elements..." FontWeight="SemiBold" Foreground="#333" HorizontalAlignment="Center" Margin="0,15,0,0"/>
-                    <TextBlock Text="This may take a moment for large projects" FontSize="10" FontWeight="Normal" Foreground="#999" HorizontalAlignment="Center" Margin="0,5,0,0"/>
+                <StackPanel Width="220">
+                    <TextBlock Text="{Binding StatusMessage}" FontWeight="SemiBold" Foreground="#222" FontSize="13" HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap"/>
+                    <TextBlock Text="Please wait a moment..." FontSize="10.5" FontWeight="Normal" Foreground="#777" HorizontalAlignment="Center" Margin="0,5,0,0"/>
                 </StackPanel>
             </Border>
         </Grid>

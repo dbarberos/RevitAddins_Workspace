@@ -115,7 +115,7 @@ public partial class PreSelectionViewModel : ObservableObject
     [RelayCommand]
     private void Apply()
     {
-        var matchingIds = new HashSet<Autodesk.Revit.DB.ElementId>(new ElementIdEqualityComparer());
+        var matchingKeys = new HashSet<ElementSelectionKey>();
 
         foreach (var el in _elements)
         {
@@ -123,7 +123,7 @@ public partial class PreSelectionViewModel : ObservableObject
 
             if (MatchesSet(el, RootSet))
             {
-                matchingIds.Add(el.Id);
+                matchingKeys.Add(new ElementSelectionKey(el.Id, el.LinkInstanceId));
             }
         }
 
@@ -131,7 +131,7 @@ public partial class PreSelectionViewModel : ObservableObject
             ? SelectionScope.AllModelElements 
             : SelectionScope.ElementsBelongingToView;
 
-        _mainViewModel.ApplyPreSelection(matchingIds, targetScope);
+        _mainViewModel.ApplyPreSelection(matchingKeys, targetScope);
         _closeAction?.Invoke();
     }
 

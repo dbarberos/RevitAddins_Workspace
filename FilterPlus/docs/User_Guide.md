@@ -1,6 +1,6 @@
 # FilterPlus
 
-> **Current Version:** v1.3.1  
+> **Current Version:** v1.4.0  
 > **Add-in ID (GUID):** `A5265BB9-214C-4109-8DDC-DF1F6E4305B9`  
 
 ---
@@ -45,6 +45,13 @@ The add-in creates a custom tab containing the FilterPlus panel.
 
 ### FilterPlus Hierarchical Explorer
 The main FilterPlus application allows you to filter and navigate elements in your active selection or project. It constructs a dynamic hierarchical tree-view categorized by **Category > Family > Type > Instance (Element ID)**. Unlike standard flat selection filters, it displays element counts at each level and allows you to select, check, or uncheck elements interactively, immediately synchronizing your choices with the active Revit selection.
+
+### Document and Linked Model Selector
+At the top of the main FilterPlus interface, a document selection dropdown allows you to choose the target model context:
+- **Active Document**: Restricts selection, tree hierarchy, pre-filtering, and rules to the host Revit file.
+- **Linked Documents**: Selecting a linked `.rvt` file shifts the explorer context to display, search, and pre-select elements belonging to that specific linked model.
+- **"All Models" (In All Models)**: Located at the bottom of the list, this option processes all operations (tree population, search, Logical rules, and "Increase Checked" expansions) across the host document and all linked documents simultaneously.
+- **Simultaneous Cross-Document Selection**: When applying selections or rule matches across multiple documents, FilterPlus creates appropriate coordinate-transformed link references. This allows Revit to highlight and select elements in both the host project and linked models at the same time in the viewport.
 
 ### Pre-Filtering (Dropdown Filters)
 Filter and narrow down elements before selecting or displaying them. Dropdown controls at the top of the interface let you pre-filter elements based on:
@@ -107,6 +114,17 @@ Click the Pick Elements button to temporarily hide the FilterPlus window and sel
 ---
 
 ## 6. Version History (Changelog)
+
+### v1.4.0 - 2026-07-01
+
+#### Added
+- **Multi-Document and Linked Models Integration**:
+  - Added a Document Selection dropdown at the top of the interface displaying the host model and all linked models.
+  - Added a specialized **"In All Models"** option to query and process operations across host and linked models simultaneously.
+  - Implemented cross-document selection highlighting in the Revit viewport using coordinate transformations (`CreateLinkReference`).
+  - Adapted the explorer tree view, logical Pre-Selection rules, search, and "Increase Checked" algorithms to run in multi-model loops when "All Models" is active.
+- **Visual Loader Overlay Optimization**:
+  - Fixed a WPF dispatcher thread rendering bug that caused the loading spinner overlay to not show up (or only briefly show at the end of the load cycle) when changing model contexts, building trees, or performing massive queries. We force immediate visual layout updating by pumping the Dispatcher queue at Background priority when setting IsBusy = true.
 
 ### v1.3.1 - 2026-07-01
 

@@ -30,8 +30,15 @@ For deep technical details, consult the following files in the `references/` fol
 - `references/revit_element_relations_and_connectivity.md`: Advanced navigation of element relationships, model groups, assemblies, 3D physical intersection filters, and MEP connector networks connectivity.
 - `references/revit_model_exploration_and_filtering.md`: Advanced querying scopes, safe loadable/system family type resolution, sequential phase sorting, and safe parameter index mining.
 - `references/debugging_wpf_thread_silent_crash_2026-06-23.md`: Debugging silent crashes when invoking strict API methods (like ActiveView or FilteredElementCollector) from WPF Modeless UI threads.
+- `references/revit_linked_models_and_cross_document_selection.md`: Coordinate selection, bounding box calculations, and transformed link references for loaded link models.
+- `references/debugging_linked_models_selection_and_combobox_resets_2026-07-01.md`: Resolution of WPF ComboBox value resets during list refreshes and ID collision handling.
+
+## 📦 Assets (Reusable Components)
+- `assets/ElementSelectionKey.cs`: Unique composite key struct using ElementId and LinkInstanceId.
+- `assets/RevitModelRepresentation.cs`: Data representation wrapping a document alongside its RevitLinkInstance.
 
 # Agent Execution Flow
 1. When the user asks you to create a new Add-in, your first step MUST be to run `dotnet new revit -n [Name]`.
 2. Your second step MUST be to restructure the `/UI` folders into `/Views` and `/ViewModels` according to MVVM standards.
 3. Whenever you create, iterate, or modify an add-in, you MUST copy the generated artifacts (Implementation Plan, Task, and Walkthrough) to the current project's `docs/` folder, following the modular documentation standard (e.g. `docs/references/[artifact]_[YYYYMMDD]_[brief_description].md`).
+

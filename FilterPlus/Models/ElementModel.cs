@@ -5,6 +5,7 @@ namespace FilterPlus.Models;
 public class ElementModel
 {
     public ElementId Id { get; set; }
+    public ElementId LinkInstanceId { get; set; } = ElementId.InvalidElementId;
     public string CategoryName { get; set; }
     public string FamilyName { get; set; }
     public string TypeName { get; set; }
