@@ -130,7 +130,7 @@
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
                 <TextBlock Grid.Column="0" Text="Apply FilterPlus with:" VerticalAlignment="Center" FontWeight="SemiBold" Margin="0,0,10,0" Foreground="#333"/>
-                <Border Grid.Column="1" BorderBrush="#007ACC" BorderThickness="1.5" Background="White" CornerRadius="4" Padding="8,5" VerticalAlignment="Center" Margin="0,0,10,0">
+                <Border Grid.Column="1" BorderBrush="#007ACC" BorderThickness="1.5" Background="White" CornerRadius="4" Height="30" Padding="8,0" VerticalAlignment="Center" Margin="0,0,10,0">
                     <TextBlock Text="{Binding SelectedModelsText}" VerticalAlignment="Center" Foreground="#333" FontWeight="Normal"/>
                 </Border>
                 <Button Grid.Column="2" Content="Select" Command="{Binding OpenModelSelectionCommand}" Width="80" Height="30" Margin="0" VerticalAlignment="Center" Cursor="Hand">
