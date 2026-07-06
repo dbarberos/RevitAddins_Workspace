@@ -24,4 +24,5 @@ Modifying the Revit model (`Document`) requires an active `Transaction`. Failing
 
 ## Assets
 - [TransactionTemplates.cs](file:///b:/REVIT/C%23/RevitAddins_Workspace/.agents/skills/revit-transactions/assets/TransactionTemplates.cs): C# Boilerplate.
+- [TransactionScopeManager.cs](file:///c:/Users/david.barbero/Documents/DOCUMENTOS/ALTEN/Workbench/RevitAddins_Workspace/RevitAddins_Workspace/.agents/skills/revit-transactions/assets/TransactionScopeManager.cs): Reusable transaction and transaction group execution scope wrapper.
 - [transaction_templates.py](file:///b:/REVIT/C%23/RevitAddins_Workspace/.agents/skills/revit-transactions/assets/transaction_templates.py): Python/pyRevit Boilerplate.
