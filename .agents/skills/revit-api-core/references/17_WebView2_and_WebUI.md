@@ -42,7 +42,7 @@ function requestWall(height, levelId) {
 The Add-in must listen for those messages, deserialize them, and **critically** pass them to an `IExternalEventHandler` (SKILL 11) because WebView2 receives the messages in an interface thread, not in the valid Revit execution context.
 
 
-[See pattern implementation in: assets/Skill17_Pattern_1.cs]
+[See pattern implementation in: assets/WebMessageRouter.cs]
 
 
 ### C. From Revit (C#) to the Frontend (JavaScript)
@@ -50,7 +50,7 @@ The Add-in must listen for those messages, deserialize them, and **critically** 
 Once Revit finishes creating the wall, it needs to prompt the web interface to update a graph or display a success message. C# injects and executes JavaScript dynamically in the browser.
 
 
-[See pattern implementation in: assets/Skill17_Pattern_2.cs]
+[See pattern implementation in: assets/WebMessageResponseSender.cs]
 
 
 ---
@@ -60,7 +60,7 @@ Once Revit finishes creating the wall, it needs to prompt the web interface to u
 *Common Antipattern (Blocking API Access from WebView)*
 
 
-[See pattern implementation in: assets/Skill17_Pattern_3.cs]
+[See pattern implementation in: assets/DirectDocumentAccessAntiPattern.cs]
 
 
 *Optimized Pattern (Centralized State Management or Redux-like in C#)*
@@ -73,7 +73,7 @@ In advanced AECO projects, the C# side acts as a local REST API. A `MessageBroke
 WebView2 especially shines when embedded in the native Revit interface using `IDockablePaneProvider`. This allows you to have a sidebar (similar to the properties palette) that is actually a complete React or Angular web application.
 
 
-[See pattern implementation in: assets/Skill17_Pattern_4.cs]
+[See pattern implementation in: assets/DockablePaneWebViewRegistration.cs]
 
 
 ---

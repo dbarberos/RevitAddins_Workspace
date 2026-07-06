@@ -22,4 +22,4 @@ The following files are located in the `assets/` folder and can be injected or u
 *   `assets/WallAnalysisServiceTests.cs`: Example xUnit test class validating the business logic of grouping services.
 *   `assets/HelperTests.cs`: xUnit test class for generic helpers (such as `OperationResult`).
 *   [UnitTestingWrappers.cs](file:///c:/Users/david.barbero/Documents/DOCUMENTOS/ALTEN/Workbench/RevitAddins_Workspace/RevitAddins_Workspace/.agents/skills/revit-addin-testing/assets/UnitTestingWrappers.cs): Interfaces and wrapper proxies for isolating element database interactions during unit tests.
-*   `assets/Skill18_Pattern_1.cs` to `assets/Skill18_Pattern_5.cs`: C# patterns for interface contracts, DTO injection, xUnit test mockings, and In-Process xUnitRevit boilerplates.
+*   `assets/NonTestableArchitectureAntiPattern.cs` to `assets/WallIntegrationTests.cs`: C# patterns for interface contracts, DTO injection, xUnit test mockings, and In-Process xUnitRevit boilerplates.

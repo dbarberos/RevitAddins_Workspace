@@ -16,7 +16,7 @@ The first architectural barrier is that **code that works in a Project (`.rvt`) 
 The agent must evaluate the runtime environment using the `doc.IsFamilyDocument` property. If `true`, the document has no levels, rooms, or plan views in use. Additionally, the object used to create items is no longer `doc.Create`, but `doc.FamilyCreate` (which returns a `FamilyItemFactory`).
 
 
-[See pattern implementation in: assets/Skill25_Pattern_1.cs]
+[See pattern implementation in: assets/FamilyDocumentContextValidator.cs]
 
 
 ---
@@ -28,7 +28,7 @@ A robust family is not based on drawing rigid geometry (fixed cubes). It is base
 ### Optimized Pattern (Skeleton Creation)
 
 
-[See pattern implementation in: assets/Skill25_Pattern_2.cs]
+[See pattern implementation in: assets/ParametricReferencePlaneBuilder.cs]
 
 
 ---
@@ -44,7 +44,7 @@ Adding parameters (Width, Height, Material) and creating Types (Symbols) within 
 * `Set()` / `SetFormula()`: Assigns values ​​or mathematical formulas to parameters.
 
 
-[See pattern implementation in: assets/Skill25_Pattern_3.cs]
+[See pattern implementation in: assets/FamilyParameterTypeBuilder.cs]
 
 
 ---
@@ -54,7 +54,7 @@ Adding parameters (Width, Height, Material) and creating Types (Symbols) within 
 ### Common Antipattern (Orphan Geometry)
 
 
-[See pattern implementation in: assets/Skill25_Pattern_4.cs]
+[See pattern implementation in: assets/StaticExtrusionAntiPattern.cs]
 
 
 ### Optimized Pattern (Alignment and Constraint)

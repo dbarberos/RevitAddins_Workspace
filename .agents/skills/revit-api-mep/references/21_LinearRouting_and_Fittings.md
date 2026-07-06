@@ -19,7 +19,7 @@ To instantiate a conduit or pipe, it is not enough to give two points; The engin
 3. **LevelId:** The reference level to which the elevation levels are associated.
 
 
-[See pattern implementation in: assets/Skill21_Pattern_1.cs]
+[See pattern implementation in: assets/MepPipeGeometryBuilder.cs]
 
 
 ---
@@ -43,13 +43,13 @@ In Revit MEP, pipes and conduits have their **Routing Preferences** configured. 
 ### Common Antipattern (Manual Geometric Calculation)
 
 
-[See pattern implementation in: assets/Skill21_Pattern_2.cs]
+[See pattern implementation in: assets/ManualFittingPlacementAntiPattern.cs]
 
 
 ### Optimized Pattern (Delegation to Routing Engine)
 
 
-[See pattern implementation in: assets/Skill21_Pattern_3.cs]
+[See pattern implementation in: assets/MepAutoElbowFitting.cs]
 
 
 ---
@@ -61,7 +61,7 @@ When you create two pipes through code and, on the line immediately after them, 
 **Why?** Because the connectors (the `XYZ` nodes) of the newly created tubes do not yet exist in math space until the model is regenerated.
 
 
-[See pattern implementation in: assets/Skill21_Pattern_4.cs]
+[See pattern implementation in: assets/MepRegenerationFittingPipeline.cs]
 
 
 ---

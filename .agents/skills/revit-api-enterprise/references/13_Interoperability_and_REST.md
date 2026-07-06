@@ -16,7 +16,7 @@ Revit exposes its export engines via the overloaded `Document.Export()` method. 
 ### Example: Mass Export of Drawings to DWG
 
 
-[See pattern implementation in: assets/Skill13_Pattern_1.cs]
+[See pattern implementation in: assets/DwgExportManager.cs]
 
 
 ---
@@ -30,7 +30,7 @@ The true value of a modern Add-in is its ability to synchronize data bidirection
 Revit blocks its main thread. Network operations (I/O) are slow and must be delegated to a secondary thread using `async/await`.
 
 
-[See pattern implementation in: assets/Skill13_Pattern_2.cs]
+[See pattern implementation in: assets/CloudSyncService.cs]
 
 
 ---
@@ -40,7 +40,7 @@ Revit blocks its main thread. Network operations (I/O) are slow and must be dele
 *Common Anti-Pattern (Interface Locking and Memory Leaks)*
 
 
-[See pattern implementation in: assets/Skill13_Pattern_3.cs]
+[See pattern implementation in: assets/BlockingHttpClientAntiPattern.cs]
 
 
 *Architecture Criticism Warning (Return to Revit):*

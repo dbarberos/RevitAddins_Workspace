@@ -26,7 +26,7 @@ Because Autodesk classes (e.g. `Wall`, `Document`) are often 'sealed' or have pr
 
 ### Common Antipattern (Strong Coupling)
 
-[See pattern implementation in: assets/Skill18_Pattern_1.cs]
+[See pattern implementation in: assets/NonTestableArchitectureAntiPattern.cs]
 
 
 ### Optimized Pattern (Dependency Injection and Abstraction)
@@ -34,19 +34,19 @@ Because Autodesk classes (e.g. `Wall`, `Document`) are often 'sealed' or have pr
 **1. Define the Contract (Interface):**
 
 
-[See pattern implementation in: assets/Skill18_Pattern_2.cs]
+[See pattern implementation in: assets/IWallDataRepresentation.cs]
 
 
 **2. Inject into Business Logic (Testable):**
 
 
-[See pattern implementation in: assets/Skill18_Pattern_3.cs]
+[See pattern implementation in: assets/CostCalculatorService.cs]
 
 
 **3. The Unit Test (Using xUnit and Moq, execution in milliseconds):**
 
 
-[See pattern implementation in: assets/Skill18_Pattern_4.cs]
+[See pattern implementation in: assets/CostCalculatorUnitTests.cs]
 
 
 ---
@@ -58,7 +58,7 @@ There is code that *must* needs the Revit database (e.g. testing if a complex `F
 For this, specialized Frameworks are used (such as Speckle's **xUnitRevit** or Dynamo's **RevitTestFramework**) that start Revit in Headless mode, load an empty test model (`.rvt`), run the `xUnit` tests using the real API, and close the process.
 
 
-[See pattern implementation in: assets/Skill18_Pattern_5.cs]
+[See pattern implementation in: assets/WallIntegrationTests.cs]
 
 
 ---

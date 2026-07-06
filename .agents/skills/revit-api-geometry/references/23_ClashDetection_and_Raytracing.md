@@ -29,7 +29,7 @@ To cross two elements or an element against an entire model, the API provides th
 
 ### Optimized Pattern (Simple Interference Detection)
 
-[See pattern implementation in: assets/Skill23_Pattern_1.cs]
+[See pattern implementation in: assets/ClashDetectionCollector.cs]
 
 
 ---
@@ -45,7 +45,7 @@ For this, `ReferenceIntersector` is used, which shoots an infinite or limited ve
 ### Optimized Pattern (Ground/Floor Clearance Measurement)
 
 
-[See pattern implementation in: assets/Skill23_Pattern_2.cs]
+[See pattern implementation in: assets/FloorProximityRaycaster.cs]
 
 
 ---
@@ -55,7 +55,7 @@ For this, `ReferenceIntersector` is used, which shoots an infinite or limited ve
 *Common Antipattern (Massive Extraction for Raycasting)*
 
 
-[See pattern implementation in: assets/Skill23_Pattern_3.cs]
+[See pattern implementation in: assets/UnfilteredRaycastingAntiPattern.cs]
 
 
 *Linked Models Antipattern*

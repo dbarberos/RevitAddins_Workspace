@@ -26,7 +26,7 @@ The most common corporate workflow is not to draw manufacturing parts from scrat
 This is done using the `DesignToFabricationConverter` class.
 
 
-[See pattern implementation in: assets/Skill24_Pattern_1.cs]
+[See pattern implementation in: assets/DesignToFabricationConverter.cs]
 
 
 ---
@@ -36,7 +36,7 @@ This is done using the `DesignToFabricationConverter` class.
 ### Common Antipattern (Length Manipulation)
 
 
-[See pattern implementation in: assets/Skill24_Pattern_2.cs]
+[See pattern implementation in: assets/FabricationPartModificationAntiPattern.cs]
 
 
 ### Optimized Pattern (Section Optimization)
@@ -45,7 +45,7 @@ To adjust lengths of manufacturing parts, native stretch and justification metho
 If a pipe is longer than the commercial length, native optimization must be used to segment it.
 
 
-[See pattern implementation in: assets/Skill24_Pattern_3.cs]
+[See pattern implementation in: assets/FabricationLengthOptimizer.cs]
 
 
 ---
@@ -55,7 +55,7 @@ If a pipe is longer than the commercial length, native optimization must be used
 The workshop model requires modeling the supports. The `FabricationPart` class has a highly specialized static method for "hanging" supports anchored to the conduit/pipe and projected against the upper structural element (internal Ray Launch).
 
 
-[See pattern implementation in: assets/Skill24_Pattern_4.cs]
+[See pattern implementation in: assets/FabricationHangerManager.cs]
 
 
 ---
