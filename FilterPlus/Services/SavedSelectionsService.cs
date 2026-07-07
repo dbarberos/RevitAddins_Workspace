@@ -18,12 +18,17 @@ namespace FilterPlus.Services
         {
             try
             {
+                LoggerService.LogInfo($"LoadSavedSelections: Requesting read from document '{doc?.Title}'...");
                 string json = ExtensibleStorageManager.ReadGlobalData(doc, SchemaGuid);
                 if (string.IsNullOrWhiteSpace(json))
                 {
+                    LoggerService.LogInfo("LoadSavedSelections: No saved selections JSON payload found (empty storage).");
                     return new List<SavedSelection>();
                 }
-                return JsonSerializer.Deserialize<List<SavedSelection>>(json) ?? new List<SavedSelection>();
+                LoggerService.LogInfo($"LoadSavedSelections: JSON payload retrieved successfully ({json.Length} characters). Deserializing...");
+                var list = JsonSerializer.Deserialize<List<SavedSelection>>(json) ?? new List<SavedSelection>();
+                LoggerService.LogInfo($"LoadSavedSelections: Successfully deserialized {list.Count} selections.");
+                return list;
             }
             catch (Exception ex)
             {
@@ -39,12 +44,16 @@ namespace FilterPlus.Services
         {
             try
             {
+                LoggerService.LogInfo($"SaveSavedSelections: Requesting write for {selections?.Count ?? 0} selections to document '{doc?.Title}'...");
                 string json = JsonSerializer.Serialize(selections);
+                LoggerService.LogInfo($"SaveSavedSelections: Serialized payload is {json.Length} characters. Starting transaction...");
                 using (Transaction t = new Transaction(doc, "Save FilterPlus Selections"))
                 {
                     t.Start();
+                    LoggerService.LogInfo("SaveSavedSelections: Transaction started. Writing payload to Extensible Storage...");
                     ExtensibleStorageManager.WriteGlobalData(doc, SchemaGuid, SchemaName, json);
                     t.Commit();
+                    LoggerService.LogInfo("SaveSavedSelections: Transaction committed successfully.");
                 }
                 return true;
             }

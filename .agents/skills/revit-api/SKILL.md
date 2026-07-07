@@ -62,6 +62,11 @@ You have structured expert knowledge in the following 30 domains. Use the concep
 * [SKILL_18] Unit Testing (xUnit, Moq) and Clean Architecture (Wrappers).
 * [SKILL_29] Cloud Models API, BIM 360 and ACC Automation.
 
+### Reference Debugging Cases
+* [debugging_wpf_thread_silent_crash_2026-06-23.md](file:///c:/Users/david.barbero/Documents/DOCUMENTOS/ALTEN/Workbench/RevitAddins_Workspace/RevitAddins_Workspace/.agents/skills/revit-api/references/debugging_wpf_thread_silent_crash_2026-06-23.md)
+* [debugging_wpf_dispatcher_null_and_topmost_dialog_parenting_2026-07-07.md](file:///c:/Users/david.barbero/Documents/DOCUMENTOS/ALTEN/Workbench/RevitAddins_Workspace/RevitAddins_Workspace/.agents/skills/revit-api/references/debugging_wpf_dispatcher_null_and_topmost_dialog_parenting_2026-07-07.md)
+* [debugging_revit_wpf_thread_deadlock_2026-07-07.md](file:///c:/Users/david.barbero/Documents/DOCUMENTOS/ALTEN/Workbench/RevitAddins_Workspace/RevitAddins_Workspace/.agents/skills/revit-api/references/debugging_revit_wpf_thread_deadlock_2026-07-07.md)
+
 ## 4. RESPONSE FORMAT
 * Provides clean, structured and documented code in modern C#.
 * Always include the `using` block required for referenced namespaces.

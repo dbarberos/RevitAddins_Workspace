@@ -33,6 +33,7 @@ namespace FilterPlus.ViewModels
             Action<SavedSelection> onOverwrite,
             Action onCancel)
         {
+            FilterPlus.Services.LoggerService.LogInfo($"SaveSelectionViewModel: Initializing. Existing selections: {existingSelections?.Count ?? 0}.");
             ExistingSelections = new ObservableCollection<SavedSelection>(existingSelections);
             _onSaveNew = onSaveNew;
             _onOverwrite = onOverwrite;
@@ -42,11 +43,23 @@ namespace FilterPlus.ViewModels
         [RelayCommand]
         private void SaveNew(object windowObj)
         {
+            FilterPlus.Services.LoggerService.LogInfo($"SaveSelectionViewModel: SaveNew clicked. NewSelectionName: '{NewSelectionName}'. Valid? {IsNewNameValid}");
             if (!IsNewNameValid) return;
 
-            TaskDialogResult res = TaskDialog.Show("FilterPlus", "Save the Selection?", TaskDialogCommonButtons.Yes | TaskDialogCommonButtons.No);
-            if (res == TaskDialogResult.Yes)
+            FilterPlus.Services.LoggerService.LogInfo("SaveSelectionViewModel: Showing confirmation dialog...");
+            
+            var ownerWin = windowObj as Window;
+            var res = System.Windows.MessageBox.Show(
+                ownerWin,
+                "Save the Selection?", 
+                "FilterPlus", 
+                MessageBoxButton.YesNo, 
+                MessageBoxImage.Question);
+                
+            FilterPlus.Services.LoggerService.LogInfo($"SaveSelectionViewModel: Confirmation result: {res}");
+            if (res == MessageBoxResult.Yes)
             {
+                FilterPlus.Services.LoggerService.LogInfo($"SaveSelectionViewModel: Invoking _onSaveNew callback for '{NewSelectionName}'...");
                 _onSaveNew?.Invoke(NewSelectionName.Trim());
                 CloseWindow(windowObj);
             }
@@ -55,11 +68,23 @@ namespace FilterPlus.ViewModels
         [RelayCommand]
         private void Overwrite(object windowObj)
         {
+            FilterPlus.Services.LoggerService.LogInfo($"SaveSelectionViewModel: Overwrite clicked. SelectedExistingSelection: '{SelectedExistingSelection?.Name}'. Valid? {IsExistingSelectionSelected}");
             if (!IsExistingSelectionSelected) return;
 
-            TaskDialogResult res = TaskDialog.Show("FilterPlus", "Save the Selection?", TaskDialogCommonButtons.Yes | TaskDialogCommonButtons.No);
-            if (res == TaskDialogResult.Yes)
+            FilterPlus.Services.LoggerService.LogInfo("SaveSelectionViewModel: Showing confirmation dialog...");
+            
+            var ownerWin = windowObj as Window;
+            var res = System.Windows.MessageBox.Show(
+                ownerWin,
+                "Save the Selection?", 
+                "FilterPlus", 
+                MessageBoxButton.YesNo, 
+                MessageBoxImage.Question);
+                
+            FilterPlus.Services.LoggerService.LogInfo($"SaveSelectionViewModel: Confirmation result: {res}");
+            if (res == MessageBoxResult.Yes)
             {
+                FilterPlus.Services.LoggerService.LogInfo($"SaveSelectionViewModel: Invoking _onOverwrite callback for '{SelectedExistingSelection?.Name}'...");
                 _onOverwrite?.Invoke(SelectedExistingSelection);
                 CloseWindow(windowObj);
             }
@@ -68,15 +93,35 @@ namespace FilterPlus.ViewModels
         [RelayCommand]
         private void Cancel(object windowObj)
         {
+            FilterPlus.Services.LoggerService.LogInfo("SaveSelectionViewModel: Cancel clicked.");
             _onCancel?.Invoke();
             CloseWindow(windowObj);
         }
 
         private void CloseWindow(object windowObj)
         {
+            FilterPlus.Services.LoggerService.LogInfo($"SaveSelectionViewModel: CloseWindow requested. Parameter type: {windowObj?.GetType().Name ?? "null"}");
             if (windowObj is Window win)
             {
+                FilterPlus.Services.LoggerService.LogInfo("SaveSelectionViewModel: Closing window...");
                 win.Close();
+                FilterPlus.Services.LoggerService.LogInfo("SaveSelectionViewModel: Window closed.");
+            }
+            else
+            {
+                FilterPlus.Services.LoggerService.LogInfo("SaveSelectionViewModel: WARNING - Could not close window because parameter was not a valid Window instance. Attempting alternative closure...");
+                if (System.Windows.Application.Current != null)
+                {
+                    foreach (Window w in System.Windows.Application.Current.Windows)
+                    {
+                        if (w is Views.SaveSelectionView)
+                        {
+                            FilterPlus.Services.LoggerService.LogInfo("SaveSelectionViewModel: Found SaveSelectionView in Application.Current.Windows. Closing it.");
+                            w.Close();
+                            return;
+                        }
+                    }
+                }
             }
         }
     }
