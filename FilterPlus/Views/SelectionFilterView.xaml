@@ -418,17 +418,35 @@
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
 
-                        <ComboBox Grid.Column="0" VerticalAlignment="Top" Padding="2" BorderBrush="#e0e0e0" BorderThickness="1" Margin="0,0,10,0"/>
+                        <ComboBox Grid.Column="0" VerticalAlignment="Top" Padding="2" BorderBrush="#e0e0e0" BorderThickness="1" Margin="0,0,10,0"
+                                  ItemsSource="{Binding SavedSelections}"
+                                  DisplayMemberPath="Name"
+                                  SelectedItem="{Binding SelectedSavedSelection}"/>
 
                         <StackPanel Grid.Column="1" VerticalAlignment="Top" HorizontalAlignment="Right">
-                            <Button Content="Apply" Margin="0,0,0,5" Padding="12,3" Background="#007ACC" Foreground="White" BorderThickness="0" Cursor="Hand">
+                            <Button Content="Recover" Command="{Binding RecoverSavedSelectionCommand}" Margin="0,0,0,5" Padding="12,3" BorderThickness="0" Cursor="Hand">
                                 <Button.Resources>
                                     <Style TargetType="Border">
                                         <Setter Property="CornerRadius" Value="4"/>
                                     </Style>
                                 </Button.Resources>
+                                <Button.Style>
+                                    <Style TargetType="Button">
+                                        <Setter Property="Background" Value="#e0e0e0"/>
+                                        <Setter Property="Foreground" Value="#666"/>
+                                        <Setter Property="IsEnabled" Value="False"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsSavedSelectionSelected}" Value="True">
+                                                <Setter Property="Background" Value="#007ACC"/>
+                                                <Setter Property="Foreground" Value="White"/>
+                                                <Setter Property="IsEnabled" Value="True"/>
+                                                <Setter Property="FontWeight" Value="SemiBold"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Button.Style>
                             </Button>
-                            <Button Content="Save" Margin="0,0,0,0" Padding="12,3" Background="#007ACC" Foreground="White" BorderThickness="0" Cursor="Hand">
+                            <Button Content="Save" Command="{Binding OpenSaveSelectionDialogCommand}" Margin="0,0,0,0" Padding="12,3" Background="#007ACC" Foreground="White" BorderThickness="0" Cursor="Hand">
                                 <Button.Resources>
                                     <Style TargetType="Border">
                                         <Setter Property="CornerRadius" Value="4"/>

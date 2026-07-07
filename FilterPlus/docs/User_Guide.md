@@ -1,6 +1,6 @@
 # FilterPlus
 
-> **Current Version:** v1.5.0  
+> **Current Version:** v1.6.0  
 > **Add-in ID (GUID):** `A5265BB9-214C-4109-8DDC-DF1F6E4305B9`  
 
 ---
@@ -113,9 +113,26 @@ Expand your current selection based on advanced relational and geometric rules. 
 ### Interactive Element Picking (Pick in Revit)
 Click the Pick Elements button to temporarily hide the FilterPlus window and select objects directly in the Revit viewport. Once selection is complete, the window automatically reappears, and the new elements are loaded into the tree view and checked.
 
+### Persistent Saved Selections
+FilterPlus allows you to save and recover element selections persistently across sessions inside your Revit project.
+- **Dropdown List**: Displays already saved selections. The first element is a blank placeholder representing "no selection active".
+- **Recover Button**: Relocates your selection context to the saved active models, checks the saved elements inside the explorer tree, and highlights/selects them in Revit. This button is only enabled when a valid selection set is chosen.
+- **Save Button**: Opens a separate modal window (`Save Selection`) offering two actions:
+  - **Save New (Row 1)**: Type a new name in the TextBox to save the current selection context. The button activates only after text is input.
+  - **Overwrite Existing (Row 2)**: Select an existing selection from the ComboBox to replace its contents. The button activates only after a selection is picked.
+  - Both operations require confirmation via a native Revit message box before saving.
+
 ---
 
 ## 6. Version History (Changelog)
+
+### v1.6.0 - 2026-07-07
+
+#### Added
+- **Persistent Saved Selections**: Save/Recover selection sets inside the active Revit document via Extensible Storage.
+- **Save Selection Window**: Separate dialog featuring conditional styling triggers and native confirmation prompts to save new or overwrite existing selections.
+- **Dynamic Recover Styling**: Main Recover button is conditionally highlighted only when a saved selection is active.
+- **NuGet Dependency**: Integrated `System.Text.Json` to handle cross-version element serialization for both .NET Framework 4.8 and .NET 8.
 
 ### v1.5.0 - 2026-07-02
 

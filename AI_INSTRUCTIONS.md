@@ -7,8 +7,16 @@
 
 ## 🧭 1. Filosofía de Trabajo (Para el Agente de IA)
 
-Como asistente de IA en este proyecto, **NO debes asumir contexto global innecesario**. Tu conocimiento sobre cómo programar en este repositorio está totalmente segregado en módulos. 
-Cuando el usuario te asigne una tarea en el chat, te proveerá de referencias explícitas (p. ej., `@skills/revit-addin-helpers.md` o `@prompts/new-command.md`). **Debes leer y aplicar estrictamente el contenido de esos archivos referenciados antes de generar cualquier código.**
+Como asistente de IA en este proyecto, tu conocimiento sobre cómo programar está estructurado en **Skills modulares** dentro de `.agents/skills/`.
+Para garantizar que el código cumpla con los estándares técnicos, de rendimiento y seguridad del repositorio, **debes aplicar de forma autónoma e implícita las directrices de los Skills Core en cada Plan de Actuación (`implementation_plan.md`) y generación de código**, sin esperar a que el usuario haga mención expresa de ellos.
+
+### 🛑 Puerta de Planificación Core (Core Planning Gate)
+Antes de proponer cualquier cambio o escribir código, debes validar el diseño contra los siguientes **Skills Core/Arquitectónicos**:
+1. **Aislamiento de Hilos (Threading & Modeless WPF)** ([revit-api-core](file:///.agents/skills/revit-api-core/SKILL.md) / [revit-async-operations](file:///.agents/skills/revit-async-operations/SKILL.md)): Todo acceso o modificación del modelo Revit desde interfaces flotantes (WPF, WebView2, RelayCommands) **debe** realizarse de forma asíncrona mediante `Revit.Async` (`await RevitTask.RunAsync(...)`) o `IExternalEventHandler`. Queda estrictamente prohibido realizar transacciones o mutaciones directamente en el hilo de la UI.
+2. **Seguridad de Transacciones (Transaction Safety)** ([revit-transactions](file:///.agents/skills/revit-transactions/SKILL.md) / [revit-api](file:///.agents/skills/revit-api/SKILL.md)): Cualquier modificación de la base de datos de Revit requiere transacciones. En C#, la instancia de `Transaction` o `SubTransaction` **debe** estar envuelta en un bloque `using` para evitar fugas de memoria C++. En Python, usa el context manager `with revit.Transaction(...)`.
+3. **Virtualización y Rendimiento WPF (WPF UI Performance)** ([virtualizing-wpf-ui](file:///.agents/skills/virtualizing-wpf-ui/SKILL.md)): Cuando representes más de 1000 elementos en controles WPF (ListView, TreeView, DataGrid), la virtualización es **obligatoria**. Nunca envuelvas el control en un `ScrollViewer` y usa `VirtualizationMode="Standard"` para evitar corrupción de estados visuales.
+4. **Hardening de Seguridad (Security Hardening)** ([security-engineer](file:///.agents/skills/security-engineer/SKILL.md)): Implementa sanitización de rutas (evitar path traversal), cifrado DPAPI (`ProtectedData`) para credenciales locales, validación de inputs (FluentValidation/Regex), y deserialización segura (sin `TypeNameHandling.All` en Newtonsoft).
+5. **Configuración del Stack del Proyecto (ImplicitUsings y Target Framework)** (Ver `3Guia maestra desarrollo add-ins Revit 2024.md` y `AGENTS.md`): Asegúrate de usar `<ImplicitUsings>enable</ImplicitUsings>` y comprobar la versión de framework según la versión de Revit (4.8 vs .NET 8).
 
 ---
 
@@ -70,7 +78,7 @@ RevitAddins_Workspace/
 
 Cuando el desarrollador te asigne una tarea en este repositorio, sigue estrictamente este protocolo:
 
-1.  **Analizar Stack Tecnológico:** Identifica si la tarea requiere código compilado C# (Add-in, instalador MSI) o scripting en Python (pyRevit, consola RPS).
-2.  **Mapear Recursos de IA:** Identifica qué skills modularizados en `.agents/skills/` y qué archivos de referencias/assets o prompts aplican.
-3.  **Proponer / Referenciar:** Sugiere al desarrollador la lectura de `@skills/[nombre]` o `@prompts/[nombre]` antes de generar el código.
+1.  **Mapear Skills Core (Obligatorio e Implícito):** Analiza cómo se aplican las directrices de Threading, Transacciones, Seguridad y Virtualización en la nueva funcionalidad. Incluye una sección en tu Plan de Actuación (`implementation_plan.md`) verificando explícitamente estas directrices contra la **Puerta de Planificación Core**.
+2.  **Analizar Stack Tecnológico:** Identifica si la tarea requiere código compilado C# (Add-in, instalador MSI) o scripting en Python (pyRevit, consola RPS).
+3.  **Mapear Skills Específicos:** Identifica qué skills específicos (ej. `revit-api-geometry`, `revit-api-mep`, `revit-addin-installer-manager`) aplican a la lógica interna de las funciones y consúltalos para desarrollar los métodos detallados.
 4.  **Preservar Conocimiento:** Al finalizar una depuración exitosa o implementar una nueva funcionalidad, asegúrate de guardar cualquier asset nuevo o documentación de error solucionado en el skill correspondiente siguiendo las reglas de la carpeta `.agents/`.
