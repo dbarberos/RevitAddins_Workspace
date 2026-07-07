@@ -5,27 +5,18 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d"
         x:Name="SaveWindow"
-        Title="Save Selection" Height="190" Width="480"
+        Title="Save Selection" Width="480" SizeToContent="Height"
         WindowStartupLocation="CenterOwner"
+        Icon="pack://application:,,,/FilterPlus;component/Resources/Icons/RibbonIcon32.png"
         Topmost="True" Background="#f5f5f5" ResizeMode="NoResize">
     <Window.Resources>
         <Style x:Key="RowButtonStyle" TargetType="Button">
-            <Setter Property="Padding" Value="15,5"/>
-            <Setter Property="Margin" Value="5"/>
-            <Setter Property="Height" Value="30"/>
+            <Setter Property="Padding" Value="12,3"/>
+            <Setter Property="BorderThickness" Value="0"/>
             <Setter Property="Cursor" Value="Hand"/>
             <Setter Property="Background" Value="#e0e0e0"/>
             <Setter Property="Foreground" Value="#666"/>
             <Setter Property="IsEnabled" Value="False"/>
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="Button">
-                        <Border Background="{TemplateBinding Background}" CornerRadius="4">
-                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                        </Border>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
         </Style>
         <Style x:Key="ActiveButtonStyle" TargetType="Button" BasedOn="{StaticResource RowButtonStyle}">
             <Style.Triggers>
@@ -38,7 +29,7 @@
         </Style>
     </Window.Resources>
 
-    <Grid Margin="15">
+    <Grid Margin="15" Grid.IsSharedSizeScope="True">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
@@ -48,46 +39,92 @@
         <!-- ROW 1: SAVE NEW -->
         <Grid Grid.Row="0" Margin="0,0,0,10">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="120"/>
                 <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto" SharedSizeGroup="SyncButtonWidth"/>
             </Grid.ColumnDefinitions>
-            <Button Grid.Column="0" Content="Save New" 
+            <Grid Grid.Column="0" Margin="0,0,10,0">
+                <TextBox x:Name="NewNameTextBox" Text="{Binding NewSelectionName, UpdateSourceTrigger=PropertyChanged}" 
+                         VerticalContentAlignment="Center" Padding="4" BorderBrush="#e0e0e0" BorderThickness="1"/>
+                <TextBlock IsHitTestVisible="False" Text="Introduce a new name for the saved selection" VerticalAlignment="Center" HorizontalAlignment="Left" Margin="8,0,0,0" Foreground="#aaa" FontStyle="Italic">
+                    <TextBlock.Style>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="Visibility" Value="Collapsed"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding Text, ElementName=NewNameTextBox}" Value="">
+                                    <Setter Property="Visibility" Value="Visible"/>
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding Text, ElementName=NewNameTextBox}" Value="{x:Null}">
+                                    <Setter Property="Visibility" Value="Visible"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBlock.Style>
+                </TextBlock>
+            </Grid>
+            <Button Grid.Column="1" Content="Save New" 
                     Command="{Binding SaveNewCommand}" 
                     CommandParameter="{Binding ElementName=SaveWindow}"
                     IsEnabled="{Binding IsNewNameValid}"
-                    Style="{StaticResource ActiveButtonStyle}"/>
-            <TextBox Grid.Column="1" Text="{Binding NewSelectionName, UpdateSourceTrigger=PropertyChanged}" 
-                     VerticalContentAlignment="Center" Margin="5" Padding="4" Height="30" BorderBrush="#e0e0e0" BorderThickness="1"/>
+                    Style="{StaticResource ActiveButtonStyle}">
+                <Button.Resources>
+                    <Style TargetType="Border">
+                        <Setter Property="CornerRadius" Value="4"/>
+                    </Style>
+                </Button.Resources>
+            </Button>
         </Grid>
 
         <!-- ROW 2: OVERWRITE -->
-        <Grid Grid.Row="1" Margin="0,0,0,10">
+        <Grid Grid.Row="1" Margin="0,0,0,15">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="120"/>
                 <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto" SharedSizeGroup="SyncButtonWidth"/>
             </Grid.ColumnDefinitions>
-            <Button Grid.Column="0" Content="Overwrite" 
+            <Grid Grid.Column="0" Margin="0,0,10,0">
+                <ComboBox x:Name="ExistingSelectionComboBox" ItemsSource="{Binding ExistingSelections}" 
+                          SelectedItem="{Binding SelectedExistingSelection}"
+                          DisplayMemberPath="Name"
+                          VerticalContentAlignment="Center" Padding="2" BorderBrush="#e0e0e0" BorderThickness="1"/>
+                <TextBlock IsHitTestVisible="False" Text="Select an existing one for overwrite the content" VerticalAlignment="Center" HorizontalAlignment="Left" Margin="8,0,0,0" Foreground="#aaa" FontStyle="Italic">
+                    <TextBlock.Style>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="Visibility" Value="Collapsed"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding SelectedItem, ElementName=ExistingSelectionComboBox}" Value="{x:Null}">
+                                    <Setter Property="Visibility" Value="Visible"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBlock.Style>
+                </TextBlock>
+            </Grid>
+            <Button Grid.Column="1" Content="Overwrite" 
                     Command="{Binding OverwriteCommand}" 
                     CommandParameter="{Binding ElementName=SaveWindow}"
                     IsEnabled="{Binding IsExistingSelectionSelected}"
-                    Style="{StaticResource ActiveButtonStyle}"/>
-            <ComboBox Grid.Column="1" ItemsSource="{Binding ExistingSelections}" 
-                      SelectedItem="{Binding SelectedExistingSelection}"
-                      DisplayMemberPath="Name"
-                      VerticalContentAlignment="Center" Margin="5" Height="30" BorderBrush="#e0e0e0" BorderThickness="1"/>
+                    Style="{StaticResource ActiveButtonStyle}">
+                <Button.Resources>
+                    <Style TargetType="Border">
+                        <Setter Property="CornerRadius" Value="4"/>
+                    </Style>
+                </Button.Resources>
+            </Button>
         </Grid>
 
         <!-- FOOTER: CANCEL -->
         <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right">
-            <Button Content="Cancel" Command="{Binding CancelCommand}" CommandParameter="{Binding ElementName=SaveWindow}" Width="80" Height="26" Cursor="Hand">
-                <Button.Template>
-                    <ControlTemplate TargetType="Button">
-                        <Border Background="#e0e0e0" CornerRadius="4">
-                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                        </Border>
-                    </ControlTemplate>
-                </Button.Template>
-            </Button>
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" SharedSizeGroup="SyncButtonWidth"/>
+                </Grid.ColumnDefinitions>
+                <Button Grid.Column="0" Content="Cancel" Command="{Binding CancelCommand}" CommandParameter="{Binding ElementName=SaveWindow}" Padding="12,3" BorderThickness="0" Cursor="Hand" Background="#e0e0e0" Foreground="#666">
+                    <Button.Resources>
+                        <Style TargetType="Border">
+                            <Setter Property="CornerRadius" Value="4"/>
+                        </Style>
+                    </Button.Resources>
+                </Button>
+            </Grid>
         </StackPanel>
     </Grid>
 </Window>

@@ -8,6 +8,7 @@
         mc:Ignorable="d"
         Title="Filter Rules" Height="500" Width="700"
         WindowStartupLocation="CenterOwner"
+        Icon="pack://application:,,,/FilterPlus;component/Resources/Icons/RibbonIcon32.png"
         Topmost="True" Background="#f5f5f5" ShowInTaskbar="False" ResizeMode="CanResize">
     <Window.Resources>
         <BooleanToVisibilityConverter x:Key="BoolToVis"/>

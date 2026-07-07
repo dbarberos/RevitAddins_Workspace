@@ -4,6 +4,7 @@
         xmlns:viewmodels="clr-namespace:FilterPlus.ViewModels"
         Title="Configuration" Height="340" Width="400"
         WindowStartupLocation="CenterScreen"
+        Icon="pack://application:,,,/FilterPlus;component/Resources/Icons/RibbonIcon32.png"
         Topmost="True" Background="#f5f5f5"
         x:Name="ConfigWindow">
     <Window.DataContext>

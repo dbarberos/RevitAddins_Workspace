@@ -26,8 +26,9 @@ When specific data architecture concepts are needed, locate the following files 
 
 * **Metadata & Conversions:** [05_Parameters_and_Units.md](file:///c:/Users/david.barbero/Documents/DOCUMENTOS/ALTEN/Workbench/RevitAddins_Workspace/RevitAddins_Workspace/.agents/skills/revit-api-data/references/05_Parameters_and_Units.md)
   * *Use cases:* Safe extraction of strings/doubles, UnitTypeId conversions, and Type vs. Instance parameter logic.
-* **Hidden Database Injection:** [12_ExtensibleStorage.md](file:///c:/Users/david.barbero/Documents/DOCUMENTOS/ALTEN/Workbench/RevitAddins_Workspace/RevitAddins_Workspace/.agents/skills/revit-api-data/references/12_ExtensibleStorage.md)
-  * *Use cases:* Creating DataStorage elements, Schemas, and injecting invisible dictionaries (JSON) into Revit elements.
+* **Hidden Database Injection:** 
+  * [12_ExtensibleStorage.md](file:///c:/Users/david.barbero/Documents/DOCUMENTOS/ALTEN/Workbench/RevitAddins_Workspace/RevitAddins_Workspace/.agents/skills/revit-api-data/references/12_ExtensibleStorage.md): Creating DataStorage elements, Schemas, and injecting invisible dictionaries.
+  * [guia_extensible_storage_json.md](file:///c:/Users/david.barbero/Documents/DOCUMENTOS/ALTEN/Workbench/RevitAddins_Workspace/RevitAddins_Workspace/.agents/skills/revit-api-data/references/guia_extensible_storage_json.md): Optimal pattern for serializing complex objects to JSON inside `ProjectInformation` across sessions.
 * **PBR & LCA Data:** [26_MaterialAPI_and_Assets.md](file:///c:/Users/david.barbero/Documents/DOCUMENTOS/ALTEN/Workbench/RevitAddins_Workspace/RevitAddins_Workspace/.agents/skills/revit-api-data/references/26_MaterialAPI_and_Assets.md)
   * *Use cases:* Creating materials, modifying albedo/color in the Protein render engine, and Data Painting faces.
 * **BOQ & Reporting:** [28_Schedules_and_TableData.md](file:///c:/Users/david.barbero/Documents/DOCUMENTOS/ALTEN/Workbench/RevitAddins_Workspace/RevitAddins_Workspace/.agents/skills/revit-api-data/references/28_Schedules_and_TableData.md)

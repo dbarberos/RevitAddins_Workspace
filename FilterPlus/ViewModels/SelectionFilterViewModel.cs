@@ -1932,6 +1932,53 @@ public partial class SelectionFilterViewModel : ObservableObject
                         LoggerService.LogInfo($"WARNING: Saved active model name '{name}' not found in current AvailableModels.");
                     }
                 }
+
+                // Resolve the ElementModel objects for the saved selection keys in the Revit API thread
+                var doc = _selectionService.Document;
+                var recoveredModels = new List<ElementModel>();
+                if (doc != null)
+                {
+                    foreach (var savedKey in targetSelection.Elements)
+                    {
+                        ElementId elId = new ElementId((long)savedKey.ElementIdValue);
+                        if (savedKey.LinkInstanceIdValue == -1)
+                        {
+                            Element el = doc.GetElement(elId);
+                            if (el != null)
+                            {
+                                var model = _selectionService.MapToElementModel(el);
+                                if (model != null)
+                                {
+                                    model.LinkInstanceId = ElementId.InvalidElementId;
+                                    recoveredModels.Add(model);
+                                }
+                            }
+                        }
+                        else
+                        {
+                            ElementId linkInstanceId = new ElementId((long)savedKey.LinkInstanceIdValue);
+                            var linkInstance = doc.GetElement(linkInstanceId) as RevitLinkInstance;
+                            if (linkInstance != null)
+                            {
+                                var linkedDoc = linkInstance.GetLinkDocument();
+                                if (linkedDoc != null)
+                                {
+                                    Element el = linkedDoc.GetElement(elId);
+                                    if (el != null)
+                                    {
+                                        var model = _selectionService.MapToElementModel(el);
+                                        if (model != null)
+                                        {
+                                            model.LinkInstanceId = linkInstanceId;
+                                            recoveredModels.Add(model);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                LoggerService.LogInfo($"RecoverSavedSelection Revit Thread: Resolved {recoveredModels.Count} elements from active RVT context.");
                 
                 uiDispatcher.BeginInvoke(new Action(() =>
                 {
@@ -1954,9 +2001,11 @@ public partial class SelectionFilterViewModel : ObservableObject
                             
                             LoggerService.LogInfo($"[RecoverSavedSelection] Restored selection scope context to: {SelectedModelsText}");
                             
-                            // Pre-fetch all scopes for the selected models combined
-                            LoggerService.LogInfo("Re-fetching element scopes for the recovered model context...");
-                            _currentSelectionElements = _selectionService.GetAvailableElements(SelectionScope.CurrentSelection, SelectedModels);
+                            // Populate current selection with ONLY the resolved recovered elements
+                            _currentSelectionElements = recoveredModels;
+
+                            // Pre-fetch all other scopes for the selected models combined
+                            LoggerService.LogInfo("Re-fetching other element scopes for the recovered model context...");
                             _elementsVisibleInViewElements = _selectionService.GetAvailableElements(SelectionScope.ElementsVisibleInView, SelectedModels);
                             _elementsBelongingToViewElements = _selectionService.GetAvailableElements(SelectionScope.ElementsBelongingToView, SelectedModels);
                             
@@ -1964,6 +2013,10 @@ public partial class SelectionFilterViewModel : ObservableObject
                             _allModelElements = allRaw.Count > 10000 ? allRaw.Take(10000).ToList() : allRaw;
                             
                             LoggerService.LogInfo($"Scopes fetched: CurrentSelection={_currentSelectionElements.Count}, VisibleInView={_elementsVisibleInViewElements.Count}, BelongingToView={_elementsBelongingToViewElements.Count}, AllModelElements={_allModelElements.Count}");
+                        }
+                        else
+                        {
+                            _currentSelectionElements = recoveredModels;
                         }
                         
                         // 2. Clear current tree checking and restore the keys
@@ -1980,12 +2033,12 @@ public partial class SelectionFilterViewModel : ObservableObject
                         
                         LoggerService.LogInfo($"Restored {_persistentCheckedIds.Count} element selection keys in ViewModel.");
                         
-                        // Set active elements to AllModelElements so that the saved items are definitely in the tree if they match
-                        CurrentScope = SelectionScope.AllModelElements;
-                        _activeElements = _allModelElements;
+                        // Set active elements to CurrentSelection scope containing only the recovered elements
+                        CurrentScope = SelectionScope.CurrentSelection;
+                        _activeElements = _currentSelectionElements;
                         
                         // Rebuild the TreeView
-                        LoggerService.LogInfo("Rebuilding tree explorer with restored elements...");
+                        LoggerService.LogInfo("Rebuilding tree explorer with restored elements (Current Selection)...");
                         BuildTree();
                         
                         // Apply selection highlights in Revit viewport
@@ -1993,6 +2046,7 @@ public partial class SelectionFilterViewModel : ObservableObject
                         ApplyFilter();
                         
                         IsSelectionDirty = false;
+                        SelectedSavedSelection = SavedSelections.FirstOrDefault();
                         StatusMessage = $"Selection '{targetSelection.Name}' recovered.";
                         LoggerService.LogInfo($"RecoverSavedSelection completed successfully for '{targetSelection.Name}'.");
                     }
@@ -2013,6 +2067,136 @@ public partial class SelectionFilterViewModel : ObservableObject
                 uiDispatcher.BeginInvoke(new Action(() =>
                 {
                     StatusMessage = "Error recovering selection.";
+                    IsBusy = false;
+                }));
+            }
+        }, _actionExternalEvent);
+    }
+
+    [RelayCommand]
+    private void DeleteSavedSelection(object windowObj)
+    {
+        if (SelectedSavedSelection == null || string.IsNullOrEmpty(SelectedSavedSelection.Name))
+        {
+            LoggerService.LogInfo("WARNING: DeleteSavedSelection canceled: no selection selected or name is empty.");
+            return;
+        }
+
+        var targetSelection = SelectedSavedSelection;
+        
+        // Resolve parent window for modal
+        System.Windows.Window ownerWin = windowObj as System.Windows.Window;
+        if (ownerWin == null && System.Windows.Application.Current != null)
+        {
+            ownerWin = System.Windows.Application.Current.Windows
+                .OfType<System.Windows.Window>()
+                .FirstOrDefault(w => w is Views.SelectionFilterView && w.IsVisible);
+            
+            if (ownerWin == null)
+            {
+                ownerWin = System.Windows.Application.Current.Windows
+                    .OfType<System.Windows.Window>()
+                    .FirstOrDefault(x => x.IsActive);
+            }
+        }
+
+        var result = System.Windows.MessageBox.Show(
+            ownerWin,
+            $"Are you sure you want to delete the saved selection '{targetSelection.Name}'?",
+            "Delete Saved Selection",
+            System.Windows.MessageBoxButton.YesNo,
+            System.Windows.MessageBoxImage.Warning);
+
+        if (result != System.Windows.MessageBoxResult.Yes)
+        {
+            LoggerService.LogInfo($"DeleteSavedSelection canceled by user for '{targetSelection.Name}'.");
+            return;
+        }
+
+        LoggerService.LogInfo($"DeleteSavedSelection confirmed for '{targetSelection.Name}'. Starting removal...");
+        StatusMessage = $"Deleting selection '{targetSelection.Name}'...";
+        IsBusy = true;
+
+        if (_actionHandler == null || _actionExternalEvent == null)
+        {
+            LoggerService.LogError("DeleteSavedSelection", new InvalidOperationException("ActionEventHandler or ExternalEvent is null."));
+            StatusMessage = "Error: Delete failed (API connection lost).";
+            IsBusy = false;
+            return;
+        }
+
+        var uiDispatcher = System.Windows.Threading.Dispatcher.CurrentDispatcher;
+
+        _actionHandler.Raise(() =>
+        {
+            try
+            {
+                var doc = _selectionService.Document;
+                if (doc == null)
+                {
+                    throw new InvalidOperationException("Revit Document is null.");
+                }
+
+                // 1. Load current list
+                var selections = SavedSelectionsService.LoadSavedSelections(doc);
+                
+                // 2. Remove the target
+                int removedCount = selections.RemoveAll(s => s.Name.Equals(targetSelection.Name, StringComparison.OrdinalIgnoreCase));
+                LoggerService.LogInfo($"DeleteSavedSelection: Removed {removedCount} entries with name '{targetSelection.Name}' from temp list.");
+
+                // 3. Save back to Extensible Storage
+                bool success = SavedSelectionsService.SaveSavedSelections(doc, selections);
+
+                if (success)
+                {
+                    LoggerService.LogInfo("DeleteSavedSelection: Extensible Storage write success.");
+                    
+                    // Reload selections from document inside the Revit thread, and push UI updates asynchronously
+                    var updatedSelections = SavedSelectionsService.LoadSavedSelections(doc);
+
+                    uiDispatcher.BeginInvoke(new Action(() =>
+                    {
+                        try
+                        {
+                            SavedSelections.Clear();
+                            SavedSelections.Add(new SavedSelection { Name = string.Empty });
+                            foreach (var s in updatedSelections)
+                            {
+                                SavedSelections.Add(s);
+                            }
+                            
+                            SelectedSavedSelection = SavedSelections.FirstOrDefault();
+                            IsSelectionDirty = false;
+                            StatusMessage = $"Selection '{targetSelection.Name}' deleted.";
+                            LoggerService.LogInfo($"DeleteSavedSelection UI update completed successfully.");
+                        }
+                        catch (Exception exInner)
+                        {
+                            LoggerService.LogError("DeleteSavedSelection UI Callback Error", exInner);
+                            StatusMessage = "Error updating UI after deletion.";
+                        }
+                        finally
+                        {
+                            IsBusy = false;
+                        }
+                    }));
+                }
+                else
+                {
+                    uiDispatcher.BeginInvoke(new Action(() =>
+                    {
+                        StatusMessage = "Failed to delete selection from document.";
+                        IsBusy = false;
+                    }));
+                    LoggerService.LogError("DeleteSavedSelection", new InvalidOperationException("SavedSelectionsService.SaveSavedSelections returned false."));
+                }
+            }
+            catch (Exception ex)
+            {
+                LoggerService.LogError("Revit API thread execution failed inside DeleteSavedSelection", ex);
+                uiDispatcher.BeginInvoke(new Action(() =>
+                {
+                    StatusMessage = "Error deleting selection.";
                     IsBusy = false;
                 }));
             }
