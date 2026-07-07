@@ -141,7 +141,9 @@ In Revit 2025 and higher, FilterPlus integrates into the right-click context men
 #### Added
 - **Persistent Saved Selections**: Save/Recover selection sets inside the active Revit document via Extensible Storage.
 - **Save Selection Window**: Separate dialog featuring conditional styling triggers and native confirmation prompts to save new or overwrite existing selections.
-- **Dynamic Recover Styling**: Main Recover button is conditionally highlighted only when a saved selection is active.
+- **Save Selection UI Polish**: Standardized button widths across "Save New", "Overwrite", and "Cancel" using `SharedSizeGroup` grid properties. Adjusted vertical padding with a 1.5x increased margin (15px) above the footer button.
+- **Dropdown Reset & Disabling**: The ComboBox selection automatically resets to the empty placeholder selection after a successful `Recover` or `Delete` action. This immediately disables the `Recover` and `Delete` buttons, resetting the interface state.
+- **WPF Window Custom Icons**: Integrated `RibbonIcon32.png` into all 6 Window title bars using absolute WPF Pack URIs (`pack://application:,,,/FilterPlus;component/Resources/Icons/RibbonIcon32.png`) to prevent Baml2006 TypeConverterMarkupExtension startup exceptions inside Revit host environment.
 - **NuGet Dependency**: Integrated `System.Text.Json` to handle cross-version element serialization for both .NET Framework 4.8 and .NET 8.
 
 ### [1.0.0] - 2026-04-29
