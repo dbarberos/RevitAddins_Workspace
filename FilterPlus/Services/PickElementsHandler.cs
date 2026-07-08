@@ -35,32 +35,123 @@ public class PickElementsHandler : IExternalEventHandler
             bool hasHost = selectedModels.Any(m => m.LinkInstance == null);
             bool hasLinks = selectedModels.Any(m => m.LinkInstance != null);
 
-            ObjectType pickType = (hasLinks && !hasHost) ? ObjectType.LinkedElement : ObjectType.Element;
+            if (selectedModels.Count == 0)
+            {
+                _viewModel.OnPickElementsFinished(new List<ElementSelectionKey>());
+                return;
+            }
 
-            // Get pre-selected references to visually highlight them during PickObjects
-            var preSelectedRefs = new List<Reference>();
+            // Target flags
+            bool runHost = false;
+            bool runLinks = false;
 
+            if (hasHost && hasLinks)
+            {
+                // Prompt user to choose target selection mode
+                var dialog = new TaskDialog("FilterPlus - Selection Mode")
+                {
+                    MainInstruction = "Choose selection target",
+                    MainContent = "Revit does not support picking host and linked elements simultaneously. Choose your selection target:",
+                    AllowCancellation = true
+                };
+
+                dialog.AddCommandLink(TaskDialogCommandLinkId.CommandLink1, "Host Model Only", "Select elements from the active document.");
+                dialog.AddCommandLink(TaskDialogCommandLinkId.CommandLink2, "Linked Models Only", "Select elements inside link instances.");
+                dialog.AddCommandLink(TaskDialogCommandLinkId.CommandLink3, "Both (Sequential)", "Select host elements first, then select linked elements.");
+
+                var result = dialog.Show();
+
+                if (result == TaskDialogResult.CommandLink1)
+                {
+                    runHost = true;
+                }
+                else if (result == TaskDialogResult.CommandLink2)
+                {
+                    runLinks = true;
+                }
+                else if (result == TaskDialogResult.CommandLink3)
+                {
+                    runHost = true;
+                    runLinks = true;
+                }
+                else
+                {
+                    // User canceled the choice dialog
+                    _viewModel.OnPickElementsFinished(new List<ElementSelectionKey>());
+                    return;
+                }
+            }
+            else if (hasHost)
+            {
+                runHost = true;
+            }
+            else if (hasLinks)
+            {
+                runLinks = true;
+            }
+
+            // Get checked keys for preselection
             var checkedKeys = new List<ElementSelectionKey>();
             foreach (var node in _viewModel.RootNodes)
             {
                 node.GetAllSelectedKeys(checkedKeys);
             }
 
-            if (pickType == ObjectType.Element)
+            var finalKeys = new List<ElementSelectionKey>();
+
+            // 1. Run Host Selection
+            if (runHost)
             {
-                // Highlight host elements only (adding linked references with ObjectType.Element will throw: "pPreSelected has invalid object")
+                var preSelectedHostRefs = new List<Reference>();
                 foreach (var key in checkedKeys.Where(k => k.LinkInstanceId == ElementId.InvalidElementId))
                 {
                     var elem = uiDoc.Document.GetElement(key.ElementId);
                     if (elem != null)
                     {
-                        preSelectedRefs.Add(new Reference(elem));
+                        preSelectedHostRefs.Add(new Reference(elem));
                     }
                 }
+
+                try
+                {
+                    IList<Reference> selectedHostRefs = uiDoc.Selection.PickObjects(
+                        ObjectType.Element,
+                        new DummySelectionFilter(),
+                        "Select elements in the Host Model only (active document). Click Finish (top-left) when done.",
+                        preSelectedHostRefs
+                    );
+
+                    if (selectedHostRefs != null)
+                    {
+                        foreach (var r in selectedHostRefs)
+                        {
+                            var hostEl = uiDoc.Document.GetElement(r.ElementId);
+                            if (hostEl is RevitLinkInstance rli)
+                            {
+                                if (selectedModels.Any(m => m.LinkInstance != null && m.LinkInstance.Id == rli.Id))
+                                {
+                                    finalKeys.Add(new ElementSelectionKey(r.LinkedElementId, rli.Id));
+                                }
+                            }
+                            else
+                            {
+                                finalKeys.Add(new ElementSelectionKey(r.ElementId, ElementId.InvalidElementId));
+                            }
+                        }
+                    }
+                }
+                catch (Autodesk.Revit.Exceptions.OperationCanceledException)
+                {
+                    // If user cancels during sequential or host phase, cancel the entire operation
+                    _viewModel.OnPickElementsFinished(new List<ElementSelectionKey>());
+                    return;
+                }
             }
-            else // ObjectType.LinkedElement
+
+            // 2. Run Links Selection
+            if (runLinks)
             {
-                // Highlight elements from selected links (adding host references with ObjectType.LinkedElement will throw)
+                var preSelectedLinkRefs = new List<Reference>();
                 foreach (var model in selectedModels.Where(m => m.LinkInstance != null))
                 {
                     var linkInst = model.LinkInstance;
@@ -76,7 +167,7 @@ public class PickElementsHandler : IExternalEventHandler
                                 {
                                     var refInLink = new Reference(elem);
                                     var hostRef = refInLink.CreateLinkReference(linkInst);
-                                    preSelectedRefs.Add(hostRef);
+                                    preSelectedLinkRefs.Add(hostRef);
                                 }
                                 catch
                                 {
@@ -86,61 +177,34 @@ public class PickElementsHandler : IExternalEventHandler
                         }
                     }
                 }
-            }
 
-            // Allow the user to select multiple elements, with existing selection highlighted
-            IList<Reference> selectedRefs = uiDoc.Selection.PickObjects(
-                pickType, 
-                new DummySelectionFilter(),
-                "Selecciona elementos. Haz clic en Finalizar (arriba a la izquierda) al terminar.",
-                preSelectedRefs
-            );
+                try
+                {
+                    IList<Reference> selectedLinkRefs = uiDoc.Selection.PickObjects(
+                        ObjectType.LinkedElement,
+                        new DummySelectionFilter(),
+                        "Select elements in Linked Models only (use TAB to highlight). Click Finish (top-left) when done.",
+                        preSelectedLinkRefs
+                    );
 
-            if (selectedRefs != null && selectedRefs.Count > 0)
-            {
-                var newKeys = new List<ElementSelectionKey>();
-                if (pickType == ObjectType.LinkedElement)
-                {
-                    foreach (var r in selectedRefs)
+                    if (selectedLinkRefs != null)
                     {
-                        newKeys.Add(new ElementSelectionKey(r.LinkedElementId, r.ElementId));
-                    }
-                }
-                else
-                {
-                    // Multi-model (or Host only) with ObjectType.Element
-                    foreach (var r in selectedRefs)
-                    {
-                        var hostEl = uiDoc.Document.GetElement(r.ElementId);
-                        if (hostEl is RevitLinkInstance rli)
+                        foreach (var r in selectedLinkRefs)
                         {
-                            // Verify if this link instance is in selected models
-                            if (selectedModels.Any(m => m.LinkInstance != null && m.LinkInstance.Id == rli.Id))
-                            {
-                                newKeys.Add(new ElementSelectionKey(r.LinkedElementId, rli.Id));
-                            }
-                        }
-                        else
-                        {
-                            // Verify if host model is in selected models
-                            if (selectedModels.Any(m => m.LinkInstance == null))
-                            {
-                                newKeys.Add(new ElementSelectionKey(r.ElementId, ElementId.InvalidElementId));
-                            }
+                            finalKeys.Add(new ElementSelectionKey(r.LinkedElementId, r.ElementId));
                         }
                     }
                 }
-                _viewModel.OnPickElementsFinished(newKeys);
+                catch (Autodesk.Revit.Exceptions.OperationCanceledException)
+                {
+                    // If user cancels linked phase, finish with whatever was gathered (e.g. from host phase)
+                }
             }
-            else
-            {
-                // Finished with empty selection
-                _viewModel.OnPickElementsFinished(new List<ElementSelectionKey>());
-            }
+
+            _viewModel.OnPickElementsFinished(finalKeys);
         }
         catch (Autodesk.Revit.Exceptions.OperationCanceledException)
         {
-            // User pressed Escape
             LoggerService.LogInfo("PickObjects operation canceled by user.");
             _viewModel.OnPickElementsFinished(new List<ElementSelectionKey>());
         }
