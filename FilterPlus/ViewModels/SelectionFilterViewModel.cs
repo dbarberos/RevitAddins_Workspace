@@ -54,6 +54,7 @@ public partial class SelectionFilterViewModel : ObservableObject
     [ObservableProperty] private bool _isUseOr;
     [ObservableProperty] private bool _isOnlyByName;
     [ObservableProperty] private bool _isUseRegex;
+    [ObservableProperty] private bool _isCacheLimited;
 
     // Increase Checked Options
     [ObservableProperty] private bool _increaseWhatSameCategory;
@@ -345,20 +346,9 @@ public partial class SelectionFilterViewModel : ObservableObject
             LoggerService.LogInfo($"Initial selection IDs count: {_persistentCheckedIds.Count}");
 
             // 2. Pre-fetch all scopes NOW (we are in Revit API thread)
-            LoggerService.LogInfo("Pre-fetching CurrentSelection elements...");
-            _currentSelectionElements = _selectionService.GetAvailableElements(SelectionScope.CurrentSelection, SelectedModels);
-            LoggerService.LogInfo($"CurrentSelection: {_currentSelectionElements.Count} elements.");
-
-            // Add check to ensure we don't get null reference
-            _elementsVisibleInViewElements = _selectionService.GetAvailableElements(SelectionScope.ElementsVisibleInView, SelectedModels);
-            LoggerService.LogInfo($"ElementsVisibleInView: {_elementsVisibleInViewElements.Count} elements.");
-
-            _elementsBelongingToViewElements = _selectionService.GetAvailableElements(SelectionScope.ElementsBelongingToView, SelectedModels);
-            LoggerService.LogInfo($"ElementsBelongingToView: {_elementsBelongingToViewElements.Count} elements.");
-
-            var allRaw = _selectionService.GetAvailableElements(SelectionScope.AllModelElements, SelectedModels);
-            _allModelElements = allRaw.Count > 100000 ? allRaw.Take(100000).ToList() : allRaw;
-            LoggerService.LogInfo($"AllModelElements: {_allModelElements.Count} elements (raw: {allRaw.Count}).");
+            LoggerService.LogInfo("Pre-fetching scopes...");
+            LoadScopesAndHandleCache(SelectedModels);
+            LoggerService.LogInfo($"Scopes fetched: CurrentSelection={_currentSelectionElements.Count}, VisibleInView={_elementsVisibleInViewElements.Count}, BelongingToView={_elementsBelongingToViewElements.Count}, AllModelElements={_allModelElements.Count}");
 
             // 3. Build tree for the default scope (CurrentSelection)
             _activeElements = _currentSelectionElements;
@@ -471,12 +461,7 @@ public partial class SelectionFilterViewModel : ObservableObject
                 _lastAppliedCheckedIds.Clear();
                 
                 // Pre-fetch all scopes for the selected models combined
-                _currentSelectionElements = _selectionService.GetAvailableElements(SelectionScope.CurrentSelection, SelectedModels);
-                _elementsVisibleInViewElements = _selectionService.GetAvailableElements(SelectionScope.ElementsVisibleInView, SelectedModels);
-                _elementsBelongingToViewElements = _selectionService.GetAvailableElements(SelectionScope.ElementsBelongingToView, SelectedModels);
-                
-                var allRaw = _selectionService.GetAvailableElements(SelectionScope.AllModelElements, SelectedModels);
-                _allModelElements = allRaw.Count > 100000 ? allRaw.Take(100000).ToList() : allRaw;
+                LoadScopesAndHandleCache(SelectedModels);
 
                 // Sync active elements based on current scope
                 _activeElements = CurrentScope switch
@@ -503,6 +488,31 @@ public partial class SelectionFilterViewModel : ObservableObject
                 IsBusy = false;
             }
         }, _actionExternalEvent);
+    }
+
+    private void LoadScopesAndHandleCache(IEnumerable<RevitModelRepresentation> targetModels)
+    {
+        var allRaw = _selectionService.GetAvailableElements(SelectionScope.AllModelElements, targetModels);
+        if (allRaw.Count > 100000)
+        {
+            IsCacheLimited = true;
+            LoggerService.LogInfo($"Total elements count ({allRaw.Count}) exceeds the 100,000 cache limit. Restricting cache to the Active Model only.");
+            
+            var activeOnlyModels = targetModels.Where(m => m.LinkInstance == null).ToList();
+            
+            _currentSelectionElements = _selectionService.GetAvailableElements(SelectionScope.CurrentSelection, activeOnlyModels);
+            _elementsVisibleInViewElements = _selectionService.GetAvailableElements(SelectionScope.ElementsVisibleInView, activeOnlyModels);
+            _elementsBelongingToViewElements = _selectionService.GetAvailableElements(SelectionScope.ElementsBelongingToView, activeOnlyModels);
+            _allModelElements = _selectionService.GetAvailableElements(SelectionScope.AllModelElements, activeOnlyModels);
+        }
+        else
+        {
+            IsCacheLimited = false;
+            _currentSelectionElements = _selectionService.GetAvailableElements(SelectionScope.CurrentSelection, targetModels);
+            _elementsVisibleInViewElements = _selectionService.GetAvailableElements(SelectionScope.ElementsVisibleInView, targetModels);
+            _elementsBelongingToViewElements = _selectionService.GetAvailableElements(SelectionScope.ElementsBelongingToView, targetModels);
+            _allModelElements = allRaw;
+        }
     }
 
     partial void OnIsOnly3DModelsChanged(bool value)
@@ -2045,11 +2055,26 @@ public partial class SelectionFilterViewModel : ObservableObject
 
                             // Pre-fetch all other scopes for the selected models combined
                             LoggerService.LogInfo("Re-fetching other element scopes for the recovered model context...");
-                            _elementsVisibleInViewElements = _selectionService.GetAvailableElements(SelectionScope.ElementsVisibleInView, SelectedModels);
-                            _elementsBelongingToViewElements = _selectionService.GetAvailableElements(SelectionScope.ElementsBelongingToView, SelectedModels);
-                            
                             var allRaw = _selectionService.GetAvailableElements(SelectionScope.AllModelElements, SelectedModels);
-                            _allModelElements = allRaw.Count > 100000 ? allRaw.Take(100000).ToList() : allRaw;
+                            if (allRaw.Count > 100000)
+                            {
+                                IsCacheLimited = true;
+                                LoggerService.LogInfo($"Total elements count ({allRaw.Count}) exceeds the 100,000 cache limit. Restricting cache to the Active Model only.");
+                                
+                                var activeOnlyModels = SelectedModels.Where(m => m.LinkInstance == null).ToList();
+                                _currentSelectionElements = recoveredModels.Where(m => m.LinkInstanceId == ElementId.InvalidElementId).ToList();
+                                _elementsVisibleInViewElements = _selectionService.GetAvailableElements(SelectionScope.ElementsVisibleInView, activeOnlyModels);
+                                _elementsBelongingToViewElements = _selectionService.GetAvailableElements(SelectionScope.ElementsBelongingToView, activeOnlyModels);
+                                _allModelElements = _selectionService.GetAvailableElements(SelectionScope.AllModelElements, activeOnlyModels);
+                            }
+                            else
+                            {
+                                IsCacheLimited = false;
+                                _currentSelectionElements = recoveredModels;
+                                _elementsVisibleInViewElements = _selectionService.GetAvailableElements(SelectionScope.ElementsVisibleInView, SelectedModels);
+                                _elementsBelongingToViewElements = _selectionService.GetAvailableElements(SelectionScope.ElementsBelongingToView, SelectedModels);
+                                _allModelElements = allRaw;
+                            }
                             
                             LoggerService.LogInfo($"Scopes fetched: CurrentSelection={_currentSelectionElements.Count}, VisibleInView={_elementsVisibleInViewElements.Count}, BelongingToView={_elementsBelongingToViewElements.Count}, AllModelElements={_allModelElements.Count}");
                         }

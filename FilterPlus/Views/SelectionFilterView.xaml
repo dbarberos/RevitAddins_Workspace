@@ -514,6 +514,13 @@
                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                             <TextBlock Text="{Binding CheckedElementsCount}" FontSize="24" FontWeight="Medium" VerticalAlignment="Center" Margin="0,0,10,0" Foreground="#333"/>
                             <TextBlock Text="Elements Checked" VerticalAlignment="Center" Foreground="#666" FontWeight="SemiBold"/>
+                            
+                            <!-- Warning Icon for cache limitation -->
+                            <Grid Visibility="{Binding IsCacheLimited, Converter={StaticResource BoolToVis}}" Margin="8,0,0,0" VerticalAlignment="Center">
+                                <Viewbox Width="16" Height="16" ToolTip="Cache Limitation: The combined elements of all selected models exceed 100,000. To preserve performance, only elements from the Active Model have been loaded, and linked models are omitted.">
+                                    <Path Data="M12,2L1,21H23L12,2M12,6L19.8,20H4.2L12,6M11,10V14H13V10H11M11,16V18H13V16H11Z" Fill="#E65100" />
+                                </Viewbox>
+                            </Grid>
                         </StackPanel>
                     </Border>
                 </StackPanel>
