@@ -3,6 +3,7 @@ using System.Collections.ObjectModel;
 using System.Collections.Generic;
 using System.Linq;
 using Autodesk.Revit.DB;
+using FilterPlus.Models;
 
 namespace FilterPlus.ViewModels;
 
@@ -15,6 +16,7 @@ public partial class TreeItemViewModel : ObservableObject
 
     public string Name { get; set; }
     public ElementId ElementId { get; set; }
+    public ElementId LinkInstanceId { get; set; } = ElementId.InvalidElementId;
     public string SearchableMetadata { get; set; } = string.Empty;
     public ObservableCollection<TreeItemViewModel> Children { get; } = new();
 
@@ -98,16 +100,16 @@ public partial class TreeItemViewModel : ObservableObject
         }
     }
 
-    public void GetAllSelectedIds(List<ElementId> ids)
+    public void GetAllSelectedKeys(List<ElementSelectionKey> keys)
     {
         if (ElementId != null && IsChecked == true)
         {
-            ids.Add(ElementId);
+            keys.Add(new ElementSelectionKey(ElementId, LinkInstanceId));
         }
 
         foreach (var child in Children)
         {
-            child.GetAllSelectedIds(ids);
+            child.GetAllSelectedKeys(keys);
         }
     }
     public void RefreshState()

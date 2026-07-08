@@ -10,6 +10,7 @@
         mc:Ignorable="d"
         Title="FilterPlus" Height="937" Width="940"
         WindowStartupLocation="CenterScreen"
+        Icon="pack://application:,,,/FilterPlus;component/Resources/Icons/RibbonIcon32.png"
         Topmost="True" Background="#f5f5f5">
     <Window.Resources>
         <BooleanToVisibilityConverter x:Key="BoolToVis"/>
@@ -112,16 +113,39 @@
     <Grid Margin="15">
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="*"/> <!-- Árbol (Flexible, aprox 720px) -->
-            <ColumnDefinition Width="Auto"/> <!-- Separador -->
-            <ColumnDefinition Width="350"/> <!-- Filtros y Selección (Ampliado para evitar recorte) -->
+            <ColumnDefinition Width="10"/> <!-- Separador (Espacio de separación) -->
+            <ColumnDefinition Width="376"/> <!-- Filtros y Selección (350px tarjeta + 17px scrollbar + 9px gap) -->
         </Grid.ColumnDefinitions>
         <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
+        <!-- DOCUMENT CONTEXT DISPLAY AND SELECT -->
+        <Border Grid.ColumnSpan="3" Grid.Row="0" Margin="0,0,0,10">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Column="0" Text="Apply FilterPlus with:" VerticalAlignment="Center" FontWeight="SemiBold" Margin="0,0,10,0" Foreground="#333"/>
+                <Border Grid.Column="1" BorderBrush="#007ACC" BorderThickness="1.5" Background="White" CornerRadius="4" Height="30" Padding="8,0" VerticalAlignment="Center" Margin="0,0,10,0">
+                    <TextBlock Text="{Binding SelectedModelsText}" VerticalAlignment="Center" Margin="0" Foreground="#333" FontWeight="Normal"/>
+                </Border>
+                <Button Grid.Column="2" Content="Select" Command="{Binding OpenModelSelectionCommand}" Width="80" Height="30" Margin="0" VerticalAlignment="Center" Cursor="Hand">
+                    <Button.Resources>
+                        <Style TargetType="Border">
+                            <Setter Property="CornerRadius" Value="4"/>
+                        </Style>
+                    </Button.Resources>
+                </Button>
+            </Grid>
+        </Border>
+
         <!-- COLUMNA IZQUIERDA: EXPLORADOR JERÁRQUICO -->
-        <Grid Grid.Column="0" Grid.Row="0" Margin="0,0,10,0">
+        <Grid Grid.Column="0" Grid.Row="1" Margin="0,0,10,0">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="*"/>
@@ -228,15 +252,15 @@
             </TreeView>
         </Grid>
 
-        <GridSplitter Grid.Column="1" Grid.Row="0" Width="5" HorizontalAlignment="Stretch" Background="#EEE" Margin="0,0,5,0" />
-
-        <!-- COLUMNA DERECHA: SELECCIÓN Y FILTROS -->
-        <Grid Grid.Column="2" Grid.Row="0" Grid.IsSharedSizeScope="True">
+        <!-- COLUMNA DERECHA: SELECCIÓN Y FILTROS (con ScrollViewer y scrollbar a la izquierda) -->
+        <ScrollViewer Grid.Column="2" Grid.Row="1" FlowDirection="RightToLeft" VerticalScrollBarVisibility="Visible" HorizontalScrollBarVisibility="Disabled" BorderThickness="0" Margin="0" Padding="0">
+            <Grid FlowDirection="LeftToRight" Grid.IsSharedSizeScope="True" Margin="0,0,9,0">
 
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/> <!-- Filter Card -->
                 <RowDefinition Height="Auto"/> <!-- Select Card -->
                 <RowDefinition Height="Auto"/> <!-- Add Checked Card -->
+                <RowDefinition Height="Auto"/> <!-- PreSelection Card 1 -->
             </Grid.RowDefinitions>
 
             <!-- Card de Filtro -->
@@ -383,10 +407,86 @@
                     </Button>
                 </Grid>
             </Border>
-        </Grid>
+
+            <!-- Card 1 de PreSelection (Feature 1) -->
+            <Border Grid.Row="3" Background="White" CornerRadius="8" Padding="15,10" Margin="0,0,0,10" BorderBrush="#e8e8e8" BorderThickness="1">
+                <StackPanel>
+                    <TextBlock Text="Saved Selections" FontWeight="500" Margin="0,0,0,5" Foreground="#333" FontSize="13"/>
+
+                    <!-- Fila Superior: ComboBox ocupando todo el ancho -->
+                    <ComboBox Padding="2" BorderBrush="#e0e0e0" BorderThickness="1" Margin="0,5,0,10"
+                              ItemsSource="{Binding SavedSelections}"
+                              DisplayMemberPath="Name"
+                              SelectedItem="{Binding SelectedSavedSelection}"/>
+
+                    <!-- Fila Inferior: Botones alineados a la derecha -->
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+
+                        <!-- Botón Recover -->
+                        <Button Content="Recover" Command="{Binding RecoverSavedSelectionCommand}" Margin="0,0,5,0" Padding="12,3" BorderThickness="0" Cursor="Hand">
+                            <Button.Resources>
+                                <Style TargetType="Border">
+                                    <Setter Property="CornerRadius" Value="4"/>
+                                </Style>
+                            </Button.Resources>
+                            <Button.Style>
+                                <Style TargetType="Button">
+                                    <Setter Property="Background" Value="#e0e0e0"/>
+                                    <Setter Property="Foreground" Value="#666"/>
+                                    <Setter Property="IsEnabled" Value="False"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsSavedSelectionSelected}" Value="True">
+                                            <Setter Property="Background" Value="#007ACC"/>
+                                            <Setter Property="Foreground" Value="White"/>
+                                            <Setter Property="IsEnabled" Value="True"/>
+                                            <Setter Property="FontWeight" Value="SemiBold"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Button.Style>
+                        </Button>
+
+                        <!-- Botón Delete (Nuevo) -->
+                        <Button Content="Delete" Command="{Binding DeleteSavedSelectionCommand}" CommandParameter="{Binding RelativeSource={RelativeSource AncestorType=Window}}" Margin="0,0,5,0" Padding="12,3" BorderThickness="0" Cursor="Hand">
+                            <Button.Resources>
+                                <Style TargetType="Border">
+                                    <Setter Property="CornerRadius" Value="4"/>
+                                </Style>
+                            </Button.Resources>
+                            <Button.Style>
+                                <Style TargetType="Button">
+                                    <Setter Property="Background" Value="#e0e0e0"/>
+                                    <Setter Property="Foreground" Value="#666"/>
+                                    <Setter Property="IsEnabled" Value="False"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsSavedSelectionSelected}" Value="True">
+                                            <Setter Property="Background" Value="#007ACC"/>
+                                            <Setter Property="Foreground" Value="White"/>
+                                            <Setter Property="IsEnabled" Value="True"/>
+                                            <Setter Property="FontWeight" Value="SemiBold"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Button.Style>
+                        </Button>
+
+                        <!-- Botón Save -->
+                        <Button Content="Save" Command="{Binding OpenSaveSelectionDialogCommand}" Margin="0,0,0,0" Padding="12,3" Background="#007ACC" Foreground="White" BorderThickness="0" Cursor="Hand">
+                            <Button.Resources>
+                                <Style TargetType="Border">
+                                    <Setter Property="CornerRadius" Value="4"/>
+                                </Style>
+                            </Button.Resources>
+                        </Button>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+            </Grid>
+        </ScrollViewer>
 
         <!-- Pestaña Inferior de Estado/Aplicar -->
-        <Border Grid.ColumnSpan="3" Grid.Row="1" Background="#f1f1f1" Padding="15" Margin="-15,10,-15,-15">
+        <Border Grid.ColumnSpan="3" Grid.Row="2" Background="#f1f1f1" Padding="15" Margin="-15,10,-15,-15">
             <Grid>
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Left" VerticalAlignment="Bottom">
                     <Button Command="{Binding OpenConfigurationCommand}" Margin="0,0,10,0" VerticalAlignment="Bottom" Cursor="Hand" ToolTip="Configuration">
@@ -417,44 +517,60 @@
                     </Border>
                 </StackPanel>
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Bottom">
-                    <Button Content="Select in Revit" Command="{Binding PickElementsCommand}" Margin="0,0,5,0" Height="30" Cursor="Hand"/>
-                    <Button Content="Clear" Command="{Binding ClearFiltersCommand}" Width="80" Margin="0,0,5,0" Height="30"/>
-                    <Button Content="Apply Selection" Command="{Binding ApplyFilterCommand}" Width="120" Height="30" Background="#007ACC" Foreground="White" FontWeight="Bold" Margin="0"/>
+                    <Button Content="Pre-Selection" Command="{Binding OpenPreSelectionCommand}" Margin="0,0,5,0" Height="30" Padding="15,0" Cursor="Hand">
+                        <Button.Resources>
+                            <Style TargetType="Border">
+                                <Setter Property="CornerRadius" Value="4"/>
+                            </Style>
+                        </Button.Resources>
+                    </Button>
+                    <Button Content="Select in Revit" Command="{Binding PickElementsCommand}" Margin="0,0,5,0" Height="30" Cursor="Hand">
+                        <Button.Resources>
+                            <Style TargetType="Border">
+                                <Setter Property="CornerRadius" Value="4"/>
+                            </Style>
+                        </Button.Resources>
+                    </Button>
+                    <Button Content="Clear" Command="{Binding ClearFiltersCommand}" Width="80" Margin="0,0,5,0" Height="30">
+                        <Button.Resources>
+                            <Style TargetType="Border">
+                                <Setter Property="CornerRadius" Value="4"/>
+                            </Style>
+                        </Button.Resources>
+                    </Button>
+                    <Button Content="Apply Selection" Command="{Binding ApplyFilterCommand}" Width="120" Height="30" Margin="0">
+                        <Button.Resources>
+                            <Style TargetType="Border">
+                                <Setter Property="CornerRadius" Value="4"/>
+                            </Style>
+                        </Button.Resources>
+                        <Button.Style>
+                            <Style TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsSelectionDirty}" Value="True">
+                                        <Setter Property="Background" Value="#007ACC"/>
+                                        <Setter Property="Foreground" Value="White"/>
+                                        <Setter Property="FontWeight" Value="Bold"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Button.Style>
+                    </Button>
                 </StackPanel>
             </Grid>
         </Border>
 
         <!-- Loading Overlay -->
-        <Grid Grid.ColumnSpan="3" Grid.RowSpan="2" Background="#A0FFFFFF" 
+        <Grid Grid.ColumnSpan="3" Grid.RowSpan="2" Background="#70FFFFFF" 
               Visibility="{Binding IsBusy, Converter={StaticResource BoolToVis}}" 
               Margin="-15">
-            <Border Background="White" CornerRadius="12" Padding="30" HorizontalAlignment="Center" VerticalAlignment="Center" BorderBrush="#e8e8e8" BorderThickness="1">
+            <Border Background="White" CornerRadius="8" Padding="25,18" HorizontalAlignment="Center" VerticalAlignment="Center" BorderBrush="#007ACC" BorderThickness="1.5">
                 <Border.Effect>
-                    <DropShadowEffect BlurRadius="15" Direction="-90" RenderingBias="Quality" ShadowDepth="2" Opacity="0.1"/>
+                    <DropShadowEffect BlurRadius="12" Direction="-90" RenderingBias="Quality" ShadowDepth="1" Opacity="0.12"/>
                 </Border.Effect>
-                <StackPanel>
-                    <Viewbox Width="40" Height="40" HorizontalAlignment="Center">
-                        <Path Fill="#007ACC" Data="M12,4V2A10,10 0 0,0 2,12H4A8,8 0 0,1 12,4Z">
-                            <Path.RenderTransform>
-                                <RotateTransform x:Name="SpinnerTransform" CenterX="12" CenterY="12" Angle="0"/>
-                            </Path.RenderTransform>
-                            <Path.Triggers>
-                                <EventTrigger RoutedEvent="Loaded">
-                                    <BeginStoryboard>
-                                        <Storyboard>
-                                            <DoubleAnimation Storyboard.TargetName="SpinnerTransform" 
-                                                             Storyboard.TargetProperty="Angle" 
-                                                             From="0" To="360" 
-                                                             Duration="0:0:1" 
-                                                             RepeatBehavior="Forever"/>
-                                        </Storyboard>
-                                    </BeginStoryboard>
-                                </EventTrigger>
-                            </Path.Triggers>
-                        </Path>
-                    </Viewbox>
-                    <TextBlock Text="Loading Elements..." FontWeight="SemiBold" Foreground="#333" HorizontalAlignment="Center" Margin="0,15,0,0"/>
-                    <TextBlock Text="This may take a moment for large projects" FontSize="10" FontWeight="Normal" Foreground="#999" HorizontalAlignment="Center" Margin="0,5,0,0"/>
+                <StackPanel Width="220">
+                    <TextBlock Text="{Binding StatusMessage}" FontWeight="SemiBold" Foreground="#222" FontSize="13" HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap"/>
+                    <TextBlock Text="Please wait a moment..." FontSize="10.5" FontWeight="Normal" Foreground="#777" HorizontalAlignment="Center" Margin="0,5,0,0"/>
                 </StackPanel>
             </Border>
         </Grid>

@@ -37,6 +37,15 @@ The add-in creates a custom tab containing the FilterPlus panel.
 ### FilterPlus Hierarchical Explorer
 The main FilterPlus application allows you to filter and navigate elements in your active selection or project. It constructs a dynamic hierarchical tree-view categorized by **Category > Family > Type > Instance (Element ID)**. Unlike standard flat selection filters, it displays element counts at each level and allows you to select, check, or uncheck elements interactively, immediately synchronizing your choices with the active Revit selection.
 
+### Document and Linked Model Selector
+At the top of the main FilterPlus interface, the document selection area allows you to choose the target model context:
+- **Selected Models Display**: A read-only text box wrapped in a primary blue (`#007ACC`) border displays the currently active filter scope (either the name of a single model, or a multiple model count like `"Multiple models selected (Count)"`).
+- **Select Button**: Clicking the `"Select"` button next to the display box opens the advanced `"Select model or models"` modal window.
+- **Active Model Default**: The host Revit document on which the add-in was executed is always checked and selected by default on startup.
+- **Select All Models**: A circular checkbox at the top of the selection window allows you to toggle all models (host + links) at once. When checked, the filtering processes all operations across all documents combined.
+- **Individual Switches**: Users can use slide switches next to each model name to check or uncheck individual models. Unchecking any model deselects the "Select all models" option, and manually checking all models automatically checks the "Select all models" option.
+- **Simultaneous Cross-Document Selection**: When applying selections or rule matches across multiple selected models, FilterPlus creates appropriate coordinate-transformed link references (`CreateLinkReference`). This allows Revit to highlight and select elements in both the host project and linked models at the same time in the viewport.
+
 ### Pre-Filtering (Dropdown Filters)
 Filter and narrow down elements before selecting or displaying them. Dropdown controls at the top of the interface let you pre-filter elements based on:
 - **Category**
@@ -46,6 +55,15 @@ Filter and narrow down elements before selecting or displaying them. Dropdown co
 - **Workset**
 
 By default, selecting "Todos" (All) displays all elements, while choosing a specific value isolates those elements within the tree structure.
+
+### Pre-Selection Rules Filter (Rules & Sets)
+Filter elements dynamically using logical operators (AND/OR). Click the **Pre-Selection** icon to open the advanced query window:
+- **Scope Selection**: Toggle between **All Model Elements** or **Elements in View** using round **RadioButtons** indicating visual mutual exclusivity.
+- **Rule Hierarchy & Constraints**: The dynamic dropdown parameters are subject to logical dependencies. "Familias" is only enabled and populated if a sibling "Categorías" rule is defined. "Tipos" is strictly enabled and populated if a sibling "Familias" rule is defined. The selectable values are dynamically filtered based on sibling selections.
+- **Cascading Deletion**: Modifying a parent rule's type or deleting it automatically prunes any dependent child rules (e.g., removing a Category rule automatically removes any associated Family/Type rules, and removing a Family rule automatically removes any associated Type rules).
+- **Tree Logic (Sets & Rules)**: Add nested sets (logical operators) and rules to form complex queries (e.g., `(Category = Walls AND Level = Level 1) OR (Category = Doors)`).
+- **Supported Parameters**: Filter by Category, Level, MEP System, Zone, Workset, Phase, System Classification, and MEP Domain.
+- **Application**: Click **Apply** to run the query. The window will close, the selected scope will be checked in the main "Select" card, and the matching elements will be checked in the explorer tree.
 
 ### Semantic Grouping & Sorting
 You can dynamically restructure the explorer's hierarchy by grouping elements semantically. Toggle the grouping options on/off to sort elements by:
@@ -85,6 +103,15 @@ Expand your current selection based on advanced relational and geometric rules. 
 
 ### Interactive Element Picking (Pick in Revit)
 Click the Pick Elements button to temporarily hide the FilterPlus window and select objects directly in the Revit viewport. Once selection is complete, the window automatically reappears, and the new elements are loaded into the tree view and checked.
+
+### Persistent Saved Selections
+FilterPlus allows you to save and recover element selections persistently across sessions inside your Revit project.
+- **Dropdown List**: Displays already saved selections. The first element is a blank placeholder representing "no selection active".
+- **Recover Button**: Relocates your selection context to the saved active models, checks the saved elements inside the explorer tree, and highlights/selects them in Revit. This button is only enabled when a valid selection set is chosen.
+- **Save Button**: Opens a separate modal window (`Save Selection`) offering two actions:
+  - **Save New (Row 1)**: Type a new name in the TextBox to save the current selection context. The button activates only after text is input.
+  - **Overwrite Existing (Row 2)**: Select an existing selection from the ComboBox to replace its contents. The button activates only after a selection is picked.
+  - Both operations require confirmation via a native Revit message box before saving.
 
 ---
 

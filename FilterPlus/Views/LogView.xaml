@@ -4,6 +4,7 @@
         xmlns:viewmodels="clr-namespace:FilterPlus.ViewModels"
         Title="FilterPlus Debug Log" Height="400" Width="600"
         WindowStartupLocation="Manual"
+        Icon="pack://application:,,,/FilterPlus;component/Resources/Icons/RibbonIcon32.png"
         Topmost="True" Background="#1e1e1e">
     <Window.DataContext>
         <viewmodels:LogViewModel/>

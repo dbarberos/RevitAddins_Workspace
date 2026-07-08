@@ -21,6 +21,7 @@ Guide the development of modern, Windows 11-style Fluent Design interfaces insid
 
 ## References
 - [Fluent Integration Guide](file:///b:/REVIT/C%23/RevitAddins_Workspace/.agents/skills/integrating-wpfui-fluent/references/fluent_integration_guide.md)
+- [Debugging: WPF ScrollViewer FlowDirection and Margins](file:///c:/Users/david.barbero/Documents/DOCUMENTOS/ALTEN/Workbench/RevitAddins_Workspace/RevitAddins_Workspace/.agents/skills/integrating-wpfui-fluent/references/debugging_wpf_rtl_scrollviewer_margins_2026-07-02.md)
 
 ## Assets
 - [FluentSetupTemplates.cs](file:///b:/REVIT/C%23/RevitAddins_Workspace/.agents/skills/integrating-wpfui-fluent/assets/FluentSetupTemplates.cs): C# boilerplate for HostBuilder DI, MainWindow initialization, and ViewModels.

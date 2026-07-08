@@ -81,7 +81,21 @@ public partial class SelectionFilterViewModel : ObservableObject
     private List<string> _activeGroupings = new List<string>();
 
     [ObservableProperty] private SelectionScope _currentScope = SelectionScope.CurrentSelection;
-    private HashSet<Autodesk.Revit.DB.ElementId> _persistentCheckedIds = new(new ElementIdEqualityComparer());
+    private HashSet<ElementSelectionKey> _persistentCheckedIds = new();
+    private HashSet<ElementSelectionKey> _lastAppliedCheckedIds = new();
+    [ObservableProperty] private bool _isSelectionDirty;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsSavedSelectionSelected))]
+    private SavedSelection _selectedSavedSelection;
+
+    public bool IsSavedSelectionSelected => SelectedSavedSelection != null && !string.IsNullOrEmpty(SelectedSavedSelection.Name);
+
+    public ObservableCollection<SavedSelection> SavedSelections { get; } = new();
+
+    [ObservableProperty] private ObservableCollection<RevitModelRepresentation> _availableModels = new();
+    public List<RevitModelRepresentation> SelectedModels { get; private set; } = new();
+    [ObservableProperty] private string _selectedModelsText;
 
     [RelayCommand]
     private void ExpandAll()
@@ -193,6 +207,77 @@ public partial class SelectionFilterViewModel : ObservableObject
         configView.ShowDialog();
     }
 
+    public List<ElementModel> AllModelElements => _allModelElements;
+    public List<ElementModel> ElementsVisibleInView => _elementsVisibleInViewElements;
+    public List<ElementModel> ElementsBelongingToView => _elementsBelongingToViewElements;
+
+    public List<ElementModel> GetAllElementsCombined()
+    {
+        return _allModelElements
+            .Concat(_elementsVisibleInViewElements)
+            .Concat(_elementsBelongingToViewElements)
+            .Concat(_currentSelectionElements)
+            .GroupBy(e => new ElementSelectionKey(e.Id, e.LinkInstanceId))
+            .Select(g => g.First())
+            .ToList();
+    }
+
+    [RelayCommand]
+    private void OpenPreSelection()
+    {
+        try
+        {
+            LoggerService.LogInfo("Opening Pre-Selection window...");
+            Views.PreSelectionView preSelView = null;
+            var viewModel = new PreSelectionViewModel(this, () => preSelView?.Close());
+            
+            preSelView = new Views.PreSelectionView(viewModel);
+            
+            if (System.Windows.Application.Current != null)
+            {
+                var owner = System.Windows.Application.Current.Windows
+                    .OfType<System.Windows.Window>()
+                    .FirstOrDefault(w => w is Views.SelectionFilterView);
+                if (owner != null)
+                {
+                    preSelView.Owner = owner;
+                }
+            }
+            
+            LoggerService.LogInfo("Showing Pre-Selection dialog...");
+            preSelView.ShowDialog();
+        }
+        catch (Exception ex)
+        {
+            LoggerService.LogError("OpenPreSelection Command Error", ex);
+        }
+    }
+
+    public void ApplyPreSelection(HashSet<ElementSelectionKey> matchingKeys, SelectionScope targetScope)
+    {
+        try
+        {
+            LoggerService.LogInfo($"[ApplyPreSelection] Applying matching keys: {matchingKeys.Count} on scope: {targetScope}. IsBulkUpdating: {TreeItemViewModel.IsBulkUpdating}");
+
+            _persistentCheckedIds = matchingKeys;
+            CheckedElementsCount = _persistentCheckedIds.Count;
+
+            if (CurrentScope == targetScope)
+            {
+                BuildTree();
+            }
+            else
+            {
+                CurrentScope = targetScope;
+            }
+            LoggerService.LogInfo($"[ApplyPreSelection] Complete. Checked count is now {CheckedElementsCount}");
+        }
+        catch (Exception ex)
+        {
+            LoggerService.LogError("ApplyPreSelection", ex);
+        }
+    }
+
     private bool _isRestoringState = false;
     private bool _isInitializing = false;
     private int _lastExpandedDepth = 0;
@@ -207,6 +292,10 @@ public partial class SelectionFilterViewModel : ObservableObject
         {
             ApplyFilter();
         }
+        else
+        {
+            UpdateIsSelectionDirty();
+        }
     }
 
     /// <summary>
@@ -219,31 +308,62 @@ public partial class SelectionFilterViewModel : ObservableObject
         
         try 
         {
+            // Populate AvailableModels (in Revit API Context)
+            var hostDoc = _selectionService.Document;
+            AvailableModels.Add(new RevitModelRepresentation("Active Model: " + hostDoc.Title, null, hostDoc));
+
+            var linkCollector = new Autodesk.Revit.DB.FilteredElementCollector(hostDoc)
+                .OfClass(typeof(Autodesk.Revit.DB.RevitLinkInstance));
+
+            foreach (var el in linkCollector)
+            {
+                if (el is Autodesk.Revit.DB.RevitLinkInstance linkInst)
+                {
+                    var linkedDoc = linkInst.GetLinkDocument();
+                    if (linkedDoc != null)
+                    {
+                        AvailableModels.Add(new RevitModelRepresentation($"Link: {linkInst.Name}", linkInst, linkedDoc));
+                    }
+                }
+            }
+
+            // Default selection: Active Model
+            var initialModel = AvailableModels.FirstOrDefault();
+            if (initialModel != null)
+            {
+                SelectedModels.Add(initialModel);
+                SelectedModelsText = initialModel.DisplayName;
+            }
+
             // 1. Get initial selection IDs from Revit (safe: API context)
-            _persistentCheckedIds = _selectionService.GetInitialSelectionIds();
+            var hostInitialIds = _selectionService.GetInitialSelectionIds();
+            _persistentCheckedIds = hostInitialIds.Select(id => new ElementSelectionKey(id, ElementId.InvalidElementId)).ToHashSet();
+            _lastAppliedCheckedIds = new HashSet<ElementSelectionKey>(_persistentCheckedIds);
+            IsSelectionDirty = false;
             LoggerService.LogInfo($"Initial selection IDs count: {_persistentCheckedIds.Count}");
 
             // 2. Pre-fetch all scopes NOW (we are in Revit API thread)
             LoggerService.LogInfo("Pre-fetching CurrentSelection elements...");
-            _currentSelectionElements = _selectionService.GetAvailableElements(SelectionScope.CurrentSelection);
+            _currentSelectionElements = _selectionService.GetAvailableElements(SelectionScope.CurrentSelection, SelectedModels);
             LoggerService.LogInfo($"CurrentSelection: {_currentSelectionElements.Count} elements.");
 
-            LoggerService.LogInfo("Pre-fetching ElementsVisibleInView elements...");
-            _elementsVisibleInViewElements = _selectionService.GetAvailableElements(SelectionScope.ElementsVisibleInView);
+            // Add check to ensure we don't get null reference
+            _elementsVisibleInViewElements = _selectionService.GetAvailableElements(SelectionScope.ElementsVisibleInView, SelectedModels);
             LoggerService.LogInfo($"ElementsVisibleInView: {_elementsVisibleInViewElements.Count} elements.");
 
-            LoggerService.LogInfo("Pre-fetching ElementsBelongingToView elements...");
-            _elementsBelongingToViewElements = _selectionService.GetAvailableElements(SelectionScope.ElementsBelongingToView);
+            _elementsBelongingToViewElements = _selectionService.GetAvailableElements(SelectionScope.ElementsBelongingToView, SelectedModels);
             LoggerService.LogInfo($"ElementsBelongingToView: {_elementsBelongingToViewElements.Count} elements.");
 
-            LoggerService.LogInfo("Pre-fetching AllModelElements elements...");
-            var allRaw = _selectionService.GetAvailableElements(SelectionScope.AllModelElements);
+            var allRaw = _selectionService.GetAvailableElements(SelectionScope.AllModelElements, SelectedModels);
             _allModelElements = allRaw.Count > 10000 ? allRaw.Take(10000).ToList() : allRaw;
             LoggerService.LogInfo($"AllModelElements: {_allModelElements.Count} elements (raw: {allRaw.Count}).");
 
             // 3. Build tree for the default scope (CurrentSelection)
             _activeElements = _currentSelectionElements;
             BuildTree();
+
+            // Load saved selections from extensible storage
+            LoadSelectionsFromDocument();
         }
         catch (Exception ex)
         {
@@ -256,8 +376,6 @@ public partial class SelectionFilterViewModel : ObservableObject
     /// </summary>
     partial void OnCurrentScopeChanged(SelectionScope value)
     {
-        if (TreeItemViewModel.IsBulkUpdating) return;
-
         try
         {
             LoggerService.LogInfo($"Scope switched to: {value}. Rebuilding tree from pre-fetched data...");
@@ -278,6 +396,111 @@ public partial class SelectionFilterViewModel : ObservableObject
         {
             LoggerService.LogError("OnCurrentScopeChanged", ex);
         }
+    }
+
+    [RelayCommand]
+    private void OpenModelSelection()
+    {
+        try
+        {
+            LoggerService.LogInfo("Opening Model Selection window...");
+            Views.ModelSelectionView view = null;
+            var viewModel = new ModelSelectionViewModel(AvailableModels.ToList(), SelectedModels, (selected) => 
+            {
+                ApplySelectedModels(selected);
+                view?.Close();
+            }, () => view?.Close());
+            
+            view = new Views.ModelSelectionView(viewModel);
+            
+            if (System.Windows.Application.Current != null)
+            {
+                var owner = System.Windows.Application.Current.Windows
+                    .OfType<System.Windows.Window>()
+                    .FirstOrDefault(w => w is Views.SelectionFilterView);
+                if (owner != null)
+                {
+                    view.Owner = owner;
+                }
+            }
+            
+            LoggerService.LogInfo("Showing Model Selection dialog...");
+            view.ShowDialog();
+        }
+        catch (Exception ex)
+        {
+            LoggerService.LogError("OpenModelSelection Command Error", ex);
+        }
+    }
+
+    public void ApplySelectedModels(List<RevitModelRepresentation> selected)
+    {
+        if (selected == null || !selected.Any()) return;
+        if (_actionHandler == null || _actionExternalEvent == null) return;
+
+        // Save selected models list
+        SelectedModels.Clear();
+        SelectedModels.AddRange(selected);
+
+        // Update display text
+        if (SelectedModels.Count == 1)
+        {
+            SelectedModelsText = SelectedModels.First().DisplayName;
+        }
+        else
+        {
+            SelectedModelsText = $"Multiple models selected ({SelectedModels.Count})";
+        }
+
+        LoggerService.LogInfo($"[ApplySelectedModels] Switching context to: {SelectedModelsText}");
+        StatusMessage = "Switching model context...";
+        IsBusy = true;
+
+        System.Windows.Threading.Dispatcher.CurrentDispatcher.Invoke(
+            System.Windows.Threading.DispatcherPriority.Background,
+            new Action(delegate { }));
+
+        _actionHandler.Raise(() =>
+        {
+            try
+            {
+                // Clear selection state
+                _persistentCheckedIds.Clear();
+                _lastAppliedCheckedIds.Clear();
+                
+                // Pre-fetch all scopes for the selected models combined
+                _currentSelectionElements = _selectionService.GetAvailableElements(SelectionScope.CurrentSelection, SelectedModels);
+                _elementsVisibleInViewElements = _selectionService.GetAvailableElements(SelectionScope.ElementsVisibleInView, SelectedModels);
+                _elementsBelongingToViewElements = _selectionService.GetAvailableElements(SelectionScope.ElementsBelongingToView, SelectedModels);
+                
+                var allRaw = _selectionService.GetAvailableElements(SelectionScope.AllModelElements, SelectedModels);
+                _allModelElements = allRaw.Count > 10000 ? allRaw.Take(10000).ToList() : allRaw;
+
+                // Sync active elements based on current scope
+                _activeElements = CurrentScope switch
+                {
+                    SelectionScope.CurrentSelection => _currentSelectionElements,
+                    SelectionScope.ElementsVisibleInView => _elementsVisibleInViewElements,
+                    SelectionScope.ElementsBelongingToView => _elementsBelongingToViewElements,
+                    SelectionScope.AllModelElements => _allModelElements,
+                    _                               => _currentSelectionElements
+                };
+
+                // Rebuild the TreeView
+                BuildTree();
+                IsSelectionDirty = false;
+                StatusMessage = $"Ready ({SelectedModelsText})";
+            }
+            catch (Exception ex)
+            {
+                LoggerService.LogError("Switching Model Context Error", ex);
+                StatusMessage = "Error switching model.";
+            }
+            finally
+            {
+                IsBusy = false;
+            }
+        }, _actionExternalEvent);
     }
 
     partial void OnIsOnly3DModelsChanged(bool value)
@@ -317,13 +540,13 @@ public partial class SelectionFilterViewModel : ObservableObject
     {
         if (_activeElements == null) return;
         
-        var hiddenIds = _activeElements.Where(isHiddenPredicate).Select(e => e.Id).ToList();
+        var hiddenKeys = _activeElements.Where(isHiddenPredicate).Select(e => new ElementSelectionKey(e.Id, e.LinkInstanceId)).ToList();
         bool changed = false;
-        foreach (var id in hiddenIds)
+        foreach (var key in hiddenKeys)
         {
-            if (_persistentCheckedIds.Contains(id))
+            if (_persistentCheckedIds.Contains(key))
             {
-                _persistentCheckedIds.Remove(id);
+                _persistentCheckedIds.Remove(key);
                 changed = true;
             }
         }
@@ -375,7 +598,12 @@ public partial class SelectionFilterViewModel : ObservableObject
     /// <summary>Rebuilds dropdowns and the tree from _activeElements. Safe to call from UI thread.</summary>
     private void BuildTree()
     {
+        StatusMessage = "Rebuilding tree explorer...";
         IsBusy = true;
+        System.Windows.Threading.Dispatcher.CurrentDispatcher.Invoke(
+            System.Windows.Threading.DispatcherPriority.Background,
+            new Action(delegate { }));
+
         TreeItemViewModel.IsBulkUpdating = true;
         LoggerService.LogInfo($"BuildTree: {_activeElements.Count} elements for scope {CurrentScope}.");
 
@@ -490,6 +718,7 @@ public partial class SelectionFilterViewModel : ObservableObject
                     var elNode = new TreeItemViewModel(element.Id.ToString(), typeNode, typeNode.Level + 1, OnTreeSelectionChanged)
                     {
                         ElementId = element.Id,
+                        LinkInstanceId = element.LinkInstanceId,
                         SearchableMetadata = element.SearchableMetadata
                     };
                     typeNode.Children.Add(elNode);
@@ -599,11 +828,11 @@ public partial class SelectionFilterViewModel : ObservableObject
         }
     }
 
-    private bool ApplyInitialSelection(TreeItemViewModel node, HashSet<Autodesk.Revit.DB.ElementId> selectedIds, bool forceExpand)
+    private bool ApplyInitialSelection(TreeItemViewModel node, HashSet<ElementSelectionKey> selectedKeys, bool forceExpand)
     {
         if (node.Children.Count == 0)
         {
-            if (node.ElementId != null && selectedIds.Contains(node.ElementId))
+            if (node.ElementId != null && selectedKeys.Contains(new ElementSelectionKey(node.ElementId, node.LinkInstanceId)))
             {
                 node.IsChecked = true;
                 return true;
@@ -614,7 +843,7 @@ public partial class SelectionFilterViewModel : ObservableObject
         bool hasCheckedChildren = false;
         foreach (var child in node.Children)
         {
-            if (ApplyInitialSelection(child, selectedIds, forceExpand))
+            if (ApplyInitialSelection(child, selectedKeys, forceExpand))
                 hasCheckedChildren = true;
         }
 
@@ -646,26 +875,26 @@ public partial class SelectionFilterViewModel : ObservableObject
         _pickElementsEvent?.Raise();
     }
 
-    public void OnPickElementsFinished(List<Autodesk.Revit.DB.ElementId> newIds)
+    public void OnPickElementsFinished(List<ElementSelectionKey> newKeys)
     {
         var dispatcher = System.Windows.Threading.Dispatcher.CurrentDispatcher;
         dispatcher.InvokeAsync(() =>
         {
-            if (newIds != null && newIds.Count > 0)
+            if (newKeys != null && newKeys.Count > 0)
             {
                 // Add new IDs to the persistent selection
-                foreach (var id in newIds)
+                foreach (var key in newKeys)
                 {
-                    _persistentCheckedIds.Add(id);
+                    _persistentCheckedIds.Add(key);
                 }
 
                 // Ensure newly picked elements are injected into the active elements so they show up in the tree!
-                var allKnownById = _allModelElements.ToDictionary(e => e.Id);
-                foreach (var id in newIds)
+                var allKnownByKey = _allModelElements.ToDictionary(e => new ElementSelectionKey(e.Id, e.LinkInstanceId));
+                foreach (var key in newKeys)
                 {
-                    if (allKnownById.TryGetValue(id, out var model))
+                    if (allKnownByKey.TryGetValue(key, out var model))
                     {
-                        if (_activeElements != null && !_activeElements.Any(e => e.Id == id))
+                        if (_activeElements != null && !_activeElements.Any(e => e.Id == key.ElementId && e.LinkInstanceId == key.LinkInstanceId))
                         {
                             _activeElements.Add(model);
                         }
@@ -683,16 +912,36 @@ public partial class SelectionFilterViewModel : ObservableObject
 
     private void UpdatePersistentCheckedIdsFromTree()
     {
-        var selectedIdsInTree = new List<Autodesk.Revit.DB.ElementId>();
-        foreach (var node in RootNodes) node.GetAllSelectedIds(selectedIdsInTree);
+        var selectedKeysInTree = new List<ElementSelectionKey>();
+        foreach (var node in RootNodes) node.GetAllSelectedKeys(selectedKeysInTree);
 
-        var activeElementIds = _activeElements?.Select(e => e.Id).ToHashSet() ?? new HashSet<Autodesk.Revit.DB.ElementId>();
+        var activeKeys = _activeElements?.Select(e => new ElementSelectionKey(e.Id, e.LinkInstanceId)).ToHashSet() 
+            ?? new HashSet<ElementSelectionKey>();
         
-        // Mantener los IDs que estaban checkeados pero que no pertenecen al scope/filtro actual
-        var idsFromOtherScopes = _persistentCheckedIds.Where(id => !activeElementIds.Contains(id));
+        var keysFromOtherScopes = _persistentCheckedIds.Where(k => !activeKeys.Contains(k));
         
-        _persistentCheckedIds = selectedIdsInTree.Concat(idsFromOtherScopes).ToHashSet();
+        _persistentCheckedIds = selectedKeysInTree.Concat(keysFromOtherScopes).ToHashSet();
         CheckedElementsCount = _persistentCheckedIds.Count;
+    }
+
+    private void UpdateIsSelectionDirty()
+    {
+        if (_persistentCheckedIds.Count != _lastAppliedCheckedIds.Count)
+        {
+            IsSelectionDirty = true;
+            return;
+        }
+
+        foreach (var key in _persistentCheckedIds)
+        {
+            if (!_lastAppliedCheckedIds.Contains(key))
+            {
+                IsSelectionDirty = true;
+                return;
+            }
+        }
+
+        IsSelectionDirty = false;
     }
 
     [RelayCommand]
@@ -703,31 +952,34 @@ public partial class SelectionFilterViewModel : ObservableObject
             // ── 1. Actualizar el estado persistente de IDs marcados ────────────────
             UpdatePersistentCheckedIdsFromTree();
 
-            var finalIds = _persistentCheckedIds.ToList();
-            StatusMessage = $"Seleccionados: {finalIds.Count}";
+            var finalKeys = _persistentCheckedIds.ToList();
+            StatusMessage = $"Seleccionados: {finalKeys.Count}";
 
             // ── 2. Aplicar la selección en Revit ───────────────────────────────────
-            _selectionService.SetSelection(finalIds);
+            _selectionService.SetSelection(finalKeys);
 
             // ── 4. Reconstruir _currentSelectionElements desde TODOS los scopes ────
             // Buscamos el ElementModel de cada ID seleccionado en el pool completo,
             // así no se pierden elementos que no estuvieran en el scope activo actual.
-            var allKnownById = _currentSelectionElements
+            var allKnownByKey = _currentSelectionElements
                 .Concat(_elementsVisibleInViewElements)
                 .Concat(_elementsBelongingToViewElements)
                 .Concat(_allModelElements)
-                .GroupBy(e => e.Id)
+                .GroupBy(e => new ElementSelectionKey(e.Id, e.LinkInstanceId))
                 .Select(g => g.First())
-                .ToDictionary(e => e.Id);
+                .ToDictionary(e => new ElementSelectionKey(e.Id, e.LinkInstanceId));
 
             _currentSelectionElements = _persistentCheckedIds
-                .Where(id => allKnownById.ContainsKey(id))
-                .Select(id => allKnownById[id])
+                .Where(key => allKnownByKey.ContainsKey(key))
+                .Select(key => allKnownByKey[key])
                 .ToList();
 
             LoggerService.LogInfo(
-                $"Apply Selection: {_persistentCheckedIds.Count} IDs applied. " +
+                $"Apply Selection: {_persistentCheckedIds.Count} elements applied. " +
                 $"CurrentSelection updated to {_currentSelectionElements.Count} elements.");
+
+            _lastAppliedCheckedIds = new HashSet<ElementSelectionKey>(_persistentCheckedIds);
+            IsSelectionDirty = false;
 
             // Clear search text if it exists, without reverting the selection in the UI
             if (!string.IsNullOrEmpty(FilterText))
@@ -753,8 +1005,22 @@ public partial class SelectionFilterViewModel : ObservableObject
         SelectedType = "Todos";
         SelectedLevel = "Todos";
         SelectedWorkset = "Todos";
-        foreach(var node in RootNodes) node.IsChecked = false;
-        ApplyFilter();
+
+        TreeItemViewModel.IsBulkUpdating = true;
+        foreach (var node in RootNodes) node.IsChecked = false;
+        TreeItemViewModel.IsBulkUpdating = false;
+
+        _persistentCheckedIds.Clear();
+        CheckedElementsCount = 0;
+
+        if (IsLiveSelection)
+        {
+            ApplyFilter();
+        }
+        else
+        {
+            UpdateIsSelectionDirty();
+        }
     }
 
     [RelayCommand]
@@ -763,52 +1029,65 @@ public partial class SelectionFilterViewModel : ObservableObject
         string searchText = FilterText;
         if (string.IsNullOrWhiteSpace(searchText)) return;
 
-        System.Text.RegularExpressions.Regex searchRegex = null;
+        StatusMessage = "Applying search filter...";
+        IsBusy = true;
+        System.Windows.Threading.Dispatcher.CurrentDispatcher.Invoke(
+            System.Windows.Threading.DispatcherPriority.Background,
+            new Action(delegate { }));
 
-        if (IsUseRegex)
+        try
         {
-            try
+            System.Text.RegularExpressions.Regex searchRegex = null;
+
+            if (IsUseRegex)
             {
-                // Compile regex with a 2-second timeout to prevent ReDoS (Regular Expression Denial of Service) attacks
-                searchRegex = new System.Text.RegularExpressions.Regex(
-                    searchText, 
-                    System.Text.RegularExpressions.RegexOptions.IgnoreCase | System.Text.RegularExpressions.RegexOptions.Compiled,
-                    TimeSpan.FromSeconds(2));
+                try
+                {
+                    // Compile regex with a 2-second timeout to prevent ReDoS (Regular Expression Denial of Service) attacks
+                    searchRegex = new System.Text.RegularExpressions.Regex(
+                        searchText, 
+                        System.Text.RegularExpressions.RegexOptions.IgnoreCase | System.Text.RegularExpressions.RegexOptions.Compiled,
+                        TimeSpan.FromSeconds(2));
+                }
+                catch (Exception ex)
+                {
+                    // Invalid regex syntax or other parsing error
+                    LoggerService.LogInfo("Invalid regex pattern: " + ex.Message);
+                    StatusMessage = "Invalid Regex Pattern";
+                    return; // Stop the search safely
+                }
             }
-            catch (Exception ex)
+            else
             {
-                // Invalid regex syntax or other parsing error
-                LoggerService.LogInfo("Invalid regex pattern: " + ex.Message);
-                StatusMessage = "Invalid Regex Pattern";
-                return; // Stop the search safely
+                // Only sanitize input if we are NOT using Regex, otherwise we strip valid regex tokens
+                searchText = SecurityUtils.SanitizeInput(searchText).ToLowerInvariant();
             }
+
+            TreeItemViewModel.IsBulkUpdating = true;
+
+            // If Use OR is OFF, the new search replaces the current selection.
+            if (!IsUseOr)
+            {
+                foreach (var node in RootNodes) node.SetCheckedState(false);
+            }
+
+            // Apply the current search matches
+            foreach (var node in RootNodes)
+                FilterNode(node, searchText, searchRegex, false);
+
+            // Ensure parent nodes reflect child states properly
+            foreach (var node in RootNodes) node.RefreshState();
+
+            TreeItemViewModel.IsBulkUpdating = false;
+            OnTreeSelectionChanged();
+
+            // Clear the text box after applying
+            FilterText = string.Empty;
         }
-        else
+        finally
         {
-            // Only sanitize input if we are NOT using Regex, otherwise we strip valid regex tokens
-            searchText = SecurityUtils.SanitizeInput(searchText).ToLowerInvariant();
+            IsBusy = false;
         }
-
-        TreeItemViewModel.IsBulkUpdating = true;
-
-        // If Use OR is OFF, the new search replaces the current selection.
-        if (!IsUseOr)
-        {
-            foreach (var node in RootNodes) node.SetCheckedState(false);
-        }
-
-        // Apply the current search matches
-        foreach (var node in RootNodes)
-            FilterNode(node, searchText, searchRegex, false);
-
-        // Ensure parent nodes reflect child states properly
-        foreach (var node in RootNodes) node.RefreshState();
-
-        TreeItemViewModel.IsBulkUpdating = false;
-        OnTreeSelectionChanged();
-
-        // Clear the text box after applying
-        FilterText = string.Empty;
     }
 
     private FilterPlus.Services.ActionEventHandler _actionHandler;
@@ -825,6 +1104,11 @@ public partial class SelectionFilterViewModel : ObservableObject
 
         LoggerService.LogInfo($"[ApplyIncreaseChecked] START. Current Scope in Select: {CurrentScope}. _activeElements count: {(_activeElements?.Count ?? 0)}.");
         StatusMessage = "Processing...";
+        IsBusy = true;
+
+        System.Windows.Threading.Dispatcher.CurrentDispatcher.Invoke(
+            System.Windows.Threading.DispatcherPriority.Background,
+            new Action(delegate { }));
         
         _actionHandler.Raise(() =>
         {
@@ -832,14 +1116,14 @@ public partial class SelectionFilterViewModel : ObservableObject
             {
                 TreeItemViewModel.IsBulkUpdating = true;
             
-            // 1. Get currently checked ElementIds from the tree
-            var currentCheckedIds = new List<Autodesk.Revit.DB.ElementId>();
+            // 1. Get currently checked ElementKeys from the tree
+            var currentCheckedKeys = new List<ElementSelectionKey>();
             foreach (var node in RootNodes)
-                node.GetAllSelectedIds(currentCheckedIds);
+                node.GetAllSelectedKeys(currentCheckedKeys);
                 
-            LoggerService.LogInfo($"[ApplyIncreaseChecked] Checked elements in explorer tree: {currentCheckedIds.Count}. IDs: {string.Join(", ", currentCheckedIds)}");
+            LoggerService.LogInfo($"[ApplyIncreaseChecked] Checked elements in explorer tree: {currentCheckedKeys.Count}.");
 
-            if (currentCheckedIds.Count == 0)
+            if (currentCheckedKeys.Count == 0)
             {
                 TreeItemViewModel.IsBulkUpdating = false;
                 StatusMessage = "No elements selected in the tree to expand.";
@@ -847,346 +1131,446 @@ public partial class SelectionFilterViewModel : ObservableObject
             }
 
             var doc = _selectionService.Document;
-            var sourceElements = currentCheckedIds.Select(id => doc.GetElement(id)).Where(e => e != null).ToList();
 
-            // 2. Define search domain based on WHERE
-            // Query Revit database directly to avoid any 10,000 pre-fetch limit during selection expansion
-            List<Autodesk.Revit.DB.Element> domainElements;
-            if (IncreaseWhereVisibleInView)
-            {
-                // Match "Elements Visible" (SelectionScope.ElementsVisibleInView)
-                var visibleCollector = new Autodesk.Revit.DB.FilteredElementCollector(doc, doc.ActiveView.Id);
-                domainElements = visibleCollector.WhereElementIsNotElementType().ToElements().ToList();
-                LoggerService.LogInfo($"[ApplyIncreaseChecked] Domain: Visible in current view. Collector count: {domainElements.Count}.");
-            }
-            else if (IncreaseWhereCurrentView)
-            {
-                // Match "Elements in View" (SelectionScope.ElementsBelongingToView)
-                var viewCollector = new Autodesk.Revit.DB.FilteredElementCollector(doc);
-                domainElements = viewCollector.WhereElementIsNotElementType().ToElements()
-                    .Where(el => el.OwnerViewId == doc.ActiveView.Id || el.get_BoundingBox(doc.ActiveView) != null)
-                    .ToList();
-                LoggerService.LogInfo($"[ApplyIncreaseChecked] Domain: Current View. Collector count: {domainElements.Count}.");
-            }
-            else
-            {
-                var modelCollector = new Autodesk.Revit.DB.FilteredElementCollector(doc);
-                domainElements = modelCollector.WhereElementIsNotElementType().ToElements().ToList();
-                LoggerService.LogInfo($"[ApplyIncreaseChecked] Domain: All Model. Collector count: {domainElements.Count}.");
-            }
+            var targets = new HashSet<ElementSelectionKey>();
             
-            var targetIds = new HashSet<Autodesk.Revit.DB.ElementId>(new ElementIdEqualityComparer());
-            
-            // 3. Apply WHAT rules
-            if (IncreaseWhatSameCategory)
+            // Get all active documents we want to expand selection in
+            var docsToProcess = new List<(Document Document, RevitLinkInstance LinkInstance, ElementId LinkInstanceId)>();
+            foreach (var model in SelectedModels)
             {
-                var targetCatIds = new HashSet<Autodesk.Revit.DB.ElementId>(
-                    sourceElements.Select(e => e.Category?.Id).Where(id => id != null),
-                    new ElementIdEqualityComparer()
-                );
-                foreach (var el in domainElements)
-                {
-                    if (el.Category != null && targetCatIds.Contains(el.Category.Id))
-                        targetIds.Add(el.Id);
-                }
-                LoggerService.LogInfo($"[ApplyIncreaseChecked] Checked 'Same Category'. Accumulative targets: {targetIds.Count}.");
+                var targetDoc = model.Document ?? doc;
+                var targetLink = model.LinkInstance;
+                docsToProcess.Add((targetDoc, targetLink, targetLink?.Id ?? ElementId.InvalidElementId));
             }
-            if (IncreaseWhatSameFamily || IncreaseWhatSameType)
-            {
-                var targetFamilyNames = new HashSet<string>();
-                var targetTypeIds = new HashSet<Autodesk.Revit.DB.ElementId>(new ElementIdEqualityComparer());
-                
-                foreach (var el in sourceElements)
-                {
-                    var typeId = el.GetTypeId();
-                    if (typeId != null && typeId != Autodesk.Revit.DB.ElementId.InvalidElementId)
-                    {
-                        targetTypeIds.Add(typeId);
-                        var type = doc.GetElement(typeId) as Autodesk.Revit.DB.ElementType;
-                        if (type != null && !string.IsNullOrEmpty(type.FamilyName))
-                        {
-                            targetFamilyNames.Add(type.FamilyName);
-                        }
-                    }
-                }
-                
-                foreach (var el in domainElements)
-                {
-                    var typeId = el.GetTypeId();
-                    if (typeId == null || typeId == Autodesk.Revit.DB.ElementId.InvalidElementId) continue;
 
-                    if (IncreaseWhatSameType)
+            foreach (var docCtx in docsToProcess)
+            {
+                var keysForDoc = currentCheckedKeys.Where(k => k.LinkInstanceId == docCtx.LinkInstanceId).ToList();
+                if (keysForDoc.Count == 0) continue;
+
+                var sourceElements = new List<Element>();
+                foreach (var key in keysForDoc)
+                {
+                    var el = docCtx.Document.GetElement(key.ElementId);
+                    if (el != null) sourceElements.Add(el);
+                }
+
+                if (sourceElements.Count == 0) continue;
+
+                // 2. Define search domain for this document
+                List<Element> domainElements;
+                if (IncreaseWhereVisibleInView)
+                {
+                    if (docCtx.LinkInstance == null)
                     {
-                        if (targetTypeIds.Contains(typeId))
-                            targetIds.Add(el.Id);
+                        var visibleCollector = new FilteredElementCollector(docCtx.Document, docCtx.Document.ActiveView.Id);
+                        domainElements = visibleCollector.WhereElementIsNotElementType().ToElements().ToList();
                     }
-                    else if (IncreaseWhatSameFamily)
+                    else
                     {
-                        var type = doc.GetElement(typeId) as Autodesk.Revit.DB.ElementType;
-                        if (type != null && !string.IsNullOrEmpty(type.FamilyName) && targetFamilyNames.Contains(type.FamilyName))
+                        var allCollector = new FilteredElementCollector(docCtx.Document);
+                        var rawElements = allCollector.WhereElementIsNotElementType().ToElements();
+                        domainElements = new List<Element>();
+                        Outline hostViewOutline = null;
+                        var activeView = doc.ActiveView;
+                        if (activeView != null)
                         {
-                            targetIds.Add(el.Id);
-                        }
-                    }
-                }
-                LoggerService.LogInfo($"[ApplyIncreaseChecked] Checked 'Same Family/Type'. Accumulative targets: {targetIds.Count}.");
-            }
-            if (IncreaseWhatSameWorkset && doc.IsWorkshared)
-            {
-                var targetWorksetIds = sourceElements.Select(e => e.WorksetId).Where(id => id != Autodesk.Revit.DB.WorksetId.InvalidWorksetId).ToHashSet();
-                foreach (var el in domainElements)
-                {
-                    if (targetWorksetIds.Contains(el.WorksetId))
-                        targetIds.Add(el.Id);
-                }
-                LoggerService.LogInfo($"[ApplyIncreaseChecked] Checked 'Same Workset'. Accumulative targets: {targetIds.Count}.");
-            }
-            if (IncreaseWhatHostOfElement)
-            {
-                foreach (var el in sourceElements)
-                {
-                    if (el is Autodesk.Revit.DB.FamilyInstance fi && fi.Host != null)
-                        targetIds.Add(fi.Host.Id);
-                }
-                LoggerService.LogInfo($"[ApplyIncreaseChecked] Checked 'Host of Element'. Accumulative targets: {targetIds.Count}.");
-            }
-            if (IncreaseWhatHostedElements)
-            {
-                var sourceIdsHash = sourceElements.Select(e => e.Id).ToHashSet();
-                foreach (var el in domainElements)
-                {
-                    if (el is Autodesk.Revit.DB.FamilyInstance fi && fi.Host != null && sourceIdsHash.Contains(fi.Host.Id))
-                        targetIds.Add(el.Id);
-                }
-                LoggerService.LogInfo($"[ApplyIncreaseChecked] Checked 'Hosted Elements'. Accumulative targets: {targetIds.Count}.");
-            }
-            if (IncreaseWhatNestedElements)
-            {
-                foreach (var el in sourceElements)
-                {
-                    if (el is Autodesk.Revit.DB.FamilyInstance fi)
-                    {
-                        var subComponents = fi.GetSubComponentIds();
-                        foreach (var subId in subComponents) targetIds.Add(subId);
-                    }
-                }
-                LoggerService.LogInfo($"[ApplyIncreaseChecked] Checked 'Nested Elements'. Accumulative targets: {targetIds.Count}.");
-            }
-            if (IncreaseWhatJoinedElements)
-            {
-                foreach (var el in sourceElements)
-                {
-                    try {
-                        var joined = Autodesk.Revit.DB.JoinGeometryUtils.GetJoinedElements(doc, el);
-                        foreach (var jId in joined) targetIds.Add(jId);
-                    } catch {} // Fails for elements that cannot be joined
-                }
-                LoggerService.LogInfo($"[ApplyIncreaseChecked] Checked 'Joined Elements'. Accumulative targets: {targetIds.Count}.");
-            }
-            if (IncreaseWhatSupercomponent)
-            {
-                foreach (var el in sourceElements)
-                {
-                    if (el is Autodesk.Revit.DB.FamilyInstance fi && fi.SuperComponent != null)
-                    {
-                        targetIds.Add(fi.SuperComponent.Id);
-                    }
-                }
-                LoggerService.LogInfo($"[ApplyIncreaseChecked] Checked 'Supercomponent'. Accumulative targets: {targetIds.Count}.");
-            }
-            if (IncreaseWhatGroupOfAssembly)
-            {
-                foreach (var el in sourceElements)
-                {
-                    if (el.GroupId != Autodesk.Revit.DB.ElementId.InvalidElementId)
-                    {
-                        var group = doc.GetElement(el.GroupId) as Autodesk.Revit.DB.Group;
-                        if (group != null)
-                        {
-                            foreach (var memberId in group.GetMemberIds()) targetIds.Add(memberId);
-                        }
-                    }
-                    if (el.AssemblyInstanceId != Autodesk.Revit.DB.ElementId.InvalidElementId)
-                    {
-                        var assembly = doc.GetElement(el.AssemblyInstanceId) as Autodesk.Revit.DB.AssemblyInstance;
-                        if (assembly != null)
-                        {
-                            foreach (var memberId in assembly.GetMemberIds()) targetIds.Add(memberId);
-                        }
-                    }
-                }
-                LoggerService.LogInfo($"[ApplyIncreaseChecked] Checked 'Group or Assembly'. Accumulative targets: {targetIds.Count}.");
-            }
-            if (IncreaseWhatDependent)
-            {
-                foreach (var el in sourceElements)
-                {
-                    try
-                    {
-                        var dependentIds = el.GetDependentElements(null);
-                        foreach (var depId in dependentIds) targetIds.Add(depId);
-                    } catch {}
-                }
-                LoggerService.LogInfo($"[ApplyIncreaseChecked] Checked 'Dependent Elements'. Accumulative targets: {targetIds.Count}.");
-            }
-            if (IncreaseWhatIntersects && domainElements.Count > 0)
-            {
-                var domainIds = domainElements.Select(e => e.Id).ToList();
-                foreach (var el in sourceElements)
-                {
-                    try
-                    {
-                        var intersects = new Autodesk.Revit.DB.FilteredElementCollector(doc, domainIds)
-                            .WherePasses(new Autodesk.Revit.DB.ElementIntersectsElementFilter(el))
-                            .ToElementIds();
-                        foreach (var id in intersects) targetIds.Add(id);
-                    }
-                    catch { } // Some elements cannot be used in intersection filters
-                }
-                LoggerService.LogInfo($"[ApplyIncreaseChecked] Checked 'Intersects'. Accumulative targets: {targetIds.Count}.");
-            }
-            if (IncreaseWhatSameMEPSystem)
-            {
-                foreach (var el in sourceElements)
-                {
-                    Autodesk.Revit.DB.ConnectorManager cm = null;
-                    if (el is Autodesk.Revit.DB.FamilyInstance fi && fi.MEPModel != null)
-                        cm = fi.MEPModel.ConnectorManager;
-                    else if (el is Autodesk.Revit.DB.MEPCurve mepCurve)
-                        cm = mepCurve.ConnectorManager;
-                    
-                    if (cm != null)
-                    {
-                        foreach (Autodesk.Revit.DB.Connector conn in cm.Connectors)
-                        {
-                            var mepSystem = conn.MEPSystem;
-                            if (mepSystem != null)
+                            try
                             {
-                                foreach (Autodesk.Revit.DB.Element sysEl in mepSystem.Elements)
-                                    targetIds.Add(sysEl.Id);
+                                if (activeView.CropBoxActive)
+                                {
+                                    var cropBox = activeView.CropBox;
+                                    hostViewOutline = new Outline(cropBox.Min, cropBox.Max);
+                                }
+                                else
+                                {
+                                    var viewOutline = activeView.get_BoundingBox(null);
+                                    if (viewOutline != null)
+                                    {
+                                        hostViewOutline = new Outline(viewOutline.Min, viewOutline.Max);
+                                    }
+                                }
+                            }
+                            catch {}
+                        }
+                        var totalTransform = docCtx.LinkInstance.GetTotalTransform();
+                        foreach (var el in rawElements)
+                        {
+                            var localBox = el.get_BoundingBox(null);
+                            if (localBox == null) continue;
+                            if (hostViewOutline != null && totalTransform != null)
+                            {
+                                XYZ minHost = totalTransform.OfPoint(localBox.Min);
+                                XYZ maxHost = totalTransform.OfPoint(localBox.Max);
+                                double minX = Math.Min(minHost.X, maxHost.X);
+                                double minY = Math.Min(minHost.Y, maxHost.Y);
+                                double minZ = Math.Min(minHost.Z, maxHost.Z);
+                                double maxX = Math.Max(minHost.X, maxHost.X);
+                                double maxY = Math.Max(minHost.Y, maxHost.Y);
+                                double maxZ = Math.Max(minHost.Z, maxHost.Z);
+                                var elOutline = new Outline(new XYZ(minX, minY, minZ), new XYZ(maxX, maxY, maxZ));
+                                if (hostViewOutline.Intersects(elOutline, 0.001))
+                                {
+                                    domainElements.Add(el);
+                                }
+                            }
+                            else
+                            {
+                                domainElements.Add(el);
                             }
                         }
                     }
                 }
-                LoggerService.LogInfo($"[ApplyIncreaseChecked] Checked 'MEP System'. Accumulative targets: {targetIds.Count}.");
-            }
-            
-            // 4. Unify with current and other scopes
-            var activeElementIds = new HashSet<Autodesk.Revit.DB.ElementId>(
-                _activeElements?.Select(e => e.Id) ?? System.Linq.Enumerable.Empty<Autodesk.Revit.DB.ElementId>(),
-                new ElementIdEqualityComparer()
-            );
-            var idsFromOtherScopes = _persistentCheckedIds.Where(id => !activeElementIds.Contains(id)).ToList();
+                else if (IncreaseWhereCurrentView)
+                {
+                    if (docCtx.LinkInstance == null)
+                    {
+                        var viewCollector = new FilteredElementCollector(docCtx.Document);
+                        domainElements = viewCollector.WhereElementIsNotElementType().ToElements()
+                            .Where(el => el.OwnerViewId == docCtx.Document.ActiveView.Id || el.get_BoundingBox(docCtx.Document.ActiveView) != null)
+                            .ToList();
+                    }
+                    else
+                    {
+                        var allCollector = new FilteredElementCollector(docCtx.Document);
+                        var rawElements = allCollector.WhereElementIsNotElementType().ToElements();
+                        domainElements = new List<Element>();
+                        Outline hostViewOutline = null;
+                        var activeView = doc.ActiveView;
+                        if (activeView != null)
+                        {
+                            try
+                            {
+                                if (activeView.CropBoxActive)
+                                {
+                                    var cropBox = activeView.CropBox;
+                                    hostViewOutline = new Outline(cropBox.Min, cropBox.Max);
+                                }
+                                else
+                                {
+                                    var viewOutline = activeView.get_BoundingBox(null);
+                                    if (viewOutline != null)
+                                    {
+                                        hostViewOutline = new Outline(viewOutline.Min, viewOutline.Max);
+                                    }
+                                }
+                            }
+                            catch {}
+                        }
+                        var totalTransform = docCtx.LinkInstance.GetTotalTransform();
+                        foreach (var el in rawElements)
+                        {
+                            var localBox = el.get_BoundingBox(null);
+                            if (localBox == null) continue;
+                            if (hostViewOutline != null && totalTransform != null)
+                            {
+                                XYZ minHost = totalTransform.OfPoint(localBox.Min);
+                                XYZ maxHost = totalTransform.OfPoint(localBox.Max);
+                                double minX = Math.Min(minHost.X, maxHost.X);
+                                double minY = Math.Min(minHost.Y, maxHost.Y);
+                                double minZ = Math.Min(minHost.Z, maxHost.Z);
+                                double maxX = Math.Max(minHost.X, maxHost.X);
+                                double maxY = Math.Max(minHost.Y, maxHost.Y);
+                                double maxZ = Math.Max(minHost.Z, maxHost.Z);
+                                var elOutline = new Outline(new XYZ(minX, minY, minZ), new XYZ(maxX, maxY, maxZ));
+                                if (hostViewOutline.Intersects(elOutline, 0.001))
+                                {
+                                    domainElements.Add(el);
+                                }
+                            }
+                            else
+                            {
+                                domainElements.Add(el);
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    var modelCollector = new FilteredElementCollector(docCtx.Document);
+                    domainElements = modelCollector.WhereElementIsNotElementType().ToElements().ToList();
+                }
 
-            var finalCheckedIds = new HashSet<Autodesk.Revit.DB.ElementId>(new ElementIdEqualityComparer());
+                var docTargetIds = new HashSet<ElementId>();
+
+                // 3. Apply WHAT rules
+                if (IncreaseWhatSameCategory)
+                {
+                    var targetCatIds = new HashSet<ElementId>(
+                        sourceElements.Select(e => e.Category?.Id).Where(id => id != null)
+                    );
+                    foreach (var el in domainElements)
+                    {
+                        if (el.Category != null && targetCatIds.Contains(el.Category.Id))
+                            docTargetIds.Add(el.Id);
+                    }
+                    LoggerService.LogInfo($"[ApplyIncreaseChecked] Checked 'Same Category' for {docCtx.Document.Title}. Targets: {docTargetIds.Count}.");
+                }
+                if (IncreaseWhatSameFamily || IncreaseWhatSameType)
+                {
+                    var targetFamilyNames = new HashSet<string>();
+                    var targetTypeIds = new HashSet<ElementId>();
+                    
+                    foreach (var el in sourceElements)
+                    {
+                        var typeId = el.GetTypeId();
+                        if (typeId != null && typeId != ElementId.InvalidElementId)
+                        {
+                            targetTypeIds.Add(typeId);
+                            var type = docCtx.Document.GetElement(typeId) as ElementType;
+                            if (type != null && !string.IsNullOrEmpty(type.FamilyName))
+                            {
+                                targetFamilyNames.Add(type.FamilyName);
+                            }
+                        }
+                    }
+                    
+                    foreach (var el in domainElements)
+                    {
+                        var typeId = el.GetTypeId();
+                        if (typeId == null || typeId == ElementId.InvalidElementId) continue;
+
+                        if (IncreaseWhatSameType)
+                        {
+                            if (targetTypeIds.Contains(typeId))
+                                docTargetIds.Add(el.Id);
+                        }
+                        else if (IncreaseWhatSameFamily)
+                        {
+                            var type = docCtx.Document.GetElement(typeId) as ElementType;
+                            if (type != null && !string.IsNullOrEmpty(type.FamilyName) && targetFamilyNames.Contains(type.FamilyName))
+                            {
+                                docTargetIds.Add(el.Id);
+                            }
+                        }
+                    }
+                    LoggerService.LogInfo($"[ApplyIncreaseChecked] Checked 'Same Family/Type' for {docCtx.Document.Title}. Targets: {docTargetIds.Count}.");
+                }
+                if (IncreaseWhatSameWorkset && docCtx.Document.IsWorkshared)
+                {
+                    var targetWorksetIds = sourceElements.Select(e => e.WorksetId).Where(id => id != WorksetId.InvalidWorksetId).ToHashSet();
+                    foreach (var el in domainElements)
+                    {
+                        if (targetWorksetIds.Contains(el.WorksetId))
+                            docTargetIds.Add(el.Id);
+                    }
+                    LoggerService.LogInfo($"[ApplyIncreaseChecked] Checked 'Same Workset' for {docCtx.Document.Title}. Targets: {docTargetIds.Count}.");
+                }
+                if (IncreaseWhatHostOfElement)
+                {
+                    foreach (var el in sourceElements)
+                    {
+                        if (el is FamilyInstance fi && fi.Host != null)
+                            docTargetIds.Add(fi.Host.Id);
+                    }
+                    LoggerService.LogInfo($"[ApplyIncreaseChecked] Checked 'Host of Element' for {docCtx.Document.Title}. Targets: {docTargetIds.Count}.");
+                }
+                if (IncreaseWhatHostedElements)
+                {
+                    var sourceIdsHash = sourceElements.Select(e => e.Id).ToHashSet();
+                    foreach (var el in domainElements)
+                    {
+                        if (el is FamilyInstance fi && fi.Host != null && sourceIdsHash.Contains(fi.Host.Id))
+                            docTargetIds.Add(el.Id);
+                    }
+                    LoggerService.LogInfo($"[ApplyIncreaseChecked] Checked 'Hosted Elements' for {docCtx.Document.Title}. Targets: {docTargetIds.Count}.");
+                }
+                if (IncreaseWhatNestedElements)
+                {
+                    foreach (var el in sourceElements)
+                    {
+                        if (el is FamilyInstance fi)
+                        {
+                            var subComponents = fi.GetSubComponentIds();
+                            foreach (var subId in subComponents) docTargetIds.Add(subId);
+                        }
+                    }
+                    LoggerService.LogInfo($"[ApplyIncreaseChecked] Checked 'Nested Elements' for {docCtx.Document.Title}. Targets: {docTargetIds.Count}.");
+                }
+                if (IncreaseWhatJoinedElements)
+                {
+                    foreach (var el in sourceElements)
+                    {
+                        try {
+                            var joined = JoinGeometryUtils.GetJoinedElements(docCtx.Document, el);
+                            foreach (var jId in joined) docTargetIds.Add(jId);
+                        } catch {}
+                    }
+                    LoggerService.LogInfo($"[ApplyIncreaseChecked] Checked 'Joined Elements' for {docCtx.Document.Title}. Targets: {docTargetIds.Count}.");
+                }
+                if (IncreaseWhatSupercomponent)
+                {
+                    foreach (var el in sourceElements)
+                    {
+                        if (el is FamilyInstance fi && fi.SuperComponent != null)
+                        {
+                            docTargetIds.Add(fi.SuperComponent.Id);
+                        }
+                    }
+                    LoggerService.LogInfo($"[ApplyIncreaseChecked] Checked 'Supercomponent' for {docCtx.Document.Title}. Targets: {docTargetIds.Count}.");
+                }
+                if (IncreaseWhatGroupOfAssembly)
+                {
+                    foreach (var el in sourceElements)
+                    {
+                        if (el.GroupId != ElementId.InvalidElementId)
+                        {
+                            var group = docCtx.Document.GetElement(el.GroupId) as Group;
+                            if (group != null)
+                            {
+                                foreach (var memberId in group.GetMemberIds()) docTargetIds.Add(memberId);
+                            }
+                        }
+                        if (el.AssemblyInstanceId != ElementId.InvalidElementId)
+                        {
+                            var assembly = docCtx.Document.GetElement(el.AssemblyInstanceId) as AssemblyInstance;
+                            if (assembly != null)
+                            {
+                                foreach (var memberId in assembly.GetMemberIds()) docTargetIds.Add(memberId);
+                            }
+                        }
+                    }
+                    LoggerService.LogInfo($"[ApplyIncreaseChecked] Checked 'Group or Assembly' for {docCtx.Document.Title}. Targets: {docTargetIds.Count}.");
+                }
+                if (IncreaseWhatDependent)
+                {
+                    foreach (var el in sourceElements)
+                    {
+                        try
+                        {
+                            var dependentIds = el.GetDependentElements(null);
+                            foreach (var depId in dependentIds) docTargetIds.Add(depId);
+                        } catch {}
+                    }
+                    LoggerService.LogInfo($"[ApplyIncreaseChecked] Checked 'Dependent Elements' for {docCtx.Document.Title}. Targets: {docTargetIds.Count}.");
+                }
+                if (IncreaseWhatIntersects && domainElements.Count > 0)
+                {
+                    var domainIds = domainElements.Select(e => e.Id).ToList();
+                    foreach (var el in sourceElements)
+                    {
+                        try
+                        {
+                            var intersects = new FilteredElementCollector(docCtx.Document, domainIds)
+                                .WherePasses(new ElementIntersectsElementFilter(el))
+                                .ToElementIds();
+                            foreach (var id in intersects) docTargetIds.Add(id);
+                        }
+                        catch { }
+                    }
+                    LoggerService.LogInfo($"[ApplyIncreaseChecked] Checked 'Intersects' for {docCtx.Document.Title}. Targets: {docTargetIds.Count}.");
+                }
+                if (IncreaseWhatSameMEPSystem)
+                {
+                    foreach (var el in sourceElements)
+                    {
+                        ConnectorManager cm = null;
+                        if (el is FamilyInstance fi && fi.MEPModel != null)
+                            cm = fi.MEPModel.ConnectorManager;
+                        else if (el is MEPCurve mepCurve)
+                            cm = mepCurve.ConnectorManager;
+                        
+                        if (cm != null)
+                        {
+                            foreach (Connector conn in cm.Connectors)
+                            {
+                                var mepSystem = conn.MEPSystem;
+                                if (mepSystem != null)
+                                {
+                                    foreach (Element sysEl in mepSystem.Elements)
+                                        docTargetIds.Add(sysEl.Id);
+                                }
+                            }
+                        }
+                    }
+                    LoggerService.LogInfo($"[ApplyIncreaseChecked] Checked 'MEP System' for {docCtx.Document.Title}. Targets: {docTargetIds.Count}.");
+                }
+
+                // 5. Exclusions
+                if (IncreaseUnselectBelongsToGroup || IncreaseUnselectBelongsToAssembly)
+                {
+                    var purgedCheckedIds = new HashSet<ElementId>();
+                    foreach (var id in docTargetIds)
+                    {
+                        var el = docCtx.Document.GetElement(id);
+                        if (el == null) continue;
+                        
+                        if (IncreaseUnselectBelongsToGroup && el.GroupId != ElementId.InvalidElementId)
+                            continue;
+                        if (IncreaseUnselectBelongsToAssembly && el.AssemblyInstanceId != ElementId.InvalidElementId)
+                            continue;
+                            
+                        purgedCheckedIds.Add(id);
+                    }
+                    docTargetIds = purgedCheckedIds;
+                    LoggerService.LogInfo($"[ApplyIncreaseChecked] Purged exclusions for {docCtx.Document.Title}. Post-purged targets: {docTargetIds.Count}.");
+                }
+
+                // Convert docTargetIds to ElementSelectionKeys and add to targets
+                foreach (var id in docTargetIds)
+                {
+                    targets.Add(new ElementSelectionKey(id, docCtx.LinkInstanceId));
+                }
+            }
+
+            // 4. Unify with current and other scopes
+            var activeKeys = _activeElements?.Select(e => new ElementSelectionKey(e.Id, e.LinkInstanceId)).ToHashSet() ?? new HashSet<ElementSelectionKey>();
+            var keysFromOtherScopes = _persistentCheckedIds.Where(k => !activeKeys.Contains(k)).ToList();
+
+            var finalCheckedKeys = new HashSet<ElementSelectionKey>();
             if (IncreaseHowAddToCurrent)
             {
-                foreach (var id in currentCheckedIds) finalCheckedIds.Add(id);
+                foreach (var k in currentCheckedKeys) finalCheckedKeys.Add(k);
             }
-            foreach (var id in targetIds)
-            {
-                finalCheckedIds.Add(id);
-            }
-            foreach (var id in idsFromOtherScopes)
-            {
-                finalCheckedIds.Add(id);
-            }
-
-            // 5. Exclusions (UNSELECT ELEMENTS IF) - applies to the unified finalCheckedIds to purge the selection
-            if (IncreaseUnselectBelongsToGroup || IncreaseUnselectBelongsToAssembly)
-            {
-                var purgedCheckedIds = new HashSet<Autodesk.Revit.DB.ElementId>(new ElementIdEqualityComparer());
-                foreach (var id in finalCheckedIds)
-                {
-                    var el = doc.GetElement(id);
-                    if (el == null) continue;
-                    
-                    if (IncreaseUnselectBelongsToGroup && el.GroupId != Autodesk.Revit.DB.ElementId.InvalidElementId)
-                        continue;
-                    if (IncreaseUnselectBelongsToAssembly && el.AssemblyInstanceId != Autodesk.Revit.DB.ElementId.InvalidElementId)
-                        continue;
-                        
-                    purgedCheckedIds.Add(id);
-                }
-                
-                // Keep targetIds in sync so we don't inject excluded elements
-                targetIds.IntersectWith(purgedCheckedIds);
-                
-                finalCheckedIds = purgedCheckedIds;
-                LoggerService.LogInfo($"[ApplyIncreaseChecked] Checked exclusions. Final targets after purging: {finalCheckedIds.Count}.");
-            }
-            
-            LoggerService.LogInfo($"[ApplyIncreaseChecked] Final checked IDs unified (including other scopes): {finalCheckedIds.Count}. IDs: {string.Join(", ", finalCheckedIds)}");
+            foreach (var k in targets) finalCheckedKeys.Add(k);
+            foreach (var k in keysFromOtherScopes) finalCheckedKeys.Add(k);
 
             // 6. Inject newly matched elements into _activeElements (if they aren't already in it)
-            var activeIds = new HashSet<Autodesk.Revit.DB.ElementId>(
-                _activeElements.Select(e => e.Id),
-                new ElementIdEqualityComparer()
-            );
-            LoggerService.LogInfo($"[ApplyIncreaseChecked] Explorer tree currently has {activeIds.Count} active IDs.");
-            
-            // Build a unified dictionary of all pre-fetched element models for O(1) reuse
-            var allKnownById = _allModelElements
+            var allKnownByKey = _allModelElements
                 .Concat(_elementsVisibleInViewElements)
                 .Concat(_elementsBelongingToViewElements)
                 .Concat(_currentSelectionElements)
-                .GroupBy(e => e.Id)
+                .GroupBy(e => new ElementSelectionKey(e.Id, e.LinkInstanceId))
                 .Select(g => g.First())
-                .ToDictionary(e => e.Id, new ElementIdEqualityComparer());
+                .ToDictionary(e => new ElementSelectionKey(e.Id, e.LinkInstanceId));
                 
-            LoggerService.LogInfo($"[ApplyIncreaseChecked] Pre-fetched scopes unified cache has {allKnownById.Count} elements.");
-
             var elementsToInject = new List<ElementModel>();
-            foreach (var id in targetIds)
+            foreach (var key in targets)
             {
-                if (activeIds.Contains(id))
-                {
-                    LoggerService.LogInfo($"[ApplyIncreaseChecked] Element {id} is already in activeIds, skipping injection.");
-                    continue;
-                }
+                if (activeKeys.Contains(key)) continue;
                 
-                if (allKnownById.TryGetValue(id, out var existingModel))
+                if (allKnownByKey.TryGetValue(key, out var existingModel))
                 {
-                    LoggerService.LogInfo($"[ApplyIncreaseChecked] Element {id} found in pre-fetched cache. Injecting model.");
                     elementsToInject.Add(existingModel);
                 }
                 else
                 {
-                    // Map on the fly from Revit Element if not pre-fetched
-                    var el = doc.GetElement(id);
+                    Document targetDoc = doc;
+                    if (key.LinkInstanceId != ElementId.InvalidElementId)
+                    {
+                        var linkInst = doc.GetElement(key.LinkInstanceId) as RevitLinkInstance;
+                        targetDoc = linkInst?.GetLinkDocument() ?? doc;
+                    }
+                    var el = targetDoc.GetElement(key.ElementId);
                     if (el != null && el.Category != null)
                     {
                         var newModel = _selectionService.MapToElementModel(el);
                         if (newModel != null)
                         {
-                            LoggerService.LogInfo($"[ApplyIncreaseChecked] Element {id} ({el.Name}) NOT in pre-fetched cache. Mapped on-the-fly and injecting.");
+                            newModel.LinkInstanceId = key.LinkInstanceId;
                             elementsToInject.Add(newModel);
                         }
-                        else
-                        {
-                            LoggerService.LogInfo($"[ApplyIncreaseChecked] Element {id} failed to map to ElementModel.");
-                        }
-                    }
-                    else
-                    {
-                        LoggerService.LogInfo($"[ApplyIncreaseChecked] Element {id} not found in doc, or has null Category.");
                     }
                 }
             }
                 
             if (elementsToInject.Count > 0)
             {
-                LoggerService.LogInfo($"[ApplyIncreaseChecked] Injecting {elementsToInject.Count} elements into active elements list.");
                 _activeElements.AddRange(elementsToInject);
-            }
-            else
-            {
-                LoggerService.LogInfo($"[ApplyIncreaseChecked] No new elements needed to be injected.");
             }
 
             // 7. Update persistent checked IDs
-            _persistentCheckedIds = finalCheckedIds;
-            LoggerService.LogInfo($"[ApplyIncreaseChecked] Updating _persistentCheckedIds to: {string.Join(", ", _persistentCheckedIds)}");
+            _persistentCheckedIds = finalCheckedKeys;
             
             // 8. Rebuild tree to show newly injected elements and apply check states
             LoggerService.LogInfo($"[ApplyIncreaseChecked] Invoking BuildTree() now...");
@@ -1203,6 +1587,7 @@ public partial class SelectionFilterViewModel : ObservableObject
         finally
         {
             TreeItemViewModel.IsBulkUpdating = false;
+            IsBusy = false;
         }
     }, _actionExternalEvent);
 }
@@ -1272,6 +1657,550 @@ public partial class SelectionFilterViewModel : ObservableObject
         {
             FilterNode(child, searchText, searchRegex, isEmpty);
         }
+    }
+
+    private void LoadSelectionsFromDocument()
+    {
+        try
+        {
+            LoggerService.LogInfo("LoadSelectionsFromDocument: Reading saved selections from document...");
+            var uiDispatcher = System.Windows.Threading.Dispatcher.CurrentDispatcher;
+            var hostDoc = _selectionService.Document;
+            var loaded = SavedSelectionsService.LoadSavedSelections(hostDoc);
+            
+            uiDispatcher.BeginInvoke(new Action(() =>
+            {
+                try
+                {
+                    SavedSelections.Clear();
+                    // Placeholder selection as first element
+                    SavedSelections.Add(new SavedSelection { Name = string.Empty });
+                    foreach (var sel in loaded)
+                    {
+                        SavedSelections.Add(sel);
+                    }
+                    SelectedSavedSelection = SavedSelections.FirstOrDefault();
+                    LoggerService.LogInfo($"LoadSelectionsFromDocument: UI dropdown list updated with {loaded.Count} selections.");
+                }
+                catch (Exception ex)
+                {
+                    LoggerService.LogError("LoadSelectionsFromDocument UI Update Error", ex);
+                }
+            }));
+        }
+        catch (Exception ex)
+        {
+            LoggerService.LogError("LoadSelectionsFromDocument Error", ex);
+        }
+    }
+
+    [RelayCommand]
+    private void OpenSaveSelectionDialog()
+    {
+        try
+        {
+            UpdatePersistentCheckedIdsFromTree();
+            LoggerService.LogInfo($"Opening Save Selection dialog. Active checked elements to save: {CheckedElementsCount}.");
+            
+            // Get all selections excluding the placeholder
+            var existingList = SavedSelections.Where(s => !string.IsNullOrEmpty(s.Name)).ToList();
+            
+            Action<string> onSaveNew = (newName) =>
+            {
+                SaveCurrentSelection(newName);
+            };
+            
+            Action<SavedSelection> onOverwrite = (targetSel) =>
+            {
+                SaveCurrentSelection(targetSel.Name);
+            };
+            
+            var vm = new SaveSelectionViewModel(existingList, onSaveNew, onOverwrite, null);
+            var view = new Views.SaveSelectionView(vm);
+            
+            if (System.Windows.Application.Current != null)
+            {
+                var owner = System.Windows.Application.Current.Windows
+                    .OfType<System.Windows.Window>()
+                    .FirstOrDefault(w => w is Views.SelectionFilterView && w.IsVisible);
+                    
+                if (owner == null)
+                {
+                    owner = System.Windows.Application.Current.Windows
+                        .OfType<System.Windows.Window>()
+                        .FirstOrDefault(x => x.IsActive);
+                }
+                
+                if (owner != null)
+                {
+                    view.Owner = owner;
+                    view.WindowStartupLocation = System.Windows.WindowStartupLocation.CenterOwner;
+                }
+                else
+                {
+                    view.WindowStartupLocation = System.Windows.WindowStartupLocation.CenterScreen;
+                    view.Topmost = true;
+                }
+            }
+            else
+            {
+                view.WindowStartupLocation = System.Windows.WindowStartupLocation.CenterScreen;
+                view.Topmost = true;
+            }
+            
+            LoggerService.LogInfo("Showing SaveSelectionView dialog (modal)...");
+            view.ShowDialog();
+            LoggerService.LogInfo("SaveSelectionView dialog closed.");
+        }
+        catch (Exception ex)
+        {
+            LoggerService.LogError("OpenSaveSelectionDialog Command Error", ex);
+        }
+    }
+
+    private void SaveCurrentSelection(string name)
+    {
+        try
+        {
+            LoggerService.LogInfo($"SaveCurrentSelection initiated for name: '{name}'");
+
+            if (_actionHandler == null || _actionExternalEvent == null)
+            {
+                LoggerService.LogError("SaveCurrentSelection", new InvalidOperationException("ActionEventHandler or ExternalEvent is null."));
+                StatusMessage = "Error: API connection lost.";
+                return;
+            }
+
+            // Step 1: Gather tree data (MUST be done on WPF UI thread)
+            UpdatePersistentCheckedIdsFromTree();
+            var elementKeys = _persistentCheckedIds.Select(k => new SavedElementKey
+            {
+                ElementIdValue = (int)k.ElementId.Value,
+                LinkInstanceIdValue = k.LinkInstanceId != ElementId.InvalidElementId ? (int)k.LinkInstanceId.Value : -1
+            }).ToList();
+            
+            var modelNames = SelectedModels.Select(m => m.DisplayName).ToList();
+            
+            var allSelections = SavedSelections.Where(s => !string.IsNullOrEmpty(s.Name)).ToList();
+            
+            // Check if already exists to overwrite
+            var existing = allSelections.FirstOrDefault(s => s.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
+            if (existing != null)
+            {
+                existing.Elements = elementKeys;
+                existing.ActiveModelInstanceNames = modelNames;
+                LoggerService.LogInfo($"Overwriting existing selection '{name}' with {elementKeys.Count} elements.");
+            }
+            else
+            {
+                allSelections.Add(new SavedSelection
+                {
+                    Name = name,
+                    Elements = elementKeys,
+                    ActiveModelInstanceNames = modelNames
+                });
+                LoggerService.LogInfo($"Creating new selection '{name}' with {elementKeys.Count} elements.");
+            }
+
+            // Show processing UI state on WPF UI thread
+            StatusMessage = "Saving selection...";
+            IsBusy = true;
+            
+            // Capture the UI thread dispatcher so we can reliably marshal back
+            var uiDispatcher = System.Windows.Threading.Dispatcher.CurrentDispatcher;
+
+            // Step 2: Raise Revit API External Event to write to Extensible Storage (runs on Revit API thread)
+            _actionHandler.Raise(() =>
+            {
+                try
+                {
+                    var hostDoc = _selectionService.Document;
+                    LoggerService.LogInfo($"Writing {allSelections.Count} selections to Extensible Storage on Revit API thread...");
+                    
+                    bool success = SavedSelectionsService.SaveSavedSelections(hostDoc, allSelections);
+                    
+                    if (success)
+                    {
+                        // Read updated selections from Extensible Storage on the Revit API thread context
+                        LoggerService.LogInfo("SaveCurrentSelection: Reading back selections from document on Revit API thread...");
+                        var loaded = SavedSelectionsService.LoadSavedSelections(hostDoc);
+                        LoggerService.LogInfo($"SaveCurrentSelection: Read {loaded.Count} updated selections successfully.");
+
+                        // Step 3: Refresh UI list (MUST be dispatched back asynchronously to WPF UI thread)
+                        uiDispatcher.BeginInvoke(new Action(() =>
+                        {
+                            try
+                            {
+                                SavedSelections.Clear();
+                                // Placeholder selection as first element
+                                SavedSelections.Add(new SavedSelection { Name = string.Empty });
+                                foreach (var sel in loaded)
+                                {
+                                    SavedSelections.Add(sel);
+                                }
+                                
+                                // Select the saved selection in the main dropdown
+                                var newlySaved = SavedSelections.FirstOrDefault(s => s.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
+                                if (newlySaved != null)
+                                {
+                                    SelectedSavedSelection = newlySaved;
+                                }
+                                StatusMessage = $"Selection '{name}' saved successfully.";
+                                LoggerService.LogInfo($"Selection '{name}' saved successfully and UI updated.");
+                            }
+                            catch (Exception ex)
+                            {
+                                LoggerService.LogError("SaveCurrentSelection UI Refresh Callback Error", ex);
+                            }
+                            finally
+                            {
+                                IsBusy = false;
+                            }
+                        }));
+                    }
+                    else
+                    {
+                        uiDispatcher.BeginInvoke(new Action(() =>
+                        {
+                            StatusMessage = "Failed to save selection to document.";
+                            IsBusy = false;
+                        }));
+                        LoggerService.LogError("SaveCurrentSelection", new InvalidOperationException("SavedSelectionsService.SaveSavedSelections returned false."));
+                    }
+                }
+                catch (Exception ex)
+                {
+                    LoggerService.LogError("Revit API context execution failed inside SaveCurrentSelection", ex);
+                    uiDispatcher.BeginInvoke(new Action(() =>
+                    {
+                        StatusMessage = "Error saving selection.";
+                        IsBusy = false;
+                    }));
+                }
+            }, _actionExternalEvent);
+        }
+        catch (Exception ex)
+        {
+            LoggerService.LogError($"SaveCurrentSelection '{name}' outer error", ex);
+            StatusMessage = "Error gathering selection data.";
+            IsBusy = false;
+        }
+    }
+
+    [RelayCommand]
+    private void RecoverSavedSelection()
+    {
+        if (SelectedSavedSelection == null || string.IsNullOrEmpty(SelectedSavedSelection.Name))
+        {
+            LoggerService.LogInfo("WARNING: RecoverSavedSelection canceled: no selection selected or name is empty.");
+            return;
+        }
+        if (_actionHandler == null || _actionExternalEvent == null)
+        {
+            LoggerService.LogError("RecoverSavedSelection", new InvalidOperationException("ActionEventHandler or ExternalEvent is null."));
+            StatusMessage = "Error: Recover failed (API connection lost).";
+            return;
+        }
+        
+        var targetSelection = SelectedSavedSelection;
+        LoggerService.LogInfo($"RecoverSavedSelection initiated for '{targetSelection.Name}' (contains {targetSelection.Elements.Count} elements, {targetSelection.ActiveModelInstanceNames.Count} active models).");
+        
+        StatusMessage = $"Recovering selection '{targetSelection.Name}'...";
+        IsBusy = true;
+        
+        // Capture the UI thread dispatcher
+        var uiDispatcher = System.Windows.Threading.Dispatcher.CurrentDispatcher;
+            
+        _actionHandler.Raise(() =>
+        {
+            try
+            {
+                // 1. Sync Document selection context
+                var availableModelsByName = AvailableModels.ToDictionary(m => m.DisplayName);
+                var targetModelNames = targetSelection.ActiveModelInstanceNames;
+                
+                LoggerService.LogInfo($"Syncing active models: {string.Join(", ", targetModelNames)}");
+                var modelsToSelect = new List<RevitModelRepresentation>();
+                foreach (var name in targetModelNames)
+                {
+                    if (availableModelsByName.TryGetValue(name, out var modelRep))
+                    {
+                        modelsToSelect.Add(modelRep);
+                    }
+                    else
+                    {
+                        LoggerService.LogInfo($"WARNING: Saved active model name '{name}' not found in current AvailableModels.");
+                    }
+                }
+
+                // Resolve the ElementModel objects for the saved selection keys in the Revit API thread
+                var doc = _selectionService.Document;
+                var recoveredModels = new List<ElementModel>();
+                if (doc != null)
+                {
+                    foreach (var savedKey in targetSelection.Elements)
+                    {
+                        ElementId elId = new ElementId((long)savedKey.ElementIdValue);
+                        if (savedKey.LinkInstanceIdValue == -1)
+                        {
+                            Element el = doc.GetElement(elId);
+                            if (el != null)
+                            {
+                                var model = _selectionService.MapToElementModel(el);
+                                if (model != null)
+                                {
+                                    model.LinkInstanceId = ElementId.InvalidElementId;
+                                    recoveredModels.Add(model);
+                                }
+                            }
+                        }
+                        else
+                        {
+                            ElementId linkInstanceId = new ElementId((long)savedKey.LinkInstanceIdValue);
+                            var linkInstance = doc.GetElement(linkInstanceId) as RevitLinkInstance;
+                            if (linkInstance != null)
+                            {
+                                var linkedDoc = linkInstance.GetLinkDocument();
+                                if (linkedDoc != null)
+                                {
+                                    Element el = linkedDoc.GetElement(elId);
+                                    if (el != null)
+                                    {
+                                        var model = _selectionService.MapToElementModel(el);
+                                        if (model != null)
+                                        {
+                                            model.LinkInstanceId = linkInstanceId;
+                                            recoveredModels.Add(model);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                LoggerService.LogInfo($"RecoverSavedSelection Revit Thread: Resolved {recoveredModels.Count} elements from active RVT context.");
+                
+                uiDispatcher.BeginInvoke(new Action(() =>
+                {
+                    try
+                    {
+                        if (modelsToSelect.Any())
+                        {
+                            SelectedModels.Clear();
+                            SelectedModels.AddRange(modelsToSelect);
+                            
+                            // Update display text
+                            if (SelectedModels.Count == 1)
+                            {
+                                SelectedModelsText = SelectedModels.First().DisplayName;
+                            }
+                            else
+                            {
+                                SelectedModelsText = $"Multiple models selected ({SelectedModels.Count})";
+                            }
+                            
+                            LoggerService.LogInfo($"[RecoverSavedSelection] Restored selection scope context to: {SelectedModelsText}");
+                            
+                            // Populate current selection with ONLY the resolved recovered elements
+                            _currentSelectionElements = recoveredModels;
+
+                            // Pre-fetch all other scopes for the selected models combined
+                            LoggerService.LogInfo("Re-fetching other element scopes for the recovered model context...");
+                            _elementsVisibleInViewElements = _selectionService.GetAvailableElements(SelectionScope.ElementsVisibleInView, SelectedModels);
+                            _elementsBelongingToViewElements = _selectionService.GetAvailableElements(SelectionScope.ElementsBelongingToView, SelectedModels);
+                            
+                            var allRaw = _selectionService.GetAvailableElements(SelectionScope.AllModelElements, SelectedModels);
+                            _allModelElements = allRaw.Count > 10000 ? allRaw.Take(10000).ToList() : allRaw;
+                            
+                            LoggerService.LogInfo($"Scopes fetched: CurrentSelection={_currentSelectionElements.Count}, VisibleInView={_elementsVisibleInViewElements.Count}, BelongingToView={_elementsBelongingToViewElements.Count}, AllModelElements={_allModelElements.Count}");
+                        }
+                        else
+                        {
+                            _currentSelectionElements = recoveredModels;
+                        }
+                        
+                        // 2. Clear current tree checking and restore the keys
+                        LoggerService.LogInfo($"Restoring selection keys: {_persistentCheckedIds.Count} existing keys cleared.");
+                        _persistentCheckedIds.Clear();
+                        _lastAppliedCheckedIds.Clear();
+                        
+                        foreach (var savedKey in targetSelection.Elements)
+                        {
+                            ElementId elId = new ElementId((long)savedKey.ElementIdValue);
+                            ElementId linkId = savedKey.LinkInstanceIdValue != -1 ? new ElementId((long)savedKey.LinkInstanceIdValue) : ElementId.InvalidElementId;
+                            _persistentCheckedIds.Add(new ElementSelectionKey(elId, linkId));
+                        }
+                        
+                        LoggerService.LogInfo($"Restored {_persistentCheckedIds.Count} element selection keys in ViewModel.");
+                        
+                        // Set active elements to CurrentSelection scope containing only the recovered elements
+                        CurrentScope = SelectionScope.CurrentSelection;
+                        _activeElements = _currentSelectionElements;
+                        
+                        // Rebuild the TreeView
+                        LoggerService.LogInfo("Rebuilding tree explorer with restored elements (Current Selection)...");
+                        BuildTree();
+                        
+                        // Apply selection highlights in Revit viewport
+                        LoggerService.LogInfo("Applying restored selection in Revit viewport...");
+                        ApplyFilter();
+                        
+                        IsSelectionDirty = false;
+                        SelectedSavedSelection = SavedSelections.FirstOrDefault();
+                        StatusMessage = $"Selection '{targetSelection.Name}' recovered.";
+                        LoggerService.LogInfo($"RecoverSavedSelection completed successfully for '{targetSelection.Name}'.");
+                    }
+                    catch (Exception exInner)
+                    {
+                        LoggerService.LogError("RecoverSavedSelection UI Callback Error", exInner);
+                        StatusMessage = "Error recovering selection.";
+                    }
+                    finally
+                    {
+                        IsBusy = false;
+                    }
+                }));
+            }
+            catch (Exception ex)
+            {
+                LoggerService.LogError("RecoverSavedSelection Revit API Thread Error", ex);
+                uiDispatcher.BeginInvoke(new Action(() =>
+                {
+                    StatusMessage = "Error recovering selection.";
+                    IsBusy = false;
+                }));
+            }
+        }, _actionExternalEvent);
+    }
+
+    [RelayCommand]
+    private void DeleteSavedSelection(object windowObj)
+    {
+        if (SelectedSavedSelection == null || string.IsNullOrEmpty(SelectedSavedSelection.Name))
+        {
+            LoggerService.LogInfo("WARNING: DeleteSavedSelection canceled: no selection selected or name is empty.");
+            return;
+        }
+
+        var targetSelection = SelectedSavedSelection;
+        
+        // Resolve parent window for modal
+        System.Windows.Window ownerWin = windowObj as System.Windows.Window;
+        if (ownerWin == null && System.Windows.Application.Current != null)
+        {
+            ownerWin = System.Windows.Application.Current.Windows
+                .OfType<System.Windows.Window>()
+                .FirstOrDefault(w => w is Views.SelectionFilterView && w.IsVisible);
+            
+            if (ownerWin == null)
+            {
+                ownerWin = System.Windows.Application.Current.Windows
+                    .OfType<System.Windows.Window>()
+                    .FirstOrDefault(x => x.IsActive);
+            }
+        }
+
+        var result = System.Windows.MessageBox.Show(
+            ownerWin,
+            $"Are you sure you want to delete the saved selection '{targetSelection.Name}'?",
+            "Delete Saved Selection",
+            System.Windows.MessageBoxButton.YesNo,
+            System.Windows.MessageBoxImage.Warning);
+
+        if (result != System.Windows.MessageBoxResult.Yes)
+        {
+            LoggerService.LogInfo($"DeleteSavedSelection canceled by user for '{targetSelection.Name}'.");
+            return;
+        }
+
+        LoggerService.LogInfo($"DeleteSavedSelection confirmed for '{targetSelection.Name}'. Starting removal...");
+        StatusMessage = $"Deleting selection '{targetSelection.Name}'...";
+        IsBusy = true;
+
+        if (_actionHandler == null || _actionExternalEvent == null)
+        {
+            LoggerService.LogError("DeleteSavedSelection", new InvalidOperationException("ActionEventHandler or ExternalEvent is null."));
+            StatusMessage = "Error: Delete failed (API connection lost).";
+            IsBusy = false;
+            return;
+        }
+
+        var uiDispatcher = System.Windows.Threading.Dispatcher.CurrentDispatcher;
+
+        _actionHandler.Raise(() =>
+        {
+            try
+            {
+                var doc = _selectionService.Document;
+                if (doc == null)
+                {
+                    throw new InvalidOperationException("Revit Document is null.");
+                }
+
+                // 1. Load current list
+                var selections = SavedSelectionsService.LoadSavedSelections(doc);
+                
+                // 2. Remove the target
+                int removedCount = selections.RemoveAll(s => s.Name.Equals(targetSelection.Name, StringComparison.OrdinalIgnoreCase));
+                LoggerService.LogInfo($"DeleteSavedSelection: Removed {removedCount} entries with name '{targetSelection.Name}' from temp list.");
+
+                // 3. Save back to Extensible Storage
+                bool success = SavedSelectionsService.SaveSavedSelections(doc, selections);
+
+                if (success)
+                {
+                    LoggerService.LogInfo("DeleteSavedSelection: Extensible Storage write success.");
+                    
+                    // Reload selections from document inside the Revit thread, and push UI updates asynchronously
+                    var updatedSelections = SavedSelectionsService.LoadSavedSelections(doc);
+
+                    uiDispatcher.BeginInvoke(new Action(() =>
+                    {
+                        try
+                        {
+                            SavedSelections.Clear();
+                            SavedSelections.Add(new SavedSelection { Name = string.Empty });
+                            foreach (var s in updatedSelections)
+                            {
+                                SavedSelections.Add(s);
+                            }
+                            
+                            SelectedSavedSelection = SavedSelections.FirstOrDefault();
+                            IsSelectionDirty = false;
+                            StatusMessage = $"Selection '{targetSelection.Name}' deleted.";
+                            LoggerService.LogInfo($"DeleteSavedSelection UI update completed successfully.");
+                        }
+                        catch (Exception exInner)
+                        {
+                            LoggerService.LogError("DeleteSavedSelection UI Callback Error", exInner);
+                            StatusMessage = "Error updating UI after deletion.";
+                        }
+                        finally
+                        {
+                            IsBusy = false;
+                        }
+                    }));
+                }
+                else
+                {
+                    uiDispatcher.BeginInvoke(new Action(() =>
+                    {
+                        StatusMessage = "Failed to delete selection from document.";
+                        IsBusy = false;
+                    }));
+                    LoggerService.LogError("DeleteSavedSelection", new InvalidOperationException("SavedSelectionsService.SaveSavedSelections returned false."));
+                }
+            }
+            catch (Exception ex)
+            {
+                LoggerService.LogError("Revit API thread execution failed inside DeleteSavedSelection", ex);
+                uiDispatcher.BeginInvoke(new Action(() =>
+                {
+                    StatusMessage = "Error deleting selection.";
+                    IsBusy = false;
+                }));
+            }
+        }, _actionExternalEvent);
     }
 }
 
