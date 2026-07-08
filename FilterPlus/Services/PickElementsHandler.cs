@@ -37,7 +37,7 @@ public class PickElementsHandler : IExternalEventHandler
 
             if (selectedModels.Count == 0)
             {
-                _viewModel.OnPickElementsFinished(new List<ElementSelectionKey>());
+                _viewModel.OnPickElementsFinished(new List<ElementSelectionKey>(), new List<ElementModel>());
                 return;
             }
 
@@ -77,7 +77,7 @@ public class PickElementsHandler : IExternalEventHandler
                 else
                 {
                     // User canceled the choice dialog
-                    _viewModel.OnPickElementsFinished(new List<ElementSelectionKey>());
+                    _viewModel.OnPickElementsFinished(new List<ElementSelectionKey>(), new List<ElementModel>());
                     return;
                 }
             }
@@ -143,7 +143,7 @@ public class PickElementsHandler : IExternalEventHandler
                 catch (Autodesk.Revit.Exceptions.OperationCanceledException)
                 {
                     // If user cancels during sequential or host phase, cancel the entire operation
-                    _viewModel.OnPickElementsFinished(new List<ElementSelectionKey>());
+                    _viewModel.OnPickElementsFinished(new List<ElementSelectionKey>(), new List<ElementModel>());
                     return;
                 }
             }
@@ -201,17 +201,57 @@ public class PickElementsHandler : IExternalEventHandler
                 }
             }
 
-            _viewModel.OnPickElementsFinished(finalKeys);
+            // Resolve selected elements to ElementModel instances (while on the Revit API thread)
+            var finalModels = new List<ElementModel>();
+            foreach (var key in finalKeys)
+            {
+                try
+                {
+                    Element el = null;
+                    if (key.LinkInstanceId == ElementId.InvalidElementId)
+                    {
+                        el = uiDoc.Document.GetElement(key.ElementId);
+                    }
+                    else
+                    {
+                        var linkInst = uiDoc.Document.GetElement(key.LinkInstanceId) as RevitLinkInstance;
+                        if (linkInst != null)
+                        {
+                            var linkedDoc = linkInst.GetLinkDocument();
+                            if (linkedDoc != null)
+                            {
+                                el = linkedDoc.GetElement(key.ElementId);
+                            }
+                        }
+                    }
+
+                    if (el != null)
+                    {
+                        var model = _viewModel.SelectionService.MapToElementModel(el);
+                        if (model != null)
+                        {
+                            model.LinkInstanceId = key.LinkInstanceId;
+                            finalModels.Add(model);
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    LoggerService.LogError($"Error mapping picked element key {key.ElementId} from Revit", ex);
+                }
+            }
+
+            _viewModel.OnPickElementsFinished(finalKeys, finalModels);
         }
         catch (Autodesk.Revit.Exceptions.OperationCanceledException)
         {
             LoggerService.LogInfo("PickObjects operation canceled by user.");
-            _viewModel.OnPickElementsFinished(new List<ElementSelectionKey>());
+            _viewModel.OnPickElementsFinished(new List<ElementSelectionKey>(), new List<ElementModel>());
         }
         catch (Exception ex)
         {
             LoggerService.LogError("PickElementsHandler", ex);
-            _viewModel.OnPickElementsFinished(new List<ElementSelectionKey>());
+            _viewModel.OnPickElementsFinished(new List<ElementSelectionKey>(), new List<ElementModel>());
         }
     }
 

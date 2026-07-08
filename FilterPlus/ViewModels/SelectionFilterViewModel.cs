@@ -11,6 +11,7 @@ namespace FilterPlus.ViewModels;
 public partial class SelectionFilterViewModel : ObservableObject
 {
     private readonly RevitSelectionService _selectionService;
+    public RevitSelectionService SelectionService => _selectionService;
     private Autodesk.Revit.UI.ExternalEvent _pickElementsEvent;
 
     public System.Action HideWindowRequested { get; set; }
@@ -356,7 +357,7 @@ public partial class SelectionFilterViewModel : ObservableObject
             LoggerService.LogInfo($"ElementsBelongingToView: {_elementsBelongingToViewElements.Count} elements.");
 
             var allRaw = _selectionService.GetAvailableElements(SelectionScope.AllModelElements, SelectedModels);
-            _allModelElements = allRaw.Count > 10000 ? allRaw.Take(10000).ToList() : allRaw;
+            _allModelElements = allRaw.Count > 50000 ? allRaw.Take(50000).ToList() : allRaw;
             LoggerService.LogInfo($"AllModelElements: {_allModelElements.Count} elements (raw: {allRaw.Count}).");
 
             // 3. Build tree for the default scope (CurrentSelection)
@@ -475,7 +476,7 @@ public partial class SelectionFilterViewModel : ObservableObject
                 _elementsBelongingToViewElements = _selectionService.GetAvailableElements(SelectionScope.ElementsBelongingToView, SelectedModels);
                 
                 var allRaw = _selectionService.GetAvailableElements(SelectionScope.AllModelElements, SelectedModels);
-                _allModelElements = allRaw.Count > 10000 ? allRaw.Take(10000).ToList() : allRaw;
+                _allModelElements = allRaw.Count > 50000 ? allRaw.Take(50000).ToList() : allRaw;
 
                 // Sync active elements based on current scope
                 _activeElements = CurrentScope switch
@@ -907,8 +908,7 @@ public partial class SelectionFilterViewModel : ObservableObject
         // 3. Trigger the external event for PickObjects
         _pickElementsEvent?.Raise();
     }
-
-    public void OnPickElementsFinished(List<ElementSelectionKey> newKeys)
+     public void OnPickElementsFinished(List<ElementSelectionKey> newKeys, List<ElementModel> newModels)
     {
         var dispatcher = System.Windows.Threading.Dispatcher.CurrentDispatcher;
         dispatcher.InvokeAsync(() =>
@@ -922,12 +922,18 @@ public partial class SelectionFilterViewModel : ObservableObject
                 }
 
                 // Ensure newly picked elements are injected into the active elements so they show up in the tree!
-                var allKnownByKey = _allModelElements.ToDictionary(e => new ElementSelectionKey(e.Id, e.LinkInstanceId));
-                foreach (var key in newKeys)
+                if (newModels != null)
                 {
-                    if (allKnownByKey.TryGetValue(key, out var model))
+                    foreach (var model in newModels)
                     {
-                        if (_activeElements != null && !_activeElements.Any(e => e.Id == key.ElementId && e.LinkInstanceId == key.LinkInstanceId))
+                        // Add to _allModelElements if not present so it can be resolved/grouped
+                        if (!_allModelElements.Any(e => e.Id == model.Id && e.LinkInstanceId == model.LinkInstanceId))
+                        {
+                            _allModelElements.Add(model);
+                        }
+
+                        // Add to _activeElements if not present so it shows up in tree
+                        if (_activeElements != null && !_activeElements.Any(e => e.Id == model.Id && e.LinkInstanceId == model.LinkInstanceId))
                         {
                             _activeElements.Add(model);
                         }
@@ -2043,7 +2049,7 @@ public partial class SelectionFilterViewModel : ObservableObject
                             _elementsBelongingToViewElements = _selectionService.GetAvailableElements(SelectionScope.ElementsBelongingToView, SelectedModels);
                             
                             var allRaw = _selectionService.GetAvailableElements(SelectionScope.AllModelElements, SelectedModels);
-                            _allModelElements = allRaw.Count > 10000 ? allRaw.Take(10000).ToList() : allRaw;
+                            _allModelElements = allRaw.Count > 50000 ? allRaw.Take(50000).ToList() : allRaw;
                             
                             LoggerService.LogInfo($"Scopes fetched: CurrentSelection={_currentSelectionElements.Count}, VisibleInView={_elementsVisibleInViewElements.Count}, BelongingToView={_elementsBelongingToViewElements.Count}, AllModelElements={_allModelElements.Count}");
                         }
