@@ -1007,7 +1007,7 @@ public partial class SelectionFilterViewModel : ObservableObject
         SelectedWorkset = "Todos";
 
         TreeItemViewModel.IsBulkUpdating = true;
-        foreach (var node in RootNodes) node.IsChecked = false;
+        foreach (var node in RootNodes) node.SetCheckedState(false);
         TreeItemViewModel.IsBulkUpdating = false;
 
         _persistentCheckedIds.Clear();
