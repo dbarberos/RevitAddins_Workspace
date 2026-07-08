@@ -12,7 +12,7 @@
 2. **Missing UI Thread Mapper:** When `OnPickElementsFinished` was called with a list of `ElementSelectionKey` objects, it attempted to look up the corresponding `ElementModel` inside the `_allModelElements` collection. Since those linked elements were either truncated (due to the 10,000 limit) or not loaded at all, the lookup failed, preventing them from being injected into the TreeView's active elements list. Because the callback is invoked on the UI thread (via `InvokeAsync`), query operations directly on Revit documents to map the elements on the fly would cause a thread-safety exception.
 
 ## Solution / Design Pattern
-1. **Increase Truncation Limit:** Raised the safety truncation limit to `50000` combined elements, which is fully supported by the WPF `VirtualizingStackPanel` with zero latency, ensuring both the host model and linked model components are loaded into memory.
+1. **Increase Truncation Limit:** Raised the safety truncation limit to `100000` combined elements, which is fully supported by the WPF `VirtualizingStackPanel` with zero latency, ensuring both the host model and linked model components are loaded into memory.
 2. **Pre-Map on the Revit API Thread:** Instead of passing raw selection keys to the UI context and resolving them on the UI thread, the resolution/mapping must happen inside the external event execution context (`IExternalEventHandler.Execute`):
    - Resolve the native `Element` objects inside the target host or link document.
    - Construct their corresponding `ElementModel` objects using the selection mapping service while still executing on the Revit API thread.
