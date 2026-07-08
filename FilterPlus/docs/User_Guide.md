@@ -126,88 +126,66 @@ FilterPlus allows you to save and recover element selections persistently across
 
 ## 6. Version History (Changelog)
 
-### v1.6.0 - 2026-07-07
+### v1.6.0
 
 #### Added
-- **Persistent Saved Selections**: Save/Recover selection sets inside the active Revit document via Extensible Storage.
-- **Save Selection Window**: Separate dialog featuring conditional styling triggers and native confirmation prompts to save new or overwrite existing selections.
-- **Save Selection UI Polish**: Standardized button widths across "Save New", "Overwrite", and "Cancel" using `SharedSizeGroup` grid properties. Adjusted vertical padding with a 1.5x increased margin (15px) above the footer button.
-- **Dropdown Reset & Disabling**: The ComboBox selection automatically resets to the empty placeholder selection after a successful `Recover` or `Delete` action. This immediately disables the `Recover` and `Delete` buttons, resetting the interface state.
-- **WPF Window Custom Icons**: Integrated `RibbonIcon32.png` into all 6 Window title bars using absolute WPF Pack URIs (`pack://application:,,,/FilterPlus;component/Resources/Icons/RibbonIcon32.png`) to prevent Baml2006 TypeConverterMarkupExtension startup exceptions inside Revit host environment.
-- **NuGet Dependency**: Integrated `System.Text.Json` to handle cross-version element serialization for both .NET Framework 4.8 and .NET 8.
+- **Persistent Saved Selections**: Save and recover selection sets persistently within active Revit projects.
+- **Save Selection Window**: A dedicated window to save new selections or overwrite existing ones.
+- **Save Selection UI Polish**: Standardized button widths and increased bottom spacing for improved visual alignment.
+- **Dropdown Auto-Reset**: Dropdowns reset to their default empty states and action buttons automatically disable after recovering or deleting selections.
+- **WPF Window Custom Icons**: Added custom title bar icons to all WPF windows.
 
-### v1.5.0 - 2026-07-02
-
-#### Added
-- **Multi-Document Selection Window**:
-  - Replaced the top dropdown context selector with a read-only display box styled with a primary blue border (`#007ACC`) and a `"Select"` button.
-  - Developed the new modal window `"Select model or models"` to check or uncheck the host model and individual links.
-  - Implemented a circular toggle-all checkbox `"Select all models"` at the top of the list.
-  - Added bidirectional checking synchronization between the toggle-all checkbox and individual slide switches.
-  - Set the active model to be selected by default on startup.
-- **Unified Button Styling (Corner Radius)**:
-  - Applied a unified `CornerRadius="4"` to all main window buttons (`Pre-Selection`, `Select in Revit`, `Clear`, and `Apply Selection`).
-  - Applied the same `CornerRadius="4"` to the `Cancel` and `Apply` buttons in both `PreSelectionView` and `ModelSelectionView`.
-  - Configured `CornerRadius="4"` for the dynamic rule-building buttons (`Add Rule` and `Add Set`) within rule group templates.
-
-### v1.4.0 - 2026-07-01
+### v1.5.0
 
 #### Added
-- **Multi-Document and Linked Models Integration**:
-  - Added a Document Selection dropdown at the top of the interface displaying the host model and all linked models.
-  - Added a specialized **"In All Models"** option to query and process operations across host and linked models simultaneously.
-  - Implemented cross-document selection highlighting in the Revit viewport using coordinate transformations (`CreateLinkReference`).
-  - Adapted the explorer tree view, logical Pre-Selection rules, search, and "Increase Checked" algorithms to run in multi-model loops when "All Models" is active.
-- **Visual Loader Overlay Optimization**:
-  - Fixed a WPF dispatcher thread rendering bug that caused the loading spinner overlay to not show up (or only briefly show at the end of the load cycle) when changing model contexts, building trees, or performing massive queries. We force immediate visual layout updating by pumping the Dispatcher queue at Background priority when setting IsBusy = true.
-- **Right Column Scrollbar Support**:
-  - Wrapped the right column panel in a ScrollViewer to make all card configurations accessible when the window height is reduced.
-  - Used WPF's FlowDirection mirroring trick (`FlowDirection="RightToLeft"` on the ScrollViewer, and `FlowDirection="LeftToRight"` on its child Grid) to position the scrollbar on the left edge of the right column, substituting the static gray vertical line separator.
-  - Configured `VerticalScrollBarVisibility="Visible"` to permanently reserve the scrollbar space, ensuring that the width of the cards remains perfectly consistent and never shifts or jumps, matching the styling behavior of the left tree explorer scrollbar.
-- **Top Row Header Layout Simplification**:
-  - Removed the white background card container from the top document context selector to integrate it seamlessly with the main window background.
-  - Reduced its height and updated the title to `"Apply FilterPlus with:"` for better user clarity.
+- **Multi-Document Selection Dialog**: A new selection modal window to manage host and link instance checkboxes individually or in bulk.
+- **Unified Button Corners**: Standardized button corner roundness across all windows and controls.
 
-### v1.3.1 - 2026-07-01
+### v1.4.0
 
 #### Added
-- **Scope RadioButtons in Pre-Selection**: Swapped square CheckBoxes for round RadioButtons in the Pre-Selection window's scope options, enhancing the visual clarity of mutual exclusivity.
-- **Dynamic Family & Type Binding & Cascading Deletion**:
-  - Implemented dynamic value list population on the very first load for initial rule setups (e.g. populating the Category dropdown immediately).
-  - Resolved WPF binding reset issues where property list changes cleared chosen sibling values.
-  - Implemented recursive rule pruning (cascading deletion) where deleting or changing a prerequisite rule (like Category or Family) automatically prunes dependent child rules (like Family or Type).
-- **Trace Logging**: Added detailed logs with Rule IDs and update states visible in the Debug Log window.
+- **Multi-Model Support**: Query, select, and highlight elements across host and linked models simultaneously.
+- **Improved Loading Feedback**: The loading spinner overlay now updates responsively when building trees or running operations.
+- **Right Column Layout**: Added scroll support and positioned the scrollbar on the left side of the card area for a clean layout separator.
+- **Simplified Header**: Reorganized the top row header context layout to fit cleanly into the window background.
 
-### v1.3.0 - 2026-06-30
+### v1.3.1
 
 #### Added
-- **Pre-Selection Rules & Scope Builder**: A complete advanced query builder allowing users to define rules and nested sets using logical operators (AND/OR) to check elements in the tree explorer.
-- **Dynamic Family & Type Parameters in Pre-Selection**: Added dynamic "Familias" and "Tipos" parameter rules. "Familias" is only selectable if a sibling "Categorías" rule is defined in the same set, and "Tipos" is strictly enabled by sibling "Familias" rules. Selectable values for families and types are filtered on the fly to match chosen sibling categories/families.
-- **Scope Exclusions in Pre-Selection**: Mutual exclusion logic for "All Model Elements" and "Elements in View" scope selectors inside the Pre-Selection window.
-- **Scope Syncing**: The chosen scope in the Pre-Selection window is automatically synchronized and checked in the main "Select" card when the filter is applied.
+- **Scope RadioButtons**: Replaced checkboxes with RadioButtons for clearer mutual exclusivity.
+- **Cascading Rule Pruning**: Prunes child family or type rules dynamically when parent rules are updated.
+- **Rule Activity Logging**: Enabled internal tracing for rule configurations and states.
+
+### v1.3.0
+
+#### Added
+- **Pre-Selection Logic**: An advanced query builder to construct logical selection rules.
+- **Dynamic Family and Type Rules**: Selectable family and type dropdown values are filtered dynamically based on parent category constraints.
+- **Pre-Selection Scope Exclusions**: Mutual exclusion toggles between active view elements and entire model elements.
+- **Pre-Selection Scope Synchronization**: Selected rule scope is automatically synchronized with the main interface.
 
 #### Changed
-- **Apply Selection Button Visual Feedback**: The "Apply Selection" button now dynamically changes to Blue (`#007ACC`) when tree checkboxes are modified (by manual check/uncheck, Search filters, Pre-Selection, or "Increase Checked"), and resets to default gray once applied to Revit.
-- **Clear Button Flow**: The "Clear" button now unchecks all checkboxes and turns the "Apply Selection" button Blue, requiring a click on "Apply Selection" to commit the cleared selection to Revit (unless **On Live Selection** is active).
+- **Dynamic Action Button Color**: The apply selection button dynamically highlights blue when selection adjustments exist.
+- **Clear Selection Flow**: The clear button unchecks selection trees and requests confirmation via the apply button.
 
 #### Fixed
-- **Tree Explorer Rebuild on Scope Change**: Fixed a bug where switching scopes during pre-selection was blocked by the `IsBulkUpdating` flag, causing the elements tree to not update.
-- **Pre-Selection Value Reset & Cascading Deletion**: Resolved a critical WPF ComboBox binding issue where modifying rules cleared previous category/family selections. Implemented cascading rule deletion to automatically clean up dependent rules (Family/Type) if their prerequisite category or family rules are deleted or changed.
+- **Tree Explorer Rebuild**: Resolved visual sync bugs during scope changes.
+- **Rule Value Persistence**: Fixed dropdown value resets and dependent rule handling.
 
-### v1.2.0 - 2026-06-23
+### v1.2.0
 
 #### Added
-- **"Visible in current view"** scope in the WHERE section, providing an optimized filter for strictly visible items.
-- Full support for WiX MSIs configured for Revit 2023–2027 under `DBDev_dbarberos`.
+- **Active View Visible Scope**: Added a filter to target strictly visible elements in the current active view.
+- **Installer Integration**: Setup MSI installer support for Revit 2023-2027 deployments.
 
 #### Changed
-- **Global Purge System:** The "Unselect Elements If" exclusions now act upon the entire unified selection (previous selection + new matches + out-of-scope checked items). This unlocks the ability to use "Apply" as a standalone purge tool without any WHAT rules.
-- Persistent selections (`_persistentCheckedIds`) are now safely merged and carried over when switching viewing scopes.
+- **Exclusion Filters Scope**: The unselection exclusions now act on the entire unified selection scope.
+- **Selection State Persistence**: Selection lists are correctly preserved when changing active scopes.
 
 #### Fixed
-- Fixed the silent failure of the **Apply** button when triggering "Increase Checked" on "All Model" with an empty initial selection.
-- New elements identified by the expansion logic are now correctly injected and immediately displayed in the UI tree.
-- Resolved a critical UI freeze and infinite recursion issue during massive tree updates by properly suspending tree selection events (`IsBulkUpdating`) when applying expansion rules.
+- **Empty Initial Expansion**: Fixed a failure when triggering element expansions from an empty selection.
+- **Visual Node Injections**: Newly added expansion elements are immediately displayed in the tree explorer.
+- **Tree Sync Loop Fix**: Suspends selection triggers during bulk additions to avoid UI lags.
 
 ---
 

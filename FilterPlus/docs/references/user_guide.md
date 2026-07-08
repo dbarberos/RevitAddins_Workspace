@@ -137,25 +137,24 @@ In Revit 2025 and higher, FilterPlus integrates into the right-click context men
 
 ## 7. Version History (Changelog)
 
-### [1.6.0] - 2026-07-07
+### [1.6.0]
 #### Added
-- **Persistent Saved Selections**: Save/Recover selection sets inside the active Revit document via Extensible Storage.
-- **Save Selection Window**: Separate dialog featuring conditional styling triggers and native confirmation prompts to save new or overwrite existing selections.
-- **Save Selection UI Polish**: Standardized button widths across "Save New", "Overwrite", and "Cancel" using `SharedSizeGroup` grid properties. Adjusted vertical padding with a 1.5x increased margin (15px) above the footer button.
-- **Dropdown Reset & Disabling**: The ComboBox selection automatically resets to the empty placeholder selection after a successful `Recover` or `Delete` action. This immediately disables the `Recover` and `Delete` buttons, resetting the interface state.
-- **WPF Window Custom Icons**: Integrated `RibbonIcon32.png` into all 6 Window title bars using absolute WPF Pack URIs (`pack://application:,,,/FilterPlus;component/Resources/Icons/RibbonIcon32.png`) to prevent Baml2006 TypeConverterMarkupExtension startup exceptions inside Revit host environment.
-- **NuGet Dependency**: Integrated `System.Text.Json` to handle cross-version element serialization for both .NET Framework 4.8 and .NET 8.
+- **Persistent Saved Selections**: Save and recover selection sets persistently within active Revit projects.
+- **Save Selection Window**: A dedicated window to save new selections or overwrite existing ones.
+- **Save Selection UI Polish**: Standardized button widths and increased bottom spacing for improved visual alignment.
+- **Dropdown Auto-Reset**: Dropdowns reset to their default empty states and action buttons automatically disable after recovering or deleting selections.
+- **WPF Window Custom Icons**: Added custom title bar icons to all WPF windows.
 
-### [1.0.0] - 2026-04-29
+### [1.0.0]
 #### Added
-- **MSI Installer**: Automated multi-version support (Revit 2023-2027).
-- **Security Hardening**: Protection against XXE attacks in XML parser and path traversal protection for settings.
-- **Error Logging**: Centralized error logging system (`LoggerService`) for ease of tech support.
-- **Context Menu**: Contextual right-click integration for Revit 2025+.
+- **MSI Installer**: Automated multi-version support for Revit 2023-2027 installations.
+- **Security Hardening**: Standardized input validations and path checks to secure application configurations.
+- **Error Logging**: Centralized error logging system for diagnostic reports.
+- **Context Menu**: Contextual right-click menu integration for newer Revit versions.
 
 #### Fixed
-- User settings loading stability.
-- Exception management at the add-in startup entry point.
+- **Settings Stability**: Fixed configuration file parsing issues on startup.
+- **Startup Integrity**: Resolved exception handling issues during ribbon creation.
 
 ---
 *For technical support, contact: dbarberos@outlook.com*

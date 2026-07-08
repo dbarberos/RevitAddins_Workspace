@@ -129,63 +129,71 @@ th { background-color: #f2f2f2; }
 
 <h2>6. Version History (Changelog)</h2>
 
-<h3>v1.6.0 - 2026-07-07</h3>
+<h3>v1.6.0</h3>
 <h4>Added</h4>
 <ul>
-<li><strong>Persistent Saved Selections</strong>: Save/Recover selection sets inside the active Revit document via Extensible Storage.</li>
-<li><strong>Save Selection Window</strong>: Separate dialog featuring conditional styling triggers and native confirmation prompts to save new or overwrite existing selections.</li>
-<li><strong>Save Selection UI Polish</strong>: Standardized button widths across "Save New", "Overwrite", and "Cancel" using <code>SharedSizeGroup</code> grid properties. Adjusted vertical padding with a 1.5x increased margin (15px) above the footer button.</li>
-<li><strong>Dropdown Reset & Disabling</strong>: The ComboBox selection automatically resets to the empty placeholder selection after a successful <code>Recover</code> or <code>Delete</code> action. This immediately disables the <code>Recover</code> and <code>Delete</code> buttons, resetting the interface state.</li>
-<li><strong>WPF Window Custom Icons</strong>: Integrated <code>RibbonIcon32.png</code> into all 6 Window title bars using absolute WPF Pack URIs (<code>pack://application:,,,/FilterPlus;component/Resources/Icons/RibbonIcon32.png</code>) to prevent Baml2006 TypeConverterMarkupExtension startup exceptions inside Revit host environment.</li>
-<li><strong>NuGet Dependency</strong>: Integrated <code>System.Text.Json</code> to handle cross-version element serialization for both .NET Framework 4.8 and .NET 8.</li>
+<li><strong>Persistent Saved Selections:</strong> Save and recover selection sets persistently within active Revit projects.</li>
+<li><strong>Save Selection Window:</strong> A dedicated window to save new selections or overwrite existing ones.</li>
+<li><strong>Save Selection UI Polish:</strong> Standardized button widths and increased bottom spacing for improved visual alignment.</li>
+<li><strong>Dropdown Auto-Reset:</strong> Dropdowns reset to their default empty states and action buttons automatically disable after recovering or deleting selections.</li>
+<li><strong>WPF Window Custom Icons:</strong> Added custom title bar icons to all WPF windows.</li>
 </ul>
 
-<h3>v1.5.0 - 2026-07-02</h3>
+<h3>v1.5.0</h3>
 <h4>Added</h4>
 <ul>
-<li><strong>Multi-Document Selection Window</strong>: Replaced dropdown context with display text and a Select button opening a link context selection dialog.</li>
-<li><strong>Unified Button Corner Radius</strong>: Standardized a <code>CornerRadius="4"</code> on all main interface and dialog buttons.</li>
+<li><strong>Multi-Document Selection Dialog:</strong> A new selection modal window to manage host and link instance checkboxes individually or in bulk.</li>
+<li><strong>Unified Button Corners:</strong> Standardized button corner roundness across all windows and controls.</li>
 </ul>
 
-<h3>v1.4.0 - 2026-07-01</h3>
+<h3>v1.4.0</h3>
 <h4>Added</h4>
 <ul>
-<li><strong>Multi-Document Linked Models Integration</strong>: Query/select elements concurrently across host and linked models.</li>
-<li><strong>Loader Spinner Dispatcher Update</strong>: Fixed loader overlay rendering freezing by flushing dispatcher queue.</li>
-<li><strong>Right Column Scrollbar Mirroring</strong>: Positioned scrollbar on the left edge of the right column.</li>
+<li><strong>Multi-Model Support:</strong> Query, select, and highlight elements across host and linked models simultaneously.</li>
+<li><strong>Improved Loading Feedback:</strong> The loading spinner overlay now updates responsively when building trees or running operations.</li>
+<li><strong>Right Column Layout:</strong> Added scroll support and positioned the scrollbar on the left side of the card area for a clean layout separator.</li>
+<li><strong>Simplified Header:</strong> Reorganized the top row header context layout to fit cleanly into the window background.</li>
 </ul>
 
-<h3>v1.3.1 - 2026-07-01</h3>
+<h3>v1.3.1</h3>
 <h4>Added</h4>
 <ul>
-<li><strong>Scope RadioButtons in Pre-Selection</strong>: Swapped square checkboxes for round RadioButtons.</li>
-<li><strong>Cascading Deletion</strong>: Dependent rules are automatically deleted if sibling Category/Family rules are changed.</li>
+<li><strong>Scope RadioButtons:</strong> Replaced checkboxes with RadioButtons for clearer mutual exclusivity.</li>
+<li><strong>Cascading Rule Pruning:</strong> Prunes child family or type rules dynamically when parent rules are updated.</li>
+<li><strong>Rule Activity Logging:</strong> Enabled internal tracing for rule configurations and states.</li>
 </ul>
 
-<h3>v1.3.0 - 2026-06-30</h3>
+<h3>v1.3.0</h3>
 <h4>Added</h4>
 <ul>
-<li><strong>Pre-Selection Rules & Scope Builder</strong>: Dynamic rule building and logical query evaluations.</li>
-<li><strong>Apply Selection Button Feedback</strong>: Turns Blue when selection edits are made, and gray once applied.</li>
-</ul>
-
-<h3>v1.2.0 - 2026-06-23</h3>
-<h4>Added</h4>
-<ul>
-<li><strong>"Visible in current view"</strong> scope in the WHERE section, providing an optimized filter for strictly visible items.</li>
-<li>Full support for WiX MSIs configured for Revit 2023–2027 under <code>DBDev_dbarberos</code>.</li>
+<li><strong>Pre-Selection Logic:</strong> An advanced query builder to construct logical selection rules.</li>
+<li><strong>Dynamic Family and Type Rules:</strong> Selectable family and type dropdown values are filtered dynamically based on parent category constraints.</li>
+<li><strong>Pre-Selection Scope Exclusions:</strong> Mutual exclusion toggles between active view elements and entire model elements.</li>
+<li><strong>Pre-Selection Scope Synchronization:</strong> Selected rule scope is automatically synchronized with the main interface.</li>
 </ul>
 <h4>Changed</h4>
 <ul>
-<li><strong>Global Purge System:</strong> The "Unselect Elements If" exclusions now act upon the entire unified selection.</li>
+<li><strong>Dynamic Action Button Color:</strong> The apply selection button dynamically highlights blue when selection adjustments exist.</li>
+<li><strong>Clear Selection Flow:</strong> The clear button unchecks selection trees and requests confirmation via the apply button.</li>
 </ul>
 
-<h3>v1.0.0 - 2026-04-29</h3>
+<h3>v1.2.0</h3>
 <h4>Added</h4>
 <ul>
-<li><strong>MSI Installer</strong>: Automated multi-version support (Revit 2023-2027).</li>
-<li><strong>Security Hardening</strong>: Protection against XXE attacks and path traversal.</li>
-<li><strong>Context Menu</strong>: Contextual right-click integration for Revit 2025+.</li>
+<li><strong>Active View Visible Scope:</strong> Added a filter to target strictly visible elements in the current active view.</li>
+<li><strong>Installer Integration:</strong> Setup MSI installer support for Revit 2023-2027 deployments.</li>
+</ul>
+<h4>Changed</h4>
+<ul>
+<li><strong>Exclusion Filters Scope:</strong> The unselection exclusions now act on the entire unified selection scope.</li>
+</ul>
+
+<h3>v1.0.0</h3>
+<h4>Added</h4>
+<ul>
+<li><strong>MSI Installer:</strong> Automated multi-version support for Revit 2023-2027 installations.</li>
+<li><strong>Security Hardening:</strong> Standardized input validations and path checks to secure application configurations.</li>
+<li><strong>Context Menu:</strong> Contextual right-click menu integration for newer Revit versions.</li>
 </ul>
 <hr>
 
