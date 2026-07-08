@@ -54,6 +54,7 @@ At the top of the main FilterPlus interface, the document selection area allows 
 - **Select All Models**: A circular checkbox at the top of the selection window allows you to toggle all models (host + links) at once. When checked, the filtering processes all operations across all documents combined (same behavior as the previous `"All Models"` dropdown context).
 - **Individual Switches**: Users can use slide switches next to each model name to check or uncheck individual models. Unchecking any model deselects the "Select all models" option, and manually checking all models automatically checks the "Select all models" option.
 - **Simultaneous Cross-Document Selection**: When applying selections or rule matches across multiple selected models, FilterPlus creates appropriate coordinate-transformed link references (`CreateLinkReference`). This allows Revit to highlight and select elements in both the host project and linked models at the same time in the viewport.
+- **Cache Limit Fallback & Warning**: To prevent UI freezes and memory crashes when loading massive datasets, FilterPlus enforces a combined limit of **100,000 elements**. If the combined total count across all selected models exceeds this limit, a fallback is triggered: only the active/host model elements are loaded, and linked models are automatically omitted. An orange warning icon appears next to the "Elements Checked" text in the main window with a detailed explanatory tooltip.
 
 ### Pre-Filtering (Dropdown Filters)
 Filter and narrow down elements before selecting or displaying them. Dropdown controls at the top of the interface let you pre-filter elements based on:
@@ -113,6 +114,10 @@ Expand your current selection based on advanced relational and geometric rules. 
 ### Interactive Element Picking (Pick in Revit)
 Click the Pick Elements button to temporarily hide the FilterPlus window and select objects directly in the Revit viewport. Once selection is complete, the window automatically reappears, and the new elements are loaded into the tree view and checked.
 
+Depending on the models checked under "Apply FilterPlus with:", selection is isolated as follows:
+- **Host Selection Phase**: When selecting host/active model elements (either alone or during the first phase of sequential selection), the add-in blocks the selection of link instances (`RevitLinkInstance`) as a whole block. This ensures only native active document elements can be picked.
+- **Linked Selection Phase**: When selecting linked model elements (either alone or during the second phase of sequential selection), the cursor only allows highlighting and selecting elements that reside inside the specific linked models checked under "Apply FilterPlus with:". Elements belonging to unchecked links or the host model are ignored.
+
 ### Persistent Saved Selections
 FilterPlus allows you to save and recover element selections persistently across sessions inside your Revit project.
 - **Dropdown List**: Displays already saved selections. The first element is a blank placeholder representing "no selection active".
@@ -135,6 +140,8 @@ FilterPlus allows you to save and recover element selections persistently across
 - **Dropdown Auto-Reset**: Dropdowns reset to their default empty states and action buttons automatically disable after recovering or deleting selections.
 - **WPF Window Custom Icons**: Added custom title bar icons to all WPF windows.
 - **Sort by Model Grouping**: Group elements in the explorer tree by their host or link models, respecting the active grouping hierarchy.
+- **100k Element Cache Warning**: Integrates an orange warning icon and tooltip to signal when the combined elements exceed 100,000, triggering an automatic fallback to Active Model Only to preserve performance.
+- **Isolated Selection Filters**: Introduces custom selection filters during "Select in Revit" to prevent selecting `RevitLinkInstance` blocks in Host phase and block selection of elements inside unchecked link models in Linked phase.
 
 ### v1.5.0
 

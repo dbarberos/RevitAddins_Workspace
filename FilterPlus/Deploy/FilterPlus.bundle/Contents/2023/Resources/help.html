@@ -62,6 +62,7 @@ th { background-color: #f2f2f2; }
 <li><strong>Select Button:</strong> Opens the advanced "Select model or models" modal window to check or uncheck individual link instances.</li>
 <li><strong>Select All Models:</strong> Circular checkbox at the top allows you to process operations across host and link documents combined.</li>
 <li><strong>Simultaneous Cross-Document Selection:</strong> Selection highlights use link transformations to highlight linked elements concurrently in viewport.</li>
+<li><strong>Cache Limit Fallback & Warning:</strong> Enforces a combined limit of <strong>100,000 elements</strong>. If this count is exceeded, only active/host model elements are loaded, and links are omitted. An orange warning icon with a tooltip is displayed in the main window.</li>
 </ul>
 
 <h3>Pre-Filtering (Dropdown Filters)</h3>
@@ -117,6 +118,11 @@ th { background-color: #f2f2f2; }
 
 <h3>Interactive Element Picking (Pick in Revit)</h3>
 <p>Click the Pick Elements button to temporarily hide the FilterPlus window and select objects directly in the Revit viewport. Once selection is complete, the window automatically reappears, and the new elements are loaded into the tree view and checked.</p>
+<p>Depending on the models checked under "Apply FilterPlus with:", selection is isolated as follows:</p>
+<ul>
+<li><strong>Host Selection Phase:</strong> When selecting host elements (alone or during the first phase of sequential selection), selecting <code>RevitLinkInstance</code> as a block is blocked to allow only native element picking.</li>
+<li><strong>Linked Selection Phase:</strong> When selecting linked elements (alone or during the second phase of sequential selection), the cursor restricts picking to elements within the linked models checked in "Apply FilterPlus with:". Elements of other link instances or the active model are ignored.</li>
+</ul>
 
 <h3>Persistent Saved Selections</h3>
 <p>FilterPlus allows you to save and recover element selections persistently across sessions inside your Revit project.</p>
@@ -138,6 +144,8 @@ th { background-color: #f2f2f2; }
 <li><strong>Dropdown Auto-Reset:</strong> Dropdowns reset to their default empty states and action buttons automatically disable after recovering or deleting selections.</li>
 <li><strong>WPF Window Custom Icons:</strong> Added custom title bar icons to all WPF windows.</li>
 <li><strong>Sort by Model Grouping:</strong> Group elements in the explorer tree by their host or link models, respecting the active grouping hierarchy.</li>
+<li><strong>100k Element Cache Warning:</strong> Integrates an orange warning icon and tooltip to signal when the combined elements exceed 100,000, triggering an automatic fallback to Active Model Only.</li>
+<li><strong>Isolated Selection Filters:</strong> Restricts host selection from picking <code>RevitLinkInstance</code> blocks, and restricts linked selection strictly to unchecked link models.</li>
 </ul>
 
 <h3>v1.5.0</h3>

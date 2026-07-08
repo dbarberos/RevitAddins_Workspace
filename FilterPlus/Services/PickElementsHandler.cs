@@ -18,10 +18,42 @@ public class PickElementsHandler : IExternalEventHandler
         _viewModel = viewModel;
     }
 
-    private class DummySelectionFilter : ISelectionFilter
+    private class HostSelectionFilter : ISelectionFilter
     {
-        public bool AllowElement(Element elem) => true;
+        public bool AllowElement(Element elem)
+        {
+            if (elem is RevitLinkInstance) return false;
+            return true;
+        }
         public bool AllowReference(Reference reference, Autodesk.Revit.DB.XYZ position) => true;
+    }
+
+    private class LinkedSelectionFilter : ISelectionFilter
+    {
+        private readonly HashSet<ElementId> _allowedLinkInstanceIds;
+
+        public LinkedSelectionFilter(IEnumerable<RevitModelRepresentation> selectedModels)
+        {
+            _allowedLinkInstanceIds = new HashSet<ElementId>(
+                selectedModels
+                    .Where(m => m.LinkInstance != null)
+                    .Select(m => m.LinkInstance.Id)
+            );
+        }
+
+        public bool AllowElement(Element elem)
+        {
+            if (elem is RevitLinkInstance linkInst)
+            {
+                return _allowedLinkInstanceIds.Contains(linkInst.Id);
+            }
+            return false;
+        }
+
+        public bool AllowReference(Reference reference, Autodesk.Revit.DB.XYZ position)
+        {
+            return _allowedLinkInstanceIds.Contains(reference.ElementId);
+        }
     }
 
     public void Execute(UIApplication app)
@@ -116,7 +148,7 @@ public class PickElementsHandler : IExternalEventHandler
                 {
                     IList<Reference> selectedHostRefs = uiDoc.Selection.PickObjects(
                         ObjectType.Element,
-                        new DummySelectionFilter(),
+                        new HostSelectionFilter(),
                         "Select elements in the Host Model only (active document). Click Finish (top-left) when done.",
                         preSelectedHostRefs
                     );
@@ -182,7 +214,7 @@ public class PickElementsHandler : IExternalEventHandler
                 {
                     IList<Reference> selectedLinkRefs = uiDoc.Selection.PickObjects(
                         ObjectType.LinkedElement,
-                        new DummySelectionFilter(),
+                        new LinkedSelectionFilter(selectedModels),
                         "Select elements in Linked Models only (use TAB to highlight). Click Finish (top-left) when done.",
                         preSelectedLinkRefs
                     );

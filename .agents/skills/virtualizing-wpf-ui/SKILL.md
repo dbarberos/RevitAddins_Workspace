@@ -19,6 +19,7 @@ Prevent memory crashes and massive performance drops when rendering thousands of
 
 ## References
 - [WPF Virtualization Guide](file:///b:/REVIT/C%23/RevitAddins_Workspace/.agents/skills/virtualizing-wpf-ui/references/wpf_virtualization_guide.md)
+- [Debugging Cache Limit with Linked Models](file:///c:/Users/david.barbero/Documents/DOCUMENTOS/ALTEN/Workbench/RevitAddins_Workspace/RevitAddins_Workspace/.agents/skills/virtualizing-wpf-ui/references/debugging_cache_limit_linked_models_2026-07-08.md)
 
 ## Assets
 - [VirtualizationHelpers.cs](file:///b:/REVIT/C%23/RevitAddins_Workspace/.agents/skills/virtualizing-wpf-ui/assets/VirtualizationHelpers.cs): C# diagnostic tools for UI virtualization.
