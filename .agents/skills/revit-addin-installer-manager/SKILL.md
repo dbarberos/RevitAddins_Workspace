@@ -9,6 +9,7 @@ This skill guides the agent in automating the creation of professional `.msi` in
 
 ## 🚨 Mandatory Critical Rules
 1. **Developer Identity:** When generating Wix templates (`.wxs`), `PackageContents.xml` files, or any installer documentation, the agent MUST strictly use `DBDev_dbarberos` as the Author/Manufacturer/Developer Name and `DBDev Solutions` as the Company Name. The use of generic AI placeholders like "AI_Corp" or "AI Solutions" is strictly forbidden.
+2. **Version-Naming and Archiving:** All compiled `.msi` installers MUST include the add-in version in their file name, formatted as `[AppName]_v[Version].msi`. During the build process, the agent MUST automatically identify any pre-existing/older `.msi` or `.zip` installer files and move them into a dedicated `Archive/` subdirectory (e.g., `Deploy/Archive/`) to preserve historical accessibility and prevent overwrites.
 
 ## 📚 Technical References (Knowledge Base)
 To obtain theoretical specifications and Windows Installer validation guides, consult the files in the `references/` folder:
@@ -21,3 +22,4 @@ The following files are located in the `assets/` folder and can be injected or u
 
 *   `assets/ProductTemplate.wxs`: Structured base XML template for packaging multi-version add-ins (Revit 2024 and 2025) with cleanup components and unique IDs.
 *   `assets/LicenseTemplate.rtf`: Base file in Rich Text Format (RTF) for the End-User License Agreement (EULA) displayed in the installer interface.
+*   `assets/build-msi.ps1`: Automated PowerShell script to compile the WiX installer, output version-named MSI files, clean intermediate outputs, and archive older builds automatically.
