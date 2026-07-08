@@ -11,6 +11,7 @@ This skill automates the integration of custom icons into Revit add-ins, autonom
 For detailed technical specifications and execution flows, consult the files in the `references/` folder:
 
 *   `references/icon_loading_strategy.md`: Active environment diagnosis, image size organization, resource compilation schemes in the `.csproj` project, and compatibility with variable DPI screens and Dark Themes (Revit 2024+).
+*   `references/debugging_wpf_icon_baml_exception_2026-07-07.md`: Resolving startup BAML / TypeConverterMarkupExtension crashes inside external Revit hosts by enforcing absolute pack URIs in WPF window titles.
 
 ## 📦 Assets (Templates and C# Code Examples)
 The following files are located in the `assets/` folder and can be injected as reusable helpers:

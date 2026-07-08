@@ -15,6 +15,7 @@ This skill allows the agent to autonomously manage the add-in's documentation li
 5. **Autodesk App Store Standard:** All information regarding "Installation & Uninstallation" must strictly use the Autodesk App Store standard (explaining that the downloaded installer already does the job, the need to restart the Autodesk product, and the uninstallation method from the Control Panel).
 6. **Preserve Changelog History:** When updating the Version History (Changelog) section of the user guide or similar documents, the agent MUST NOT delete or overwrite comments from previous versions. New version updates must be appended at the top of the history to maintain a complete historical record of all changes.
 7. **Developer Identity:** When generating any documentation or template, the agent MUST strictly use `DBDev_dbarberos` as the Author/Developer Name and `DBDev Solutions` as the Company Name. The use of generic AI placeholders like "AI_Corp" or "AI Solutions" is strictly forbidden.
+8. **Revit Contextual Help (F1 help.html):** In projects that feature a `Resources/help.html` file (used for Revit F1 Contextual Help), the agent MUST synchronously update it alongside `User_Guide.md`. Its HTML content must mirror the user guide's structure, version, and changelog updates in clean, readable HTML, ensuring that F1 help is compiled with the latest application specs.
 
 ## 📚 Technical References (Knowledge Base)
 To obtain documentation inspection guides and procedures, consult the files in the `references/` folder:

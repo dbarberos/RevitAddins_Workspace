@@ -36,27 +36,67 @@ public class RevitSelectionService
         return ids;
     }
 
-    public List<ElementModel> GetAvailableElements(SelectionScope scope)
+    public List<ElementModel> GetAvailableElements(SelectionScope scope, IEnumerable<RevitModelRepresentation> selectedModels)
     {
-        LoggerService.LogInfo($"Querying Revit for scope: {scope}...");
+        var result = new List<ElementModel>();
+        if (selectedModels == null || !selectedModels.Any())
+        {
+            LoggerService.LogInfo($"[GetAvailableElements] No models specified. Defaulting to host document elements.");
+            return GetAvailableElementsForDoc(scope, _doc, null);
+        }
+
+        LoggerService.LogInfo($"Querying Revit for scope: {scope} on {selectedModels.Count()} models combined...");
+        foreach (var model in selectedModels)
+        {
+            Document doc = model.Document ?? _doc;
+            RevitLinkInstance linkInstance = model.LinkInstance;
+            var elements = GetAvailableElementsForDoc(scope, doc, linkInstance);
+            result.AddRange(elements);
+        }
+
+        LoggerService.LogInfo($"Querying selected models complete. Total elements found: {result.Count}");
+        return result;
+    }
+
+    private List<ElementModel> GetAvailableElementsForDoc(SelectionScope scope, Document doc, RevitLinkInstance linkInstance)
+    {
+        LoggerService.LogInfo($"Collecting elements for scope: {scope} in doc: {doc.Title} (LinkInstance: {linkInstance?.Name ?? "None"})...");
         FilteredElementCollector collector;
         
         switch (scope)
         {
             case SelectionScope.CurrentSelection:
+                if (linkInstance != null)
+                {
+                    return new List<ElementModel>();
+                }
                 var selectedIds = _uiDoc.Selection.GetElementIds();
                 if (!selectedIds.Any()) return new List<ElementModel>();
-                collector = new FilteredElementCollector(_doc, selectedIds);
+                collector = new FilteredElementCollector(doc, selectedIds);
                 break;
             case SelectionScope.ElementsVisibleInView:
-                collector = new FilteredElementCollector(_doc, _doc.ActiveView.Id);
-                break;
             case SelectionScope.ElementsBelongingToView:
+                if (linkInstance != null)
+                {
+                    collector = new FilteredElementCollector(doc);
+                }
+                else
+                {
+                    collector = new FilteredElementCollector(doc, _doc.ActiveView.Id);
+                }
+                break;
             case SelectionScope.AllModelElements:
-                collector = new FilteredElementCollector(_doc);
+                collector = new FilteredElementCollector(doc);
                 break;
             default:
-                collector = new FilteredElementCollector(_doc, _doc.ActiveView.Id);
+                if (linkInstance != null)
+                {
+                    collector = new FilteredElementCollector(doc);
+                }
+                else
+                {
+                    collector = new FilteredElementCollector(doc, _doc.ActiveView.Id);
+                }
                 break;
         }
 
@@ -65,34 +105,99 @@ public class RevitSelectionService
             .ToElements();
 
         var result = new List<ElementModel>();
-        var worksetTable = _doc.GetWorksetTable();
+        var worksetTable = doc.GetWorksetTable();
 
-        // Pre-fetch phases once for ordering
-        var phaseMap = _doc.Phases.Cast<Phase>()
+        var phaseMap = doc.Phases.Cast<Phase>()
             .Select((p, i) => new { p.Id, p.Name, Order = i })
             .ToDictionary(x => x.Id, x => (x.Name, x.Order));
 
+        Outline hostViewOutline = null;
+        if (linkInstance != null && (scope == SelectionScope.ElementsVisibleInView || scope == SelectionScope.ElementsBelongingToView))
+        {
+            var activeView = _doc.ActiveView;
+            if (activeView != null)
+            {
+                try
+                {
+                    if (activeView.CropBoxActive)
+                    {
+                        var cropBox = activeView.CropBox;
+                        hostViewOutline = new Outline(cropBox.Min, cropBox.Max);
+                    }
+                    else
+                    {
+                        var viewOutline = activeView.get_BoundingBox(null);
+                        if (viewOutline != null)
+                        {
+                            hostViewOutline = new Outline(viewOutline.Min, viewOutline.Max);
+                        }
+                    }
+                }
+                catch
+                {
+                    // Fallback to null
+                }
+            }
+        }
+
+        var totalTransform = linkInstance?.GetTotalTransform();
+
         foreach (var el in elements)
         {
-            // For ElementsBelongingToView, we include:
-            // 1. Elements owned by the view (view-specific like text, detail lines, etc.)
-            // 2. Elements visible in the view (have a bounding box)
-            if (scope == SelectionScope.ElementsBelongingToView)
+            if (linkInstance != null)
             {
-                bool isViewSpecific = el.OwnerViewId == _doc.ActiveView.Id;
-                bool isVisibleInView = el.get_BoundingBox(_doc.ActiveView) != null;
-                
-                if (!isViewSpecific && !isVisibleInView) continue;
+                if (scope == SelectionScope.ElementsVisibleInView || scope == SelectionScope.ElementsBelongingToView)
+                {
+                    var localBox = el.get_BoundingBox(null);
+                    if (localBox == null) continue;
+
+                    if (hostViewOutline != null && totalTransform != null)
+                    {
+                        XYZ minHost = totalTransform.OfPoint(localBox.Min);
+                        XYZ maxHost = totalTransform.OfPoint(localBox.Max);
+
+                        double minX = Math.Min(minHost.X, maxHost.X);
+                        double minY = Math.Min(minHost.Y, maxHost.Y);
+                        double minZ = Math.Min(minHost.Z, maxHost.Z);
+                        double maxX = Math.Max(minHost.X, maxHost.X);
+                        double maxY = Math.Max(minHost.Y, maxHost.Y);
+                        double maxZ = Math.Max(minHost.Z, maxHost.Z);
+
+                        var elOutline = new Outline(new XYZ(minX, minY, minZ), new XYZ(maxX, maxY, maxZ));
+
+                        if (!hostViewOutline.Intersects(elOutline, 0.001))
+                        {
+                            continue;
+                        }
+                    }
+                }
+            }
+            else
+            {
+                if (scope == SelectionScope.ElementsBelongingToView)
+                {
+                    bool isViewSpecific = el.OwnerViewId == _doc.ActiveView.Id;
+                    bool isVisibleInView = el.get_BoundingBox(_doc.ActiveView) != null;
+                    
+                    if (!isViewSpecific && !isVisibleInView) continue;
+                }
             }
 
             var model = MapToElementModel(el, phaseMap, worksetTable);
             if (model != null)
             {
+                if (linkInstance != null)
+                {
+                    model.LinkInstanceId = linkInstance.Id;
+                }
+                else
+                {
+                    model.LinkInstanceId = ElementId.InvalidElementId;
+                }
                 result.Add(model);
             }
         }
 
-        LoggerService.LogInfo($"Revit query finished. {result.Count} valid elements found.");
         return result;
     }
 
@@ -120,8 +225,7 @@ public class RevitSelectionService
         }
         else if (el is HostObject host)
         {
-            // Walls, Floors, etc.
-            var type = _doc.GetElement(host.GetTypeId()) as ElementType;
+            var type = el.Document.GetElement(host.GetTypeId()) as ElementType;
             if (type != null)
             {
                 familyName = type.FamilyName;
@@ -131,13 +235,13 @@ public class RevitSelectionService
 
         if (el.LevelId != ElementId.InvalidElementId)
         {
-            var level = _doc.GetElement(el.LevelId);
+            var level = el.Document.GetElement(el.LevelId);
             if (level != null) levelName = level.Name;
         }
 
-        if (el.WorksetId != WorksetId.InvalidWorksetId && _doc.IsWorkshared)
+        if (el.WorksetId != WorksetId.InvalidWorksetId && el.Document.IsWorkshared)
         {
-            var table = worksetTable ?? _doc.GetWorksetTable();
+            var table = worksetTable ?? el.Document.GetWorksetTable();
             var workset = table.GetWorkset(el.WorksetId);
             if (workset != null) worksetName = workset.Name;
         }
@@ -155,13 +259,12 @@ public class RevitSelectionService
             }
             else
             {
-                var phase = _doc.GetElement(phaseId) as Phase;
+                var phase = el.Document.GetElement(phaseId) as Phase;
                 if (phase != null)
                 {
                     phaseName = phase.Name;
-                    // Dynamically calculate phase order
                     int order = 0;
-                    foreach (Phase p in _doc.Phases)
+                    foreach (Phase p in el.Document.Phases)
                     {
                         if (p.Id == phaseId)
                         {
@@ -186,7 +289,7 @@ public class RevitSelectionService
             if (pComments != null && pComments.HasValue) metaBuilder.Append(pComments.AsString()?.ToLowerInvariant()).Append(" ");
 
             // Marcas y Comentarios de Tipo
-            var type = _doc.GetElement(el.GetTypeId()) as ElementType;
+            var type = el.Document.GetElement(el.GetTypeId()) as ElementType;
             if (type != null)
             {
                 var pTypeMark = type.get_Parameter(BuiltInParameter.ALL_MODEL_TYPE_MARK);
@@ -207,6 +310,137 @@ public class RevitSelectionService
             // Ignorar errores de lectura puntuales
         }
 
+        // System and Domain detection
+        string systemName = "N/A";
+        string systemClassification = "N/A";
+        string mepDomain = "N/A";
+        
+        try
+        {
+            var sysParam = el.get_Parameter(BuiltInParameter.RBS_SYSTEM_NAME_PARAM);
+            if (sysParam != null && sysParam.HasValue)
+            {
+                systemName = sysParam.AsString();
+            }
+
+            ConnectorManager cm = null;
+            if (el is FamilyInstance fi2 && fi2.MEPModel != null)
+            {
+                cm = fi2.MEPModel.ConnectorManager;
+            }
+            else if (el is MEPCurve mepCurve)
+            {
+                cm = mepCurve.ConnectorManager;
+            }
+
+            if (cm != null)
+            {
+                foreach (Connector conn in cm.Connectors)
+                {
+                    if (conn.MEPSystem != null)
+                    {
+                        if (string.IsNullOrEmpty(systemName) || systemName == "N/A") 
+                            systemName = conn.MEPSystem.Name;
+                            
+                        var sysType = el.Document.GetElement(conn.MEPSystem.GetTypeId()) as MEPSystemType;
+                        if (sysType != null)
+                        {
+                            systemClassification = sysType.SystemClassification.ToString();
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+        catch
+        {
+            // Ignore system retrieval issues
+        }
+        
+        // Compute MEP Domain
+        if (el.Category != null)
+        {
+            string catLower = el.Category.Name.ToLowerInvariant();
+            if (catLower.Contains("duct") || catLower.Contains("air") || catLower.Contains("mechanical") || catLower.Contains("terminal"))
+            {
+                mepDomain = "Mechanical";
+            }
+            else if (catLower.Contains("pipe") || catLower.Contains("plumbing") || catLower.Contains("sprinkler"))
+            {
+                mepDomain = "Piping";
+            }
+            else if (catLower.Contains("fitting"))
+            {
+                if (catLower.Contains("pipe")) mepDomain = "Piping";
+                else if (catLower.Contains("duct")) mepDomain = "Mechanical";
+            }
+            else if (catLower.Contains("electrical") || catLower.Contains("lighting") || catLower.Contains("cable tray") || catLower.Contains("conduit") || catLower.Contains("wire") || catLower.Contains("switch"))
+            {
+                mepDomain = "Electrical";
+            }
+        }
+        
+        if (mepDomain == "N/A" && systemClassification != "N/A")
+        {
+            string sysClassLower = systemClassification.ToLowerInvariant();
+            if (sysClassLower.Contains("air") || sysClassLower.Contains("exhaust") || sysClassLower.Contains("supply") || sysClassLower.Contains("return"))
+                mepDomain = "Mechanical";
+            else if (sysClassLower.Contains("water") || sysClassLower.Contains("sanitary") || sysClassLower.Contains("hydronic") || sysClassLower.Contains("fire") || sysClassLower.Contains("otherpipe"))
+                mepDomain = "Piping";
+        }
+
+        // Zone detection
+        string zoneName = "N/A";
+        try
+        {
+            if (el is Autodesk.Revit.DB.Mechanical.Space space)
+            {
+                if (space.Zone != null) zoneName = space.Zone.Name;
+            }
+            else if (el is FamilyInstance fi3)
+            {
+                Phase activePhase = null;
+                var viewPhaseParam = _doc.ActiveView.get_Parameter(BuiltInParameter.VIEW_PHASE);
+                if (viewPhaseParam != null && viewPhaseParam.HasValue)
+                {
+                    var pId = viewPhaseParam.AsElementId();
+                    if (pId != ElementId.InvalidElementId)
+                    {
+                        var hostPhase = _doc.GetElement(pId) as Phase;
+                        if (hostPhase != null)
+                        {
+                            activePhase = el.Document.Phases.Cast<Phase>()
+                                .FirstOrDefault(p => p.Name.Equals(hostPhase.Name, StringComparison.OrdinalIgnoreCase));
+                        }
+                    }
+                }
+                
+                if (activePhase == null)
+                {
+                    activePhase = el.Document.Phases.Cast<Phase>().LastOrDefault();
+                }
+
+                Autodesk.Revit.DB.Mechanical.Space sp = null;
+                if (activePhase != null)
+                {
+                    try { sp = fi3.get_Space(activePhase); } catch {}
+                }
+                if (sp == null)
+                {
+                    sp = fi3.Space;
+                }
+                
+                if (sp != null && sp.Zone != null)
+                {
+                    zoneName = sp.Zone.Name;
+                }
+            }
+        }
+        catch
+        {
+            // Ignore zone retrieval issues
+        }
+
         return new ElementModel
         {
             Id = el.Id,
@@ -215,6 +449,10 @@ public class RevitSelectionService
             TypeName = typeName,
             LevelName = levelName,
             WorksetName = worksetName,
+            SystemName = systemName,
+            SystemClassification = systemClassification,
+            MepDomain = mepDomain,
+            ZoneName = zoneName,
             IsModelElement = el.Category?.CategoryType == CategoryType.Model,
             IsAnnotation = el.Category?.CategoryType == CategoryType.Annotation,
             HasBoundingBox = el.get_BoundingBox(null) != null,
@@ -224,8 +462,69 @@ public class RevitSelectionService
         };
     }
 
-    public void SetSelection(IEnumerable<ElementId> ids)
+    public void SetSelection(IEnumerable<ElementSelectionKey> selection)
     {
-        _uiDoc.Selection.SetElementIds(ids.ToList());
+        var refs = new List<Reference>();
+        var hostIds = new List<ElementId>();
+
+        foreach (var key in selection)
+        {
+            if (key.LinkInstanceId == null || key.LinkInstanceId == ElementId.InvalidElementId)
+            {
+                hostIds.Add(key.ElementId);
+            }
+            else
+            {
+                var linkInstance = _doc.GetElement(key.LinkInstanceId) as RevitLinkInstance;
+                if (linkInstance != null)
+                {
+                    var linkedDoc = linkInstance.GetLinkDocument();
+                    if (linkedDoc != null)
+                    {
+                        var el = linkedDoc.GetElement(key.ElementId);
+                        if (el != null)
+                        {
+                            try
+                            {
+                                var refInLink = new Reference(el);
+                                var hostRef = refInLink.CreateLinkReference(linkInstance);
+                                refs.Add(hostRef);
+                            }
+                            catch (Exception ex)
+                            {
+                                LoggerService.LogError($"SetSelection failed for linked element {key.ElementId}", ex);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // Convert host ElementIds to Reference objects so they can be selected in the same call
+        foreach (var id in hostIds)
+        {
+            var el = _doc.GetElement(id);
+            if (el != null)
+            {
+                try
+                {
+                    refs.Add(new Reference(el));
+                }
+                catch (Exception ex)
+                {
+                    LoggerService.LogError($"SetSelection failed for host element {id}", ex);
+                }
+            }
+        }
+
+        // Select all references (host + links) simultaneously
+        try
+        {
+            _uiDoc.Selection.SetReferences(refs);
+        }
+        catch (Exception ex)
+        {
+            LoggerService.LogError("SetSelection via SetReferences failed", ex);
+        }
     }
 }

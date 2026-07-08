@@ -1,6 +1,6 @@
 # User Guide - FilterPlus
 
-**Current Version:** 1.1.0  
+**Current Version:** 1.6.0  
 **Developer:** DBDev_dbarberos  
 **Publisher Website:** [Autodesk App Store Profile](https://apps.autodesk.com/en/Publisher/PublisherHomepage) *(Publisher profile URL)*  
 **Privacy Policy:** [https://dbdev-dbarberos.github.io/PrivacyPolicy/](https://dbdev-dbarberos.github.io/PrivacyPolicy/)  
@@ -97,6 +97,15 @@ Expand your current selection based on advanced relational and geometric rules. 
 ### Interactive Element Picking (Pick in Revit)
 Click the **Pick Elements** button to temporarily hide the FilterPlus window and select objects directly in the Revit viewport. Once selection is complete, the window automatically reappears, and the new elements are loaded into the tree view and checked.
 
+### Persistent Saved Selections
+FilterPlus allows you to save and recover element selections persistently across sessions inside your Revit project.
+- **Dropdown List**: Displays already saved selections. The first element is a blank placeholder representing "no selection active".
+- **Recover Button**: Relocates your selection context to the saved active models, checks the saved elements inside the explorer tree, and highlights/selects them in Revit. This button is only enabled when a valid selection set is chosen.
+- **Save Button**: Opens a separate modal window (`Save Selection`) offering two actions:
+  - **Save New (Row 1)**: Type a new name in the TextBox to save the current selection context. The button activates only after text is input.
+  - **Overwrite Existing (Row 2)**: Select an existing selection from the ComboBox to replace its contents. The button activates only after a selection is picked.
+  - Both operations require confirmation via a native Revit message box before saving.
+
 ---
 
 ## 5. Commands and Features Guide
@@ -128,16 +137,24 @@ In Revit 2025 and higher, FilterPlus integrates into the right-click context men
 
 ## 7. Version History (Changelog)
 
-### [1.0.0] - 2026-04-29
+### [1.6.0]
 #### Added
-- **MSI Installer**: Automated multi-version support (Revit 2023-2027).
-- **Security Hardening**: Protection against XXE attacks in XML parser and path traversal protection for settings.
-- **Error Logging**: Centralized error logging system (`LoggerService`) for ease of tech support.
-- **Context Menu**: Contextual right-click integration for Revit 2025+.
+- **Persistent Saved Selections**: Save and recover selection sets persistently within active Revit projects.
+- **Save Selection Window**: A dedicated window to save new selections or overwrite existing ones.
+- **Save Selection UI Polish**: Standardized button widths and increased bottom spacing for improved visual alignment.
+- **Dropdown Auto-Reset**: Dropdowns reset to their default empty states and action buttons automatically disable after recovering or deleting selections.
+- **WPF Window Custom Icons**: Added custom title bar icons to all WPF windows.
+
+### [1.0.0]
+#### Added
+- **MSI Installer**: Automated multi-version support for Revit 2023-2027 installations.
+- **Security Hardening**: Standardized input validations and path checks to secure application configurations.
+- **Error Logging**: Centralized error logging system for diagnostic reports.
+- **Context Menu**: Contextual right-click menu integration for newer Revit versions.
 
 #### Fixed
-- User settings loading stability.
-- Exception management at the add-in startup entry point.
+- **Settings Stability**: Fixed configuration file parsing issues on startup.
+- **Startup Integrity**: Resolved exception handling issues during ribbon creation.
 
 ---
 *For technical support, contact: dbarberos@outlook.com*

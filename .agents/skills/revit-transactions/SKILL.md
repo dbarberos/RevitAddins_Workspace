@@ -14,6 +14,8 @@ Modifying the Revit model (`Document`) requires an active `Transaction`. Failing
 
 ## Mandatory Rules (C# Add-ins)
 - **`using` Block Requirement**: You **MUST** wrap every `Transaction` or `SubTransaction` instantiation inside a `using` block to guarantee the `Dispose()` method is called even if an exception occurs.
+- **Thread Context Restriction**: It is strictly forbidden to open or start a `Transaction` directly from a WPF / Modeless UI thread (e.g., inside WPF Button Click events or VM RelayCommands). You **MUST** raise an `ExternalEvent` (via `IExternalEventHandler`) to execute the database transaction safely on the main Revit API thread.
+
 
 ## Mandatory Rules (Python / pyRevit)
 - **Context Manager Requirement**: You **MUST** use the `with` statement.
@@ -24,4 +26,5 @@ Modifying the Revit model (`Document`) requires an active `Transaction`. Failing
 
 ## Assets
 - [TransactionTemplates.cs](file:///b:/REVIT/C%23/RevitAddins_Workspace/.agents/skills/revit-transactions/assets/TransactionTemplates.cs): C# Boilerplate.
+- [TransactionScopeManager.cs](file:///c:/Users/david.barbero/Documents/DOCUMENTOS/ALTEN/Workbench/RevitAddins_Workspace/RevitAddins_Workspace/.agents/skills/revit-transactions/assets/TransactionScopeManager.cs): Reusable transaction and transaction group execution scope wrapper.
 - [transaction_templates.py](file:///b:/REVIT/C%23/RevitAddins_Workspace/.agents/skills/revit-transactions/assets/transaction_templates.py): Python/pyRevit Boilerplate.
