@@ -18,9 +18,9 @@ public partial class SelectionFilterView : Window
         viewModel.HideWindowRequested = this.Hide;
         viewModel.ShowWindowRequested = this.Show;
 
-        _logView = new LogView();
-        _logView.Show(); // Uncomment for development/debugging
+        // _logView = new LogView();
+        // _logView.Show(); // Uncomment for development/debugging
         
-        this.Closed += (s, e) => _logView.Close();
+        // this.Closed += (s, e) => _logView.Close();
     }
 }
