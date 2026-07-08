@@ -16,6 +16,7 @@ To obtain theoretical specifications and Windows Installer validation guides, co
 
 *   `references/wix_toolset_architecture.md`: Explanation of how it is possible to create `.msi` files and compile C# projects without using Visual Studio (demystifying the role of the IDE and enabling CI/CD flows).
 *   `references/wxs_golden_rules.md`: Mandatory golden rules for writing robust `.wxs` XML files, preventing Windows Installer validation errors (ICE38 and ICE64) in AppData installations.
+*   `references/debugging_wix_path_resolution_2026-07-08.md`: Resolution of path command-not-found issues for candle and light executables in local/CI/CD pipelines.
 
 ## 📦 Assets (Templates and Installer Configuration Examples)
 The following files are located in the `assets/` folder and can be injected or used as a guide in projects:
