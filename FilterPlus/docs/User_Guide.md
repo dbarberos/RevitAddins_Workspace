@@ -134,6 +134,7 @@ FilterPlus allows you to save and recover element selections persistently across
 - **Save Selection UI Polish**: Standardized button widths and increased bottom spacing for improved visual alignment.
 - **Dropdown Auto-Reset**: Dropdowns reset to their default empty states and action buttons automatically disable after recovering or deleting selections.
 - **WPF Window Custom Icons**: Added custom title bar icons to all WPF windows.
+- **Sort by Model Grouping**: Group elements in the explorer tree by their host or link models, respecting the active grouping hierarchy.
 
 ### v1.5.0
 

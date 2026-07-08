@@ -339,6 +339,7 @@
                             <CheckBox Content="Sort by Phase" IsChecked="{Binding SortByPhase}" Style="{StaticResource SwitchStyle}" Margin="0,0,0,6" FontSize="11"/>
                             <CheckBox Content="Sort by Level" IsChecked="{Binding SortByLevel}" Style="{StaticResource SwitchStyle}" Margin="0,0,0,6" FontSize="11"/>
                             <CheckBox Content="Sort by Workset" IsChecked="{Binding SortByWorkset}" Style="{StaticResource SwitchStyle}" Margin="0,0,0,6" FontSize="11"/>
+                            <CheckBox Content="Sort by Model" IsChecked="{Binding SortByModel}" Style="{StaticResource SwitchStyle}" Margin="0,0,0,6" FontSize="11"/>
                             <CheckBox Content="on Live Selection" IsChecked="{Binding IsLiveSelection}" Style="{StaticResource SwitchStyle}" Margin="0,0,0,0" FontSize="11"/>
                         </StackPanel>
                     </Grid>

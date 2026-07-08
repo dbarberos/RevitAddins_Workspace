@@ -49,6 +49,7 @@ public partial class SelectionFilterViewModel : ObservableObject
     [ObservableProperty] private bool _sortByPhase;
     [ObservableProperty] private bool _sortByLevel;
     [ObservableProperty] private bool _sortByWorkset;
+    [ObservableProperty] private bool _sortByModel;
     [ObservableProperty] private bool _isUseOr;
     [ObservableProperty] private bool _isOnlyByName;
     [ObservableProperty] private bool _isUseRegex;
@@ -582,6 +583,13 @@ public partial class SelectionFilterViewModel : ObservableObject
         BuildTree();
     }
 
+    partial void OnSortByModelChanged(bool value)
+    {
+        if (value) { if (!_activeGroupings.Contains("Model")) _activeGroupings.Add("Model"); }
+        else _activeGroupings.Remove("Model");
+        BuildTree();
+    }
+
     private IEnumerable<ElementModel> GetFilteredElements()
     {
         if (_activeElements == null) return Enumerable.Empty<ElementModel>();
@@ -781,6 +789,31 @@ public partial class SelectionFilterViewModel : ObservableObject
                 BuildGroupedTree(wsGroup, wsNode, groupingIndex + 1);
             }
             parentNode.Count = parentNode.Children.Sum(c => c.Count);
+        }
+        else if (groupingType == "Model")
+        {
+            var models = elements.GroupBy(e => GetModelDisplayName(e.LinkInstanceId)).OrderBy(g => g.Key);
+            foreach (var modelGroup in models)
+            {
+                var modelNode = new TreeItemViewModel(modelGroup.Key, parentNode, parentNode.Level + 1, OnTreeSelectionChanged);
+                parentNode.Children.Add(modelNode);
+                BuildGroupedTree(modelGroup, modelNode, groupingIndex + 1);
+            }
+            parentNode.Count = parentNode.Children.Sum(c => c.Count);
+        }
+    }
+
+    private string GetModelDisplayName(ElementId linkInstanceId)
+    {
+        if (linkInstanceId == null || linkInstanceId == ElementId.InvalidElementId)
+        {
+            var hostModel = AvailableModels.FirstOrDefault(m => m.LinkInstance == null);
+            return hostModel?.DisplayName ?? "Active Model";
+        }
+        else
+        {
+            var linkModel = AvailableModels.FirstOrDefault(m => m.LinkInstance != null && m.LinkInstance.Id == linkInstanceId);
+            return linkModel?.DisplayName ?? $"Link: {linkInstanceId}";
         }
     }
 
