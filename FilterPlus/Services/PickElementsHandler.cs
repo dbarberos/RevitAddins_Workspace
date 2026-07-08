@@ -32,65 +32,35 @@ public class PickElementsHandler : IExternalEventHandler
             if (uiDoc == null) return;
 
             var selectedModels = _viewModel.SelectedModels;
-            bool isSingleLink = selectedModels.Count == 1 && selectedModels.First().LinkInstance != null;
-            RevitLinkInstance singleLinkInstance = isSingleLink ? selectedModels.First().LinkInstance : null;
+            bool hasHost = selectedModels.Any(m => m.LinkInstance == null);
+            bool hasLinks = selectedModels.Any(m => m.LinkInstance != null);
+
+            ObjectType pickType = (hasLinks && !hasHost) ? ObjectType.LinkedElement : ObjectType.Element;
 
             // Get pre-selected references to visually highlight them during PickObjects
             var preSelectedRefs = new List<Reference>();
 
-            if (isSingleLink)
+            var checkedKeys = new List<ElementSelectionKey>();
+            foreach (var node in _viewModel.RootNodes)
             {
-                var checkedKeys = new List<ElementSelectionKey>();
-                foreach (var node in _viewModel.RootNodes)
-                {
-                    node.GetAllSelectedKeys(checkedKeys);
-                }
+                node.GetAllSelectedKeys(checkedKeys);
+            }
 
-                var linkedDoc = singleLinkInstance.GetLinkDocument();
-                if (linkedDoc != null)
+            if (pickType == ObjectType.Element)
+            {
+                // Highlight host elements only (adding linked references with ObjectType.Element will throw: "pPreSelected has invalid object")
+                foreach (var key in checkedKeys.Where(k => k.LinkInstanceId == ElementId.InvalidElementId))
                 {
-                    foreach (var key in checkedKeys)
+                    var elem = uiDoc.Document.GetElement(key.ElementId);
+                    if (elem != null)
                     {
-                        var elem = linkedDoc.GetElement(key.ElementId);
-                        if (elem != null)
-                        {
-                            try
-                            {
-                                var refInLink = new Reference(elem);
-                                var hostRef = refInLink.CreateLinkReference(singleLinkInstance);
-                                preSelectedRefs.Add(hostRef);
-                            }
-                            catch
-                            {
-                                // Ignore reference errors
-                            }
-                        }
+                        preSelectedRefs.Add(new Reference(elem));
                     }
                 }
             }
-            else
+            else // ObjectType.LinkedElement
             {
-                var checkedKeys = new List<ElementSelectionKey>();
-                foreach (var node in _viewModel.RootNodes)
-                {
-                    node.GetAllSelectedKeys(checkedKeys);
-                }
-
-                // If active model is selected, highlight host elements
-                bool isHostSelected = selectedModels.Any(m => m.LinkInstance == null);
-                if (isHostSelected)
-                {
-                    foreach (var key in checkedKeys.Where(k => k.LinkInstanceId == ElementId.InvalidElementId))
-                    {
-                        var elem = uiDoc.Document.GetElement(key.ElementId);
-                        if (elem != null)
-                        {
-                            preSelectedRefs.Add(new Reference(elem));
-                        }
-                    }
-                }
-
-                // Highlight elements from selected links
+                // Highlight elements from selected links (adding host references with ObjectType.LinkedElement will throw)
                 foreach (var model in selectedModels.Where(m => m.LinkInstance != null))
                 {
                     var linkInst = model.LinkInstance;
@@ -118,9 +88,6 @@ public class PickElementsHandler : IExternalEventHandler
                 }
             }
 
-            ObjectType pickType = isSingleLink ? ObjectType.LinkedElement : ObjectType.Element;
-            bool isMultiModel = selectedModels.Count > 1;
-
             // Allow the user to select multiple elements, with existing selection highlighted
             IList<Reference> selectedRefs = uiDoc.Selection.PickObjects(
                 pickType, 
@@ -132,16 +99,16 @@ public class PickElementsHandler : IExternalEventHandler
             if (selectedRefs != null && selectedRefs.Count > 0)
             {
                 var newKeys = new List<ElementSelectionKey>();
-                if (isSingleLink)
+                if (pickType == ObjectType.LinkedElement)
                 {
-                    newKeys = selectedRefs
-                        .Where(r => r.ElementId == singleLinkInstance.Id)
-                        .Select(r => new ElementSelectionKey(r.LinkedElementId, singleLinkInstance.Id))
-                        .ToList();
+                    foreach (var r in selectedRefs)
+                    {
+                        newKeys.Add(new ElementSelectionKey(r.LinkedElementId, r.ElementId));
+                    }
                 }
                 else
                 {
-                    // Multi-model or Host only
+                    // Multi-model (or Host only) with ObjectType.Element
                     foreach (var r in selectedRefs)
                     {
                         var hostEl = uiDoc.Document.GetElement(r.ElementId);
