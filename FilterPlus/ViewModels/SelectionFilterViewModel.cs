@@ -357,7 +357,7 @@ public partial class SelectionFilterViewModel : ObservableObject
             LoggerService.LogInfo($"ElementsBelongingToView: {_elementsBelongingToViewElements.Count} elements.");
 
             var allRaw = _selectionService.GetAvailableElements(SelectionScope.AllModelElements, SelectedModels);
-            _allModelElements = allRaw.Count > 50000 ? allRaw.Take(50000).ToList() : allRaw;
+            _allModelElements = allRaw.Count > 100000 ? allRaw.Take(100000).ToList() : allRaw;
             LoggerService.LogInfo($"AllModelElements: {_allModelElements.Count} elements (raw: {allRaw.Count}).");
 
             // 3. Build tree for the default scope (CurrentSelection)
@@ -476,7 +476,7 @@ public partial class SelectionFilterViewModel : ObservableObject
                 _elementsBelongingToViewElements = _selectionService.GetAvailableElements(SelectionScope.ElementsBelongingToView, SelectedModels);
                 
                 var allRaw = _selectionService.GetAvailableElements(SelectionScope.AllModelElements, SelectedModels);
-                _allModelElements = allRaw.Count > 50000 ? allRaw.Take(50000).ToList() : allRaw;
+                _allModelElements = allRaw.Count > 100000 ? allRaw.Take(100000).ToList() : allRaw;
 
                 // Sync active elements based on current scope
                 _activeElements = CurrentScope switch
@@ -2049,7 +2049,7 @@ public partial class SelectionFilterViewModel : ObservableObject
                             _elementsBelongingToViewElements = _selectionService.GetAvailableElements(SelectionScope.ElementsBelongingToView, SelectedModels);
                             
                             var allRaw = _selectionService.GetAvailableElements(SelectionScope.AllModelElements, SelectedModels);
-                            _allModelElements = allRaw.Count > 50000 ? allRaw.Take(50000).ToList() : allRaw;
+                            _allModelElements = allRaw.Count > 100000 ? allRaw.Take(100000).ToList() : allRaw;
                             
                             LoggerService.LogInfo($"Scopes fetched: CurrentSelection={_currentSelectionElements.Count}, VisibleInView={_elementsVisibleInViewElements.Count}, BelongingToView={_elementsBelongingToViewElements.Count}, AllModelElements={_allModelElements.Count}");
                         }
