@@ -1,0 +1,14 @@
+<RevitAddIns>
+    <AddIn Type="Application">
+        <Name>TransferPlus</Name>
+        <Assembly>TransferPlus\TransferPlus.dll</Assembly>
+        <AddInId>D1981E8C-1951-45C0-B24C-CA821B7288D2</AddInId>
+        <FullClassName>TransferPlus.Application</FullClassName>
+        <VendorId>DBDev_dbarberos</VendorId>
+        <VendorDescription>DBDev_dbarberos</VendorDescription>
+    </AddIn>
+    <ManifestSettings>
+        <UseRevitContext>False</UseRevitContext>
+        <ContextName>TransferPlus</ContextName>
+    </ManifestSettings>
+</RevitAddIns>
