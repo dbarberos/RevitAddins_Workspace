@@ -28,6 +28,7 @@
         <PackageReference Include="Polyfill" Version="10.0.0" PrivateAssets="all"/>
         <PackageReference Include="CommunityToolkit.Mvvm" Version="8.2.2"/>
         <PackageReference Include="System.Text.Json" Version="8.0.3"/>
+        <PackageReference Include="Obfuscar" Version="2.2.50" PrivateAssets="all"/>
     </ItemGroup>
 
     <ItemGroup>
@@ -37,5 +38,8 @@
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </None>
     </ItemGroup>
+
+    <!-- Import Obfuscation Targets -->
+    <Import Project="..\Obfuscar.targets" Condition="Exists('..\Obfusccar.targets') Or Exists('..\Obfuscar.targets')" />
 
 </Project>

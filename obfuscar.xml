@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Obfuscator>
+  <Var name="InPath" value="." />
+  <Var name="OutPath" value=".\Obfuscated" />
+  
+  <Var name="KeepPublicApi" value="false" />
+  <Var name="HidePrivateApi" value="true" />
+  <Var name="RenameProperties" value="true" />
+  <Var name="RenameEvents" value="true" />
+  <Var name="RenameFields" value="true" />
+  <Var name="UseUnicodeNames" value="true" />
+  
+  <Var name="ReuseAttributes" value="true" />
+
+  <Module file="$(InPath)\$(TargetFileName)">
+    <!-- Skip Entrypoint methods for Revit API Reflection -->
+    <SkipMethod type="*.App" name="OnStartup" />
+    <SkipMethod type="*.App" name="OnShutdown" />
+    <SkipMethod type="*Command" name="Execute" />
+    <SkipMethod type="*Cmd" name="Execute" />
+
+    <!-- Skip WPF components matching default initializer -->
+    <SkipString IsRegEx="true" match="^InitializeComponent$" />
+  </Module>
+</Obfuscator>
