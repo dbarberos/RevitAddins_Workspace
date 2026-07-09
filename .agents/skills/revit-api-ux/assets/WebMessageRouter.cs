@@ -1,5 +1,5 @@
 // ==============================================================================
-// SKILL: revit-api-core (WebView2 Async Integration)
+// SKILL: SKILL-RVT-UX (Advanced UX/UI)
 // PATTERN: WebView2 Message Routing Handler
 // PURPOSE: Safely intercepts browser actions and dispatches External Events.
 // ==============================================================================
@@ -8,11 +8,11 @@ using System;
 using System.Text.Json;
 using Microsoft.Web.WebView2.Core;
 
-namespace RevitAddinBase.Core
+namespace RevitAddinBase.UX
 {
     public class WebMessageRouter
     {
-        private ExternalEventBridge _wallCreationEvent;
+        private dynamic _wallCreationEvent; // From revit-api-core ExternalEventBridge
         private dynamic _wallCreationDataHandler;
 
         private void InitializeWebView(Microsoft.Web.WebView2.Wpf.WebView2 webView)

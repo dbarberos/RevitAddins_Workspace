@@ -34,24 +34,19 @@ function requestWall(height, levelId) {
     // postMessage sends the JSON to C# asynchronously
     window.chrome.webview.postMessage(JSON.stringify(payload));
 }
-
 ```
 
 ### B. From the Backend (C#) to the Revit API
 
-The Add-in must listen for those messages, deserialize them, and **critically** pass them to an `IExternalEventHandler` (SKILL 11) because WebView2 receives the messages in an interface thread, not in the valid Revit execution context.
+The Add-in must listen for those messages, deserialize them, and **critically** pass them to an `IExternalEventHandler` (SKILL-RVT-011) because WebView2 receives the messages in an interface thread, not in the valid Revit execution context.
 
-
-[See pattern implementation in: assets/WebMessageRouter.cs]
-
+[See pattern implementation in: assets/WebMessageRouter.cs](file:///c:/Users/david.barbero/Documents/DOCUMENTOS/ALTEN/Workbench/RevitAddins_Workspace/RevitAddins_Workspace/.agents/skills/revit-api-ux/assets/WebMessageRouter.cs)
 
 ### C. From Revit (C#) to the Frontend (JavaScript)
 
 Once Revit finishes creating the wall, it needs to prompt the web interface to update a graph or display a success message. C# injects and executes JavaScript dynamically in the browser.
 
-
-[See pattern implementation in: assets/WebMessageResponseSender.cs]
-
+[See pattern implementation in: assets/WebMessageResponseSender.cs](file:///c:/Users/david.barbero/Documents/DOCUMENTOS/ALTEN/Workbench/RevitAddins_Workspace/RevitAddins_Workspace/.agents/skills/revit-api-ux/assets/WebMessageResponseSender.cs)
 
 ---
 
@@ -59,12 +54,10 @@ Once Revit finishes creating the wall, it needs to prompt the web interface to u
 
 *Common Antipattern (Blocking API Access from WebView)*
 
-
-[See pattern implementation in: assets/DirectDocumentAccessAntiPattern.cs]
-
+[See pattern implementation in: assets/DirectDocumentAccessAntiPattern.cs](file:///c:/Users/david.barbero/Documents/DOCUMENTOS/ALTEN/Workbench/RevitAddins_Workspace/RevitAddins_Workspace/.agents/skills/revit-api-ux/assets/DirectDocumentAccessAntiPattern.cs)
 
 *Optimized Pattern (Centralized State Management or Redux-like in C#)*
-In advanced AECO projects, the C# side acts as a local REST API. A `MessageBroker` or Router is created that sorts the incoming payloads (`"GET_LEEVELS"`, `"CREATE_ASSET"`, `"SELECT_ELEMENTS"`) and fires the corresponding `ExternalEvents`, returning responses to the WebView2 via `ExecuteScriptAsync`.
+In advanced AECO projects, the C# side acts as a local REST API. A `MessageBroker` or Router is created that sorts the incoming payloads (`"GET_LEVELS"`, `"CREATE_ASSET"`, `"SELECT_ELEMENTS"`) and fires the corresponding `ExternalEvents`, returning responses to the WebView2 via `ExecuteScriptAsync`.
 
 ---
 
@@ -72,9 +65,7 @@ In advanced AECO projects, the C# side acts as a local REST API. A `MessageBroke
 
 WebView2 especially shines when embedded in the native Revit interface using `IDockablePaneProvider`. This allows you to have a sidebar (similar to the properties palette) that is actually a complete React or Angular web application.
 
-
-[See pattern implementation in: assets/DockablePaneWebViewRegistration.cs]
-
+[See pattern implementation in: assets/DockablePaneWebViewRegistration.cs](file:///c:/Users/david.barbero/Documents/DOCUMENTOS/ALTEN/Workbench/RevitAddins_Workspace/RevitAddins_Workspace/.agents/skills/revit-api-ux/assets/DockablePaneWebViewRegistration.cs)
 
 ---
 

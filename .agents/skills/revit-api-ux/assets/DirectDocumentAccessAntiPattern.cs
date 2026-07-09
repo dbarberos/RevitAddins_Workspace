@@ -1,5 +1,5 @@
 // ==============================================================================
-// SKILL: revit-api-core (WebView2 Async Integration)
+// SKILL: SKILL-RVT-UX (Advanced UX/UI)
 // ANTI-PATTERN: Direct Document Access from Thread Context of Web Messaging
 // PURPOSE: Demonstrates why direct modifications from WebMessageReceived threads crash.
 // ==============================================================================
@@ -7,7 +7,7 @@
 using Autodesk.Revit.DB;
 using Microsoft.Web.WebView2.Core;
 
-namespace RevitAddinBase.Core
+namespace RevitAddinBase.UX
 {
     public class DirectDocumentAccessAntiPattern
     {

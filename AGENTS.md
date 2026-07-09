@@ -127,6 +127,10 @@ Before drafting any implementation plan or modifying code, the agent **MUST** re
 - **Security Hardening (`security-engineer`)**: Path validation is mandatory (prevent Path Traversal); local credentials must be encrypted using Windows DPAPI (`ProtectedData`); disable JSON `TypeNameHandling.All` in Newtonsoft (use `None` or `System.Text.Json`); exceptions must never leak raw stack traces to the UI (wrap them in safe catch-loggers).
 - **ImplicitUsings & References (`3Guia maestra desarrollo add-ins Revit 2024.md`)**: Ensure `<ImplicitUsings>enable</ImplicitUsings>` is configured in `.csproj`. Validate compilation dependencies against the targeted Revit SDK/Framework (.NET Framework 4.8 for R24 and earlier; .NET 8 for R25+).
 - **Coordinate Transformations (`revit-api-geometry`)**: When operating across linked documents or models, coordinate transformations (`CreateLinkReference`) must be applied.
+- **Advanced UX & WebUI (`revit-api-ux`)**: Dockable panes (`IDockablePaneProvider`) must be registered exclusively inside `IExternalApplication.OnStartup()`. WPF ViewModels must not reference the Revit API directly (use `ICommand` and `ExternalEventBridge`). For WebView2 hosting web apps/React panels, follow safe cross-thread web messaging.
+- **Deliverables & Exporters (`revit-api-export`)**: Force view regeneration (`doc.Regenerate()`) before exporting. Native PDF export is Revit 2022+; use `PrintManager` for older versions. For DWG, use stored settings (`ExportDWGSettings`) by name to map layers.
+- **Worksharing Concurrency & Coordinates (`revit-api-worksharing`)**: Always verify `doc.IsWorkshared` before using collaborative functions. Checkout elements programmatically using `CheckoutElements` before modifying them. Survey Point and Project Base Point must be unpinned (`Pinned = false`) before geometrical transformations and repinned immediately after.
+
 
 ---
 
@@ -139,11 +143,15 @@ The agent has modular skills organized under `.agents/skills/`:
 | `revit-api` | `.agents/skills/revit-api/` | API Rules: threading, transactions, TreeView, ForgeTypeId. |
 | `revit-transactions` | `.agents/skills/revit-transactions/` | Transaction management: using blocks, context managers, nested transactions. |
 | `revit-api-core` | `.agents/skills/revit-api-core/` | Core API: Threading context, modeless WPF, ExternalEvent, document selector. |
+| `revit-api-ux` | `.agents/skills/revit-api-ux/` | Advanced UX/UI: WPF/XAML MVVM page registration, Dockable Panes, event monitors, and WebView2 React containers. |
+| `revit-api-export` | `.agents/skills/revit-api-export/` | Mass Export: Batch PDF generation, IFC OpenBIM configurations, and CAD layer settings. |
+| `revit-api-worksharing` | `.agents/skills/revit-api-worksharing/` | Worksharing & Coordinates: Worksets, Element Borrowing, Checkout/Relinquish, Shared Coordinates, and Base/Survey Point translations. |
 | `revit-api-data` | `.agents/skills/revit-api-data/` | Data: parameters, units, Extensible Storage (Invisible storage). |
 | `revit-api-geometry` | `.agents/skills/revit-api-geometry/` | Geometry: transformations, coordinates, link references, intersection clash detection. |
 | `revit-api-mep` | `.agents/skills/revit-api-mep/` | MEP: topology, connectors, routing fittings, MEP systems. |
 | `revit-api-families` | `.agents/skills/revit-api-families/` | Families: component instantiation, family creation, views, sheets. |
 | `revit-api-enterprise` | `.agents/skills/revit-api-enterprise/` | Enterprise: cloud integrations, CI/CD multi-versioning, automated tests. |
+
 | `revit-addin-helpers` | `.agents/skills/revit-addin-helpers/` | C# / Python helpers and extensions ready to copy. |
 | `revit-addin-testing` | `.agents/skills/revit-addin-testing/` | xUnit testing strategies, Moq, and interface injection. |
 | `revit-private-nuget-feed` | `.agents/skills/revit-private-nuget-feed/` | Private NuGet Feed: extract official Revit DLLs, build private NuGet feeds, configure nuget.config, version pinning, and CI/CD caching. |

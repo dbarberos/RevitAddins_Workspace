@@ -9,14 +9,8 @@
 
 ---
 
-## 2. Native Export (OpenBIM and CAD Flows)
-
-Revit exposes its export engines via the overloaded `Document.Export()` method. The secret to an automated and rigorous export lies in correctly configuring the option classes (`DWGExportOptions`, `IFCExportOptions`), preventing the engine from using the default configuration of the user session.
-
-### Example: Mass Export of Drawings to DWG
-
-
-[See pattern implementation in: assets/DwgExportManager.cs]
+## 2. Native Export (OpenBIM, CAD, PDF Exporters)
+For detailed native database export options (DWG layer mappings, IFC settings, PDF batch generation, and fallback workflows), refer directly to the specialized [revit-api-export](file:///c:/Users/david.barbero/Documents/DOCUMENTOS/ALTEN/Workbench/RevitAddins_Workspace/RevitAddins_Workspace/.agents/skills/revit-api-export/SKILL.md) skill.
 
 
 ---

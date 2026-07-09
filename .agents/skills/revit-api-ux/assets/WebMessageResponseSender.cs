@@ -1,5 +1,5 @@
 // ==============================================================================
-// SKILL: revit-api-core (WebView2 Async Integration)
+// SKILL: SKILL-RVT-UX (Advanced UX/UI)
 // PATTERN: Dispatch Script execution back to Web UI
 // PURPOSE: Notifies the browser client of Revit transaction success.
 // ==============================================================================
@@ -8,7 +8,7 @@ using System;
 using System.Threading.Tasks;
 using Microsoft.Web.WebView2.Wpf;
 
-namespace RevitAddinBase.Core
+namespace RevitAddinBase.UX
 {
     public class WebMessageResponseSender
     {

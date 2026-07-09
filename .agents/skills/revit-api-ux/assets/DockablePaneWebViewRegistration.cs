@@ -1,13 +1,13 @@
 // ==============================================================================
-// SKILL: revit-api-core (WebView2 Async Integration)
-// PATTERN: Dockable Pane Web Component Registration
+// SKILL: SKILL-RVT-UX (Advanced UX/UI)
+// PATTERN: Dockable Pane Web Component Registration (WebView2)
 // PURPOSE: Sets up and registers the WebView2 panel inside the Revit UI.
 // ==============================================================================
 
 using System;
 using Autodesk.Revit.UI;
 
-namespace RevitAddinBase.Core
+namespace RevitAddinBase.UX
 {
     public class DockablePaneWebViewRegistration
     {
