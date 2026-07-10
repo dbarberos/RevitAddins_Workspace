@@ -16,7 +16,7 @@ public class Application : ExternalApplication
 
     private void CreateRibbon()
     {
-        var panel = Application.CreatePanel("Commands", "TransferPlus");
+        var panel = Application.CreatePanel("TransferPlus", "DBDev");
 
         panel.AddPushButton<CmdTransferPlus>("Transfer\nPlus")
             .SetImage("/TransferPlus;component/Resources/Icons/RibbonIcon16.png")

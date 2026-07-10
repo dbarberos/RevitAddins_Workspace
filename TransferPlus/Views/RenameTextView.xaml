@@ -1,0 +1,29 @@
+<Window x:Class="TransferPlus.Views.RenameTextView"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Find &amp; Replace" Height="220" Width="380"
+        WindowStartupLocation="CenterOwner" ResizeMode="NoResize" WindowStyle="ToolWindow" Background="#fafafa">
+    <Grid Margin="15">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        
+        <TextBlock Text="Find:" FontWeight="SemiBold" Margin="0,0,0,5"/>
+        <TextBox x:Name="FindTextBox" Grid.Row="1" Padding="5" Margin="0,0,0,10"/>
+
+        <TextBlock Grid.Row="2" Text="Replace with:" FontWeight="SemiBold" Margin="0,0,0,5"/>
+        <TextBox x:Name="ReplaceTextBox" Grid.Row="3" Padding="5" Margin="0,0,0,10"/>
+
+        <CheckBox x:Name="RegexCheckBox" Grid.Row="4" Content="Use Regular Expressions" VerticalAlignment="Center"/>
+
+        <StackPanel Grid.Row="5" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,10,0,0">
+            <Button Content="OK" Width="75" Height="25" IsDefault="True" Click="Ok_Click" Margin="0,0,10,0" Background="#007ACC" Foreground="White" BorderThickness="0"/>
+            <Button Content="Cancel" Width="75" Height="25" IsCancel="True" Click="Cancel_Click" Background="#ccc" BorderThickness="0"/>
+        </StackPanel>
+    </Grid>
+</Window>

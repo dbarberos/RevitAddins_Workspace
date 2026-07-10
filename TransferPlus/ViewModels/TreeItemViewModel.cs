@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using System.Linq;
 using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Messaging;
 using TransferPlus.Models;
 
 namespace TransferPlus.ViewModels;
@@ -16,6 +17,12 @@ public partial class TreeItemViewModel : ObservableObject
     [ObservableProperty]
     private bool _isExpanded = true;
 
+    [ObservableProperty]
+    private int _count;
+
+    [ObservableProperty]
+    private string _numText = string.Empty;
+
     private bool? _isChecked = false;
 
     public bool? IsChecked
@@ -27,17 +34,18 @@ public partial class TreeItemViewModel : ObservableObject
             {
                 UpdateChildrenCheckState(value);
                 Parent?.UpdateParentCheckState();
+                CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Default.Send(new CheckedItemsChangedMessage());
             }
         }
     }
 
-    public TransferItem? Item { get; set; }
+    public Elemento? Item { get; set; }
 
     public ObservableCollection<TreeItemViewModel> Children { get; } = new();
 
     public TreeItemViewModel? Parent { get; set; }
 
-    public TreeItemViewModel(string name, string category, TransferItem? item = null)
+    public TreeItemViewModel(string name, string category, Elemento? item = null)
     {
         Name = name;
         Category = category;
@@ -78,3 +86,5 @@ public partial class TreeItemViewModel : ObservableObject
         }
     }
 }
+
+public class CheckedItemsChangedMessage { }
