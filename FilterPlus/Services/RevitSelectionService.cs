@@ -68,11 +68,24 @@ public class RevitSelectionService
             case SelectionScope.CurrentSelection:
                 if (linkInstance != null)
                 {
-                    return new List<ElementModel>();
+                    IList<Reference> refs = null;
+                    try { refs = _uiDoc.Selection.GetReferences(); } catch { }
+                    if (refs == null || !refs.Any()) return new List<ElementModel>();
+                    
+                    var linkedIds = refs
+                        .Where(r => r.ElementId == linkInstance.Id && r.LinkedElementId != ElementId.InvalidElementId)
+                        .Select(r => r.LinkedElementId)
+                        .ToList();
+                    
+                    if (!linkedIds.Any()) return new List<ElementModel>();
+                    collector = new FilteredElementCollector(doc, linkedIds);
                 }
-                var selectedIds = _uiDoc.Selection.GetElementIds();
-                if (!selectedIds.Any()) return new List<ElementModel>();
-                collector = new FilteredElementCollector(doc, selectedIds);
+                else
+                {
+                    var selectedIds = _uiDoc.Selection.GetElementIds();
+                    if (!selectedIds.Any()) return new List<ElementModel>();
+                    collector = new FilteredElementCollector(doc, selectedIds);
+                }
                 break;
             case SelectionScope.ElementsVisibleInView:
             case SelectionScope.ElementsBelongingToView:
@@ -122,15 +135,29 @@ public class RevitSelectionService
                     if (activeView.CropBoxActive)
                     {
                         var cropBox = activeView.CropBox;
-                        hostViewOutline = new Outline(cropBox.Min, cropBox.Max);
-                    }
-                    else
-                    {
-                        var viewOutline = activeView.get_BoundingBox(null);
-                        if (viewOutline != null)
+                        var transform = cropBox.Transform;
+                        
+                        // Transform the 8 corners of the CropBox from local view coordinates to project coordinates
+                        var corners = new List<XYZ>
                         {
-                            hostViewOutline = new Outline(viewOutline.Min, viewOutline.Max);
-                        }
+                            transform.OfPoint(new XYZ(cropBox.Min.X, cropBox.Min.Y, cropBox.Min.Z)),
+                            transform.OfPoint(new XYZ(cropBox.Max.X, cropBox.Min.Y, cropBox.Min.Z)),
+                            transform.OfPoint(new XYZ(cropBox.Min.X, cropBox.Max.Y, cropBox.Min.Z)),
+                            transform.OfPoint(new XYZ(cropBox.Max.X, cropBox.Max.Y, cropBox.Min.Z)),
+                            transform.OfPoint(new XYZ(cropBox.Min.X, cropBox.Min.Y, cropBox.Max.Z)),
+                            transform.OfPoint(new XYZ(cropBox.Max.X, cropBox.Min.Y, cropBox.Max.Z)),
+                            transform.OfPoint(new XYZ(cropBox.Min.X, cropBox.Max.Y, cropBox.Max.Z)),
+                            transform.OfPoint(new XYZ(cropBox.Max.X, cropBox.Max.Y, cropBox.Max.Z))
+                        };
+
+                        double minX = corners.Min(pt => pt.X);
+                        double minY = corners.Min(pt => pt.Y);
+                        double minZ = corners.Min(pt => pt.Z);
+                        double maxX = corners.Max(pt => pt.X);
+                        double maxY = corners.Max(pt => pt.Y);
+                        double maxZ = corners.Max(pt => pt.Z);
+
+                        hostViewOutline = new Outline(new XYZ(minX, minY, minZ), new XYZ(maxX, maxY, maxZ));
                     }
                 }
                 catch
