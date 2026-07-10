@@ -27,6 +27,7 @@ The following files are located in the `assets/` folder and you can copy them di
 - `assets/RevitRelationshipUtils.cs`: High-performance utilities to query nesting, groups, assemblies, physical 3D intersections, and MEP system networks.
 - `assets/RevitFilterUtils.cs`: Dynamic family and type resolvers, view ownership filters, sequential phase order mapping, and secure parameter metadata extraction.
 - `assets/ActionEventHandler.cs`: Generic `IExternalEventHandler` to execute arbitrary actions on the Revit UI thread from Modeless WPF windows, preventing InvalidOperationExceptions.
+- `assets/SequentialSelectionPattern.cs`: Implements sequential task dialog prompts and mixed selection grouping to safely retrieve objects from both the Host Document and Linked Documents without causing PickObjects ArgumentExceptions.
 
 ## Integration Rules
 - All helpers must be placed in the project's `/Helpers` folder.

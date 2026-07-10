@@ -1,0 +1,24 @@
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Target Name="LocalObfuscationTarget" AfterTargets="AfterBuild" Condition="'$(Configuration)' == 'Release'">
+    <Message Importance="high" Text="[DevOps] Iniciando proceso de Anti-Tampering Local con Obfuscar..." />
+
+    <!-- Self-healing: ensure Obfuscar global tool is installed -->
+    <Exec Command="dotnet tool install --global Obfuscar.GlobalTool" ContinueOnError="true" StandardOutputImportance="low" />
+
+    <PropertyGroup>
+      <ObfuscarConfigPath>$(SolutionDir)obfuscar.xml</ObfuscarConfigPath>
+      <TargetInputPath>$(TargetDir.TrimEnd('\'))</TargetInputPath>
+      <TargetOutputPath>$(TargetDir)Obfuscated</TargetOutputPath>
+    </PropertyGroup>
+
+    <Exec Command="obfuscar.console $(ObfuscarConfigPath) InPath=$(TargetInputPath) OutPath=$(TargetOutputPath) TargetFileName=$(TargetFileName)" />
+
+    <Message Importance="high" Text="[DevOps] Reemplazando ensamblados originales por archivos protegidos..." />
+    <Copy SourceFiles="$(TargetOutputPath)\$(TargetFileName)" DestinationFolder="$(TargetInputPath)" OverwriteReadOnlyFiles="true" />
+    <Copy SourceFiles="$(TargetOutputPath)\$(TargetName).pdb" DestinationFolder="$(TargetInputPath)" OverwriteReadOnlyFiles="true" Condition="Exists('$(TargetOutputPath)\$(TargetName).pdb')" />
+
+    <!-- Clean up the temporary Obfuscated directory -->
+    <RemoveDir Directories="$(TargetOutputPath)" />
+    <Message Importance="high" Text="[DevOps] ¡Anti-Tampering completado con éxito para $(TargetFileName)!" />
+  </Target>
+</Project>

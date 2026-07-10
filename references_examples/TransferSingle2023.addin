@@ -1,0 +1,15 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<RevitAddIns>
+  <AddIn Type="Application">
+<Name>TransferSingle</Name>
+    <Assembly>.\TransferSingle.dll</Assembly>
+    <ClientId>065D9861-65A9-43DC-9F89-22241BD07BC2</ClientId>
+    <Text>Transfer Single</Text>
+    <Description>Transfer Single</Description>
+    <VisibilityMode>AlwaysVisible</VisibilityMode>
+    <VendorId>Juan Osborne</VendorId>
+    <VendorDescription>www.juanosborne.com</VendorDescription>
+    <FullClassName>TransferSingleApp.AdskApplication</FullClassName>
+  </AddIn>
+</RevitAddIns>
+

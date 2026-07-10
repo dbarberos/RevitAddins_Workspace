@@ -1,0 +1,189 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{12E3E2FE-DD7D-4FC3-A3A9-42DF49232F81}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <RootNamespace>TransferPlusApp</RootNamespace>
+    <AssemblyName>TransferPlus</AssemblyName>
+    <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+    <ProjectTypeGuids>{60DC8134-EBA5-43B8-BCC9-BB4BC16C2548};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="ObjectListView" />
+    <Reference Include="PresentationCore" />
+    <Reference Include="RevitAPI">
+      <HintPath>..\..\..\..\..\..\..\..\..\..\..\Program Files\Autodesk\Revit 2024\RevitAPI.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="RevitUIAPI">
+      <HintPath>..\..\..\..\..\..\..\..\..\..\..\Program Files\Autodesk\Revit 2024\RevitUIAPI.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.Windows.Forms" />
+    <Reference Include="System.Xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <AppDesigner Include="Properties\" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="-Module-.cs" />
+    <Compile Include="About.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="About.Designer.cs">
+      <DependentUpon>About.cs</DependentUpon>
+    </Compile>
+    <Compile Include="AdskApplication.cs" />
+    <Compile Include="Archivo.cs" />
+    <Compile Include="BarraDeProgreso.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="BarraDeProgreso.Designer.cs">
+      <DependentUpon>BarraDeProgreso.cs</DependentUpon>
+    </Compile>
+    <Compile Include="BarraDeProgresoLineal.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="BarraDeProgresoLineal.Designer.cs">
+      <DependentUpon>BarraDeProgresoLineal.cs</DependentUpon>
+    </Compile>
+    <Compile Include="BarraProgreso.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="BarraProgreso.Designer.cs">
+      <DependentUpon>BarraProgreso.cs</DependentUpon>
+    </Compile>
+    <Compile Include="BarraProgresoMultiple.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="BarraProgresoMultiple.Designer.cs">
+      <DependentUpon>BarraProgresoMultiple.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Configuraciones.cs" />
+    <Compile Include="ConfiguracionTab.cs" />
+    <Compile Include="Configuration.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Configuration.Designer.cs">
+      <DependentUpon>Configuration.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Costura\AssemblyLoader.cs" />
+    <Compile Include="Elemento.cs" />
+    <Compile Include="Estructura.cs" />
+    <Compile Include="FailurePreproccessor.cs" />
+    <Compile Include="FamilyLoadOptions.cs" />
+    <Compile Include="FamilyOption.cs" />
+    <Compile Include="formgeneral.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="formgeneral.Designer.cs">
+      <DependentUpon>formgeneral.cs</DependentUpon>
+    </Compile>
+    <Compile Include="FormLoad.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FormLoad.Designer.cs">
+      <DependentUpon>FormLoad.cs</DependentUpon>
+    </Compile>
+    <Compile Include="LogEditor.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="LogEditor.Designer.cs">
+      <DependentUpon>LogEditor.cs</DependentUpon>
+    </Compile>
+    <Compile Include="MassLoadFamilies.cs" />
+    <Compile Include="MassSaveFamilies.cs" />
+    <Compile Include="Nodo.cs" />
+    <Compile Include="ProcessedByFody.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Properties\Resources.cs" />
+    <Compile Include="Properties\Settings.Designer.cs">
+      <DependentUpon>Settings.settings</DependentUpon>
+      <AutoGen>True</AutoGen>
+      <DesignTimeSharedInput>True</DesignTimeSharedInput>
+    </Compile>
+    <Compile Include="RenameText.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="RenameText.Designer.cs">
+      <DependentUpon>RenameText.cs</DependentUpon>
+    </Compile>
+    <Compile Include="SaveXMLConfigs.cs" />
+    <Compile Include="SaveXMLConfigTab.cs" />
+    <Compile Include="Serializaciones.cs" />
+    <Compile Include="TakeText.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="TakeText.Designer.cs">
+      <DependentUpon>TakeText.cs</DependentUpon>
+    </Compile>
+    <Compile Include="TransferSingle.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="TransferSingle.Designer.cs">
+      <DependentUpon>TransferSingle.cs</DependentUpon>
+    </Compile>
+    <Compile Include="TransferSingleCommand.cs" />
+    <Compile Include="Utiles.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="About.resources" />
+    <EmbeddedResource Include="BarraDeProgreso.resources" />
+    <EmbeddedResource Include="BarraDeProgresoLineal.resources" />
+    <EmbeddedResource Include="BarraProgreso.resources" />
+    <EmbeddedResource Include="BarraProgresoMultiple.resources" />
+    <EmbeddedResource Include="Configuration.resources" />
+    <EmbeddedResource Include="Costura\costura\dll.compressed" />
+    <EmbeddedResource Include="Costura\objectlistview\dll.compressed" />
+    <EmbeddedResource Include="formgeneral.resources" />
+    <EmbeddedResource Include="FormLoad.resources" />
+    <EmbeddedResource Include="LogEditor.resources" />
+    <EmbeddedResource Include="Properties\Resources.resources" />
+    <EmbeddedResource Include="RenameText.resources" />
+    <EmbeddedResource Include="Resources\Clip.png" />
+    <EmbeddedResource Include="Resources\Clip_over.png" />
+    <EmbeddedResource Include="Resources\Id.png" />
+    <EmbeddedResource Include="Resources\Id_over.png" />
+    <EmbeddedResource Include="Resources\LoadFamily16x16.ico" />
+    <EmbeddedResource Include="Resources\LoadFamily32x32.ico" />
+    <EmbeddedResource Include="Resources\SaveFamily16x16.ico" />
+    <EmbeddedResource Include="Resources\SaveFamily32x32.ico" />
+    <EmbeddedResource Include="Resources\TransferSingle16x16.ico" />
+    <EmbeddedResource Include="Resources\TransferSingle32x32.ico" />
+    <EmbeddedResource Include="TakeText.resources" />
+    <EmbeddedResource Include="TransferSingle.resources" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Properties\Settings.settings">
+      <Generator>SettingsSingleFileGenerator</Generator>
+      <LastGenOutput>Settings.Designer.cs</LastGenOutput>
+    </None>
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+</Project>

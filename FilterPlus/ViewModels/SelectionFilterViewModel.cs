@@ -11,6 +11,7 @@ namespace FilterPlus.ViewModels;
 public partial class SelectionFilterViewModel : ObservableObject
 {
     private readonly RevitSelectionService _selectionService;
+    public RevitSelectionService SelectionService => _selectionService;
     private Autodesk.Revit.UI.ExternalEvent _pickElementsEvent;
 
     public System.Action HideWindowRequested { get; set; }
@@ -49,9 +50,11 @@ public partial class SelectionFilterViewModel : ObservableObject
     [ObservableProperty] private bool _sortByPhase;
     [ObservableProperty] private bool _sortByLevel;
     [ObservableProperty] private bool _sortByWorkset;
+    [ObservableProperty] private bool _sortByModel;
     [ObservableProperty] private bool _isUseOr;
     [ObservableProperty] private bool _isOnlyByName;
     [ObservableProperty] private bool _isUseRegex;
+    [ObservableProperty] private bool _isCacheLimited;
 
     // Increase Checked Options
     [ObservableProperty] private bool _increaseWhatSameCategory;
@@ -84,6 +87,7 @@ public partial class SelectionFilterViewModel : ObservableObject
     private HashSet<ElementSelectionKey> _persistentCheckedIds = new();
     private HashSet<ElementSelectionKey> _lastAppliedCheckedIds = new();
     [ObservableProperty] private bool _isSelectionDirty;
+    [ObservableProperty] private bool _canRestoreRevitSelection;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsSavedSelectionSelected))]
@@ -296,6 +300,8 @@ public partial class SelectionFilterViewModel : ObservableObject
         {
             UpdateIsSelectionDirty();
         }
+        
+        UpdateCanRestore();
     }
 
     /// <summary>
@@ -343,20 +349,9 @@ public partial class SelectionFilterViewModel : ObservableObject
             LoggerService.LogInfo($"Initial selection IDs count: {_persistentCheckedIds.Count}");
 
             // 2. Pre-fetch all scopes NOW (we are in Revit API thread)
-            LoggerService.LogInfo("Pre-fetching CurrentSelection elements...");
-            _currentSelectionElements = _selectionService.GetAvailableElements(SelectionScope.CurrentSelection, SelectedModels);
-            LoggerService.LogInfo($"CurrentSelection: {_currentSelectionElements.Count} elements.");
-
-            // Add check to ensure we don't get null reference
-            _elementsVisibleInViewElements = _selectionService.GetAvailableElements(SelectionScope.ElementsVisibleInView, SelectedModels);
-            LoggerService.LogInfo($"ElementsVisibleInView: {_elementsVisibleInViewElements.Count} elements.");
-
-            _elementsBelongingToViewElements = _selectionService.GetAvailableElements(SelectionScope.ElementsBelongingToView, SelectedModels);
-            LoggerService.LogInfo($"ElementsBelongingToView: {_elementsBelongingToViewElements.Count} elements.");
-
-            var allRaw = _selectionService.GetAvailableElements(SelectionScope.AllModelElements, SelectedModels);
-            _allModelElements = allRaw.Count > 10000 ? allRaw.Take(10000).ToList() : allRaw;
-            LoggerService.LogInfo($"AllModelElements: {_allModelElements.Count} elements (raw: {allRaw.Count}).");
+            LoggerService.LogInfo("Pre-fetching scopes...");
+            LoadScopesAndHandleCache(SelectedModels);
+            LoggerService.LogInfo($"Scopes fetched: CurrentSelection={_currentSelectionElements.Count}, VisibleInView={_elementsVisibleInViewElements.Count}, BelongingToView={_elementsBelongingToViewElements.Count}, AllModelElements={_allModelElements.Count}");
 
             // 3. Build tree for the default scope (CurrentSelection)
             _activeElements = _currentSelectionElements;
@@ -469,12 +464,7 @@ public partial class SelectionFilterViewModel : ObservableObject
                 _lastAppliedCheckedIds.Clear();
                 
                 // Pre-fetch all scopes for the selected models combined
-                _currentSelectionElements = _selectionService.GetAvailableElements(SelectionScope.CurrentSelection, SelectedModels);
-                _elementsVisibleInViewElements = _selectionService.GetAvailableElements(SelectionScope.ElementsVisibleInView, SelectedModels);
-                _elementsBelongingToViewElements = _selectionService.GetAvailableElements(SelectionScope.ElementsBelongingToView, SelectedModels);
-                
-                var allRaw = _selectionService.GetAvailableElements(SelectionScope.AllModelElements, SelectedModels);
-                _allModelElements = allRaw.Count > 10000 ? allRaw.Take(10000).ToList() : allRaw;
+                LoadScopesAndHandleCache(SelectedModels);
 
                 // Sync active elements based on current scope
                 _activeElements = CurrentScope switch
@@ -501,6 +491,31 @@ public partial class SelectionFilterViewModel : ObservableObject
                 IsBusy = false;
             }
         }, _actionExternalEvent);
+    }
+
+    private void LoadScopesAndHandleCache(IEnumerable<RevitModelRepresentation> targetModels)
+    {
+        var allRaw = _selectionService.GetAvailableElements(SelectionScope.AllModelElements, targetModels);
+        if (allRaw.Count > 100000)
+        {
+            IsCacheLimited = true;
+            LoggerService.LogInfo($"Total elements count ({allRaw.Count}) exceeds the 100,000 cache limit. Restricting cache to the Active Model only.");
+            
+            var activeOnlyModels = targetModels.Where(m => m.LinkInstance == null).ToList();
+            
+            _currentSelectionElements = _selectionService.GetAvailableElements(SelectionScope.CurrentSelection, activeOnlyModels);
+            _elementsVisibleInViewElements = _selectionService.GetAvailableElements(SelectionScope.ElementsVisibleInView, activeOnlyModels);
+            _elementsBelongingToViewElements = _selectionService.GetAvailableElements(SelectionScope.ElementsBelongingToView, activeOnlyModels);
+            _allModelElements = _selectionService.GetAvailableElements(SelectionScope.AllModelElements, activeOnlyModels);
+        }
+        else
+        {
+            IsCacheLimited = false;
+            _currentSelectionElements = _selectionService.GetAvailableElements(SelectionScope.CurrentSelection, targetModels);
+            _elementsVisibleInViewElements = _selectionService.GetAvailableElements(SelectionScope.ElementsVisibleInView, targetModels);
+            _elementsBelongingToViewElements = _selectionService.GetAvailableElements(SelectionScope.ElementsBelongingToView, targetModels);
+            _allModelElements = allRaw;
+        }
     }
 
     partial void OnIsOnly3DModelsChanged(bool value)
@@ -579,6 +594,13 @@ public partial class SelectionFilterViewModel : ObservableObject
     {
         if (value) { if (!_activeGroupings.Contains("Workset")) _activeGroupings.Add("Workset"); }
         else _activeGroupings.Remove("Workset");
+        BuildTree();
+    }
+
+    partial void OnSortByModelChanged(bool value)
+    {
+        if (value) { if (!_activeGroupings.Contains("Model")) _activeGroupings.Add("Model"); }
+        else _activeGroupings.Remove("Model");
         BuildTree();
     }
 
@@ -782,6 +804,31 @@ public partial class SelectionFilterViewModel : ObservableObject
             }
             parentNode.Count = parentNode.Children.Sum(c => c.Count);
         }
+        else if (groupingType == "Model")
+        {
+            var models = elements.GroupBy(e => GetModelDisplayName(e.LinkInstanceId)).OrderBy(g => g.Key);
+            foreach (var modelGroup in models)
+            {
+                var modelNode = new TreeItemViewModel(modelGroup.Key, parentNode, parentNode.Level + 1, OnTreeSelectionChanged);
+                parentNode.Children.Add(modelNode);
+                BuildGroupedTree(modelGroup, modelNode, groupingIndex + 1);
+            }
+            parentNode.Count = parentNode.Children.Sum(c => c.Count);
+        }
+    }
+
+    private string GetModelDisplayName(ElementId linkInstanceId)
+    {
+        if (linkInstanceId == null || linkInstanceId == ElementId.InvalidElementId)
+        {
+            var hostModel = AvailableModels.FirstOrDefault(m => m.LinkInstance == null);
+            return hostModel?.DisplayName ?? "Active Model";
+        }
+        else
+        {
+            var linkModel = AvailableModels.FirstOrDefault(m => m.LinkInstance != null && m.LinkInstance.Id == linkInstanceId);
+            return linkModel?.DisplayName ?? $"Link: {linkInstanceId}";
+        }
     }
 
     private void InitializeTree(IEnumerable<ElementModel> filteredElements, bool forceExpand)
@@ -874,8 +921,7 @@ public partial class SelectionFilterViewModel : ObservableObject
         // 3. Trigger the external event for PickObjects
         _pickElementsEvent?.Raise();
     }
-
-    public void OnPickElementsFinished(List<ElementSelectionKey> newKeys)
+     public void OnPickElementsFinished(List<ElementSelectionKey> newKeys, List<ElementModel> newModels)
     {
         var dispatcher = System.Windows.Threading.Dispatcher.CurrentDispatcher;
         dispatcher.InvokeAsync(() =>
@@ -889,12 +935,18 @@ public partial class SelectionFilterViewModel : ObservableObject
                 }
 
                 // Ensure newly picked elements are injected into the active elements so they show up in the tree!
-                var allKnownByKey = _allModelElements.ToDictionary(e => new ElementSelectionKey(e.Id, e.LinkInstanceId));
-                foreach (var key in newKeys)
+                if (newModels != null)
                 {
-                    if (allKnownByKey.TryGetValue(key, out var model))
+                    foreach (var model in newModels)
                     {
-                        if (_activeElements != null && !_activeElements.Any(e => e.Id == key.ElementId && e.LinkInstanceId == key.LinkInstanceId))
+                        // Add to _allModelElements if not present so it can be resolved/grouped
+                        if (!_allModelElements.Any(e => e.Id == model.Id && e.LinkInstanceId == model.LinkInstanceId))
+                        {
+                            _allModelElements.Add(model);
+                        }
+
+                        // Add to _activeElements if not present so it shows up in tree
+                        if (_activeElements != null && !_activeElements.Any(e => e.Id == model.Id && e.LinkInstanceId == model.LinkInstanceId))
                         {
                             _activeElements.Add(model);
                         }
@@ -942,6 +994,217 @@ public partial class SelectionFilterViewModel : ObservableObject
         }
 
         IsSelectionDirty = false;
+    }
+
+    public void UpdateCanRestore()
+    {
+        if (_actionHandler == null || _actionExternalEvent == null) return;
+
+        _actionHandler.Raise(() =>
+        {
+            try
+            {
+                var uiDoc = _selectionService.UiDocument;
+                if (uiDoc == null) return;
+
+                var selectedIds = uiDoc.Selection.GetElementIds();
+                var selectedRefs = uiDoc.Selection.GetReferences();
+
+                var revitKeys = new HashSet<ElementSelectionKey>();
+                foreach (var id in selectedIds)
+                {
+                    var el = _selectionService.Document.GetElement(id);
+                    if (el != null && el is not RevitLinkInstance)
+                    {
+                        revitKeys.Add(new ElementSelectionKey(id, ElementId.InvalidElementId));
+                    }
+                }
+
+                if (selectedRefs != null)
+                {
+                    foreach (var r in selectedRefs)
+                    {
+                        if (r.LinkedElementId != ElementId.InvalidElementId)
+                        {
+                            revitKeys.Add(new ElementSelectionKey(r.LinkedElementId, r.ElementId));
+                        }
+                    }
+                }
+
+                bool match = revitKeys.SetEquals(_persistentCheckedIds);
+
+                System.Windows.Application.Current?.Dispatcher?.Invoke(() =>
+                {
+                    CanRestoreRevitSelection = !match;
+                });
+            }
+            catch (Exception ex)
+            {
+                LoggerService.LogError("UpdateCanRestore", ex);
+            }
+        }, _actionExternalEvent);
+    }
+
+    [RelayCommand]
+    private void RestoreRevitSelection()
+    {
+        if (_actionHandler == null || _actionExternalEvent == null) return;
+
+        IsBusy = true;
+        StatusMessage = "Restoring selection...";
+
+        _actionHandler.Raise(() =>
+        {
+            try
+            {
+                var uiDoc = _selectionService.UiDocument;
+                if (uiDoc == null) return;
+
+                var selectedIds = uiDoc.Selection.GetElementIds();
+                var selectedRefs = uiDoc.Selection.GetReferences();
+
+                var revitKeys = new HashSet<ElementSelectionKey>();
+                bool modelsChanged = false;
+                var modelsToAdd = new List<RevitModelRepresentation>();
+
+                // Case 1: Host elements or RevitLinkInstances
+                foreach (var id in selectedIds)
+                {
+                    var el = _selectionService.Document.GetElement(id);
+                    if (el != null)
+                    {
+                        if (el is RevitLinkInstance linkInst)
+                        {
+                            var matchingModel = AvailableModels.FirstOrDefault(m => m.LinkInstance != null && m.LinkInstance.Id == linkInst.Id);
+                            if (matchingModel != null && !SelectedModels.Any(sm => sm.LinkInstance != null && sm.LinkInstance.Id == linkInst.Id))
+                            {
+                                modelsToAdd.Add(matchingModel);
+                                modelsChanged = true;
+                            }
+                        }
+                        else
+                        {
+                            revitKeys.Add(new ElementSelectionKey(id, ElementId.InvalidElementId));
+                        }
+                    }
+                }
+
+                // Case 2: Elements inside links
+                if (selectedRefs != null)
+                {
+                    foreach (var r in selectedRefs)
+                    {
+                        if (r.LinkedElementId != ElementId.InvalidElementId)
+                        {
+                            revitKeys.Add(new ElementSelectionKey(r.LinkedElementId, r.ElementId));
+                            
+                            var matchingModel = AvailableModels.FirstOrDefault(m => m.LinkInstance != null && m.LinkInstance.Id == r.ElementId);
+                            if (matchingModel != null && !SelectedModels.Any(sm => sm.LinkInstance != null && sm.LinkInstance.Id == r.ElementId))
+                            {
+                                modelsToAdd.Add(matchingModel);
+                                modelsChanged = true;
+                            }
+                        }
+                    }
+                }
+
+                var newSelectedModels = SelectedModels.ToList();
+                if (modelsChanged)
+                {
+                    foreach (var model in modelsToAdd.Distinct())
+                    {
+                        if (!newSelectedModels.Any(sm => sm.LinkInstance != null && sm.LinkInstance.Id == model.LinkInstance.Id))
+                        {
+                            newSelectedModels.Add(model);
+                        }
+                    }
+                }
+
+                List<ElementModel> newSelectionElements;
+                List<ElementModel> visibleInViewList = null;
+                List<ElementModel> belongingToViewList = null;
+                List<ElementModel> allModelList = null;
+                bool isCacheLimitedResult = false;
+
+                if (modelsChanged)
+                {
+                    var allRaw = _selectionService.GetAvailableElements(SelectionScope.AllModelElements, newSelectedModels);
+                    if (allRaw.Count > 100000)
+                    {
+                        isCacheLimitedResult = true;
+                        var activeOnlyModels = newSelectedModels.Where(m => m.LinkInstance == null).ToList();
+                        newSelectionElements = _selectionService.GetAvailableElements(SelectionScope.CurrentSelection, activeOnlyModels);
+                        visibleInViewList = _selectionService.GetAvailableElements(SelectionScope.ElementsVisibleInView, activeOnlyModels);
+                        belongingToViewList = _selectionService.GetAvailableElements(SelectionScope.ElementsBelongingToView, activeOnlyModels);
+                        allModelList = _selectionService.GetAvailableElements(SelectionScope.AllModelElements, activeOnlyModels);
+                    }
+                    else
+                    {
+                        isCacheLimitedResult = false;
+                        newSelectionElements = _selectionService.GetAvailableElements(SelectionScope.CurrentSelection, newSelectedModels);
+                        visibleInViewList = _selectionService.GetAvailableElements(SelectionScope.ElementsVisibleInView, newSelectedModels);
+                        belongingToViewList = _selectionService.GetAvailableElements(SelectionScope.ElementsBelongingToView, newSelectedModels);
+                        allModelList = allRaw;
+                    }
+                }
+                else
+                {
+                    newSelectionElements = _selectionService.GetAvailableElements(SelectionScope.CurrentSelection, SelectedModels);
+                }
+
+                System.Windows.Application.Current?.Dispatcher?.Invoke(() =>
+                {
+                    if (modelsChanged)
+                    {
+                        SelectedModels.Clear();
+                        SelectedModels.AddRange(newSelectedModels);
+
+                        if (SelectedModels.Count == 1)
+                        {
+                            SelectedModelsText = SelectedModels.First().DisplayName;
+                        }
+                        else
+                        {
+                            SelectedModelsText = $"Multiple models selected ({SelectedModels.Count})";
+                        }
+
+                        IsCacheLimited = isCacheLimitedResult;
+                        _elementsVisibleInViewElements = visibleInViewList;
+                        _elementsBelongingToViewElements = belongingToViewList;
+                        _allModelElements = allModelList;
+                    }
+
+                    _currentSelectionElements = newSelectionElements;
+                    _persistentCheckedIds = revitKeys;
+                    _lastAppliedCheckedIds = new HashSet<ElementSelectionKey>(_persistentCheckedIds);
+                    CheckedElementsCount = _persistentCheckedIds.Count;
+
+                    if (CurrentScope == SelectionScope.CurrentSelection)
+                    {
+                        _activeElements = _currentSelectionElements;
+                        BuildTree();
+                    }
+                    else
+                    {
+                        CurrentScope = SelectionScope.CurrentSelection;
+                    }
+
+                    IsSelectionDirty = false;
+                    CanRestoreRevitSelection = false;
+                    StatusMessage = $"Selection restored ({_persistentCheckedIds.Count} elements).";
+                    IsBusy = false;
+                });
+            }
+            catch (Exception ex)
+            {
+                LoggerService.LogError("RestoreRevitSelection execution error", ex);
+                System.Windows.Application.Current?.Dispatcher?.Invoke(() =>
+                {
+                    IsBusy = false;
+                    StatusMessage = "Error restoring selection.";
+                });
+            }
+        }, _actionExternalEvent);
     }
 
     [RelayCommand]
@@ -1007,7 +1270,7 @@ public partial class SelectionFilterViewModel : ObservableObject
         SelectedWorkset = "Todos";
 
         TreeItemViewModel.IsBulkUpdating = true;
-        foreach (var node in RootNodes) node.IsChecked = false;
+        foreach (var node in RootNodes) node.SetCheckedState(false);
         TreeItemViewModel.IsBulkUpdating = false;
 
         _persistentCheckedIds.Clear();
@@ -2006,11 +2269,26 @@ public partial class SelectionFilterViewModel : ObservableObject
 
                             // Pre-fetch all other scopes for the selected models combined
                             LoggerService.LogInfo("Re-fetching other element scopes for the recovered model context...");
-                            _elementsVisibleInViewElements = _selectionService.GetAvailableElements(SelectionScope.ElementsVisibleInView, SelectedModels);
-                            _elementsBelongingToViewElements = _selectionService.GetAvailableElements(SelectionScope.ElementsBelongingToView, SelectedModels);
-                            
                             var allRaw = _selectionService.GetAvailableElements(SelectionScope.AllModelElements, SelectedModels);
-                            _allModelElements = allRaw.Count > 10000 ? allRaw.Take(10000).ToList() : allRaw;
+                            if (allRaw.Count > 100000)
+                            {
+                                IsCacheLimited = true;
+                                LoggerService.LogInfo($"Total elements count ({allRaw.Count}) exceeds the 100,000 cache limit. Restricting cache to the Active Model only.");
+                                
+                                var activeOnlyModels = SelectedModels.Where(m => m.LinkInstance == null).ToList();
+                                _currentSelectionElements = recoveredModels.Where(m => m.LinkInstanceId == ElementId.InvalidElementId).ToList();
+                                _elementsVisibleInViewElements = _selectionService.GetAvailableElements(SelectionScope.ElementsVisibleInView, activeOnlyModels);
+                                _elementsBelongingToViewElements = _selectionService.GetAvailableElements(SelectionScope.ElementsBelongingToView, activeOnlyModels);
+                                _allModelElements = _selectionService.GetAvailableElements(SelectionScope.AllModelElements, activeOnlyModels);
+                            }
+                            else
+                            {
+                                IsCacheLimited = false;
+                                _currentSelectionElements = recoveredModels;
+                                _elementsVisibleInViewElements = _selectionService.GetAvailableElements(SelectionScope.ElementsVisibleInView, SelectedModels);
+                                _elementsBelongingToViewElements = _selectionService.GetAvailableElements(SelectionScope.ElementsBelongingToView, SelectedModels);
+                                _allModelElements = allRaw;
+                            }
                             
                             LoggerService.LogInfo($"Scopes fetched: CurrentSelection={_currentSelectionElements.Count}, VisibleInView={_elementsVisibleInViewElements.Count}, BelongingToView={_elementsBelongingToViewElements.Count}, AllModelElements={_allModelElements.Count}");
                         }

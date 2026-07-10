@@ -158,6 +158,7 @@
                         <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="60"/>
                     </Grid.ColumnDefinitions>
@@ -170,8 +171,29 @@
                     <Button Grid.Column="2" Command="{Binding CollapseAllCommand}" Style="{StaticResource HeaderIconButtonStyle}" ToolTip="Collapse All" VerticalAlignment="Center">
                         <Path Data="M5,0 L10,8 L0,8 Z" Fill="#666" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                     </Button>
+
+                    <Button Grid.Column="3" Command="{Binding RestoreRevitSelectionCommand}" IsEnabled="{Binding CanRestoreRevitSelection}" ToolTip="Restore Selection" VerticalAlignment="Center">
+                        <Button.Template>
+                            <ControlTemplate TargetType="Button">
+                                <Border x:Name="border" Background="Transparent" CornerRadius="10" Width="20" Height="20" Padding="3">
+                                    <Viewbox Width="12" Height="12" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                        <Path Data="M12,4A8,8 0 0,1 20,12A8,8 0 0,1 12,20C7.57,20 4,16.43 4,12H6A6,6 0 0,0 12,18A6,6 0 0,0 18,12A6,6 0 0,0 12,6C9.9,6 8,7.1 7,8.8H10V10.8H4V4.8H6V6.8C7.5,5.1 9.6,4 12,4Z" Fill="#777" x:Name="iconPath"/>
+                                    </Viewbox>
+                                </Border>
+                                <ControlTemplate.Triggers>
+                                    <Trigger Property="IsMouseOver" Value="True">
+                                        <Setter TargetName="border" Property="Background" Value="#eeeeee"/>
+                                        <Setter TargetName="iconPath" Property="Fill" Value="#333"/>
+                                    </Trigger>
+                                    <Trigger Property="IsEnabled" Value="False">
+                                        <Setter TargetName="iconPath" Property="Opacity" Value="0.3"/>
+                                    </Trigger>
+                                </ControlTemplate.Triggers>
+                            </ControlTemplate>
+                        </Button.Template>
+                    </Button>
                     
-                    <TextBlock Grid.Column="4" Text="Count" FontWeight="Bold" HorizontalAlignment="Right" Margin="0,0,5,0" VerticalAlignment="Center"/>
+                    <TextBlock Grid.Column="5" Text="Count" FontWeight="Bold" HorizontalAlignment="Right" Margin="0,0,5,0" VerticalAlignment="Center"/>
                 </Grid>
             </Border>
             <TreeView Grid.Row="1" ItemsSource="{Binding RootNodes}" 
@@ -339,6 +361,7 @@
                             <CheckBox Content="Sort by Phase" IsChecked="{Binding SortByPhase}" Style="{StaticResource SwitchStyle}" Margin="0,0,0,6" FontSize="11"/>
                             <CheckBox Content="Sort by Level" IsChecked="{Binding SortByLevel}" Style="{StaticResource SwitchStyle}" Margin="0,0,0,6" FontSize="11"/>
                             <CheckBox Content="Sort by Workset" IsChecked="{Binding SortByWorkset}" Style="{StaticResource SwitchStyle}" Margin="0,0,0,6" FontSize="11"/>
+                            <CheckBox Content="Sort by Model" IsChecked="{Binding SortByModel}" Style="{StaticResource SwitchStyle}" Margin="0,0,0,6" FontSize="11"/>
                             <CheckBox Content="on Live Selection" IsChecked="{Binding IsLiveSelection}" Style="{StaticResource SwitchStyle}" Margin="0,0,0,0" FontSize="11"/>
                         </StackPanel>
                     </Grid>
@@ -513,6 +536,13 @@
                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                             <TextBlock Text="{Binding CheckedElementsCount}" FontSize="24" FontWeight="Medium" VerticalAlignment="Center" Margin="0,0,10,0" Foreground="#333"/>
                             <TextBlock Text="Elements Checked" VerticalAlignment="Center" Foreground="#666" FontWeight="SemiBold"/>
+                            
+                            <!-- Warning Icon for cache limitation -->
+                            <Grid Visibility="{Binding IsCacheLimited, Converter={StaticResource BoolToVis}}" Margin="8,0,0,0" VerticalAlignment="Center">
+                                <Viewbox Width="16" Height="16" ToolTip="Cache Limitation: The combined elements of all selected models exceed 100,000. To preserve performance, only elements from the Active Model have been loaded, and linked models are omitted.">
+                                    <Path Data="M12,2L1,21H23L12,2M12,6L19.8,20H4.2L12,6M11,10V14H13V10H11M11,16V18H13V16H11Z" Fill="#E65100" />
+                                </Viewbox>
+                            </Grid>
                         </StackPanel>
                     </Border>
                 </StackPanel>

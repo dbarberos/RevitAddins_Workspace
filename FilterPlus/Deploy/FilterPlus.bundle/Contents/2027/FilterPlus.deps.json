@@ -6,7 +6,7 @@
   "compilationOptions": {},
   "targets": {
     ".NETCoreApp,Version=v10.0": {
-      "FilterPlus/1.2.0": {
+      "FilterPlus/1.6.0": {
         "dependencies": {
           "CommunityToolkit.Mvvm": "8.2.2",
           "JetBrains.Annotations": "2025.2.4",
@@ -52,7 +52,7 @@
     }
   },
   "libraries": {
-    "FilterPlus/1.2.0": {
+    "FilterPlus/1.6.0": {
       "type": "project",
       "serviceable": false,
       "sha512": ""
