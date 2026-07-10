@@ -16,7 +16,13 @@ public struct ElementSelectionKey : IEquatable<ElementSelectionKey>
 
     public bool Equals(ElementSelectionKey other)
     {
-        return Equals(ElementId, other.ElementId) && Equals(LinkInstanceId, other.LinkInstanceId);
+        long thisId = ElementId != null ? ElementId.Value : -1;
+        long otherId = other.ElementId != null ? other.ElementId.Value : -1;
+        
+        long thisLinkId = LinkInstanceId != null ? LinkInstanceId.Value : -1;
+        long otherLinkId = other.LinkInstanceId != null ? other.LinkInstanceId.Value : -1;
+
+        return thisId == otherId && thisLinkId == otherLinkId;
     }
 
     public override bool Equals(object obj)
@@ -28,7 +34,9 @@ public struct ElementSelectionKey : IEquatable<ElementSelectionKey>
     {
         unchecked
         {
-            return ((ElementId != null ? ElementId.GetHashCode() : 0) * 397) ^ (LinkInstanceId != null ? LinkInstanceId.GetHashCode() : 0);
+            long thisId = ElementId != null ? ElementId.Value : -1;
+            long thisLinkId = LinkInstanceId != null ? LinkInstanceId.Value : -1;
+            return (thisId.GetHashCode() * 397) ^ thisLinkId.GetHashCode();
         }
     }
 }

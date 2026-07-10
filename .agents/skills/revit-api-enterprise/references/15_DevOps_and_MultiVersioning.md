@@ -61,10 +61,14 @@ To distribute the tool to hundreds of architects and engineers at an AECO consul
 The industry standard requires the use of packaging tools (such as Inno Setup or WiX Toolset) that silently perform the following operations:
 Detect which versions of Revit are installed on the client machine by reading the Windows Registry (RegEdit).
 Copy the correct .dlls to the global paths (%ProgramData%\Autodesk\Revit\Addins\).
-Delete old versions if they exist.
-6. Agent Injection Instructions (Prompting Prompt)
+* Detect which versions of Revit are installed on the client machine by reading the Windows Registry (RegEdit).
+* Copy the correct .dlls to the global paths (%ProgramData%\Autodesk\Revit\Addins\).
+* Delete old versions if they exist.
+
+## 6. Agent Injection Instructions (Prompting Prompt)
 When you are assigned the task of structuring the deployment of an Add-in or managing code for different versions of Revit, you must apply these rules:
-Strict Conditional Directives: If you inject code that contains methods marked [Obsolete] into modern versions of Revit, you MUST surround that block with #if REVIT[YEAR] / #else / #endif directives and provide the corresponding modern alternative in the else block.
-No Manual Intervention: Configures project instructions so that the local environment is automatically updated using Post-Build events. The developer should not move .addin files manually at any point in the development lifecycle.
-Prohibition of Copy Local (Copy Local = False): Always verify that in the generated build documentation, the main Autodesk dependencies (RevitAPI.dll, RevitAPIUI.dll, AdWindows.dll) have the instruction not to be copied to the output directory to avoid bulking up the final installer and causing memory collisions.
-Agonistic Paths: When generating folder automation scripts, never use absolute paths burned into the code (like C:\Users\Juan\AppData...). Always use system environment variables (%AppData%, %ProgramData%) or compiler macro variables ($(TargetDir)).
+* **Strict Conditional Directives:** If you inject code that contains methods marked [Obsolete] into modern versions of Revit, you MUST surround that block with #if REVIT[YEAR] / #else / #endif directives and provide the corresponding modern alternative in the else block.
+* **No Manual Intervention:** Configures project instructions so that the local environment is automatically updated using Post-Build events. The developer should not move .addin files manually at any point in the development lifecycle.
+* **Prohibition of Copy Local (Copy Local = False):** Always verify that in the generated build documentation, the main Autodesk dependencies (RevitAPI.dll, RevitAPIUI.dll, AdWindows.dll) have the instruction not to be copied to the output directory to avoid bulking up the final installer and causing memory collisions.
+* **Agonistic Paths:** When generating folder automation scripts, never use absolute paths burned into the code (like C:\Users\Juan\AppData...). Always use system environment variables (%AppData%, %ProgramData%) or compiler macro variables ($(TargetDir)).
+* **Debug Log Window Handling (CI/CD):** During Development/Debug builds, any code displaying debug log windows (e.g. `_logView.Show()`) MUST remain active and uncommented to aid diagnostics. However, during Production/Release builds, the automated CI/CD pipeline or pre-compilation routine must comment out/exclude these log-showing lines (or wrap them in `#if DEBUG` preprocessor directives) to ensure end-users never see debug interfaces.
