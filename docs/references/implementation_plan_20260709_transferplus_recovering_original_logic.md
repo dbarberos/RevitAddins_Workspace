@@ -4,72 +4,61 @@ Este plan describe el proceso detallado para recuperar y adaptar el 100% de la l
 
 ---
 
-## 1. Justificación del Flujo
-El andamiaje inicial se realizó con una plantilla limpia de `Nice3point.Revit.Sdk` para asegurar la configuración multi-versión (.NET Framework 4.8 / .NET 8), WPF y ofuscación desatendida. Sin embargo, para no perder las complejas características de recolección de Revit (las 37 categorías, copiado recursivo de vistas dependientes/callouts, copiado de planos y traducción de coordenadas de vínculos), recuperaremos y adaptaremos los archivos lógicos originales.
+## 1. Justificación y Beneficios del Análisis del Código Heredado
+
+El andamiaje inicial se realizó con una plantilla limpia de `Nice3point.Revit.Sdk` para asegurar la configuración multi-versión (.NET Framework 4.8 / .NET 8), WPF y ofuscación desatendida. Sin embargo, para no perder las complejas características de recolección de Revit (las 37 categorías, copiado recursivo de vistas dependientes/callouts, copiado de planos y traducción de coordenadas de vínculos), se recuperan y adaptan los archivos lógicos originales bajo las siguientes premisas:
+
+1. **Recuperación Directa de la Lógica de Negocio (Core API)**: Reutilización de los algoritmos de extracción y mapeo de elementos sin necesidad de rediseñar las complejas dependencias y relaciones de bases de datos de Revit.
+2. **Modernización de la Arquitectura (UI/UX)**: Abstracción de la interfaz gráfica WinForms obsoleta hacia un patrón desacoplado **MVVM (Model-View-ViewModel)** en WPF, mejorando la mantenibilidad.
+3. **Actualización de la API de Revit (2024+)**: Adaptación de métodos e interfaces deprecadas al SDK moderno de Revit 2024+ para asegurar la compilación.
+4. **Preservación del Workflow Familiar**: Conservación de reglas críticas ante duplicados y lógica de renombrado que los usuarios ya dominan.
 
 ---
 
-## 2. Archivos a Recuperar y Adaptar
+## 2. Cambios de la API de Revit en la Modernización (2024+)
+
+Para asegurar la correcta compilación y compatibilidad con Revit 2024 y versiones superiores, se han identificado y adaptado los siguientes elementos del API:
+* **`ElementId.IntegerValue`**: Reemplazado por **`ElementId.Value`** (de tipo `Int64` / `long`) debido a la obsolescencia de los IDs de 32 bits en favor de los IDs de 64 bits en versiones recientes de Revit.
+* **Sobrecarga de `get_Parameter(int)`**: Reemplazada mediante el casteo explícito de los enteros de BuiltInParameters utilizando **`el.get_Parameter((BuiltInParameter)id)`**.
+* **Tipos de almacenamiento (`StorageType`)**: Actualización de comparaciones numéricas directas (`StorageType == 4`) a la enumeración tipada de Revit **`StorageType == (StorageType)4`** o su equivalente nominal.
+
+---
+
+## 3. Estructura de la Interfaz en Dos Columnas (WPF / MVVM)
+
+La vista principal `TransferPlusView.xaml` ha sido adaptada para organizar de manera eficiente el espacio y optimizar el flujo de trabajo:
+* **Columna Izquierda (Flujo de Transferencia)**:
+  * **From**: Selector combobox del documento origen.
+  * **What**: Tabla/Explorador jerárquico de categorías, familias y tipos (TreeView con columnas alineadas para Nombre, Num y Cantidad de elementos).
+  * **To**: Lista de documentos abiertos destino con selectores de tipo checkbox.
+* **Columna Derecha (Opciones y Configuración)**:
+  * **Include Links**: Reglas de coordenadas y transformaciones espaciales (None, Link, Shared Coordinates).
+  * **Manage Checked**: Acciones rápidas sobre el texto de los ítems seleccionados (Eliminar, Añadir prefijos/sufijos, cambiar de caja tipográfica, Buscar y Reemplazar).
+  * **Options**: Resolución de duplicados (Sobrescribir, Cancelar, Preguntar) y vinculación de elementos de vista (Leyendas, Tablas, etc.).
+
+---
+
+## 4. Archivos Recuperados y Adaptados en TransferPlus
 
 ### A. Modelos y Estructuras de Datos
-
-#### [NEW] [Elemento.cs](file:///c:/Users/david.barbero/Documents/DOCUMENTOS/ALTEN/Workbench/RevitAddins_Workspace/RevitAddins_Workspace/TransferPlus/Models/Elemento.cs)
-* Copiado de la versión original. Namespace ajustado a `TransferPlus.Models`.
-* Mantiene propiedades vitales como `IsView`, `IsLegend`, `IsSheet`, `IsSchedule`, `IsWorkset`, `SheetNumber`, `NoTransferible`, `wID` y `eID`.
-
-#### [NEW] [Nodo.cs](file:///c:/Users/david.barbero/Documents/DOCUMENTOS/ALTEN/Workbench/RevitAddins_Workspace/RevitAddins_Workspace/TransferPlus/Models/Nodo.cs)
-* Copiado de la versión original para mantener la agrupación jerárquica de categorías (All -> Categoría -> Familia -> Tipo -> Elementos). Namespace ajustado a `TransferPlus.Models`.
-
-#### [NEW] [Archivo.cs](file:///c:/Users/david.barbero/Documents/DOCUMENTOS/ALTEN/Workbench/RevitAddins_Workspace/RevitAddins_Workspace/TransferPlus/Models/Archivo.cs)
-* Copiado de la versión original. Namespace actualizado a `TransferPlus.Models`. Mapea los documentos vinculados y abiertos.
-
-#### [NEW] [Estructura.cs](file:///c:/Users/david.barbero/Documents/DOCUMENTOS/ALTEN/Workbench/RevitAddins_Workspace/RevitAddins_Workspace/TransferPlus/Models/Estructura.cs)
-* Copiado de la versión original. Mantiene la lista de raíces, nodos, archivos y log de transacciones.
-
-#### [NEW] [Configuraciones.cs](file:///c:/Users/david.barbero/Documents/DOCUMENTOS/ALTEN/Workbench/RevitAddins_Workspace/RevitAddins_Workspace/TransferPlus/Models/Configuraciones.cs)
-* Copiado y adaptado. Se retiran los campos de control WinForms (`System.Drawing.Size` y `System.Drawing.Point`) y se mantiene la configuración de copiado (`cf_rbOverride`, `cf_chk_Links`, `cf_chk_Callout`, `cf_chk_SheetWithViews`, etc.).
-
----
+* **[Elemento.cs](file:///c:/Users/david.barbero/Documents/DOCUMENTOS/ALTEN/Workbench/RevitAddins_Workspace/RevitAddins_Workspace/TransferPlus/Models/Elemento.cs)**: Mantiene propiedades vitales como `IsView`, `IsLegend`, `IsSheet`, `IsSchedule`, `IsWorkset`, `SheetNumber`, `NoTransferible`, `wID` y `eID`.
+* **[Nodo.cs](file:///c:/Users/david.barbero/Documents/DOCUMENTOS/ALTEN/Workbench/RevitAddins_Workspace/RevitAddins_Workspace/TransferPlus/Models/Nodo.cs)**: Mantiene la agrupación jerárquica de categorías (All -> Categoría -> Familia -> Tipo -> Elementos).
+* **[Archivo.cs](file:///c:/Users/david.barbero/Documents/DOCUMENTOS/ALTEN/Workbench/RevitAddins_Workspace/RevitAddins_Workspace/TransferPlus/Models/Archivo.cs)**: Mapea los documentos vinculados y abiertos de la sesión activa de Revit.
+* **[Estructura.cs](file:///c:/Users/david.barbero/Documents/DOCUMENTOS/ALTEN/Workbench/RevitAddins_Workspace/RevitAddins_Workspace/TransferPlus/Models/Estructura.cs)**: Estructura contenedora del árbol de elementos y logs.
+* **[Configuraciones.cs](file:///c:/Users/david.barbero/Documents/DOCUMENTOS/ALTEN/Workbench/RevitAddins_Workspace/RevitAddins_Workspace/TransferPlus/Models/Configuraciones.cs)**: Serialización de los parámetros del usuario (evitando dependencias obsoletas de coordenadas WinForms).
 
 ### B. Servicios y Lógica de Negocio
+* **[Serializaciones.cs](file:///c:/Users/david.barbero/Documents/DOCUMENTOS/ALTEN/Workbench/RevitAddins_Workspace/RevitAddins_Workspace/TransferPlus/Services/Serializaciones.cs)**: Gestión del guardado/cargado de configuraciones XML en disco.
+* **[DocumentCollector.cs](file:///c:/Users/david.barbero/Documents/DOCUMENTOS/ALTEN/Workbench/RevitAddins_Workspace/RevitAddins_Workspace/TransferPlus/Services/DocumentCollector.cs)**: Implementa los 37 `FilteredElementCollector` originales y reporta el progreso actual de forma asíncrona a la interfaz WPF.
+* **[TransferOrchestrator.cs](file:///c:/Users/david.barbero/Documents/DOCUMENTOS/ALTEN/Workbench/RevitAddins_Workspace/RevitAddins_Workspace/TransferPlus/Services/TransferOrchestrator.cs)**: Centraliza la ejecución de las copias físicas (`ElementTransformUtils`), la traducción geométrica de vínculos y el manejo silencioso de advertencias mediante un `WarningSwallower` nativo.
 
-#### [NEW] [Serializaciones.cs](file:///c:/Users/david.barbero/Documents/DOCUMENTOS/ALTEN/Workbench/RevitAddins_Workspace/RevitAddins_Workspace/TransferPlus/Services/Serializaciones.cs)
-* Copiado de la versión original. Namespace cambiado a `TransferPlus.Services`. Reemplazado `MessageBox.Show` por `TaskDialog.Show` de Revit.
-
-#### [NEW] [DocumentCollector.cs](file:///c:/Users/david.barbero/Documents/DOCUMENTOS/ALTEN/Workbench/RevitAddins_Workspace/RevitAddins_Workspace/TransferPlus/Services/DocumentCollector.cs)
-* Se portará la totalidad del método `TomaElementosSeleccion` original (las 37 consultas de FilteredElementCollector).
-* Se adaptará para recibir un delegado de progreso `Action<string, int, int>? progressCallback` que reporte a la ventana WPF el porcentaje actual.
-
-#### [NEW] [TransferOrchestrator.cs](file:///c:/Users/david.barbero/Documents/DOCUMENTOS/ALTEN/Workbench/RevitAddins_Workspace/RevitAddins_Workspace/TransferPlus/Services/TransferOrchestrator.cs)
-* Contendrá la lógica del botón Transferir original (copias recursivas, transformaciones, matrices de coordenadas de vínculos, y `WarningSwallower`).
+### C. Capa de Presentación
+* **[TransferPlusViewModel.cs](file:///c:/Users/david.barbero/Documents/DOCUMENTOS/ALTEN/Workbench/RevitAddins_Workspace/RevitAddins_Workspace/TransferPlus/ViewModels/TransferPlusViewModel.cs)**: Gestiona la reactividad, los comandos de renombrado, y la actualización de los contadores de selección.
+* **[TransferPlusView.xaml](file:///c:/Users/david.barbero/Documents/DOCUMENTOS/ALTEN/Workbench/RevitAddins_Workspace/RevitAddins_Workspace/TransferPlus/Views/TransferPlusView.xaml)**: Ventana WPF premium con diseño de dos columnas, tarjetas y barras de progreso flotantes.
 
 ---
 
-### C. Ajuste de la Capa de Presentación (ViewModels & Views)
-
-#### [MODIFY] [TransferPlusViewModel.cs](file:///c:/Users/david.barbero/Documents/DOCUMENTOS/ALTEN/Workbench/RevitAddins_Workspace/RevitAddins_Workspace/TransferPlus/ViewModels/TransferPlusViewModel.cs)
-* Adaptará los comandos para poblar la vista en base a los modelos `Nodo` y `Elemento` originales.
-* Se expondrán todos los comandos de renombrado y edición del árbol de elementos:
-  * `AddPrefixCommand` y `AddSuffixCommand` (solicitan el texto mediante un cuadro de diálogo WPF modal ligero).
-  * `FindAndReplaceCommand` (solicita texto original y reemplazo).
-  * `ChangeCaseCommand` (mayúsculas, minúsculas, ProperCase).
-  * `DeleteElementsCommand` (elimina elementos seleccionados del documento origen tras confirmación).
-* Se agregarán las propiedades reactivas para vincular los checkboxes de configuración de vínculos, planos y llamadas de detalle.
-
-#### [MODIFY] [TransferPlusView.xaml](file:///c:/Users/david.barbero/Documents/DOCUMENTOS/ALTEN/Workbench/RevitAddins_Workspace/RevitAddins_Workspace/TransferPlus/Views/TransferPlusView.xaml)
-* Se portarán todos los controles visuales originales adaptados a WPF y organizados en tarjetas (`CardBorderStyle`):
-  * **Filtros e Inputs**: ComboBox para origen, Lista con checkboxes para los archivos destino.
-  * **Panel de Operaciones de Texto**: Botones premium con iconos circulares para prefijo, sufijo, buscar/reemplazar, cambiar caja y eliminar.
-  * **Opciones de Transferencia**: Switches planos estilo iOS para incluir llamadas de detalle (`cf_chk_Callout`), vistas en planos (`cf_chk_SheetWithViews`), activar vínculos (`cf_chk_Links`), etc.
-  * **Tratamiento de Coordenadas**: RadioButtons para coordenadas de vínculo, coordenadas compartidas o ninguna.
-  * **Manejo de Duplicados**: RadioButtons para sobrescribir, cancelar o preguntar.
-* Enlazará la barra de progreso flotante (`ProgressBar`) a la propiedad `ProgressPercentage` y habilitará un `TextBlock` con el estado detallado.
-
-#### [NEW] [RenameTextView.xaml](file:///c:/Users/david.barbero/Documents/DOCUMENTOS/ALTEN/Workbench/RevitAddins_Workspace/RevitAddins_Workspace/TransferPlus/Views/RenameTextView.xaml) & [TakeTextView.xaml](file:///c:/Users/david.barbero/Documents/DOCUMENTOS/ALTEN/Workbench/RevitAddins_Workspace/RevitAddins_Workspace/TransferPlus/Views/TakeTextView.xaml)
-* Diálogos modales WPF ligeros y estilizados que reemplazarán a `RenameText.cs` y `TakeText.cs` de WinForms para solicitar los valores de búsqueda/prefijo.
-
----
-
-## 3. Plan de Verificación
-1. **Compilación local**: Compilar el proyecto para Revit 2024 (R24).
-2. **Revisión de Seguridad**: Verificar transacciones correctas utilizando bloques `using` en el orquestador.
+## 5. Plan de Verificación
+1. **Compilación en Revit SDK (R24)**: Validar con `dotnet build` usando perfiles multi-versión.
+2. **Pruebas de Transacciones**: Asegurar que todas las transacciones de Revit estén adecuadamente contenidas en bloques `using`.
+3. **Verificación de Coordenadas**: Comprobar el traslado geométrico de familias hospedadas en vínculos Revit.
