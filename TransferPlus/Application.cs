@@ -19,7 +19,7 @@ public class Application : ExternalApplication
         var panel = Application.CreatePanel("TransferPlus", "DBDev");
 
         panel.AddPushButton<CmdTransferPlus>("Transfer\nPlus")
-            .SetImage("/TransferPlus;component/Resources/Icons/RibbonIcon16.png")
-            .SetLargeImage("/TransferPlus;component/Resources/Icons/RibbonIcon32.png");
+            .SetImage("/TransferPlus;component/Resources/Icons/TransferPlus16x16.png")
+            .SetLargeImage("/TransferPlus;component/Resources/Icons/TransferPlus32x32.png");
     }
 }
