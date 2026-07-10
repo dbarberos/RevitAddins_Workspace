@@ -11,6 +11,7 @@ namespace FilterPlus.ViewModels;
 public partial class SelectionFilterViewModel : ObservableObject
 {
     private readonly RevitSelectionService _selectionService;
+    private readonly System.Windows.Threading.Dispatcher _uiDispatcher;
     public RevitSelectionService SelectionService => _selectionService;
     private Autodesk.Revit.UI.ExternalEvent _pickElementsEvent;
 
@@ -311,6 +312,7 @@ public partial class SelectionFilterViewModel : ObservableObject
     {
         LoggerService.LogInfo("SelectionFilterViewModel initializing...");
         _selectionService = selectionService;
+        _uiDispatcher = System.Windows.Threading.Dispatcher.CurrentDispatcher;
         
         try 
         {
@@ -333,20 +335,68 @@ public partial class SelectionFilterViewModel : ObservableObject
                 }
             }
 
-            // Default selection: Active Model
-            var initialModel = AvailableModels.FirstOrDefault();
-            if (initialModel != null)
-            {
-                SelectedModels.Add(initialModel);
-                SelectedModelsText = initialModel.DisplayName;
-            }
-
             // 1. Get initial selection IDs from Revit (safe: API context)
             var hostInitialIds = _selectionService.GetInitialSelectionIds();
             _persistentCheckedIds = hostInitialIds.Select(id => new ElementSelectionKey(id, ElementId.InvalidElementId)).ToHashSet();
+            
+            IList<Reference> selectedRefs = null;
+            try
+            {
+                selectedRefs = _selectionService.UiDocument.Selection.GetReferences();
+            }
+            catch { }
+
+            if (selectedRefs != null)
+            {
+                foreach (var r in selectedRefs)
+                {
+                    if (r.LinkedElementId != ElementId.InvalidElementId)
+                    {
+                        _persistentCheckedIds.Add(new ElementSelectionKey(r.LinkedElementId, r.ElementId));
+                    }
+                }
+            }
+
+            // Default selection: Include Host if it has elements, or if nothing is selected
+            var initialModel = AvailableModels.FirstOrDefault();
+            if (hostInitialIds.Any() && initialModel != null)
+            {
+                SelectedModels.Add(initialModel);
+            }
+
+            // Include linked models that have selected elements
+            if (selectedRefs != null)
+            {
+                foreach (var r in selectedRefs)
+                {
+                    if (r.LinkedElementId != ElementId.InvalidElementId)
+                    {
+                        var linkModel = AvailableModels.FirstOrDefault(m => m.LinkInstance != null && m.LinkInstance.Id == r.ElementId);
+                        if (linkModel != null && !SelectedModels.Contains(linkModel))
+                        {
+                            SelectedModels.Add(linkModel);
+                        }
+                    }
+                }
+            }
+            
+            if (SelectedModels.Count == 0 && initialModel != null)
+            {
+                SelectedModels.Add(initialModel);
+            }
+
+            if (SelectedModels.Count == 1)
+            {
+                SelectedModelsText = SelectedModels.First().DisplayName;
+            }
+            else
+            {
+                SelectedModelsText = $"Multiple models selected ({SelectedModels.Count})";
+            }
+
             _lastAppliedCheckedIds = new HashSet<ElementSelectionKey>(_persistentCheckedIds);
             IsSelectionDirty = false;
-            LoggerService.LogInfo($"Initial selection IDs count: {_persistentCheckedIds.Count}");
+            LoggerService.LogInfo($"Initial selection IDs count: {_persistentCheckedIds.Count} across {SelectedModels.Count} models.");
 
             // 2. Pre-fetch all scopes NOW (we are in Revit API thread)
             LoggerService.LogInfo("Pre-fetching scopes...");
@@ -402,9 +452,16 @@ public partial class SelectionFilterViewModel : ObservableObject
             Views.ModelSelectionView view = null;
             var viewModel = new ModelSelectionViewModel(AvailableModels.ToList(), SelectedModels, (selected) => 
             {
+                LoggerService.LogInfo($"ModelSelection Callback: Apply clicked. Selected models count: {selected.Count}");
                 ApplySelectedModels(selected);
+                LoggerService.LogInfo("ModelSelection Callback: Closing ModelSelectionView...");
                 view?.Close();
-            }, () => view?.Close());
+                LoggerService.LogInfo("ModelSelection Callback: ModelSelectionView closed.");
+            }, () => 
+            {
+                LoggerService.LogInfo("ModelSelection Callback: Cancel clicked.");
+                view?.Close();
+            });
             
             view = new Views.ModelSelectionView(viewModel);
             
@@ -430,8 +487,16 @@ public partial class SelectionFilterViewModel : ObservableObject
 
     public void ApplySelectedModels(List<RevitModelRepresentation> selected)
     {
-        if (selected == null || !selected.Any()) return;
-        if (_actionHandler == null || _actionExternalEvent == null) return;
+        if (selected == null || !selected.Any())
+        {
+            LoggerService.LogInfo("[ApplySelectedModels] Selected models list is null or empty.");
+            return;
+        }
+        if (_actionHandler == null || _actionExternalEvent == null)
+        {
+            LoggerService.LogInfo("[ApplySelectedModels] _actionHandler or _actionExternalEvent is null.");
+            return;
+        }
 
         // Save selected models list
         SelectedModels.Clear();
@@ -451,22 +516,35 @@ public partial class SelectionFilterViewModel : ObservableObject
         StatusMessage = "Switching model context...";
         IsBusy = true;
 
-        System.Windows.Threading.Dispatcher.CurrentDispatcher.Invoke(
-            System.Windows.Threading.DispatcherPriority.Background,
-            new Action(delegate { }));
-
+        LoggerService.LogInfo("[ApplySelectedModels] Calling _actionHandler.Raise...");
         _actionHandler.Raise(() =>
         {
+            LoggerService.LogInfo("[ApplySelectedModels] External event action started executing on Revit thread.");
             try
             {
-                // Clear selection state
-                _persistentCheckedIds.Clear();
-                _lastAppliedCheckedIds.Clear();
+                // Keep only selection elements belonging to models that are STILL selected
+                var modelsKeep = SelectedModels.ToList();
+                _persistentCheckedIds = _persistentCheckedIds
+                    .Where(key => 
+                    {
+                        if (key.LinkInstanceId == ElementId.InvalidElementId)
+                        {
+                            return modelsKeep.Any(m => m.LinkInstance == null);
+                        }
+                        else
+                        {
+                            return modelsKeep.Any(m => m.LinkInstance != null && m.LinkInstance.Id == key.LinkInstanceId);
+                        }
+                    })
+                    .ToHashSet();
+                _lastAppliedCheckedIds = new HashSet<ElementSelectionKey>(_persistentCheckedIds);
                 
                 // Pre-fetch all scopes for the selected models combined
+                LoggerService.LogInfo("[ApplySelectedModels] Loading scopes and handling cache...");
                 LoadScopesAndHandleCache(SelectedModels);
 
                 // Sync active elements based on current scope
+                LoggerService.LogInfo("[ApplySelectedModels] Syncing active elements...");
                 _activeElements = CurrentScope switch
                 {
                     SelectionScope.CurrentSelection => _currentSelectionElements,
@@ -477,20 +555,34 @@ public partial class SelectionFilterViewModel : ObservableObject
                 };
 
                 // Rebuild the TreeView
-                BuildTree();
-                IsSelectionDirty = false;
-                StatusMessage = $"Ready ({SelectedModelsText})";
+                LoggerService.LogInfo("[ApplySelectedModels] Rebuilding tree explorer (dispatching to UI)...");
+                _uiDispatcher.Invoke(() =>
+                {
+                    LoggerService.LogInfo("[ApplySelectedModels] BuildTree executing on UI thread...");
+                    BuildTree();
+                    IsSelectionDirty = false;
+                    StatusMessage = $"Ready ({SelectedModelsText})";
+                    LoggerService.LogInfo("[ApplySelectedModels] BuildTree UI update complete.");
+                });
             }
             catch (Exception ex)
             {
                 LoggerService.LogError("Switching Model Context Error", ex);
-                StatusMessage = "Error switching model.";
+                _uiDispatcher.Invoke(() =>
+                {
+                    StatusMessage = "Error switching model.";
+                });
             }
             finally
             {
-                IsBusy = false;
+                _uiDispatcher.Invoke(() =>
+                {
+                    IsBusy = false;
+                });
+                LoggerService.LogInfo("[ApplySelectedModels] External event action completed.");
             }
         }, _actionExternalEvent);
+        LoggerService.LogInfo("[ApplySelectedModels] _actionHandler.Raise finished.");
     }
 
     private void LoadScopesAndHandleCache(IEnumerable<RevitModelRepresentation> targetModels)
@@ -622,9 +714,6 @@ public partial class SelectionFilterViewModel : ObservableObject
     {
         StatusMessage = "Rebuilding tree explorer...";
         IsBusy = true;
-        System.Windows.Threading.Dispatcher.CurrentDispatcher.Invoke(
-            System.Windows.Threading.DispatcherPriority.Background,
-            new Action(delegate { }));
 
         TreeItemViewModel.IsBulkUpdating = true;
         LoggerService.LogInfo($"BuildTree: {_activeElements.Count} elements for scope {CurrentScope}.");
@@ -1008,7 +1097,15 @@ public partial class SelectionFilterViewModel : ObservableObject
                 if (uiDoc == null) return;
 
                 var selectedIds = uiDoc.Selection.GetElementIds();
-                var selectedRefs = uiDoc.Selection.GetReferences();
+                IList<Reference> selectedRefs = null;
+                try
+                {
+                    selectedRefs = uiDoc.Selection.GetReferences();
+                }
+                catch
+                {
+                    // Revit might throw if no valid references exist in the current selection
+                }
 
                 var revitKeys = new HashSet<ElementSelectionKey>();
                 foreach (var id in selectedIds)
@@ -1033,7 +1130,7 @@ public partial class SelectionFilterViewModel : ObservableObject
 
                 bool match = revitKeys.SetEquals(_persistentCheckedIds);
 
-                System.Windows.Application.Current?.Dispatcher?.Invoke(() =>
+                _uiDispatcher.Invoke(() =>
                 {
                     CanRestoreRevitSelection = !match;
                 });
@@ -1061,7 +1158,15 @@ public partial class SelectionFilterViewModel : ObservableObject
                 if (uiDoc == null) return;
 
                 var selectedIds = uiDoc.Selection.GetElementIds();
-                var selectedRefs = uiDoc.Selection.GetReferences();
+                IList<Reference> selectedRefs = null;
+                try
+                {
+                    selectedRefs = uiDoc.Selection.GetReferences();
+                }
+                catch
+                {
+                    // Revit might throw if no valid references exist
+                }
 
                 var revitKeys = new HashSet<ElementSelectionKey>();
                 bool modelsChanged = false;
@@ -1085,6 +1190,14 @@ public partial class SelectionFilterViewModel : ObservableObject
                         else
                         {
                             revitKeys.Add(new ElementSelectionKey(id, ElementId.InvalidElementId));
+                            
+                            // Ensure Host model is included if a host element is selected
+                            var hostModel = AvailableModels.FirstOrDefault(m => m.LinkInstance == null);
+                            if (hostModel != null && !SelectedModels.Any(sm => sm.LinkInstance == null))
+                            {
+                                modelsToAdd.Add(hostModel);
+                                modelsChanged = true;
+                            }
                         }
                     }
                 }
@@ -1113,7 +1226,11 @@ public partial class SelectionFilterViewModel : ObservableObject
                 {
                     foreach (var model in modelsToAdd.Distinct())
                     {
-                        if (!newSelectedModels.Any(sm => sm.LinkInstance != null && sm.LinkInstance.Id == model.LinkInstance.Id))
+                        bool isAlreadySelected = model.LinkInstance == null 
+                            ? newSelectedModels.Any(sm => sm.LinkInstance == null)
+                            : newSelectedModels.Any(sm => sm.LinkInstance != null && sm.LinkInstance.Id == model.LinkInstance.Id);
+
+                        if (!isAlreadySelected)
                         {
                             newSelectedModels.Add(model);
                         }
@@ -1152,7 +1269,7 @@ public partial class SelectionFilterViewModel : ObservableObject
                     newSelectionElements = _selectionService.GetAvailableElements(SelectionScope.CurrentSelection, SelectedModels);
                 }
 
-                System.Windows.Application.Current?.Dispatcher?.Invoke(() =>
+                _uiDispatcher.Invoke(() =>
                 {
                     if (modelsChanged)
                     {
@@ -1198,7 +1315,7 @@ public partial class SelectionFilterViewModel : ObservableObject
             catch (Exception ex)
             {
                 LoggerService.LogError("RestoreRevitSelection execution error", ex);
-                System.Windows.Application.Current?.Dispatcher?.Invoke(() =>
+                _uiDispatcher.Invoke(() =>
                 {
                     IsBusy = false;
                     StatusMessage = "Error restoring selection.";
@@ -1294,9 +1411,6 @@ public partial class SelectionFilterViewModel : ObservableObject
 
         StatusMessage = "Applying search filter...";
         IsBusy = true;
-        System.Windows.Threading.Dispatcher.CurrentDispatcher.Invoke(
-            System.Windows.Threading.DispatcherPriority.Background,
-            new Action(delegate { }));
 
         try
         {
@@ -1368,10 +1482,6 @@ public partial class SelectionFilterViewModel : ObservableObject
         LoggerService.LogInfo($"[ApplyIncreaseChecked] START. Current Scope in Select: {CurrentScope}. _activeElements count: {(_activeElements?.Count ?? 0)}.");
         StatusMessage = "Processing...";
         IsBusy = true;
-
-        System.Windows.Threading.Dispatcher.CurrentDispatcher.Invoke(
-            System.Windows.Threading.DispatcherPriority.Background,
-            new Action(delegate { }));
         
         _actionHandler.Raise(() =>
         {

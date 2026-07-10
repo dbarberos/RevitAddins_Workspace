@@ -172,25 +172,10 @@
                         <Path Data="M5,0 L10,8 L0,8 Z" Fill="#666" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                     </Button>
 
-                    <Button Grid.Column="3" Command="{Binding RestoreRevitSelectionCommand}" IsEnabled="{Binding CanRestoreRevitSelection}" ToolTip="Restore Selection" VerticalAlignment="Center">
-                        <Button.Template>
-                            <ControlTemplate TargetType="Button">
-                                <Border x:Name="border" Background="Transparent" CornerRadius="10" Width="20" Height="20" Padding="3">
-                                    <Viewbox Width="12" Height="12" HorizontalAlignment="Center" VerticalAlignment="Center">
-                                        <Path Data="M12,4A8,8 0 0,1 20,12A8,8 0 0,1 12,20C7.57,20 4,16.43 4,12H6A6,6 0 0,0 12,18A6,6 0 0,0 18,12A6,6 0 0,0 12,6C9.9,6 8,7.1 7,8.8H10V10.8H4V4.8H6V6.8C7.5,5.1 9.6,4 12,4Z" Fill="#777" x:Name="iconPath"/>
-                                    </Viewbox>
-                                </Border>
-                                <ControlTemplate.Triggers>
-                                    <Trigger Property="IsMouseOver" Value="True">
-                                        <Setter TargetName="border" Property="Background" Value="#eeeeee"/>
-                                        <Setter TargetName="iconPath" Property="Fill" Value="#333"/>
-                                    </Trigger>
-                                    <Trigger Property="IsEnabled" Value="False">
-                                        <Setter TargetName="iconPath" Property="Opacity" Value="0.3"/>
-                                    </Trigger>
-                                </ControlTemplate.Triggers>
-                            </ControlTemplate>
-                        </Button.Template>
+                    <Button Grid.Column="3" Command="{Binding RestoreRevitSelectionCommand}" IsEnabled="{Binding CanRestoreRevitSelection}" Style="{StaticResource HeaderIconButtonStyle}" ToolTip="Restore Selection" VerticalAlignment="Center">
+                        <Viewbox Width="18" Height="18" HorizontalAlignment="Center" VerticalAlignment="Center">
+                            <Path Data="M12,4A8,8 0 0,1 20,12A8,8 0 0,1 12,20C7.57,20 4,16.43 4,12H6A6,6 0 0,0 12,18A6,6 0 0,0 18,12A6,6 0 0,0 12,6C9.9,6 8,7.1 7,8.8H10V10.8H4V4.8H6V6.8C7.5,5.1 9.6,4 12,4Z" Fill="#666" x:Name="iconPath"/>
+                        </Viewbox>
                     </Button>
                     
                     <TextBlock Grid.Column="5" Text="Count" FontWeight="Bold" HorizontalAlignment="Right" Margin="0,0,5,0" VerticalAlignment="Center"/>
