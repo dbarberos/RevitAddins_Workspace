@@ -87,6 +87,7 @@ public partial class SelectionFilterViewModel : ObservableObject
     private HashSet<ElementSelectionKey> _persistentCheckedIds = new();
     private HashSet<ElementSelectionKey> _lastAppliedCheckedIds = new();
     [ObservableProperty] private bool _isSelectionDirty;
+    [ObservableProperty] private bool _canRestoreRevitSelection;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsSavedSelectionSelected))]
@@ -299,6 +300,8 @@ public partial class SelectionFilterViewModel : ObservableObject
         {
             UpdateIsSelectionDirty();
         }
+        
+        UpdateCanRestore();
     }
 
     /// <summary>
@@ -991,6 +994,217 @@ public partial class SelectionFilterViewModel : ObservableObject
         }
 
         IsSelectionDirty = false;
+    }
+
+    public void UpdateCanRestore()
+    {
+        if (_actionHandler == null || _actionExternalEvent == null) return;
+
+        _actionHandler.Raise(() =>
+        {
+            try
+            {
+                var uiDoc = _selectionService.UiDocument;
+                if (uiDoc == null) return;
+
+                var selectedIds = uiDoc.Selection.GetElementIds();
+                var selectedRefs = uiDoc.Selection.GetReferences();
+
+                var revitKeys = new HashSet<ElementSelectionKey>();
+                foreach (var id in selectedIds)
+                {
+                    var el = _selectionService.Document.GetElement(id);
+                    if (el != null && el is not RevitLinkInstance)
+                    {
+                        revitKeys.Add(new ElementSelectionKey(id, ElementId.InvalidElementId));
+                    }
+                }
+
+                if (selectedRefs != null)
+                {
+                    foreach (var r in selectedRefs)
+                    {
+                        if (r.LinkedElementId != ElementId.InvalidElementId)
+                        {
+                            revitKeys.Add(new ElementSelectionKey(r.LinkedElementId, r.ElementId));
+                        }
+                    }
+                }
+
+                bool match = revitKeys.SetEquals(_persistentCheckedIds);
+
+                System.Windows.Application.Current?.Dispatcher?.Invoke(() =>
+                {
+                    CanRestoreRevitSelection = !match;
+                });
+            }
+            catch (Exception ex)
+            {
+                LoggerService.LogError("UpdateCanRestore", ex);
+            }
+        }, _actionExternalEvent);
+    }
+
+    [RelayCommand]
+    private void RestoreRevitSelection()
+    {
+        if (_actionHandler == null || _actionExternalEvent == null) return;
+
+        IsBusy = true;
+        StatusMessage = "Restoring selection...";
+
+        _actionHandler.Raise(() =>
+        {
+            try
+            {
+                var uiDoc = _selectionService.UiDocument;
+                if (uiDoc == null) return;
+
+                var selectedIds = uiDoc.Selection.GetElementIds();
+                var selectedRefs = uiDoc.Selection.GetReferences();
+
+                var revitKeys = new HashSet<ElementSelectionKey>();
+                bool modelsChanged = false;
+                var modelsToAdd = new List<RevitModelRepresentation>();
+
+                // Case 1: Host elements or RevitLinkInstances
+                foreach (var id in selectedIds)
+                {
+                    var el = _selectionService.Document.GetElement(id);
+                    if (el != null)
+                    {
+                        if (el is RevitLinkInstance linkInst)
+                        {
+                            var matchingModel = AvailableModels.FirstOrDefault(m => m.LinkInstance != null && m.LinkInstance.Id == linkInst.Id);
+                            if (matchingModel != null && !SelectedModels.Any(sm => sm.LinkInstance != null && sm.LinkInstance.Id == linkInst.Id))
+                            {
+                                modelsToAdd.Add(matchingModel);
+                                modelsChanged = true;
+                            }
+                        }
+                        else
+                        {
+                            revitKeys.Add(new ElementSelectionKey(id, ElementId.InvalidElementId));
+                        }
+                    }
+                }
+
+                // Case 2: Elements inside links
+                if (selectedRefs != null)
+                {
+                    foreach (var r in selectedRefs)
+                    {
+                        if (r.LinkedElementId != ElementId.InvalidElementId)
+                        {
+                            revitKeys.Add(new ElementSelectionKey(r.LinkedElementId, r.ElementId));
+                            
+                            var matchingModel = AvailableModels.FirstOrDefault(m => m.LinkInstance != null && m.LinkInstance.Id == r.ElementId);
+                            if (matchingModel != null && !SelectedModels.Any(sm => sm.LinkInstance != null && sm.LinkInstance.Id == r.ElementId))
+                            {
+                                modelsToAdd.Add(matchingModel);
+                                modelsChanged = true;
+                            }
+                        }
+                    }
+                }
+
+                var newSelectedModels = SelectedModels.ToList();
+                if (modelsChanged)
+                {
+                    foreach (var model in modelsToAdd.Distinct())
+                    {
+                        if (!newSelectedModels.Any(sm => sm.LinkInstance != null && sm.LinkInstance.Id == model.LinkInstance.Id))
+                        {
+                            newSelectedModels.Add(model);
+                        }
+                    }
+                }
+
+                List<ElementModel> newSelectionElements;
+                List<ElementModel> visibleInViewList = null;
+                List<ElementModel> belongingToViewList = null;
+                List<ElementModel> allModelList = null;
+                bool isCacheLimitedResult = false;
+
+                if (modelsChanged)
+                {
+                    var allRaw = _selectionService.GetAvailableElements(SelectionScope.AllModelElements, newSelectedModels);
+                    if (allRaw.Count > 100000)
+                    {
+                        isCacheLimitedResult = true;
+                        var activeOnlyModels = newSelectedModels.Where(m => m.LinkInstance == null).ToList();
+                        newSelectionElements = _selectionService.GetAvailableElements(SelectionScope.CurrentSelection, activeOnlyModels);
+                        visibleInViewList = _selectionService.GetAvailableElements(SelectionScope.ElementsVisibleInView, activeOnlyModels);
+                        belongingToViewList = _selectionService.GetAvailableElements(SelectionScope.ElementsBelongingToView, activeOnlyModels);
+                        allModelList = _selectionService.GetAvailableElements(SelectionScope.AllModelElements, activeOnlyModels);
+                    }
+                    else
+                    {
+                        isCacheLimitedResult = false;
+                        newSelectionElements = _selectionService.GetAvailableElements(SelectionScope.CurrentSelection, newSelectedModels);
+                        visibleInViewList = _selectionService.GetAvailableElements(SelectionScope.ElementsVisibleInView, newSelectedModels);
+                        belongingToViewList = _selectionService.GetAvailableElements(SelectionScope.ElementsBelongingToView, newSelectedModels);
+                        allModelList = allRaw;
+                    }
+                }
+                else
+                {
+                    newSelectionElements = _selectionService.GetAvailableElements(SelectionScope.CurrentSelection, SelectedModels);
+                }
+
+                System.Windows.Application.Current?.Dispatcher?.Invoke(() =>
+                {
+                    if (modelsChanged)
+                    {
+                        SelectedModels.Clear();
+                        SelectedModels.AddRange(newSelectedModels);
+
+                        if (SelectedModels.Count == 1)
+                        {
+                            SelectedModelsText = SelectedModels.First().DisplayName;
+                        }
+                        else
+                        {
+                            SelectedModelsText = $"Multiple models selected ({SelectedModels.Count})";
+                        }
+
+                        IsCacheLimited = isCacheLimitedResult;
+                        _elementsVisibleInViewElements = visibleInViewList;
+                        _elementsBelongingToViewElements = belongingToViewList;
+                        _allModelElements = allModelList;
+                    }
+
+                    _currentSelectionElements = newSelectionElements;
+                    _persistentCheckedIds = revitKeys;
+                    _lastAppliedCheckedIds = new HashSet<ElementSelectionKey>(_persistentCheckedIds);
+                    CheckedElementsCount = _persistentCheckedIds.Count;
+
+                    if (CurrentScope == SelectionScope.CurrentSelection)
+                    {
+                        _activeElements = _currentSelectionElements;
+                        BuildTree();
+                    }
+                    else
+                    {
+                        CurrentScope = SelectionScope.CurrentSelection;
+                    }
+
+                    IsSelectionDirty = false;
+                    CanRestoreRevitSelection = false;
+                    StatusMessage = $"Selection restored ({_persistentCheckedIds.Count} elements).";
+                    IsBusy = false;
+                });
+            }
+            catch (Exception ex)
+            {
+                LoggerService.LogError("RestoreRevitSelection execution error", ex);
+                System.Windows.Application.Current?.Dispatcher?.Invoke(() =>
+                {
+                    IsBusy = false;
+                    StatusMessage = "Error restoring selection.";
+                });
+            }
+        }, _actionExternalEvent);
     }
 
     [RelayCommand]
