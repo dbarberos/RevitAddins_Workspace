@@ -642,83 +642,34 @@ public partial class TransferPlusViewModel : ObservableObject
         CheckedElementsCount = checkedItems.Count;
     }
 
-    // Text Rename Operations
+    // PowerRename Properties and Commands
+    [ObservableProperty]
+    private bool _isRenamePanelOpen;
+
+    [ObservableProperty]
+    private string _renameSearchText = string.Empty;
+
+    [ObservableProperty]
+    private string _renameReplaceText = string.Empty;
+
+    [ObservableProperty]
+    private bool _renameUseRegex;
+
+    [ObservableProperty]
+    private bool _renameMatchCase;
+
+    public ObservableCollection<RenamePreviewItem> RenamePreviewItems { get; } = new();
+
+    partial void OnRenameSearchTextChanged(string value) => UpdateRenamePreviews();
+    partial void OnRenameReplaceTextChanged(string value) => UpdateRenamePreviews();
+    partial void OnRenameUseRegexChanged(bool value) => UpdateRenamePreviews();
+    partial void OnRenameMatchCaseChanged(bool value) => UpdateRenamePreviews();
+
     [RelayCommand]
-    private void AddPrefix()
+    private void OpenRenamePanel()
     {
         if (SelectedSourceDocument == null) return;
 
-        var takeText = new TakeTextView { Title = "Add Prefix" };
-        if (takeText.ShowDialog() != true || string.IsNullOrEmpty(TakeTextView.texto_out)) return;
-
-        ExecuteRenameOperation(name => TakeTextView.texto_out + name, "Add Prefix");
-    }
-
-    [RelayCommand]
-    private void AddSuffix()
-    {
-        if (SelectedSourceDocument == null) return;
-
-        var takeText = new TakeTextView { Title = "Add Suffix" };
-        if (takeText.ShowDialog() != true || string.IsNullOrEmpty(TakeTextView.texto_out)) return;
-
-        ExecuteRenameOperation(name => name + TakeTextView.texto_out, "Add Suffix");
-    }
-
-    [RelayCommand]
-    private void FindReplace()
-    {
-        if (SelectedSourceDocument == null) return;
-
-        var renameText = new RenameTextView();
-        if (renameText.ShowDialog() != true || string.IsNullOrEmpty(RenameTextView.textofind_out)) return;
-
-        string find = RenameTextView.textofind_out;
-        string replace = RenameTextView.textoreplace_out;
-        bool useRegex = RenameTextView.usaregex;
-
-        ExecuteRenameOperation(name =>
-        {
-            if (useRegex)
-            {
-                return Regex.Replace(name, find, replace);
-            }
-            return name.Replace(find, replace);
-        }, "Find & Replace");
-    }
-
-    [RelayCommand]
-    private void ChangeCase(string mode)
-    {
-        if (SelectedSourceDocument == null) return;
-
-        ExecuteRenameOperation(name =>
-        {
-            return mode switch
-            {
-                "upper" => name.ToUpperInvariant(),
-                "lower" => name.ToLowerInvariant(),
-                "proper" => ProperCase(name),
-                _ => name
-            };
-        }, "Change Case");
-    }
-
-    private string ProperCase(string text)
-    {
-        string[] array = text.Split(' ');
-        for (int i = 0; i < array.Length; i++)
-        {
-            if (!Regex.IsMatch(array[i], "^\\d+"))
-            {
-                array[i] = CultureInfo.CurrentCulture.TextInfo.ToTitleCase(array[i].ToLower());
-            }
-        }
-        return string.Join(" ", array);
-    }
-
-    private void ExecuteRenameOperation(Func<string, string> renameFunc, string operationName)
-    {
         var checkedItems = new List<Elemento>();
         CollectCheckedItems(RootNodes, checkedItems);
 
@@ -728,38 +679,73 @@ public partial class TransferPlusViewModel : ObservableObject
             return;
         }
 
-        Document document = SelectedSourceDocument!.Adoc;
-        int successCount = 0;
-
-        using (Transaction transaction = new Transaction(document, "TransferPlus: " + operationName))
+        RenamePreviewItems.Clear();
+        foreach (var item in checkedItems)
         {
-            transaction.Start();
-            WarningSwallower.AttachToTransaction(transaction);
-
-            foreach (var item in checkedItems)
-            {
-                Element element = document.GetElement(item.eID);
-                if (element != null)
-                {
-                    string oldName = element.Name;
-                    string newName = renameFunc(oldName);
-
-                    if (!oldName.Equals(newName))
-                    {
-                        try
-                        {
-                            element.Name = newName;
-                            successCount++;
-                        }
-                        catch { }
-                    }
-                }
-            }
-            transaction.Commit();
+            RenamePreviewItems.Add(new RenamePreviewItem(item.eID, item.Nombre));
         }
 
-        TaskDialog.Show("TransferPlus", $"Operation '{operationName}' complete.\nChanged: {successCount} of {checkedItems.Count} elements.");
-        LoadSourceItems(document);
+        IsRenamePanelOpen = true;
+        UpdateRenamePreviews();
+    }
+
+    [RelayCommand]
+    private void CloseRenamePanel()
+    {
+        IsRenamePanelOpen = false;
+    }
+
+    [RelayCommand]
+    private void TransferAndRename()
+    {
+        // Placeholder for the actual transfer and rename logic
+        TaskDialog.Show("TransferPlus", "Transfer & Rename logic will be implemented in the next step!");
+        IsRenamePanelOpen = false;
+    }
+
+    private void UpdateRenamePreviews()
+    {
+        if (string.IsNullOrEmpty(RenameSearchText))
+        {
+            foreach (var item in RenamePreviewItems)
+            {
+                item.NewName = item.OriginalName;
+            }
+            return;
+        }
+
+        RegexOptions options = RenameMatchCase ? RegexOptions.None : RegexOptions.IgnoreCase;
+        Regex? regex = null;
+
+        if (RenameUseRegex)
+        {
+            try
+            {
+                regex = new Regex(RenameSearchText, options);
+            }
+            catch
+            {
+                // Incomplete regex, do not apply changes yet
+                return;
+            }
+        }
+
+        foreach (var item in RenamePreviewItems)
+        {
+            if (RenameUseRegex && regex != null)
+            {
+                try
+                {
+                    item.NewName = regex.Replace(item.OriginalName, RenameReplaceText);
+                }
+                catch { }
+            }
+            else
+            {
+                string literalPattern = Regex.Escape(RenameSearchText);
+                item.NewName = Regex.Replace(item.OriginalName, literalPattern, RenameReplaceText, options);
+            }
+        }
     }
 
     [RelayCommand]
@@ -776,10 +762,16 @@ public partial class TransferPlusViewModel : ObservableObject
             return;
         }
 
+        Document document = SelectedSourceDocument.Adoc;
+        if (document.IsLinked)
+        {
+            TaskDialog.Show("TransferPlus", "Cannot delete elements from a linked document.");
+            return;
+        }
+
         var result = TaskDialog.Show("TransferPlus", $"Are you sure you want to delete {checkedItems.Count} elements from the source document?", TaskDialogCommonButtons.Yes | TaskDialogCommonButtons.No);
         if (result != TaskDialogResult.Yes) return;
 
-        Document document = SelectedSourceDocument.Adoc;
         int deletedCount = 0;
 
         using (Transaction transaction = new Transaction(document, "TransferPlus: Delete Elements"))

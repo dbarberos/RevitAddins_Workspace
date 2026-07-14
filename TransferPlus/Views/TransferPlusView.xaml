@@ -6,9 +6,41 @@
         xmlns:local="clr-namespace:TransferPlus.Views"
         xmlns:viewmodels="clr-namespace:TransferPlus.ViewModels"
         mc:Ignorable="d"
-        Title="TransferPlus" Height="788" Width="940"
+        Title="TransferPlus" Height="788"
         WindowStartupLocation="CenterScreen"
         Background="#FAFAFA">
+
+    <Window.Style>
+        <Style TargetType="Window">
+            <Setter Property="Width" Value="940"/>
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding IsRenamePanelOpen}" Value="True">
+                    <DataTrigger.EnterActions>
+                        <BeginStoryboard>
+                            <Storyboard>
+                                <DoubleAnimation Storyboard.TargetProperty="Width" To="1440" Duration="0:0:0.3">
+                                    <DoubleAnimation.EasingFunction>
+                                        <CubicEase EasingMode="EaseOut"/>
+                                    </DoubleAnimation.EasingFunction>
+                                </DoubleAnimation>
+                            </Storyboard>
+                        </BeginStoryboard>
+                    </DataTrigger.EnterActions>
+                    <DataTrigger.ExitActions>
+                        <BeginStoryboard>
+                            <Storyboard>
+                                <DoubleAnimation Storyboard.TargetProperty="Width" To="940" Duration="0:0:0.3">
+                                    <DoubleAnimation.EasingFunction>
+                                        <CubicEase EasingMode="EaseOut"/>
+                                    </DoubleAnimation.EasingFunction>
+                                </DoubleAnimation>
+                            </Storyboard>
+                        </BeginStoryboard>
+                    </DataTrigger.ExitActions>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+    </Window.Style>
 
     <Window.Resources>
         <ResourceDictionary>
@@ -57,12 +89,18 @@
         </ResourceDictionary>
     </Window.Resources>
 
-    <Grid Margin="15">
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/> <!-- Row 0: Apply filter from -->
-            <RowDefinition Height="*"/>    <!-- Row 1: Main Tree + Right Side Cards -->
-            <RowDefinition Height="Auto"/> <!-- Row 2: Submit Buttons -->
-        </Grid.RowDefinitions>
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="Auto"/>
+        </Grid.ColumnDefinitions>
+
+        <Grid Grid.Column="0" Margin="15">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/> <!-- Row 0: Apply filter from -->
+                <RowDefinition Height="*"/>    <!-- Row 1: Main Tree + Right Side Cards -->
+                <RowDefinition Height="Auto"/> <!-- Row 2: Submit Buttons -->
+            </Grid.RowDefinitions>
 
         <!-- TOP ROW: SOURCE SELECT AND INCLUDE LINKS -->
         <Border Grid.Row="0" Margin="0,0,0,5" Padding="0,0,0,8" BorderBrush="#E0E0E0" BorderThickness="0,0,0,1">
@@ -321,7 +359,6 @@
                                 </StackPanel>
                             </StackPanel>
                         </Border>
-
                         <!-- Manage Checked Card -->
                         <Border Style="{StaticResource CardBorderStyle}">
                             <StackPanel>
@@ -331,26 +368,8 @@
                                         <ColumnDefinition Width="*"/>
                                         <ColumnDefinition Width="*"/>
                                     </Grid.ColumnDefinitions>
-                                    <Grid.RowDefinitions>
-                                        <RowDefinition Height="Auto"/>
-                                        <RowDefinition Height="Auto"/>
-                                        <RowDefinition Height="Auto"/>
-                                        <RowDefinition Height="Auto"/>
-                                        <RowDefinition Height="Auto"/>
-                                    </Grid.RowDefinitions>
-                                    <Button Grid.Row="0" Grid.Column="0" Content="Delete" Command="{Binding DeleteElementsCommand}" Margin="2" Padding="6" Background="White" Foreground="#C80000" BorderBrush="#FFC1C1" BorderThickness="1"/>
-                                    <Button Grid.Row="0" Grid.Column="1" Content="UPPER Case" Command="{Binding ChangeCaseCommand}" CommandParameter="upper" Margin="2" Padding="6" Background="White" BorderBrush="#ccc"/>
-                                    
-                                    <Button Grid.Row="1" Grid.Column="0" Content="Add Prefix" Command="{Binding AddPrefixCommand}" Margin="2" Padding="6" Background="White" BorderBrush="#ccc"/>
-                                    <Button Grid.Row="1" Grid.Column="1" Content="lower Case" Command="{Binding ChangeCaseCommand}" CommandParameter="lower" Margin="2" Padding="6" Background="White" BorderBrush="#ccc"/>
-                                    
-                                    <Button Grid.Row="2" Grid.Column="0" Content="Add Suffix" Command="{Binding AddSuffixCommand}" Margin="2" Padding="6" Background="White" BorderBrush="#ccc"/>
-                                    <Button Grid.Row="2" Grid.Column="1" Content="Proper Case" Command="{Binding ChangeCaseCommand}" CommandParameter="proper" Margin="2" Padding="6" Background="White" BorderBrush="#ccc"/>
-                                    
-                                    <Button Grid.Row="3" Grid.Column="0" Content="Find Replace" Command="{Binding FindReplaceCommand}" Margin="2" Padding="6" Background="White" BorderBrush="#ccc"/>
-                                    
-                                    <Button Grid.Row="4" Grid.Column="0" Content="Find Replace Number:" Margin="2" Padding="6" Background="White" BorderBrush="#ccc"/>
-                                    <Button Grid.Row="4" Grid.Column="1" Content="Advanced Rename" Margin="2" Padding="6" Background="White" BorderBrush="#ccc"/>
+                                    <Button Grid.Column="0" Content="Delete" Command="{Binding DeleteElementsCommand}" Margin="2" Padding="6" Background="White" Foreground="#C80000" BorderBrush="#FFC1C1" BorderThickness="1"/>
+                                    <Button Grid.Column="1" Content="Transfer &amp; Rename..." Command="{Binding OpenRenamePanelCommand}" Margin="2" Padding="6" Background="White" BorderBrush="#ccc"/>
                                 </Grid>
                             </StackPanel>
                         </Border>
@@ -430,9 +449,116 @@
                 </Button>
             </StackPanel>
         </Grid>
+        </Grid>
+        
+        <!-- PowerRename Panel (Sidebar) -->
+        <Border Grid.Column="1" x:Name="RenamePanel" ClipToBounds="True" Background="#FAFAFA" BorderBrush="#E0E0E0" BorderThickness="1,0,0,0">
+            <Border.Style>
+                <Style TargetType="Border">
+                    <Setter Property="Width" Value="0"/>
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding IsRenamePanelOpen}" Value="True">
+                            <DataTrigger.EnterActions>
+                                <BeginStoryboard>
+                                    <Storyboard>
+                                        <DoubleAnimation Storyboard.TargetProperty="Width" To="500" Duration="0:0:0.3">
+                                            <DoubleAnimation.EasingFunction>
+                                                <CubicEase EasingMode="EaseOut"/>
+                                            </DoubleAnimation.EasingFunction>
+                                        </DoubleAnimation>
+                                    </Storyboard>
+                                </BeginStoryboard>
+                            </DataTrigger.EnterActions>
+                            <DataTrigger.ExitActions>
+                                <BeginStoryboard>
+                                    <Storyboard>
+                                        <DoubleAnimation Storyboard.TargetProperty="Width" To="0" Duration="0:0:0.3">
+                                            <DoubleAnimation.EasingFunction>
+                                                <CubicEase EasingMode="EaseOut"/>
+                                            </DoubleAnimation.EasingFunction>
+                                        </DoubleAnimation>
+                                    </Storyboard>
+                                </BeginStoryboard>
+                            </DataTrigger.ExitActions>
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </Border.Style>
+            
+            <Grid Margin="15" Width="470" HorizontalAlignment="Left">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <!-- Header -->
+                <Grid Grid.Row="0" Margin="0,0,0,15">
+                    <TextBlock Text="Transfer &amp; Rename" FontSize="16" FontWeight="Bold" Foreground="#333" VerticalAlignment="Center"/>
+                    <Button Content="✕" Command="{Binding CloseRenamePanelCommand}" HorizontalAlignment="Right" VerticalAlignment="Center" Background="Transparent" BorderThickness="0" Foreground="#666" FontSize="14" Cursor="Hand" Width="24" Height="24"/>
+                </Grid>
+
+                <!-- Body (Controls and Previews) -->
+                <Grid Grid.Row="1">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <!-- Search Controls -->
+                    <StackPanel Grid.Row="0" Margin="0,0,0,15">
+                        <TextBlock Text="Buscar:" FontWeight="Bold" Margin="0,0,0,5" Foreground="#555"/>
+                        <TextBox Text="{Binding RenameSearchText, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,10" Padding="4" Height="28"/>
+
+                        <TextBlock Text="Reemplazar con:" FontWeight="Bold" Margin="0,0,0,5" Foreground="#555"/>
+                        <TextBox Text="{Binding RenameReplaceText, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,10" Padding="4" Height="28"/>
+
+                        <StackPanel Orientation="Horizontal" Margin="0,5,0,0">
+                            <CheckBox Content="Usar Regex" IsChecked="{Binding RenameUseRegex}"/>
+                            <CheckBox Content="Coincidir Mayús/Minús" IsChecked="{Binding RenameMatchCase}" Margin="15,0,0,0"/>
+                        </StackPanel>
+                    </StackPanel>
+
+                    <!-- Preview DataGrid -->
+                    <DataGrid Grid.Row="1" 
+                              ItemsSource="{Binding RenamePreviewItems}" 
+                              AutoGenerateColumns="False" 
+                              CanUserAddRows="False" 
+                              IsReadOnly="False"
+                              HeadersVisibility="Column"
+                              Background="White"
+                              BorderBrush="#e0e0e0"
+                              GridLinesVisibility="Horizontal"
+                              HorizontalGridLinesBrush="#f0f0f0">
+                        <DataGrid.Columns>
+                            <DataGridCheckBoxColumn Header="Apply" Binding="{Binding IsSelected}" Width="50"/>
+                            <DataGridTextColumn Header="Original Name" Binding="{Binding OriginalName}" Width="*" IsReadOnly="True"/>
+                            <DataGridTextColumn Header="New Name" Binding="{Binding NewName}" Width="*" IsReadOnly="True">
+                                <DataGridTextColumn.ElementStyle>
+                                    <Style TargetType="TextBlock">
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsSelected}" Value="True">
+                                                <Setter Property="Foreground" Value="#007ACC"/>
+                                                <Setter Property="FontWeight" Value="SemiBold"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </DataGridTextColumn.ElementStyle>
+                            </DataGridTextColumn>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </Grid>
+
+                <!-- Actions Footer -->
+                <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,15,0,0">
+                    <Button Content="Cancelar" Command="{Binding CloseRenamePanelCommand}" Width="100" Margin="0,0,10,0" Height="30" Background="#f0f0f0" BorderBrush="#ccc"/>
+                    <Button Content="Transferir y Renombrar" Command="{Binding TransferAndRenameCommand}" Width="160" Height="30" Background="#007ACC" Foreground="White" FontWeight="Bold" BorderThickness="0" Cursor="Hand"/>
+                </StackPanel>
+            </Grid>
+        </Border>
 
         <!-- Busy Overlay -->
-        <Grid Grid.RowSpan="3" Background="#80FFFFFF" Visibility="{Binding IsBusy, Converter={StaticResource BoolToVis}}">
+        <Grid Grid.ColumnSpan="2" Background="#80FFFFFF" Visibility="{Binding IsBusy, Converter={StaticResource BoolToVis}}">
             <Border Background="White" CornerRadius="10" Padding="25" HorizontalAlignment="Center" VerticalAlignment="Center" BorderThickness="1" BorderBrush="#ddd">
                 <StackPanel>
                     <TextBlock Text="{Binding StatusMessage}" FontSize="14" FontWeight="SemiBold" HorizontalAlignment="Center" Margin="0,0,0,15"/>

@@ -4,33 +4,29 @@ namespace TransferPlus.Views;
 
 public partial class RenameTextView : Window
 {
-    public static string textofind_out = "";
-    public static string textoreplace_out = "";
-    public static bool usaregex = false;
-    public static bool cancelado = false;
+    public string TextoFindOut { get; private set; } = string.Empty;
+    public string TextoReplaceOut { get; private set; } = string.Empty;
+    public bool UsaRegex { get; private set; } = false;
+    public bool Cancelado { get; private set; } = true;
 
     public RenameTextView()
     {
         InitializeComponent();
-        textofind_out = "";
-        textoreplace_out = "";
-        usaregex = false;
-        cancelado = true;
     }
 
     private void Ok_Click(object sender, RoutedEventArgs e)
     {
-        textofind_out = FindTextBox.Text;
-        textoreplace_out = ReplaceTextBox.Text;
-        usaregex = RegexCheckBox.IsChecked == true;
-        cancelado = false;
+        TextoFindOut = FindTextBox.Text;
+        TextoReplaceOut = ReplaceTextBox.Text;
+        UsaRegex = RegexCheckBox.IsChecked == true;
+        Cancelado = false;
         DialogResult = true;
         Close();
     }
 
     private void Cancel_Click(object sender, RoutedEventArgs e)
     {
-        cancelado = true;
+        Cancelado = true;
         DialogResult = false;
         Close();
     }
