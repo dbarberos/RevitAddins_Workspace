@@ -261,7 +261,7 @@
                                         <ColumnDefinition Width="*"/>
                                         <ColumnDefinition Width="Auto"/>
                                     </Grid.ColumnDefinitions>
-                                    <TextBlock Grid.Column="0" Text="Filter:" VerticalAlignment="Center" Margin="0,0,5,0" Foreground="#999"/>
+                                    <TextBlock Grid.Column="0" Text="Filter:" FontWeight="Bold" FontSize="12" Foreground="#999" VerticalAlignment="Center" Margin="0,0,10,0"/>
                                     <TextBox Grid.Column="1" Text="{Binding SearchFilter, UpdateSourceTrigger=PropertyChanged}" VerticalAlignment="Center" Padding="2" BorderBrush="#e0e0e0" BorderThickness="1"/>
                                     
                                     <StackPanel Grid.Column="2" Orientation="Horizontal" Margin="10,0,0,0" VerticalAlignment="Center">
@@ -277,15 +277,26 @@
                             </Grid>
                         </Border>
 
-                        <!-- On Duplicates & Geometry Card -->
-                        <Border Style="{StaticResource CardBorderStyle}">
-                            <StackPanel>
-                                <TextBlock Text="On Duplicates:" Style="{StaticResource FilterPlusTextBlockStyle}"/>
-                                <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
-                                    <RadioButton Content="Ok" IsChecked="{Binding OverrideDuplicates}" Margin="6,0,10,0"/>
-                                    <RadioButton Content="Abort" IsChecked="{Binding CancelDuplicates}" Margin="0,0,10,0"/>
+                        <!-- On Duplicates Card -->
+                        <Border Style="{StaticResource CardBorderStyle}" Padding="15,8">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Grid.Column="0" Text="On Duplicates:" FontWeight="Bold" FontSize="12" Foreground="#999" VerticalAlignment="Center" Margin="0,0,15,0"/>
+                                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                                    <RadioButton Content="Ok" IsChecked="{Binding OverrideDuplicates}" Margin="0,0,15,0"/>
+                                    <RadioButton Content="Abort" IsChecked="{Binding CancelDuplicates}" Margin="0,0,15,0"/>
                                     <RadioButton Content="Ask User" IsChecked="{Binding AskDuplicates}"/>
                                 </StackPanel>
+                            </Grid>
+                        </Border>
+
+                        <!-- On Views & Geometry Card -->
+                        <Border Style="{StaticResource CardBorderStyle}">
+                            <StackPanel>
+                                <TextBlock Text="On Views:" FontWeight="Bold" FontSize="12" Foreground="#999" Margin="0,0,0,8"/>
                                 
                                 <CheckBox Content="Accept on all Dialogs" IsChecked="{Binding AcceptAllWarnings}" Style="{StaticResource SwitchStyle}" Margin="0,4"/>
                                 
@@ -302,7 +313,7 @@
                                 
                                 <Border BorderBrush="#E0E0E0" BorderThickness="0,1,0,0" Margin="0,10,0,10"/>
                                 
-                                <TextBlock Text="Transform By: " VerticalAlignment="Center" FontWeight="SemiBold" FontSize="11" Foreground="#555" Margin="0,0,0,4"/>
+                                <TextBlock Text="Transform By:" FontWeight="Bold" FontSize="12" Foreground="#999" Margin="0,0,0,8"/>
                                 <StackPanel Orientation="Horizontal" Margin="0,0,0,0">
                                     <RadioButton Content="None" IsChecked="{Binding TransformNone}" Margin="0,0,15,0" ToolTipService.InitialShowDelay="600" ToolTip="Do not apply coordinate transformations.&#x0a;&#x0a;Use when linking directly."/>
                                     <RadioButton Content="Link" IsChecked="{Binding TransformLink}" Margin="0,0,15,0" ToolTipService.InitialShowDelay="600" ToolTip="Apply the geometry transformation of the linked instance.&#x0a;&#x0a;Use when transferring from a loaded link."/>
