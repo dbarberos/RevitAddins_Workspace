@@ -19,6 +19,7 @@ public class TransferOrchestrator
         var elementsCopyList = new List<ElementId>();
         var familiesLoadList = new List<Elemento>();
         var worksetsToCreate = new List<Elemento>();
+        var objectStylesToTransfer = new List<Elemento>();
 
         foreach (var item in elementsToCopy)
         {
@@ -30,13 +31,17 @@ public class TransferOrchestrator
             {
                 familiesLoadList.Add(item);
             }
+            else if (item.IsObjectStyle)
+            {
+                objectStylesToTransfer.Add(item);
+            }
             else
             {
                 elementsCopyList.Add(item.eID);
             }
         }
 
-        int totalCount = worksetsToCreate.Count + familiesLoadList.Count + elementsCopyList.Count;
+        int totalCount = worksetsToCreate.Count + familiesLoadList.Count + elementsCopyList.Count + objectStylesToTransfer.Count;
         int currentCount = 0;
 
         void Report(string msg)
@@ -92,6 +97,42 @@ public class TransferOrchestrator
                     }
                 }
                 catch { }
+            }
+        }
+
+        // 2.5. Process Object Styles
+        if (objectStylesToTransfer.Any())
+        {
+            using (Transaction t = new Transaction(targetDoc, "TransferPlus: Object Styles"))
+            {
+                t.Start();
+                WarningSwallower.AttachToTransaction(t);
+                foreach (var styleItem in objectStylesToTransfer)
+                {
+                    Report($"Transferring Object Style: {styleItem.Nombre}");
+                    try
+                    {
+                        Category sourceCat = Category.GetCategory(sourceDoc, styleItem.eID);
+                        if (sourceCat == null) continue;
+
+                        Category targetCat = Category.GetCategory(targetDoc, styleItem.eID);
+                        if (targetCat == null && sourceCat.Parent != null)
+                        {
+                            Category destParent = Category.GetCategory(targetDoc, sourceCat.Parent.Id);
+                            if (destParent != null)
+                            {
+                                targetCat = targetDoc.Settings.Categories.NewSubcategory(destParent, sourceCat.Name);
+                            }
+                        }
+
+                        if (targetCat != null)
+                        {
+                            TransferSingleCategoryStyle(sourceDoc, targetDoc, sourceCat, targetCat);
+                        }
+                    }
+                    catch { }
+                }
+                t.Commit();
             }
         }
 
@@ -349,6 +390,130 @@ public class TransferOrchestrator
             source = FamilySource.Family;
             overwriteParameterValues = true;
             return true;
+        }
+    }
+
+    private static void TransferSingleCategoryStyle(Document sourceDoc, Document targetDoc, Category sourceCat, Category targetCat)
+    {
+        // 1. Line Weight (Projection)
+        int? projLW = sourceCat.GetLineWeight(GraphicsStyleType.Projection);
+        if (projLW.HasValue)
+        {
+            try { targetCat.SetLineWeight(projLW.Value, GraphicsStyleType.Projection); } catch { }
+        }
+
+        // 2. Line Weight (Cut)
+        if (sourceCat.IsCuttable)
+        {
+            int? cutLW = sourceCat.GetLineWeight(GraphicsStyleType.Cut);
+            if (cutLW.HasValue)
+            {
+                try { targetCat.SetLineWeight(cutLW.Value, GraphicsStyleType.Cut); } catch { }
+            }
+        }
+
+        // 3. Line Color
+        try { targetCat.LineColor = sourceCat.LineColor; } catch { }
+
+        // 4. Line Pattern (Projection)
+        ElementId sourcePatternProj = sourceCat.GetLinePatternId(GraphicsStyleType.Projection);
+        if (sourcePatternProj != null && sourcePatternProj != ElementId.InvalidElementId)
+        {
+            ElementId targetPatternProj = TransferLinePattern(sourceDoc, targetDoc, sourcePatternProj);
+            try { targetCat.SetLinePatternId(targetPatternProj, GraphicsStyleType.Projection); } catch { }
+        }
+
+        // 5. Line Pattern (Cut)
+        if (sourceCat.IsCuttable)
+        {
+            ElementId sourcePatternCut = sourceCat.GetLinePatternId(GraphicsStyleType.Cut);
+            if (sourcePatternCut != null && sourcePatternCut != ElementId.InvalidElementId)
+            {
+                ElementId targetPatternCut = TransferLinePattern(sourceDoc, targetDoc, sourcePatternCut);
+                try { targetCat.SetLinePatternId(targetPatternCut, GraphicsStyleType.Cut); } catch { }
+            }
+        }
+
+        // 6. Material
+        if (sourceCat.Material != null)
+        {
+            ElementId targetMatId = TransferMaterial(sourceDoc, targetDoc, sourceCat.Material.Id);
+            if (targetMatId != null && targetMatId != ElementId.InvalidElementId)
+            {
+                try { targetCat.Material = targetDoc.GetElement(targetMatId) as Material; } catch { }
+            }
+        }
+
+        // Recurse for subcategories
+        if (sourceCat.SubCategories != null && sourceCat.SubCategories.Size > 0)
+        {
+            foreach (object obj in sourceCat.SubCategories)
+            {
+                if (obj is Category sourceSub)
+                {
+                    Category targetSub = null;
+                    if (targetCat.SubCategories != null)
+                    {
+                        targetSub = targetCat.SubCategories.get_Item(sourceSub.Name);
+                    }
+                    if (targetSub == null)
+                    {
+                        try
+                        {
+                            targetSub = targetDoc.Settings.Categories.NewSubcategory(targetCat, sourceSub.Name);
+                        }
+                        catch { }
+                    }
+                    if (targetSub != null)
+                    {
+                        TransferSingleCategoryStyle(sourceDoc, targetDoc, sourceSub, targetSub);
+                    }
+                }
+            }
+        }
+    }
+
+    private static ElementId TransferLinePattern(Document sourceDoc, Document targetDoc, ElementId sourcePatternId)
+    {
+        if (sourcePatternId == null || sourcePatternId == ElementId.InvalidElementId) return ElementId.InvalidElementId;
+        Element sourcePattern = sourceDoc.GetElement(sourcePatternId);
+        if (sourcePattern == null) return ElementId.InvalidElementId;
+
+        Element targetPattern = new FilteredElementCollector(targetDoc)
+            .OfClass(typeof(LinePatternElement))
+            .FirstOrDefault(p => p.Name == sourcePattern.Name);
+        if (targetPattern != null) return targetPattern.Id;
+
+        try
+        {
+            var copied = ElementTransformUtils.CopyElements(sourceDoc, new List<ElementId> { sourcePatternId }, targetDoc, null, new CopyPasteOptions());
+            return copied.FirstOrDefault() ?? ElementId.InvalidElementId;
+        }
+        catch
+        {
+            return ElementId.InvalidElementId;
+        }
+    }
+
+    private static ElementId TransferMaterial(Document sourceDoc, Document targetDoc, ElementId sourceMatId)
+    {
+        if (sourceMatId == null || sourceMatId == ElementId.InvalidElementId) return ElementId.InvalidElementId;
+        Element sourceMat = sourceDoc.GetElement(sourceMatId);
+        if (sourceMat == null) return ElementId.InvalidElementId;
+
+        Element targetMat = new FilteredElementCollector(targetDoc)
+            .OfClass(typeof(Material))
+            .FirstOrDefault(m => m.Name == sourceMat.Name);
+        if (targetMat != null) return targetMat.Id;
+
+        try
+        {
+            var copied = ElementTransformUtils.CopyElements(sourceDoc, new List<ElementId> { sourceMatId }, targetDoc, null, new CopyPasteOptions());
+            return copied.FirstOrDefault() ?? ElementId.InvalidElementId;
+        }
+        catch
+        {
+            return ElementId.InvalidElementId;
         }
     }
 }

@@ -12,7 +12,7 @@ public static class DocumentCollector
     {
         var elementsAFiltrar = new List<Elemento>();
         int num = 0;
-        int maxMain = 32;
+        int maxMain = 33;
 
         void Report(string stepName, int currentCount)
         {
@@ -143,7 +143,7 @@ public static class DocumentCollector
                 {
                     flag = true;
                 }
-                if (element7.get_Parameter((BuiltInParameter)(-1002051))?.AsValueString() != null)
+                if (element7.get_Parameter((BuiltInParameter)(-1002051))?.AsValueString() != null || view.ViewType == ViewType.Legend || view.ViewType == ViewType.Schedule || view.ViewType == ViewType.DrawingSheet)
                 {
                     if (view.GetPrimaryViewId().IntegerValue != -1)
                     {
@@ -684,6 +684,44 @@ public static class DocumentCollector
                         catch { }
                     }
                 }
+            }
+        }
+
+        // 33. Object Styles
+        Categories categoriesList = _doc_origen.Settings.Categories;
+        Report("Collecting Object Styles", categoriesList.Size);
+        foreach (object obj in categoriesList)
+        {
+            if (obj is Category category && category.Parent == null)
+            {
+                string familyName = "Model Objects";
+                if (category.Id.IntegerValue > 0)
+                {
+                    familyName = "Imported Objects";
+                }
+                else if (category.CategoryType == CategoryType.Model)
+                {
+                    familyName = "Model Objects";
+                }
+                else if (category.CategoryType == CategoryType.Annotation)
+                {
+                    familyName = "Annotation Objects";
+                }
+                else if (category.CategoryType == CategoryType.AnalyticalModel)
+                {
+                    familyName = "Analytical Model Objects";
+                }
+                else
+                {
+                    continue; // Skip Internal and other types
+                }
+
+                try
+                {
+                    Elemento itemStyles = new Elemento(category, familyName);
+                    elementsAFiltrar.Add(itemStyles);
+                }
+                catch { }
             }
         }
 

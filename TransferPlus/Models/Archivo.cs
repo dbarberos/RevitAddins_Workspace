@@ -1,29 +1,52 @@
 using System;
 using Autodesk.Revit.DB;
+using CommunityToolkit.Mvvm.ComponentModel;
 
 namespace TransferPlus.Models
 {
-	// Token: 0x02000029 RID: 41
-	public class Archivo
+	public class Archivo : ObservableObject
 	{
-		// Token: 0x060001A2 RID: 418 RVA: 0x00015A6B File Offset: 0x00013C6B
 		public Archivo(Document e)
 		{
-			this.Adoc = e;
-			this.Nombre = this.Adoc.Title;
-			this.Checked = false;
+			this._adoc = e;
+			this._nombre = e.Title;
+			this._checked = false;
 		}
 
-		// Token: 0x04000164 RID: 356
-		public string Nombre;
+		private string _nombre = string.Empty;
+		public string Nombre
+		{
+			get => _nombre;
+			set => SetProperty(ref _nombre, value);
+		}
 
-		// Token: 0x04000165 RID: 357
-		public Document Adoc;
+		private Document _adoc;
+		public Document Adoc
+		{
+			get => _adoc;
+			set => SetProperty(ref _adoc, value);
+		}
 
-		// Token: 0x04000166 RID: 358
-		public bool Checked;
+		private bool _checked;
+		public bool Checked
+		{
+			get => _checked;
+			set
+			{
+				if (SetProperty(ref _checked, value))
+				{
+					OnCheckedPropertyChanged?.Invoke();
+				}
+			}
+		}
 
-		// Token: 0x04000167 RID: 359
-		public bool EsVinculo;
+		private bool _esVinculo;
+		public bool EsVinculo
+		{
+			get => _esVinculo;
+			set => SetProperty(ref _esVinculo, value);
+		}
+
+		public Action? OnCheckedPropertyChanged { get; set; }
 	}
 }

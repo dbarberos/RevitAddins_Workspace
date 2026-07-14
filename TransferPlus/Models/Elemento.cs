@@ -26,7 +26,36 @@ namespace TransferPlus.Models
 		// Token: 0x06000199 RID: 409 RVA: 0x000149B0 File Offset: 0x00012BB0
 		public Elemento(Element el)
 		{
-			if (el.Name != null)
+			if (el is View viewEl)
+			{
+				try { this.Discipline = viewEl.Discipline.ToString(); } catch { this.Discipline = "Coordination"; }
+				if (viewEl.ViewType == ViewType.Legend)
+				{
+					this.IsLegend = true;
+					this.Familia = "Legend";
+					this.Categoria = "Legends";
+				}
+				else if (viewEl.ViewType == ViewType.Schedule)
+				{
+					this.IsSchedule = true;
+					this.Familia = "Schedule";
+					this.Categoria = "Schedules";
+				}
+				else if (viewEl is ViewSheet viewSheet)
+				{
+					this.IsSheet = true;
+					this.SheetNumber = viewSheet.SheetNumber;
+					string sheetName = string.IsNullOrEmpty(viewSheet.Name) ? "Unnamed" : viewSheet.Name;
+					string sheetNumber = string.IsNullOrEmpty(viewSheet.SheetNumber) ? "---" : viewSheet.SheetNumber;
+					this.Nombre = $"{sheetNumber} - {sheetName}";
+				}
+				
+				if (string.IsNullOrEmpty(this.Nombre) && el.Name != null)
+				{
+					this.Nombre = el.Name;
+				}
+			}
+			else if (el.Name != null)
 			{
 				this.Nombre = el.Name;
 			}
@@ -150,13 +179,18 @@ namespace TransferPlus.Models
 				if (view != null)
 				{
 					this.IsView = true;
+					try { this.Discipline = view.Discipline.ToString(); } catch { this.Discipline = "Coordination"; }
 					if (view.ViewType == (ViewType)11)
 					{
 						this.IsLegend = true;
+						this.Familia = "Legend";
+						this.Categoria = "Legends";
 					}
-					if (view.ViewType == (ViewType)5)
+					else if (view.ViewType == (ViewType)5)
 					{
 						this.IsSchedule = true;
+						this.Familia = "Schedule";
+						this.Categoria = "Schedules";
 					}
 					if (view.ViewType == (ViewType)10)
 					{
@@ -167,7 +201,9 @@ namespace TransferPlus.Models
 						this.IsSheet = true;
 						ViewSheet viewSheet = view as ViewSheet;
 						this.SheetNumber = viewSheet.SheetNumber;
-						this.Nombre = el.Name;
+						string sheetName = string.IsNullOrEmpty(viewSheet.Name) ? "Unnamed" : viewSheet.Name;
+						string sheetNumber = string.IsNullOrEmpty(viewSheet.SheetNumber) ? "---" : viewSheet.SheetNumber;
+						this.Nombre = $"{sheetNumber} - {sheetName}";
 					}
 					if (view.IsAssemblyView)
 					{
@@ -254,6 +290,11 @@ namespace TransferPlus.Models
 				}
 				if (caso == 3)
 				{
+					View viewTemplate = docin.GetElement(el.Id) as View;
+					if (viewTemplate != null)
+					{
+						this.Discipline = viewTemplate.Discipline.ToString();
+					}
 					if (el.Name != null)
 					{
 						this.Nombre = el.Name;
@@ -728,6 +769,19 @@ namespace TransferPlus.Models
 			this.IsWorkset = true;
 		}
 
+		public Elemento(Category cat, string typeName)
+		{
+			this.Nombre = cat.Name;
+			this.Categoria = "Object Styles";
+			this.Familia = typeName;
+			this.Tipo = "Undefined";
+			this.eID = cat.Id;
+			this.Checked = false;
+			this.Num = 1;
+			this.wID = WorksetId.InvalidWorksetId;
+			this.IsObjectStyle = true;
+		}
+
 		// Token: 0x060001A0 RID: 416 RVA: 0x00015A5B File Offset: 0x00013C5B
 		public string Descripcion()
 		{
@@ -754,6 +808,7 @@ namespace TransferPlus.Models
 
 		// Token: 0x04000151 RID: 337
 		public string SheetNumber;
+		public string Discipline = "Undefined";
 
 		// Token: 0x04000152 RID: 338
 		public bool Checked;
@@ -796,6 +851,7 @@ namespace TransferPlus.Models
 
 		// Token: 0x0400015F RID: 351
 		public bool IsProjectInfo;
+		public bool IsObjectStyle;
 
 		// Token: 0x04000160 RID: 352
 		public bool NoTransferible;

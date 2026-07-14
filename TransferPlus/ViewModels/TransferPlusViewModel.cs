@@ -88,13 +88,13 @@ public partial class TransferPlusViewModel : ObservableObject
     private bool _useAssemblyViewsIfExists = true;
 
     [ObservableProperty]
-    private bool _copyLinks = true;
+    private bool _copyLinks;
 
     [ObservableProperty]
-    private bool _transformNone = true;
+    private bool _transformNone;
 
     [ObservableProperty]
-    private bool _transformLink;
+    private bool _transformLink = true;
 
     [ObservableProperty]
     private bool _transformShared;
@@ -118,26 +118,37 @@ public partial class TransferPlusViewModel : ObservableObject
         WeakReferenceMessenger.Default.Register<CheckedItemsChangedMessage>(this, (r, m) => UpdateCheckedCount());
     }
 
+    public string CheckedDestinationsText
+    {
+        get
+        {
+            int count = DestinationDocuments.Count(d => d.Checked);
+            return count == 1 ? "1 selected model" : $"{count} selected models";
+        }
+    }
+
     private void LoadDocuments()
     {
         SourceDocuments.Clear();
         DestinationDocuments.Clear();
 
+        // Load all documents in the session, including links
         foreach (Document doc in _app.Application.Documents)
         {
-            if (doc.PathName != _targetDoc.PathName)
+            var arch = new Archivo(doc);
+            if (doc.IsLinked)
             {
-                SourceDocuments.Add(new Archivo(doc));
+                arch.EsVinculo = true;
             }
-            else
-            {
-                // Target is a destination
-                var dest = new Archivo(doc) { Checked = true };
-                DestinationDocuments.Add(dest);
-            }
+            arch.Nombre = GetDocumentDisplayName(doc);
+            SourceDocuments.Add(arch);
         }
 
-        SelectedSourceDocument = SourceDocuments.FirstOrDefault();
+        // Default selection to the active target document
+        SelectedSourceDocument = SourceDocuments.FirstOrDefault(d => d.Adoc.PathName.Equals(_targetDoc.PathName, StringComparison.OrdinalIgnoreCase))
+                                 ?? SourceDocuments.FirstOrDefault();
+
+        OnPropertyChanged(nameof(CheckedDestinationsText));
     }
 
     partial void OnSelectedSourceDocumentChanged(Archivo? value)
@@ -145,12 +156,66 @@ public partial class TransferPlusViewModel : ObservableObject
         if (value != null)
         {
             LoadSourceItems(value.Adoc);
+
+            // Rebuild destination documents: all open non-linked documents except the selected source
+            DestinationDocuments.Clear();
+            foreach (Document doc in _app.Application.Documents)
+            {
+                if (doc.IsLinked) continue;
+                if (doc.PathName.Equals(value.Adoc.PathName, StringComparison.OrdinalIgnoreCase)) continue;
+
+                var dest = new Archivo(doc) { Checked = true };
+                dest.Nombre = GetDocumentDisplayName(doc);
+                dest.OnCheckedPropertyChanged = () => OnPropertyChanged(nameof(CheckedDestinationsText));
+                DestinationDocuments.Add(dest);
+            }
         }
         else
         {
             RootNodes.Clear();
             _allSourceItems.Clear();
             CheckedElementsCount = 0;
+            DestinationDocuments.Clear();
+        }
+        OnPropertyChanged(nameof(CheckedDestinationsText));
+    }
+
+    private string GetDocumentDisplayName(Document doc)
+    {
+        if (doc.IsLinked)
+        {
+            try
+            {
+                var linkInst = new FilteredElementCollector(_targetDoc)
+                    .OfClass(typeof(RevitLinkInstance))
+                    .Cast<RevitLinkInstance>()
+                    .FirstOrDefault(li => li.GetLinkDocument() != null && li.GetLinkDocument().PathName.Equals(doc.PathName, StringComparison.OrdinalIgnoreCase));
+
+                if (linkInst != null)
+                {
+                    return $"Link: {linkInst.Name}";
+                }
+            }
+            catch { }
+
+            return "Link: " + doc.Title;
+        }
+        else if (doc.PathName.Equals(_targetDoc.PathName, StringComparison.OrdinalIgnoreCase))
+        {
+            return "Active Model: " + doc.Title;
+        }
+        else
+        {
+            return "Model: " + doc.Title;
+        }
+    }
+
+    partial void OnCopyLinksChanged(bool value)
+    {
+        // If Include Links as Source is turned off, and the selected document is a link, reset selection
+        if (!value && SelectedSourceDocument != null && SelectedSourceDocument.EsVinculo)
+        {
+            SelectedSourceDocument = SourceDocuments.FirstOrDefault(d => !d.EsVinculo);
         }
     }
 
@@ -192,7 +257,7 @@ public partial class TransferPlusViewModel : ObservableObject
         RootNodes.Clear();
         if (!_allSourceItems.Any()) return;
 
-        var allNode = new TreeItemViewModel("All", "Root")
+        var allNode = new TreeItemViewModel("All", "Root", null, null, 0)
         {
             Count = _allSourceItems.Count,
             IsExpanded = true
@@ -202,31 +267,62 @@ public partial class TransferPlusViewModel : ObservableObject
 
         foreach (var group in groups)
         {
-            var categoryNode = new TreeItemViewModel(group.Key, "Category")
+            var categoryNode = new TreeItemViewModel(group.Key, "Category", null, allNode, 1)
             {
-                Parent = allNode,
                 Count = group.Count()
             };
             
-            var familyGroups = group.GroupBy(x => x.Familia).OrderBy(g => g.Key);
-            foreach (var famGroup in familyGroups)
+            if (group.Key == "Views" || group.Key == "View Templates")
             {
-                var familyNode = new TreeItemViewModel(famGroup.Key, "Family")
+                var disciplineGroups = group.GroupBy(x => string.IsNullOrEmpty(x.Discipline) || x.Discipline == "Undefined" ? "Coordination" : x.Discipline).OrderBy(g => g.Key);
+                foreach (var discGroup in disciplineGroups)
                 {
-                    Parent = categoryNode,
-                    Count = famGroup.Count()
-                };
-                
-                foreach (var item in famGroup.OrderBy(x => x.Nombre))
-                {
-                    var itemNode = new TreeItemViewModel(item.Nombre, item.Tipo ?? "Undefined", item)
+                    var disciplineNode = new TreeItemViewModel(discGroup.Key, "Discipline", null, categoryNode, 2)
                     {
-                        Parent = familyNode,
-                        Count = 1
+                        Count = discGroup.Count()
                     };
-                    familyNode.Children.Add(itemNode);
+                    
+                    var familyGroups = discGroup.GroupBy(x => x.Familia).OrderBy(g => g.Key);
+                    foreach (var famGroup in familyGroups)
+                    {
+                        var familyNode = new TreeItemViewModel(famGroup.Key, "Family", null, disciplineNode, 3)
+                        {
+                            Count = famGroup.Count()
+                        };
+                        
+                        foreach (var item in famGroup.OrderBy(x => x.Nombre))
+                        {
+                            var itemNode = new TreeItemViewModel(item.Nombre, item.Tipo ?? "Undefined", item, familyNode, 4)
+                            {
+                                Count = 1
+                            };
+                            familyNode.Children.Add(itemNode);
+                        }
+                        disciplineNode.Children.Add(familyNode);
+                    }
+                    categoryNode.Children.Add(disciplineNode);
                 }
-                categoryNode.Children.Add(familyNode);
+            }
+            else
+            {
+                var familyGroups = group.GroupBy(x => x.Familia).OrderBy(g => g.Key);
+                foreach (var famGroup in familyGroups)
+                {
+                    var familyNode = new TreeItemViewModel(famGroup.Key, "Family", null, categoryNode, 2)
+                    {
+                        Count = famGroup.Count()
+                    };
+                    
+                    foreach (var item in famGroup.OrderBy(x => x.Nombre))
+                    {
+                        var itemNode = new TreeItemViewModel(item.Nombre, item.Tipo ?? "Undefined", item, familyNode, 3)
+                        {
+                            Count = 1
+                        };
+                        familyNode.Children.Add(itemNode);
+                    }
+                    categoryNode.Children.Add(familyNode);
+                }
             }
             allNode.Children.Add(categoryNode);
         }
@@ -271,7 +367,7 @@ public partial class TransferPlusViewModel : ObservableObject
 
         var filteredItems = _allSourceItems.Where(predicate).ToList();
 
-        var allNode = new TreeItemViewModel("All", "Root")
+        var allNode = new TreeItemViewModel("All", "Root", null, null, 0)
         {
             Count = filteredItems.Count,
             IsExpanded = true
@@ -281,29 +377,61 @@ public partial class TransferPlusViewModel : ObservableObject
 
         foreach (var group in groups)
         {
-            var categoryNode = new TreeItemViewModel(group.Key, "Category")
+            var categoryNode = new TreeItemViewModel(group.Key, "Category", null, allNode, 1)
             {
-                Parent = allNode,
                 Count = group.Count()
             };
-            var familyGroups = group.GroupBy(x => x.Familia).OrderBy(g => g.Key);
-            foreach (var famGroup in familyGroups)
+            
+            if (group.Key == "Views" || group.Key == "View Templates")
             {
-                var familyNode = new TreeItemViewModel(famGroup.Key, "Family")
+                var disciplineGroups = group.GroupBy(x => string.IsNullOrEmpty(x.Discipline) || x.Discipline == "Undefined" ? "Coordination" : x.Discipline).OrderBy(g => g.Key);
+                foreach (var discGroup in disciplineGroups)
                 {
-                    Parent = categoryNode,
-                    Count = famGroup.Count()
-                };
-                foreach (var item in famGroup.OrderBy(x => x.Nombre))
-                {
-                    var itemNode = new TreeItemViewModel(item.Nombre, item.Tipo ?? "Undefined", item)
+                    var disciplineNode = new TreeItemViewModel(discGroup.Key, "Discipline", null, categoryNode, 2)
                     {
-                        Parent = familyNode,
-                        Count = 1
+                        Count = discGroup.Count()
                     };
-                    familyNode.Children.Add(itemNode);
+                    
+                    var familyGroups = discGroup.GroupBy(x => x.Familia).OrderBy(g => g.Key);
+                    foreach (var famGroup in familyGroups)
+                    {
+                        var familyNode = new TreeItemViewModel(famGroup.Key, "Family", null, disciplineNode, 3)
+                        {
+                            Count = famGroup.Count()
+                        };
+                        
+                        foreach (var item in famGroup.OrderBy(x => x.Nombre))
+                        {
+                            var itemNode = new TreeItemViewModel(item.Nombre, item.Tipo ?? "Undefined", item, familyNode, 4)
+                            {
+                                Count = 1
+                            };
+                            familyNode.Children.Add(itemNode);
+                        }
+                        disciplineNode.Children.Add(familyNode);
+                    }
+                    categoryNode.Children.Add(disciplineNode);
                 }
-                categoryNode.Children.Add(familyNode);
+            }
+            else
+            {
+                var familyGroups = group.GroupBy(x => x.Familia).OrderBy(g => g.Key);
+                foreach (var famGroup in familyGroups)
+                {
+                    var familyNode = new TreeItemViewModel(famGroup.Key, "Family", null, categoryNode, 2)
+                    {
+                        Count = famGroup.Count()
+                    };
+                    foreach (var item in famGroup.OrderBy(x => x.Nombre))
+                    {
+                        var itemNode = new TreeItemViewModel(item.Nombre, item.Tipo ?? "Undefined", item, familyNode, 3)
+                        {
+                            Count = 1
+                        };
+                        familyNode.Children.Add(itemNode);
+                    }
+                    categoryNode.Children.Add(familyNode);
+                }
             }
             allNode.Children.Add(categoryNode);
         }
@@ -318,6 +446,94 @@ public partial class TransferPlusViewModel : ObservableObject
         FilterUseOr = false;
         FilterOnlyNames = false;
         FilterUseRegex = false;
+    }
+
+    [RelayCommand]
+    private void ExpandAll()
+    {
+        if (RootNodes == null || !RootNodes.Any()) return;
+        
+        int targetLevel = FindLowestUnexpandedLevel(RootNodes);
+        if (targetLevel != int.MaxValue)
+        {
+            if (targetLevel == 0)
+            {
+                ForceCollapseAll(RootNodes.SelectMany(r => r.Children));
+            }
+            SetExpandedStateAtLevel(RootNodes, targetLevel, true);
+        }
+    }
+
+    [RelayCommand]
+    private void CollapseAll()
+    {
+        if (RootNodes == null || !RootNodes.Any()) return;
+
+        int targetLevel = FindHighestExpandedLevel(RootNodes);
+        if (targetLevel > 0) // Never collapse Level 0 (Root "All")
+        {
+            SetExpandedStateAtLevel(RootNodes, targetLevel, false);
+        }
+    }
+
+    private int FindLowestUnexpandedLevel(IEnumerable<TreeItemViewModel> nodes)
+    {
+        int lowest = int.MaxValue;
+        foreach (var node in nodes)
+        {
+            if (node.Children.Count > 0)
+            {
+                if (!node.IsExpanded)
+                {
+                    if (node.Level < lowest) lowest = node.Level;
+                }
+                else
+                {
+                    int childLowest = FindLowestUnexpandedLevel(node.Children);
+                    if (childLowest < lowest) lowest = childLowest;
+                }
+            }
+        }
+        return lowest;
+    }
+
+    private int FindHighestExpandedLevel(IEnumerable<TreeItemViewModel> nodes)
+    {
+        int highest = -1;
+        foreach (var node in nodes)
+        {
+            if (node.IsExpanded && node.Children.Count > 0)
+            {
+                if (node.Level > highest) highest = node.Level;
+                int childHighest = FindHighestExpandedLevel(node.Children);
+                if (childHighest > highest) highest = childHighest;
+            }
+        }
+        return highest;
+    }
+
+    private void SetExpandedStateAtLevel(IEnumerable<TreeItemViewModel> nodes, int targetLevel, bool state)
+    {
+        foreach (var node in nodes)
+        {
+            if (node.Level == targetLevel)
+            {
+                if (node.Children.Count > 0) node.IsExpanded = state;
+            }
+            else if (node.Level < targetLevel)
+            {
+                SetExpandedStateAtLevel(node.Children, targetLevel, state);
+            }
+        }
+    }
+
+    private void ForceCollapseAll(IEnumerable<TreeItemViewModel> nodes)
+    {
+        foreach (var node in nodes)
+        {
+            node.IsExpanded = false;
+            ForceCollapseAll(node.Children);
+        }
     }
 
     private void SyncConfig()
@@ -562,5 +778,12 @@ public partial class TransferPlusViewModel : ObservableObject
 
         TaskDialog.Show("TransferPlus", $"Deleted {deletedCount} elements.");
         LoadSourceItems(document);
+    }
+
+    [RelayCommand]
+    private void OpenConfiguration()
+    {
+        var configView = new ConfigurationView();
+        configView.ShowDialog();
     }
 }

@@ -5,10 +5,43 @@
     <!-- Scrollbar Width adjustment -->
     <sys:Double x:Key="{x:Static SystemParameters.VerticalScrollBarWidthKey}">10</sys:Double>
 
-    <!-- Standard TextBlock Base Style -->
-    <Style x:Key="FilterPlusTextBlockStyle" TargetType="TextBlock">
+    <!-- Global TextBlock Style (Matches FilterPlus) -->
+    <Style TargetType="TextBlock">
         <Setter Property="Margin" Value="0,10,0,2"/>
         <Setter Property="FontWeight" Value="SemiBold"/>
+    </Style>
+
+    <!-- Standard TextBlock Base Style -->
+    <Style x:Key="FilterPlusTextBlockStyle" TargetType="TextBlock" BasedOn="{StaticResource {x:Type TextBlock}}"/>
+
+    <!-- Global Button Style (Ensures CornerRadius = 4) -->
+    <Style TargetType="Button">
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="Padding" Value="10,5"/>
+        <Style.Resources>
+            <Style TargetType="Border">
+                <Setter Property="CornerRadius" Value="4"/>
+            </Style>
+        </Style.Resources>
+    </Style>
+
+    <!-- Global TextBox Style -->
+    <Style TargetType="TextBox">
+        <Setter Property="Padding" Value="4"/>
+        <Setter Property="BorderBrush" Value="#e0e0e0"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Style.Resources>
+            <Style TargetType="Border">
+                <Setter Property="CornerRadius" Value="4"/>
+            </Style>
+        </Style.Resources>
+    </Style>
+
+    <!-- Global ComboBox Style -->
+    <Style TargetType="ComboBox">
+        <Setter Property="Padding" Value="4"/>
+        <Setter Property="BorderBrush" Value="#e0e0e0"/>
+        <Setter Property="BorderThickness" Value="1"/>
     </Style>
 
     <!-- Header Icon Flat Button Style -->

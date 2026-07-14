@@ -23,18 +23,42 @@ public partial class TreeItemViewModel : ObservableObject
     [ObservableProperty]
     private string _numText = string.Empty;
 
+    [ObservableProperty]
+    private bool _isVisible = true;
+
+    public int Level { get; set; }
+    public System.Windows.Thickness IndentMargin => new System.Windows.Thickness(Level * 15, 0, 0, 0);
+
     private bool? _isChecked = false;
+    private bool _isUpdatingState;
 
     public bool? IsChecked
     {
         get => _isChecked;
         set
         {
-            if (SetProperty(ref _isChecked, value))
+            // Intercept user click (attempting to go to null) and force to false.
+            if (!_isUpdatingState && value == null)
             {
-                UpdateChildrenCheckState(value);
-                Parent?.UpdateParentCheckState();
-                CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Default.Send(new CheckedItemsChangedMessage());
+                value = false;
+            }
+
+            if (_isChecked != value)
+            {
+                _isChecked = value;
+                OnPropertyChanged(nameof(IsChecked));
+
+                if (!_isUpdatingState)
+                {
+                    _isUpdatingState = true;
+                    if (value.HasValue)
+                    {
+                        UpdateChildrenCheckState(value.Value);
+                    }
+                    Parent?.UpdateParentCheckState();
+                    _isUpdatingState = false;
+                    CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Default.Send(new CheckedItemsChangedMessage());
+                }
             }
         }
     }
@@ -45,25 +69,23 @@ public partial class TreeItemViewModel : ObservableObject
 
     public TreeItemViewModel? Parent { get; set; }
 
-    public TreeItemViewModel(string name, string category, Elemento? item = null)
+    public TreeItemViewModel(string name, string category, Elemento? item = null, TreeItemViewModel? parent = null, int level = 0)
     {
         Name = name;
         Category = category;
         Item = item;
+        Parent = parent;
+        Level = level;
     }
 
-    private void UpdateChildrenCheckState(bool? value)
+    private void UpdateChildrenCheckState(bool value)
     {
-        if (value == null) return;
-
         foreach (var child in Children)
         {
-            if (child._isChecked != value)
-            {
-                child._isChecked = value;
-                child.OnPropertyChanged(nameof(IsChecked));
-                child.UpdateChildrenCheckState(value);
-            }
+            child._isUpdatingState = true;
+            child.IsChecked = value;
+            child._isUpdatingState = false;
+            child.UpdateChildrenCheckState(value);
         }
     }
 
@@ -80,8 +102,9 @@ public partial class TreeItemViewModel : ObservableObject
 
         if (_isChecked != newState)
         {
-            _isChecked = newState;
-            OnPropertyChanged(nameof(IsChecked));
+            _isUpdatingState = true;
+            IsChecked = newState;
+            _isUpdatingState = false;
             Parent?.UpdateParentCheckState();
         }
     }
