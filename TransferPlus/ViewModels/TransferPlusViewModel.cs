@@ -219,10 +219,7 @@ public partial class TransferPlusViewModel : ObservableObject
         }
     }
 
-    partial void OnSearchFilterChanged(string value) => FilterTree();
-    partial void OnFilterUseOrChanged(bool value) => FilterTree();
-    partial void OnFilterOnlyNamesChanged(bool value) => FilterTree();
-    partial void OnFilterUseRegexChanged(bool value) => FilterTree();
+    // No automatic filtering on property changes (triggered by Apply button only)
 
     private void LoadSourceItems(Document sourceDoc)
     {
@@ -329,114 +326,129 @@ public partial class TransferPlusViewModel : ObservableObject
         RootNodes.Add(allNode);
     }
 
+    [RelayCommand]
     private void FilterTree()
     {
-        if (string.IsNullOrWhiteSpace(SearchFilter))
+        string searchText = SearchFilter;
+        if (string.IsNullOrWhiteSpace(searchText)) return;
+
+        StatusMessage = "Applying search filter...";
+        IsBusy = true;
+
+        System.Windows.Threading.Dispatcher.CurrentDispatcher.Invoke(
+            System.Windows.Threading.DispatcherPriority.Background,
+            new Action(delegate { }));
+
+        try
         {
-            BuildTree();
-            return;
-        }
+            Regex? searchRegex = null;
 
-        var query = SearchFilter;
-        RootNodes.Clear();
-
-        Func<Elemento, bool> predicate;
-
-        if (FilterUseRegex)
-        {
-            try
+            if (FilterUseRegex)
             {
-                var regex = new Regex(query, RegexOptions.IgnoreCase);
-                predicate = x => regex.IsMatch(x.Nombre) || (!FilterOnlyNames && (regex.IsMatch(x.Categoria) || regex.IsMatch(x.Familia)));
-            }
-            catch
-            {
-                predicate = x => x.Nombre.IndexOf(query, StringComparison.OrdinalIgnoreCase) >= 0;
-            }
-        }
-        else if (FilterUseOr)
-        {
-            var terms = query.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
-            predicate = x => terms.Any(t => x.Nombre.IndexOf(t, StringComparison.OrdinalIgnoreCase) >= 0 || (!FilterOnlyNames && (x.Categoria.IndexOf(t, StringComparison.OrdinalIgnoreCase) >= 0 || x.Familia.IndexOf(t, StringComparison.OrdinalIgnoreCase) >= 0)));
-        }
-        else
-        {
-            var terms = query.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
-            predicate = x => terms.All(t => x.Nombre.IndexOf(t, StringComparison.OrdinalIgnoreCase) >= 0 || (!FilterOnlyNames && (x.Categoria.IndexOf(t, StringComparison.OrdinalIgnoreCase) >= 0 || x.Familia.IndexOf(t, StringComparison.OrdinalIgnoreCase) >= 0)));
-        }
-
-        var filteredItems = _allSourceItems.Where(predicate).ToList();
-
-        var allNode = new TreeItemViewModel("All", "Root", null, null, 0)
-        {
-            Count = filteredItems.Count,
-            IsExpanded = true
-        };
-
-        var groups = filteredItems.GroupBy(x => x.Categoria).OrderBy(g => g.Key);
-
-        foreach (var group in groups)
-        {
-            var categoryNode = new TreeItemViewModel(group.Key, "Category", null, allNode, 1)
-            {
-                Count = group.Count()
-            };
-            
-            if (group.Key == "Views" || group.Key == "View Templates")
-            {
-                var disciplineGroups = group.GroupBy(x => string.IsNullOrEmpty(x.Discipline) || x.Discipline == "Undefined" ? "Coordination" : x.Discipline).OrderBy(g => g.Key);
-                foreach (var discGroup in disciplineGroups)
+                try
                 {
-                    var disciplineNode = new TreeItemViewModel(discGroup.Key, "Discipline", null, categoryNode, 2)
-                    {
-                        Count = discGroup.Count()
-                    };
-                    
-                    var familyGroups = discGroup.GroupBy(x => x.Familia).OrderBy(g => g.Key);
-                    foreach (var famGroup in familyGroups)
-                    {
-                        var familyNode = new TreeItemViewModel(famGroup.Key, "Family", null, disciplineNode, 3)
-                        {
-                            Count = famGroup.Count()
-                        };
-                        
-                        foreach (var item in famGroup.OrderBy(x => x.Nombre))
-                        {
-                            var itemNode = new TreeItemViewModel(item.Nombre, item.Tipo ?? "Undefined", item, familyNode, 4)
-                            {
-                                Count = 1
-                            };
-                            familyNode.Children.Add(itemNode);
-                        }
-                        disciplineNode.Children.Add(familyNode);
-                    }
-                    categoryNode.Children.Add(disciplineNode);
+                    searchRegex = new Regex(
+                        searchText, 
+                        RegexOptions.IgnoreCase | RegexOptions.Compiled,
+                        TimeSpan.FromSeconds(2));
+                }
+                catch
+                {
+                    StatusMessage = "Invalid Regex Pattern";
+                    return;
                 }
             }
             else
             {
-                var familyGroups = group.GroupBy(x => x.Familia).OrderBy(g => g.Key);
-                foreach (var famGroup in familyGroups)
+                searchText = searchText.ToLowerInvariant();
+            }
+
+            TreeItemViewModel.IsBulkUpdating = true;
+
+            // If Use OR is OFF, the new search replaces the current selection.
+            if (!FilterUseOr)
+            {
+                foreach (var node in RootNodes)
                 {
-                    var familyNode = new TreeItemViewModel(famGroup.Key, "Family", null, categoryNode, 2)
-                    {
-                        Count = famGroup.Count()
-                    };
-                    foreach (var item in famGroup.OrderBy(x => x.Nombre))
-                    {
-                        var itemNode = new TreeItemViewModel(item.Nombre, item.Tipo ?? "Undefined", item, familyNode, 3)
-                        {
-                            Count = 1
-                        };
-                        familyNode.Children.Add(itemNode);
-                    }
-                    categoryNode.Children.Add(familyNode);
+                    node.SetCheckedState(false);
                 }
             }
-            allNode.Children.Add(categoryNode);
+
+            // Apply the current search matches on the nodes shown in the explorer
+            foreach (var node in RootNodes)
+            {
+                FilterNode(node, searchText, searchRegex);
+            }
+
+            // Ensure parent nodes reflect child states properly
+            foreach (var node in RootNodes)
+            {
+                node.RefreshState();
+            }
+
+            TreeItemViewModel.IsBulkUpdating = false;
+            UpdateCheckedCount();
+
+            // Clear the text box after applying
+            SearchFilter = string.Empty;
         }
-        RootNodes.Add(allNode);
-        UpdateCheckedCount();
+        catch (Exception ex)
+        {
+            TaskDialog.Show("TransferPlus", "Error applying filter: " + ex.Message);
+        }
+        finally
+        {
+            IsBusy = false;
+            StatusMessage = "Ready";
+        }
+    }
+
+    private void FilterNode(TreeItemViewModel node, string searchText, Regex? searchRegex)
+    {
+        bool match = false;
+        if (node.Level > 0)
+        {
+            try
+            {
+                if (searchRegex != null)
+                {
+                    match = searchRegex.IsMatch(node.Name);
+                    if (!match && !FilterOnlyNames)
+                    {
+                        match = searchRegex.IsMatch(node.Category);
+                        if (!match && node.Item != null)
+                        {
+                            if (node.Item.Familia != null) match = searchRegex.IsMatch(node.Item.Familia);
+                            if (!match && node.Item.Tipo != null) match = searchRegex.IsMatch(node.Item.Tipo);
+                        }
+                    }
+                }
+                else
+                {
+                    match = node.Name.ToLowerInvariant().Contains(searchText);
+                    if (!match && !FilterOnlyNames)
+                    {
+                        match = node.Category.ToLowerInvariant().Contains(searchText);
+                        if (!match && node.Item != null)
+                        {
+                            if (node.Item.Familia != null) match = node.Item.Familia.ToLowerInvariant().Contains(searchText);
+                            if (!match && node.Item.Tipo != null) match = node.Item.Tipo.ToLowerInvariant().Contains(searchText);
+                        }
+                    }
+                }
+            }
+            catch {}
+        }
+
+        if (match)
+        {
+            node.SetCheckedState(true);
+        }
+
+        foreach (var child in node.Children)
+        {
+            FilterNode(child, searchText, searchRegex);
+        }
     }
 
     [RelayCommand]
@@ -446,6 +458,17 @@ public partial class TransferPlusViewModel : ObservableObject
         FilterUseOr = false;
         FilterOnlyNames = false;
         FilterUseRegex = false;
+
+        if (RootNodes != null)
+        {
+            TreeItemViewModel.IsBulkUpdating = true;
+            foreach (var node in RootNodes)
+            {
+                node.SetCheckedState(false);
+            }
+            TreeItemViewModel.IsBulkUpdating = false;
+            UpdateCheckedCount();
+        }
     }
 
     [RelayCommand]

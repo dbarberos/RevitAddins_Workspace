@@ -29,6 +29,8 @@ public partial class TreeItemViewModel : ObservableObject
     public int Level { get; set; }
     public System.Windows.Thickness IndentMargin => new System.Windows.Thickness(Level * 15, 0, 0, 0);
 
+    public static bool IsBulkUpdating { get; set; }
+
     private bool? _isChecked = false;
     private bool _isUpdatingState;
 
@@ -48,7 +50,7 @@ public partial class TreeItemViewModel : ObservableObject
                 _isChecked = value;
                 OnPropertyChanged(nameof(IsChecked));
 
-                if (!_isUpdatingState)
+                if (!_isUpdatingState && !IsBulkUpdating)
                 {
                     _isUpdatingState = true;
                     if (value.HasValue)
@@ -106,6 +108,42 @@ public partial class TreeItemViewModel : ObservableObject
             IsChecked = newState;
             _isUpdatingState = false;
             Parent?.UpdateParentCheckState();
+        }
+    }
+
+    public void SetCheckedState(bool value)
+    {
+        _isUpdatingState = true;
+        IsChecked = value;
+        foreach (var child in Children)
+        {
+            child.SetCheckedState(value);
+        }
+        _isUpdatingState = false;
+    }
+
+    public void RefreshState()
+    {
+        foreach (var child in Children)
+        {
+            child.RefreshState();
+        }
+
+        if (Children.Count > 0)
+        {
+            bool allChecked = Children.All(c => c.IsChecked == true);
+            bool allUnchecked = Children.All(c => c.IsChecked == false);
+
+            bool? newState = null;
+            if (allChecked) newState = true;
+            else if (allUnchecked) newState = false;
+
+            if (_isChecked != newState)
+            {
+                _isUpdatingState = true;
+                IsChecked = newState;
+                _isUpdatingState = false;
+            }
         }
     }
 }
