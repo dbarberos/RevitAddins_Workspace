@@ -451,7 +451,7 @@ public partial class TransferPlusViewModel : ObservableObject
         }
     }
 
-    [RelayCommand]
+    [RelayCommand(CanExecute = nameof(HasCheckedElements))]
     private void ClearFilter()
     {
         SearchFilter = string.Empty;
@@ -574,7 +574,7 @@ public partial class TransferPlusViewModel : ObservableObject
         _config.cf_chk_AcceptAll = AcceptAllWarnings;
     }
 
-    [RelayCommand]
+    [RelayCommand(CanExecute = nameof(HasCheckedElements))]
     private void Transfer()
     {
         if (SelectedSourceDocument == null) return;
@@ -598,6 +598,21 @@ public partial class TransferPlusViewModel : ObservableObject
 
         try
         {
+            // Diccionario de renombrado
+            Dictionary<ElementId, string>? customNames = null;
+            if (RenamePreviewItems.Any())
+            {
+                customNames = new Dictionary<ElementId, string>();
+                foreach (var item in RenamePreviewItems)
+                {
+                    if (item.IsSelected && item.NewName != item.OriginalName)
+                    {
+                        customNames[item.SourceId] = item.NewName;
+                    }
+                }
+                if (!customNames.Any()) customNames = null;
+            }
+
             foreach (var destDoc in DestinationDocuments)
             {
                 if (destDoc.Checked)
@@ -606,7 +621,7 @@ public partial class TransferPlusViewModel : ObservableObject
                     {
                         StatusMessage = $"{msg}...";
                         ProgressPercentage = (int)((double)current / total * 100);
-                    });
+                    }, customNames);
                 }
             }
             TaskDialog.Show("TransferPlus", "Transfer complete!");
@@ -635,11 +650,47 @@ public partial class TransferPlusViewModel : ObservableObject
         }
     }
 
+    private bool HasCheckedElements()
+    {
+        return CheckedElementsCount > 0;
+    }
+
     private void UpdateCheckedCount()
     {
         var checkedItems = new List<Elemento>();
         CollectCheckedItems(RootNodes, checkedItems);
         CheckedElementsCount = checkedItems.Count;
+        
+        TransferCommand.NotifyCanExecuteChanged();
+        OpenRenamePanelCommand.NotifyCanExecuteChanged();
+        ClearFilterCommand.NotifyCanExecuteChanged();
+        
+        // Sincronización dinámica con la paleta si está abierta o hay datos
+        if (IsRenamePanelOpen || RenamePreviewItems.Any())
+        {
+            var currentPreviewIds = RenamePreviewItems.Select(x => x.SourceId).ToHashSet();
+            var newCheckedIds = checkedItems.Select(x => x.eID).ToHashSet();
+
+            // Eliminar los que ya no están seleccionados
+            for (int i = RenamePreviewItems.Count - 1; i >= 0; i--)
+            {
+                if (!newCheckedIds.Contains(RenamePreviewItems[i].SourceId))
+                {
+                    RenamePreviewItems.RemoveAt(i);
+                }
+            }
+
+            // Añadir los nuevos seleccionados
+            foreach (var item in checkedItems)
+            {
+                if (!currentPreviewIds.Contains(item.eID))
+                {
+                    RenamePreviewItems.Add(new RenamePreviewItem(item.eID, item.Nombre));
+                }
+            }
+
+            UpdateRenamePreviews();
+        }
     }
 
     // PowerRename Properties and Commands
@@ -710,7 +761,7 @@ public partial class TransferPlusViewModel : ObservableObject
         UpdateRenamePreviews();
     }
 
-    [RelayCommand]
+    [RelayCommand(CanExecute = nameof(HasCheckedElements))]
     private void OpenRenamePanel()
     {
         if (SelectedSourceDocument == null) return;
@@ -738,14 +789,21 @@ public partial class TransferPlusViewModel : ObservableObject
     private void CloseRenamePanel()
     {
         IsRenamePanelOpen = false;
+        RenameSearchText = string.Empty;
+        RenameReplaceText = string.Empty;
+        RenamePreviewItems.Clear();
     }
 
     [RelayCommand]
-    private void TransferAndRename()
+    private void InsertRegexHelper(string snippet)
     {
-        // Placeholder for the actual transfer and rename logic
-        TaskDialog.Show("TransferPlus", "Transfer & Rename logic will be implemented in the next step!");
-        IsRenamePanelOpen = false;
+        RenameSearchText += snippet;
+    }
+
+    [RelayCommand]
+    private void InsertDateHelper(string snippet)
+    {
+        RenameReplaceText += snippet;
     }
 
     private void UpdateRenamePreviews()

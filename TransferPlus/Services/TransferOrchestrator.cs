@@ -14,7 +14,8 @@ public class TransferOrchestrator
         Document targetDoc,
         List<Elemento> elementsToCopy,
         Configuraciones config,
-        Action<string, int, int>? progressCallback = null)
+        Action<string, int, int>? progressCallback = null,
+        Dictionary<ElementId, string>? customNames = null)
     {
         var elementsCopyList = new List<ElementId>();
         var familiesLoadList = new List<Elemento>();
@@ -59,11 +60,12 @@ public class TransferOrchestrator
                 WarningSwallower.AttachToTransaction(t);
                 foreach (var wsItem in worksetsToCreate)
                 {
-                    Report($"Creating Workset: {wsItem.Nombre}");
+                    string wsName = customNames?.ContainsKey(wsItem.eID) == true ? customNames[wsItem.eID] : wsItem.Nombre;
+                    Report($"Creating Workset: {wsName}");
                     try
                     {
-                        if (!WorksetTable.IsWorksetNameUnique(targetDoc, wsItem.Nombre)) continue;
-                        Workset.Create(targetDoc, wsItem.Nombre);
+                        if (!WorksetTable.IsWorksetNameUnique(targetDoc, wsName)) continue;
+                        Workset.Create(targetDoc, wsName);
                     }
                     catch { }
                 }
@@ -92,7 +94,11 @@ public class TransferOrchestrator
                         famDoc.SaveAs(tempPath);
                         famDoc.Close(false);
 
-                        targetDoc.LoadFamily(tempPath, familyLoadOptions, out Family _);
+                        targetDoc.LoadFamily(tempPath, familyLoadOptions, out Family loadedFam);
+                        if (loadedFam != null && customNames?.ContainsKey(famItem.eID) == true)
+                        {
+                            try { loadedFam.Name = customNames[famItem.eID]; } catch { }
+                        }
                         if (File.Exists(tempPath)) File.Delete(tempPath);
                     }
                 }
@@ -121,7 +127,8 @@ public class TransferOrchestrator
                             Category destParent = Category.GetCategory(targetDoc, sourceCat.Parent.Id);
                             if (destParent != null)
                             {
-                                targetCat = targetDoc.Settings.Categories.NewSubcategory(destParent, sourceCat.Name);
+                                string catName = customNames?.ContainsKey(styleItem.eID) == true ? customNames[styleItem.eID] : sourceCat.Name;
+                                targetCat = targetDoc.Settings.Categories.NewSubcategory(destParent, catName);
                             }
                         }
 
@@ -192,6 +199,25 @@ public class TransferOrchestrator
                             else if (config.cf_chk_ViewElements)
                             {
                                 ponDependientes(sourceDoc, sourceView.GetDependentElements(null), sourceView, targetView, options);
+                            }
+                        }
+                    }
+
+                    // Apply renamed elements
+                    if (customNames != null)
+                    {
+                        for (int i = 0; i < elementsCopyList.Count; i++)
+                        {
+                            ElementId originalId = elementsCopyList[i];
+                            ElementId newId = copied.ElementAtOrDefault(i);
+                            if (newId != null && newId != ElementId.InvalidElementId && customNames.ContainsKey(originalId))
+                            {
+                                try
+                                {
+                                    Element newElem = targetDoc.GetElement(newId);
+                                    if (newElem != null) newElem.Name = customNames[originalId];
+                                }
+                                catch { }
                             }
                         }
                     }
