@@ -507,46 +507,111 @@
 
                     <!-- Search Controls -->
                     <StackPanel Grid.Row="0" Margin="0,0,0,15">
-                        <TextBlock Text="Buscar:" FontWeight="Bold" Margin="0,0,0,5" Foreground="#555"/>
-                        <TextBox Text="{Binding RenameSearchText, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,10" Padding="4" Height="28"/>
+                        <!-- Find Input -->
+                        <Grid Margin="0,0,0,10">
+                            <TextBox x:Name="FindTextBox" Text="{Binding RenameSearchText, UpdateSourceTrigger=PropertyChanged}" Padding="8,6" Height="32" VerticalContentAlignment="Center"/>
+                            <TextBlock Text="Find" Foreground="#aaa" Margin="10,0,0,0" VerticalAlignment="Center" IsHitTestVisible="False">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding Text, ElementName=FindTextBox}" Value="">
+                                                <Setter Property="Visibility" Value="Visible"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                        </Grid>
 
-                        <TextBlock Text="Reemplazar con:" FontWeight="Bold" Margin="0,0,0,5" Foreground="#555"/>
-                        <TextBox Text="{Binding RenameReplaceText, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,10" Padding="4" Height="28"/>
+                        <!-- Checkboxes -->
+                        <StackPanel Margin="0,0,0,15">
+                            <CheckBox Content="Use regular expressions" IsChecked="{Binding RenameUseRegex}" Margin="0,0,0,6"/>
+                            <CheckBox Content="Match all occurrences" IsChecked="{Binding RenameMatchAllOccurrences}" Margin="0,0,0,6"/>
+                            <CheckBox Content="Match case" IsChecked="{Binding RenameMatchCase}"/>
+                        </StackPanel>
 
-                        <StackPanel Orientation="Horizontal" Margin="0,5,0,0">
-                            <CheckBox Content="Usar Regex" IsChecked="{Binding RenameUseRegex}"/>
-                            <CheckBox Content="Coincidir Mayús/Minús" IsChecked="{Binding RenameMatchCase}" Margin="15,0,0,0"/>
+                        <!-- Replace Input -->
+                        <Grid Margin="0,0,0,15">
+                            <TextBox x:Name="ReplaceTextBox" Text="{Binding RenameReplaceText, UpdateSourceTrigger=PropertyChanged}" Padding="8,6" Height="32" VerticalContentAlignment="Center"/>
+                            <TextBlock Text="Changed by:" Foreground="#aaa" Margin="10,0,0,0" VerticalAlignment="Center" IsHitTestVisible="False">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding Text, ElementName=ReplaceTextBox}" Value="">
+                                                <Setter Property="Visibility" Value="Visible"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                        </Grid>
+
+                        <!-- Text Format -->
+                        <TextBlock Text="Text format:" Margin="0,0,0,8" Foreground="#555" FontSize="12"/>
+                        <StackPanel Orientation="Horizontal">
+                            <StackPanel.Resources>
+                                <Style TargetType="ToggleButton">
+                                    <Setter Property="Background" Value="#F3F3F3"/>
+                                    <Setter Property="BorderBrush" Value="#E0E0E0"/>
+                                    <Setter Property="BorderThickness" Value="1"/>
+                                    <Setter Property="Foreground" Value="#333"/>
+                                    <Setter Property="Margin" Value="0,0,4,0"/>
+                                    <Setter Property="Cursor" Value="Hand"/>
+                                    <Style.Triggers>
+                                        <Trigger Property="IsChecked" Value="True">
+                                            <Setter Property="Background" Value="#EAEAEA"/>
+                                            <Setter Property="BorderBrush" Value="#BDBDBD"/>
+                                            <Setter Property="FontWeight" Value="SemiBold"/>
+                                        </Trigger>
+                                        <Trigger Property="IsMouseOver" Value="True">
+                                            <Setter Property="Background" Value="#EBEBEB"/>
+                                        </Trigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </StackPanel.Resources>
+                            <!-- ToggleButtons for Casing -->
+                            <ToggleButton Content="aa" ToolTip="Lowercase" IsChecked="{Binding IsFormatLowercase, Mode=TwoWay}" Width="36" Height="32"/>
+                            <ToggleButton Content="AA" ToolTip="Uppercase" IsChecked="{Binding IsFormatUppercase, Mode=TwoWay}" Width="36" Height="32"/>
+                            <ToggleButton Content="Aa" ToolTip="Title Case" IsChecked="{Binding IsFormatTitleCase, Mode=TwoWay}" Width="36" Height="32"/>
+                            <ToggleButton Content="Aa Aa" ToolTip="Capitalize Each Word" IsChecked="{Binding IsFormatCapitalizeEach, Mode=TwoWay}" Width="52" Height="32" Margin="0,0,15,0"/>
+                            
+                            <!-- ToggleButtons for Enumeration and Random -->
+                            <ToggleButton Content="123" ToolTip="Enumerate Items" IsChecked="{Binding RenameEnumerateItems, Mode=TwoWay}" Width="36" Height="32"/>
+                            <ToggleButton Content="🔀" ToolTip="Randomize Items" IsChecked="{Binding RenameRandomizeItems, Mode=TwoWay}" Width="36" Height="32"/>
                         </StackPanel>
                     </StackPanel>
 
                     <!-- Preview DataGrid -->
-                    <DataGrid Grid.Row="1" 
-                              ItemsSource="{Binding RenamePreviewItems}" 
-                              AutoGenerateColumns="False" 
-                              CanUserAddRows="False" 
-                              IsReadOnly="False"
-                              HeadersVisibility="Column"
-                              Background="White"
-                              BorderBrush="#e0e0e0"
-                              GridLinesVisibility="Horizontal"
-                              HorizontalGridLinesBrush="#f0f0f0">
-                        <DataGrid.Columns>
-                            <DataGridCheckBoxColumn Header="Apply" Binding="{Binding IsSelected}" Width="50"/>
-                            <DataGridTextColumn Header="Original Name" Binding="{Binding OriginalName}" Width="*" IsReadOnly="True"/>
-                            <DataGridTextColumn Header="New Name" Binding="{Binding NewName}" Width="*" IsReadOnly="True">
-                                <DataGridTextColumn.ElementStyle>
-                                    <Style TargetType="TextBlock">
-                                        <Style.Triggers>
-                                            <DataTrigger Binding="{Binding IsSelected}" Value="True">
-                                                <Setter Property="Foreground" Value="#007ACC"/>
-                                                <Setter Property="FontWeight" Value="SemiBold"/>
-                                            </DataTrigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </DataGridTextColumn.ElementStyle>
-                            </DataGridTextColumn>
-                        </DataGrid.Columns>
-                    </DataGrid>
+                    <Border Grid.Row="1" Background="White" BorderBrush="#E0E0E0" BorderThickness="1" CornerRadius="6" Padding="1">
+                        <DataGrid ItemsSource="{Binding RenamePreviewItems}" 
+                                  AutoGenerateColumns="False" 
+                                  CanUserAddRows="False" 
+                                  IsReadOnly="False"
+                                  HeadersVisibility="Column"
+                                  Background="Transparent"
+                                  BorderThickness="0"
+                                  GridLinesVisibility="Horizontal"
+                                  HorizontalGridLinesBrush="#f0f0f0">
+                            <DataGrid.Columns>
+                                <DataGridCheckBoxColumn Header="" Binding="{Binding IsSelected}" Width="30"/>
+                                <DataGridTextColumn Header="Original" Binding="{Binding OriginalName}" Width="*" IsReadOnly="True"/>
+                                <DataGridTextColumn Header="New Name" Binding="{Binding NewName}" Width="*" IsReadOnly="True">
+                                    <DataGridTextColumn.ElementStyle>
+                                        <Style TargetType="TextBlock">
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding IsSelected}" Value="True">
+                                                    <Setter Property="Foreground" Value="#007ACC"/>
+                                                    <Setter Property="FontWeight" Value="SemiBold"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </DataGridTextColumn.ElementStyle>
+                                </DataGridTextColumn>
+                            </DataGrid.Columns>
+                        </DataGrid>
+                    </Border>
                 </Grid>
 
                 <!-- Actions Footer -->

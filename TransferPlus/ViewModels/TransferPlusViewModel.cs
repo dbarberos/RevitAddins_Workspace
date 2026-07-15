@@ -658,12 +658,57 @@ public partial class TransferPlusViewModel : ObservableObject
     [ObservableProperty]
     private bool _renameMatchCase;
 
+    [ObservableProperty]
+    private bool _renameMatchAllOccurrences = true;
+
+    [ObservableProperty]
+    private bool _renameEnumerateItems;
+
+    [ObservableProperty]
+    private bool _renameRandomizeItems;
+
+    [ObservableProperty]
+    private bool _isFormatLowercase;
+
+    [ObservableProperty]
+    private bool _isFormatUppercase;
+
+    [ObservableProperty]
+    private bool _isFormatTitleCase;
+
+    [ObservableProperty]
+    private bool _isFormatCapitalizeEach;
+
     public ObservableCollection<RenamePreviewItem> RenamePreviewItems { get; } = new();
 
     partial void OnRenameSearchTextChanged(string value) => UpdateRenamePreviews();
     partial void OnRenameReplaceTextChanged(string value) => UpdateRenamePreviews();
     partial void OnRenameUseRegexChanged(bool value) => UpdateRenamePreviews();
     partial void OnRenameMatchCaseChanged(bool value) => UpdateRenamePreviews();
+    partial void OnRenameMatchAllOccurrencesChanged(bool value) => UpdateRenamePreviews();
+    partial void OnRenameEnumerateItemsChanged(bool value) => UpdateRenamePreviews();
+    partial void OnRenameRandomizeItemsChanged(bool value) => UpdateRenamePreviews();
+
+    partial void OnIsFormatLowercaseChanged(bool value)
+    {
+        if (value) { IsFormatUppercase = false; IsFormatTitleCase = false; IsFormatCapitalizeEach = false; }
+        UpdateRenamePreviews();
+    }
+    partial void OnIsFormatUppercaseChanged(bool value)
+    {
+        if (value) { IsFormatLowercase = false; IsFormatTitleCase = false; IsFormatCapitalizeEach = false; }
+        UpdateRenamePreviews();
+    }
+    partial void OnIsFormatTitleCaseChanged(bool value)
+    {
+        if (value) { IsFormatLowercase = false; IsFormatUppercase = false; IsFormatCapitalizeEach = false; }
+        UpdateRenamePreviews();
+    }
+    partial void OnIsFormatCapitalizeEachChanged(bool value)
+    {
+        if (value) { IsFormatLowercase = false; IsFormatUppercase = false; IsFormatTitleCase = false; }
+        UpdateRenamePreviews();
+    }
 
     [RelayCommand]
     private void OpenRenamePanel()
@@ -732,18 +777,49 @@ public partial class TransferPlusViewModel : ObservableObject
 
         foreach (var item in RenamePreviewItems)
         {
-            if (RenameUseRegex && regex != null)
+            string newName = item.OriginalName;
+
+            if (!string.IsNullOrEmpty(RenameSearchText))
             {
-                try
+                if (RenameUseRegex && regex != null)
                 {
-                    item.NewName = regex.Replace(item.OriginalName, RenameReplaceText);
+                    try
+                    {
+                        newName = RenameMatchAllOccurrences ? regex.Replace(item.OriginalName, RenameReplaceText) : regex.Replace(item.OriginalName, RenameReplaceText, 1);
+                    }
+                    catch { }
                 }
-                catch { }
+                else
+                {
+                    string literalPattern = Regex.Escape(RenameSearchText);
+                    var re = new Regex(literalPattern, options);
+                    newName = RenameMatchAllOccurrences ? re.Replace(item.OriginalName, RenameReplaceText) : re.Replace(item.OriginalName, RenameReplaceText, 1);
+                }
             }
-            else
+
+            // Apply casing
+            if (IsFormatLowercase) newName = newName.ToLower();
+            else if (IsFormatUppercase) newName = newName.ToUpper();
+            else if (IsFormatTitleCase && newName.Length > 0) newName = char.ToUpper(newName[0]) + newName.Substring(1).ToLower();
+            else if (IsFormatCapitalizeEach) newName = System.Threading.Thread.CurrentThread.CurrentCulture.TextInfo.ToTitleCase(newName.ToLower());
+
+            item.NewName = newName;
+        }
+
+        // Apply enumeration and randomizing
+        if (RenameEnumerateItems)
+        {
+            for (int i = 0; i < RenamePreviewItems.Count; i++)
             {
-                string literalPattern = Regex.Escape(RenameSearchText);
-                item.NewName = Regex.Replace(item.OriginalName, literalPattern, RenameReplaceText, options);
+                RenamePreviewItems[i].NewName += $" - {(i + 1):D2}";
+            }
+        }
+        if (RenameRandomizeItems)
+        {
+            var rnd = new Random();
+            foreach (var item in RenamePreviewItems)
+            {
+                item.NewName += $"_{rnd.Next(1000, 9999)}";
             }
         }
     }
