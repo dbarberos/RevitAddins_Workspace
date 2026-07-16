@@ -129,6 +129,7 @@ public partial class TransferPlusViewModel : ObservableObject
 
     private void LoadDocuments()
     {
+        TransferPlus.Services.LoggerService.LogInfo("LoadDocuments: Loading open documents and links from Revit Session...");
         SourceDocuments.Clear();
         DestinationDocuments.Clear();
 
@@ -149,10 +150,12 @@ public partial class TransferPlusViewModel : ObservableObject
                                  ?? SourceDocuments.FirstOrDefault();
 
         OnPropertyChanged(nameof(CheckedDestinationsText));
+        TransferPlus.Services.LoggerService.LogInfo($"LoadDocuments: Found {SourceDocuments.Count} source documents. Selected default source: '{SelectedSourceDocument?.Nombre}'");
     }
 
     partial void OnSelectedSourceDocumentChanged(Archivo? value)
     {
+        TransferPlus.Services.LoggerService.LogInfo($"OnSelectedSourceDocumentChanged: Selected source document changed to '{value?.Nombre ?? "null"}'");
         if (value != null)
         {
             LoadSourceItems(value.Adoc);
@@ -169,6 +172,7 @@ public partial class TransferPlusViewModel : ObservableObject
                 dest.OnCheckedPropertyChanged = () => OnPropertyChanged(nameof(CheckedDestinationsText));
                 DestinationDocuments.Add(dest);
             }
+            TransferPlus.Services.LoggerService.LogInfo($"OnSelectedSourceDocumentChanged: Rebuilt destination documents. Target destinations count: {DestinationDocuments.Count}");
         }
         else
         {
@@ -223,6 +227,7 @@ public partial class TransferPlusViewModel : ObservableObject
 
     private void LoadSourceItems(Document sourceDoc)
     {
+        TransferPlus.Services.LoggerService.LogInfo($"LoadSourceItems: Starting element collection from '{sourceDoc.Title}'...");
         IsBusy = true;
         StatusMessage = "Collecting elements...";
         ProgressPercentage = 0;
@@ -234,11 +239,12 @@ public partial class TransferPlusViewModel : ObservableObject
                 StatusMessage = $"{stepName}...";
                 ProgressPercentage = (int)((double)stepIndex / maxSteps * 100);
             });
+            TransferPlus.Services.LoggerService.LogInfo($"LoadSourceItems: Collection complete. Collected {_allSourceItems.Count} elements. Initiating tree build...");
             BuildTree();
         }
         catch (Exception ex)
         {
-            TaskDialog.Show("TransferPlus", "Error collecting elements: " + ex.Message);
+            TransferPlus.Services.LoggerService.LogError("LoadSourceItems", ex);
         }
         finally
         {
@@ -251,6 +257,7 @@ public partial class TransferPlusViewModel : ObservableObject
 
     private void BuildTree()
     {
+        TransferPlus.Services.LoggerService.LogInfo("BuildTree: Generating TreeView nodes from collected elements...");
         RootNodes.Clear();
         if (!_allSourceItems.Any()) return;
 
@@ -324,6 +331,7 @@ public partial class TransferPlusViewModel : ObservableObject
             allNode.Children.Add(categoryNode);
         }
         RootNodes.Add(allNode);
+        TransferPlus.Services.LoggerService.LogInfo($"BuildTree: Tree built successfully. Total nodes grouped in root: {allNode.Count}");
     }
 
     [RelayCommand]
@@ -332,6 +340,7 @@ public partial class TransferPlusViewModel : ObservableObject
         string searchText = SearchFilter;
         if (string.IsNullOrWhiteSpace(searchText)) return;
 
+        TransferPlus.Services.LoggerService.LogInfo($"FilterTree: Applying filter '{searchText}' (Regex: {FilterUseRegex}, Only Names: {FilterOnlyNames}, Use OR: {FilterUseOr})");
         StatusMessage = "Applying search filter...";
         IsBusy = true;
 
@@ -352,8 +361,9 @@ public partial class TransferPlusViewModel : ObservableObject
                         RegexOptions.IgnoreCase | RegexOptions.Compiled,
                         TimeSpan.FromSeconds(2));
                 }
-                catch
+                catch (Exception ex)
                 {
+                    TransferPlus.Services.LoggerService.LogError("FilterTree (Regex Compile)", ex);
                     StatusMessage = "Invalid Regex Pattern";
                     return;
                 }
@@ -391,10 +401,11 @@ public partial class TransferPlusViewModel : ObservableObject
 
             // Clear the text box after applying
             SearchFilter = string.Empty;
+            TransferPlus.Services.LoggerService.LogInfo($"FilterTree: Filter applied successfully. Elements checked count is now {CheckedElementsCount}");
         }
         catch (Exception ex)
         {
-            TaskDialog.Show("TransferPlus", "Error applying filter: " + ex.Message);
+            TransferPlus.Services.LoggerService.LogError("FilterTree", ex);
         }
         finally
         {
@@ -579,6 +590,7 @@ public partial class TransferPlusViewModel : ObservableObject
     {
         if (SelectedSourceDocument == null) return;
 
+        TransferPlus.Services.LoggerService.LogInfo($"Transfer: Initiating transfer from '{SelectedSourceDocument.Nombre}'...");
         SyncConfig();
 
         var checkedItems = new List<Elemento>();
@@ -586,11 +598,13 @@ public partial class TransferPlusViewModel : ObservableObject
 
         if (!checkedItems.Any())
         {
+            TransferPlus.Services.LoggerService.LogInfo("Transfer: Operation aborted. No items are checked for transfer.");
             TaskDialog.Show("TransferPlus", "No items selected to transfer.");
             return;
         }
 
         var elementsToCopy = checkedItems;
+        TransferPlus.Services.LoggerService.LogInfo($"Transfer: Collected {elementsToCopy.Count} elements to transfer.");
 
         IsBusy = true;
         StatusMessage = "Transferring elements...";
@@ -613,22 +627,31 @@ public partial class TransferPlusViewModel : ObservableObject
                 if (!customNames.Any()) customNames = null;
             }
 
+            int transferTargetCount = 0;
             foreach (var destDoc in DestinationDocuments)
             {
                 if (destDoc.Checked)
                 {
+                    transferTargetCount++;
+                    TransferPlus.Services.LoggerService.LogInfo($"Transfer: Copying elements to target model '{destDoc.Nombre}'...");
                     TransferOrchestrator.TransferElements(SelectedSourceDocument.Adoc, destDoc.Adoc, elementsToCopy, _config, (msg, current, total) =>
                     {
                         StatusMessage = $"{msg}...";
                         ProgressPercentage = (int)((double)current / total * 100);
+                        if (current % 10 == 0 || current == total)
+                        {
+                            TransferPlus.Services.LoggerService.LogInfo($"Transfer: [{msg}] {current}/{total} elements processed ({ProgressPercentage}%)");
+                        }
                     }, customNames);
                 }
             }
+
+            TransferPlus.Services.LoggerService.LogInfo($"Transfer: Completed successfully. Transferred to {transferTargetCount} destination models.");
             TaskDialog.Show("TransferPlus", "Transfer complete!");
         }
         catch (Exception ex)
         {
-            TaskDialog.Show("TransferPlus", "Error during transfer: " + ex.Message);
+            TransferPlus.Services.LoggerService.LogError("Transfer", ex);
         }
         finally
         {
@@ -764,7 +787,7 @@ public partial class TransferPlusViewModel : ObservableObject
     private bool _numOrderDescending;
 
     [ObservableProperty]
-    private string _numMinDigits = "1";
+    private string _numMinDigits = "3";
 
     [ObservableProperty]
     private string _numStartNumber = "1";
@@ -773,10 +796,16 @@ public partial class TransferPlusViewModel : ObservableObject
     private string _numStartLetter = "A";
 
     [ObservableProperty]
-    private string _numPrefix = string.Empty;
+    private string _numPrefix = "-";
 
     [ObservableProperty]
     private string _numSuffix = string.Empty;
+
+    [ObservableProperty]
+    private bool _numLocationBeginning;
+
+    [ObservableProperty]
+    private bool _numLocationEnd = true;
 
     [ObservableProperty]
     private string _numCustomSequence = string.Empty;
@@ -808,6 +837,12 @@ public partial class TransferPlusViewModel : ObservableObject
 
     [ObservableProperty]
     private string _editNumSuffix = string.Empty;
+
+    [ObservableProperty]
+    private bool _editNumLocationBeginning;
+
+    [ObservableProperty]
+    private bool _editNumLocationEnd;
 
     [ObservableProperty]
     private string _editNumCustomSequence = string.Empty;
@@ -941,9 +976,14 @@ public partial class TransferPlusViewModel : ObservableObject
             foreach (var item in RenamePreviewItems)
             {
                 item.IsMatchingFilter = false;
+                // Keep original name; formatting may be applied later based on flags.
                 item.NewName = item.OriginalName;
             }
-            return;
+            // Do not return; continue to apply formatting based on ApplyAll flag.
+        }
+        else
+        {
+            // Search text is provided; further processing will handle matching.
         }
 
         RegexOptions options = RenameMatchCase ? RegexOptions.None : RegexOptions.IgnoreCase;
@@ -1031,39 +1071,210 @@ public partial class TransferPlusViewModel : ObservableObject
             selectedItemIndex++;
         }
 
-        // Apply enumeration and randomizing
-        if (RenameEnumerateItems)
+        // Collect items that will actually be formatted
+        var itemsToFormat = new List<RenamePreviewItem>();
+        foreach (var item in RenamePreviewItems)
         {
-            int selectedIndex = 1;
-            for (int i = 0; i < RenamePreviewItems.Count; i++)
+            if (item.IsSelected)
             {
-                var item = RenamePreviewItems[i];
-                if (item.IsSelected)
+                bool shouldFormat = RenameApplyAll || (RenameApplyOnlyFiltered && item.IsMatchingFilter);
+                if (shouldFormat)
                 {
-                    bool shouldFormat = RenameApplyAll || (RenameApplyOnlyFiltered && item.IsMatchingFilter);
-                    if (shouldFormat)
+                    itemsToFormat.Add(item);
+                }
+            }
+        }
+        int N = itemsToFormat.Count;
+
+        // Apply enumeration and randomizing
+        if (RenameEnumerateItems && N > 0)
+        {
+            var customVals = new List<string>();
+            if (!string.IsNullOrWhiteSpace(NumCustomSequence))
+            {
+                customVals = NumCustomSequence.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
+                                             .Select(s => s.Trim())
+                                             .ToList();
+            }
+
+            bool useCustom = customVals.Any();
+
+            if (useCustom)
+            {
+                for (int i = 0; i < N; i++)
+                {
+                    string baseVal = customVals[i % customVals.Count];
+                    string seqString = (NumPrefix ?? string.Empty) + baseVal + (NumSuffix ?? string.Empty);
+                    
+                    if (NumLocationBeginning)
+                        itemsToFormat[i].NewName = seqString + itemsToFormat[i].NewName;
+                    else
+                        itemsToFormat[i].NewName += seqString;
+                }
+            }
+            else
+            {
+                int.TryParse(NumMinDigits, out int minDigits);
+                if (minDigits <= 0) minDigits = 1;
+
+                if (NumTypeNumeric)
+                {
+                    bool hasStartNum = !string.IsNullOrWhiteSpace(NumStartNumber);
+                    int startVal = 1;
+                    if (hasStartNum && int.TryParse(NumStartNumber, out int parsed))
+                        startVal = parsed;
+                    if (startVal < 0) startVal = 1;
+
+                    for (int i = 0; i < N; i++)
                     {
-                        item.NewName += $" - {selectedIndex:D2}";
-                        selectedIndex++;
+                        int currentVal;
+                        if (NumOrderAscending)
+                        {
+                            currentVal = startVal + i;
+                        }
+                        else
+                        {
+                            if (hasStartNum)
+                                currentVal = startVal - i;
+                            else
+                                currentVal = N - i;
+                        }
+
+                        if (currentVal < 0) currentVal = 0;
+
+                        string baseVal = currentVal.ToString().PadLeft(minDigits, '0');
+                        string seqString = (NumPrefix ?? string.Empty) + baseVal + (NumSuffix ?? string.Empty);
+                        
+                        if (NumLocationBeginning)
+                            itemsToFormat[i].NewName = seqString + itemsToFormat[i].NewName;
+                        else
+                            itemsToFormat[i].NewName += seqString;
+                    }
+                }
+                else // NumTypeAlphanumeric
+                {
+                    bool hasStartLetter = !string.IsNullOrWhiteSpace(NumStartLetter);
+                    int startIndex = 0;
+
+                    if (hasStartLetter)
+                    {
+                        string letter = NumStartLetter.Trim().ToUpperInvariant();
+                        if (letter.Length < minDigits)
+                        {
+                            char padChar = NumOrderAscending ? 'A' : 'Z';
+                            letter = letter.PadRight(minDigits, padChar);
+                        }
+                        startIndex = ParseFixedBase26(letter, minDigits);
+                    }
+                    else
+                    {
+                        startIndex = 0;
+                    }
+
+                    for (int i = 0; i < N; i++)
+                    {
+                        int currentIndex;
+                        if (NumOrderAscending)
+                        {
+                            currentIndex = startIndex + i;
+                        }
+                        else
+                        {
+                            if (hasStartLetter)
+                                currentIndex = startIndex - i;
+                            else
+                                currentIndex = (N - 1) - i;
+                        }
+                        
+                        string baseVal = IndexToFixedBase26(currentIndex, minDigits);
+                        string seqString = (NumPrefix ?? string.Empty) + baseVal + (NumSuffix ?? string.Empty);
+                        
+                        if (NumLocationBeginning)
+                            itemsToFormat[i].NewName = seqString + itemsToFormat[i].NewName;
+                        else
+                            itemsToFormat[i].NewName += seqString;
                     }
                 }
             }
         }
-        if (RenameRandomizeItems)
+
+        if (RenameRandomizeItems && N > 0)
         {
             var rnd = new Random();
-            foreach (var item in RenamePreviewItems)
+            int.TryParse(NumMinDigits, out int minDigits);
+            if (minDigits <= 0) minDigits = 1;
+
+            for (int i = 0; i < N; i++)
             {
-                if (item.IsSelected)
-                {
-                    bool shouldFormat = RenameApplyAll || (RenameApplyOnlyFiltered && item.IsMatchingFilter);
-                    if (shouldFormat)
-                    {
-                        item.NewName += $"_{rnd.Next(1000, 9999)}";
-                    }
-                }
+                string baseVal = NumTypeNumeric ? GenerateRandomNumeric(minDigits, rnd) : GenerateRandomAlphanumeric(minDigits, rnd);
+                string seqString = (NumPrefix ?? string.Empty) + baseVal + (NumSuffix ?? string.Empty);
+                
+                if (NumLocationBeginning)
+                    itemsToFormat[i].NewName = seqString + itemsToFormat[i].NewName;
+                else
+                    itemsToFormat[i].NewName += seqString;
             }
         }
+    }
+
+    private int ParseFixedBase26(string letter, int length)
+    {
+        if (string.IsNullOrWhiteSpace(letter)) return 0;
+        string clean = letter.Trim().ToUpperInvariant();
+        int val = 0;
+        foreach (char c in clean)
+        {
+            if (c >= 'A' && c <= 'Z')
+            {
+                val = val * 26 + (c - 'A');
+            }
+        }
+        return val;
+    }
+
+    private string IndexToFixedBase26(int value, int length)
+    {
+        if (length <= 0) length = 1;
+        long baseVal = 1;
+        for (int i = 0; i < length; i++) baseVal *= 26;
+        
+        long longVal = value;
+        if (longVal < 0)
+        {
+            longVal = baseVal + (longVal % baseVal);
+        }
+        longVal = longVal % baseVal;
+
+        char[] chars = new char[length];
+        for (int i = length - 1; i >= 0; i--)
+        {
+            int digit = (int)(longVal % 26);
+            chars[i] = (char)('A' + digit);
+            longVal /= 26;
+        }
+        return new string(chars);
+    }
+
+    private string GenerateRandomNumeric(int length, Random rnd)
+    {
+        if (length <= 0) length = 1;
+        char[] chars = new char[length];
+        for (int i = 0; i < length; i++)
+        {
+            chars[i] = (char)('0' + rnd.Next(0, 10));
+        }
+        return new string(chars);
+    }
+
+    private string GenerateRandomAlphanumeric(int length, Random rnd)
+    {
+        if (length <= 0) length = 1;
+        char[] chars = new char[length];
+        for (int i = 0; i < length; i++)
+        {
+            chars[i] = (char)('A' + rnd.Next(0, 26));
+        }
+        return new string(chars);
     }
 
     private string EvaluateReplacementTemplate(string template, int itemIndex)
@@ -1233,35 +1444,52 @@ public partial class TransferPlusViewModel : ObservableObject
     [RelayCommand]
     private void OpenNumberingSettings()
     {
-        // Copy active to editing
-        EditNumTypeNumeric = NumTypeNumeric;
-        EditNumTypeAlphanumeric = NumTypeAlphanumeric;
-        EditNumOrderAscending = NumOrderAscending;
-        EditNumOrderDescending = NumOrderDescending;
-        EditNumMinDigits = NumMinDigits;
-        EditNumStartNumber = NumStartNumber;
-        EditNumStartLetter = NumStartLetter;
-        EditNumPrefix = NumPrefix;
-        EditNumSuffix = NumSuffix;
-        EditNumCustomSequence = NumCustomSequence;
-
-        // Open Dialog
-        var view = new NumberingSettingsView(this);
-        if (view.ShowDialog() == true)
+        try
         {
-            // Copy editing back to active
-            NumTypeNumeric = EditNumTypeNumeric;
-            NumTypeAlphanumeric = EditNumTypeAlphanumeric;
-            NumOrderAscending = EditNumOrderAscending;
-            NumOrderDescending = EditNumOrderDescending;
-            NumMinDigits = EditNumMinDigits;
-            NumStartNumber = EditNumStartNumber;
-            NumStartLetter = EditNumStartLetter;
-            NumPrefix = EditNumPrefix;
-            NumSuffix = EditNumSuffix;
-            NumCustomSequence = EditNumCustomSequence;
+            TransferPlus.Services.LoggerService.LogInfo("OpenNumberingSettings: Initializing configurations copy...");
+            // Copy active to editing
+            EditNumTypeNumeric = NumTypeNumeric;
+            EditNumTypeAlphanumeric = NumTypeAlphanumeric;
+            EditNumOrderAscending = NumOrderAscending;
+            EditNumOrderDescending = NumOrderDescending;
+            EditNumMinDigits = NumMinDigits;
+            EditNumStartNumber = NumStartNumber;
+            EditNumStartLetter = NumStartLetter;
+            EditNumPrefix = NumPrefix;
+            EditNumSuffix = NumSuffix;
+            EditNumLocationBeginning = NumLocationBeginning;
+            EditNumLocationEnd = NumLocationEnd;
+            EditNumCustomSequence = NumCustomSequence;
 
-            UpdateRenamePreviews();
+            TransferPlus.Services.LoggerService.LogInfo("OpenNumberingSettings: Instantiating NumberingSettingsView...");
+            // Open Dialog
+            var view = new NumberingSettingsView(this);
+            TransferPlus.Services.LoggerService.LogInfo("OpenNumberingSettings: Showing NumberingSettingsView Dialog...");
+            bool? result = view.ShowDialog();
+            TransferPlus.Services.LoggerService.LogInfo($"OpenNumberingSettings: DialogResult is {result}");
+            if (result == true)
+            {
+                // Copy editing back to active
+                NumTypeNumeric = EditNumTypeNumeric;
+                NumTypeAlphanumeric = EditNumTypeAlphanumeric;
+                NumOrderAscending = EditNumOrderAscending;
+                NumOrderDescending = EditNumOrderDescending;
+                NumMinDigits = EditNumMinDigits;
+                NumStartNumber = EditNumStartNumber;
+                NumStartLetter = EditNumStartLetter;
+                NumPrefix = EditNumPrefix;
+                NumSuffix = EditNumSuffix;
+                NumLocationBeginning = EditNumLocationBeginning;
+                NumLocationEnd = EditNumLocationEnd;
+                NumCustomSequence = EditNumCustomSequence;
+
+                TransferPlus.Services.LoggerService.LogInfo("OpenNumberingSettings: Committing edit changes and updating previews...");
+                UpdateRenamePreviews();
+            }
+        }
+        catch (Exception ex)
+        {
+            TransferPlus.Services.LoggerService.LogError("OpenNumberingSettings", ex);
         }
     }
 }

@@ -9,7 +9,25 @@ public partial class NumberingSettingsView : Window
     {
         InitializeComponent();
         DataContext = viewModel;
-        Owner = System.Windows.Application.Current.Windows.OfType<Window>().FirstOrDefault(w => w.IsActive) ?? System.Windows.Application.Current.MainWindow;
+        try
+        {
+            if (System.Windows.Application.Current != null)
+            {
+                var activeWindow = System.Windows.Application.Current.Windows.OfType<Window>().FirstOrDefault(w => w.IsActive);
+                if (activeWindow != null)
+                {
+                    Owner = activeWindow;
+                }
+                else
+                {
+                    Owner = System.Windows.Application.Current.MainWindow;
+                }
+            }
+        }
+        catch
+        {
+            // Fail-safe: do not crash if Owner cannot be bound in Revit
+        }
     }
 
     private void Accept_Click(object sender, RoutedEventArgs e)
