@@ -676,6 +676,7 @@ public partial class TransferPlusViewModel : ObservableObject
             {
                 if (!newCheckedIds.Contains(RenamePreviewItems[i].SourceId))
                 {
+                    RenamePreviewItems[i].PropertyChanged -= PreviewItem_PropertyChanged;
                     RenamePreviewItems.RemoveAt(i);
                 }
             }
@@ -685,8 +686,21 @@ public partial class TransferPlusViewModel : ObservableObject
             {
                 if (!currentPreviewIds.Contains(item.eID))
                 {
-                    RenamePreviewItems.Add(new RenamePreviewItem(item.eID, item.Nombre));
+                    var pItem = new RenamePreviewItem(item.eID, item.Nombre);
+                    pItem.PropertyChanged += PreviewItem_PropertyChanged;
+                    RenamePreviewItems.Add(pItem);
                 }
+            }
+
+            // Recalcular SelectAllRenameItems
+            _isUpdatingSelectAll = true;
+            try
+            {
+                SelectAllRenameItems = RenamePreviewItems.All(x => x.IsSelected);
+            }
+            finally
+            {
+                _isUpdatingSelectAll = false;
             }
 
             UpdateRenamePreviews();
@@ -730,6 +744,115 @@ public partial class TransferPlusViewModel : ObservableObject
     [ObservableProperty]
     private bool _isFormatCapitalizeEach;
 
+    [ObservableProperty]
+    private bool _renameApplyAll = true;
+
+    [ObservableProperty]
+    private bool _renameApplyOnlyFiltered;
+
+    // Active Numbering Sequence Settings
+    [ObservableProperty]
+    private bool _numTypeNumeric = true;
+
+    [ObservableProperty]
+    private bool _numTypeAlphanumeric;
+
+    [ObservableProperty]
+    private bool _numOrderAscending = true;
+
+    [ObservableProperty]
+    private bool _numOrderDescending;
+
+    [ObservableProperty]
+    private string _numMinDigits = "1";
+
+    [ObservableProperty]
+    private string _numStartNumber = "1";
+
+    [ObservableProperty]
+    private string _numStartLetter = "A";
+
+    [ObservableProperty]
+    private string _numPrefix = string.Empty;
+
+    [ObservableProperty]
+    private string _numSuffix = string.Empty;
+
+    [ObservableProperty]
+    private string _numCustomSequence = string.Empty;
+
+    // Editing Numbering Sequence Settings
+    [ObservableProperty]
+    private bool _editNumTypeNumeric;
+
+    [ObservableProperty]
+    private bool _editNumTypeAlphanumeric;
+
+    [ObservableProperty]
+    private bool _editNumOrderAscending;
+
+    [ObservableProperty]
+    private bool _editNumOrderDescending;
+
+    [ObservableProperty]
+    private string _editNumMinDigits = string.Empty;
+
+    [ObservableProperty]
+    private string _editNumStartNumber = string.Empty;
+
+    [ObservableProperty]
+    private string _editNumStartLetter = string.Empty;
+
+    [ObservableProperty]
+    private string _editNumPrefix = string.Empty;
+
+    [ObservableProperty]
+    private string _editNumSuffix = string.Empty;
+
+    [ObservableProperty]
+    private string _editNumCustomSequence = string.Empty;
+
+    [ObservableProperty]
+    private bool _selectAllRenameItems = true;
+
+    private bool _isUpdatingSelectAll;
+
+    partial void OnSelectAllRenameItemsChanged(bool value)
+    {
+        if (_isUpdatingSelectAll) return;
+        _isUpdatingSelectAll = true;
+        try
+        {
+            foreach (var item in RenamePreviewItems)
+            {
+                item.IsSelected = value;
+            }
+        }
+        finally
+        {
+            _isUpdatingSelectAll = false;
+        }
+        UpdateRenamePreviews();
+    }
+
+    private void PreviewItem_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(RenamePreviewItem.IsSelected))
+        {
+            if (_isUpdatingSelectAll) return;
+            _isUpdatingSelectAll = true;
+            try
+            {
+                SelectAllRenameItems = RenamePreviewItems.All(x => x.IsSelected);
+            }
+            finally
+            {
+                _isUpdatingSelectAll = false;
+            }
+            UpdateRenamePreviews();
+        }
+    }
+
     public ObservableCollection<RenamePreviewItem> RenamePreviewItems { get; } = new();
 
     partial void OnRenameSearchTextChanged(string value) => UpdateRenamePreviews();
@@ -739,6 +862,8 @@ public partial class TransferPlusViewModel : ObservableObject
     partial void OnRenameMatchAllOccurrencesChanged(bool value) => UpdateRenamePreviews();
     partial void OnRenameEnumerateItemsChanged(bool value) => UpdateRenamePreviews();
     partial void OnRenameRandomizeItemsChanged(bool value) => UpdateRenamePreviews();
+    partial void OnRenameApplyAllChanged(bool value) => UpdateRenamePreviews();
+    partial void OnRenameApplyOnlyFilteredChanged(bool value) => UpdateRenamePreviews();
 
     partial void OnIsFormatLowercaseChanged(bool value)
     {
@@ -778,8 +903,11 @@ public partial class TransferPlusViewModel : ObservableObject
         RenamePreviewItems.Clear();
         foreach (var item in checkedItems)
         {
-            RenamePreviewItems.Add(new RenamePreviewItem(item.eID, item.Nombre));
+            var pItem = new RenamePreviewItem(item.eID, item.Nombre);
+            pItem.PropertyChanged += PreviewItem_PropertyChanged;
+            RenamePreviewItems.Add(pItem);
         }
+        SelectAllRenameItems = true;
 
         IsRenamePanelOpen = true;
         UpdateRenamePreviews();
@@ -812,6 +940,7 @@ public partial class TransferPlusViewModel : ObservableObject
         {
             foreach (var item in RenamePreviewItems)
             {
+                item.IsMatchingFilter = false;
                 item.NewName = item.OriginalName;
             }
             return;
@@ -833,17 +962,18 @@ public partial class TransferPlusViewModel : ObservableObject
             }
         }
 
+        int selectedItemIndex = 0;
         foreach (var item in RenamePreviewItems)
         {
-            string newName = item.OriginalName;
-
+            // First, calculate if it matches the Find text (regardless of IsSelected)
+            bool isMatch = false;
             if (!string.IsNullOrEmpty(RenameSearchText))
             {
                 if (RenameUseRegex && regex != null)
                 {
                     try
                     {
-                        newName = RenameMatchAllOccurrences ? regex.Replace(item.OriginalName, RenameReplaceText) : regex.Replace(item.OriginalName, RenameReplaceText, 1);
+                        isMatch = regex.IsMatch(item.OriginalName);
                     }
                     catch { }
                 }
@@ -851,25 +981,72 @@ public partial class TransferPlusViewModel : ObservableObject
                 {
                     string literalPattern = Regex.Escape(RenameSearchText);
                     var re = new Regex(literalPattern, options);
-                    newName = RenameMatchAllOccurrences ? re.Replace(item.OriginalName, RenameReplaceText) : re.Replace(item.OriginalName, RenameReplaceText, 1);
+                    isMatch = re.IsMatch(item.OriginalName);
+                }
+            }
+            item.IsMatchingFilter = isMatch;
+
+            // If the item is unchecked, revert to original name and do not apply any rename logic
+            if (!item.IsSelected)
+            {
+                item.NewName = item.OriginalName;
+                continue;
+            }
+
+            // Determine if we should apply formatting to this item
+            bool shouldFormat = RenameApplyAll || (RenameApplyOnlyFiltered && isMatch);
+
+            // Evaluate the replacement template per selected item index
+            string evaluatedReplaceText = EvaluateReplacementTemplate(RenameReplaceText, selectedItemIndex);
+
+            string newName = item.OriginalName;
+            if (isMatch)
+            {
+                if (RenameUseRegex && regex != null)
+                {
+                    try
+                    {
+                        newName = RenameMatchAllOccurrences ? regex.Replace(item.OriginalName, evaluatedReplaceText) : regex.Replace(item.OriginalName, evaluatedReplaceText, 1);
+                    }
+                    catch { }
+                }
+                else
+                {
+                    string literalPattern = Regex.Escape(RenameSearchText);
+                    var re = new Regex(literalPattern, options);
+                    newName = RenameMatchAllOccurrences ? re.Replace(item.OriginalName, evaluatedReplaceText) : re.Replace(item.OriginalName, evaluatedReplaceText, 1);
                 }
             }
 
-            // Apply casing
-            if (IsFormatLowercase) newName = newName.ToLower();
-            else if (IsFormatUppercase) newName = newName.ToUpper();
-            else if (IsFormatTitleCase && newName.Length > 0) newName = char.ToUpper(newName[0]) + newName.Substring(1).ToLower();
-            else if (IsFormatCapitalizeEach) newName = System.Threading.Thread.CurrentThread.CurrentCulture.TextInfo.ToTitleCase(newName.ToLower());
+            // Apply casing only if shouldFormat is true
+            if (shouldFormat)
+            {
+                if (IsFormatLowercase) newName = newName.ToLower();
+                else if (IsFormatUppercase) newName = newName.ToUpper();
+                else if (IsFormatTitleCase && newName.Length > 0) newName = char.ToUpper(newName[0]) + newName.Substring(1).ToLower();
+                else if (IsFormatCapitalizeEach) newName = System.Threading.Thread.CurrentThread.CurrentCulture.TextInfo.ToTitleCase(newName.ToLower());
+            }
 
             item.NewName = newName;
+            selectedItemIndex++;
         }
 
         // Apply enumeration and randomizing
         if (RenameEnumerateItems)
         {
+            int selectedIndex = 1;
             for (int i = 0; i < RenamePreviewItems.Count; i++)
             {
-                RenamePreviewItems[i].NewName += $" - {(i + 1):D2}";
+                var item = RenamePreviewItems[i];
+                if (item.IsSelected)
+                {
+                    bool shouldFormat = RenameApplyAll || (RenameApplyOnlyFiltered && item.IsMatchingFilter);
+                    if (shouldFormat)
+                    {
+                        item.NewName += $" - {selectedIndex:D2}";
+                        selectedIndex++;
+                    }
+                }
             }
         }
         if (RenameRandomizeItems)
@@ -877,9 +1054,126 @@ public partial class TransferPlusViewModel : ObservableObject
             var rnd = new Random();
             foreach (var item in RenamePreviewItems)
             {
-                item.NewName += $"_{rnd.Next(1000, 9999)}";
+                if (item.IsSelected)
+                {
+                    bool shouldFormat = RenameApplyAll || (RenameApplyOnlyFiltered && item.IsMatchingFilter);
+                    if (shouldFormat)
+                    {
+                        item.NewName += $"_{rnd.Next(1000, 9999)}";
+                    }
+                }
             }
         }
+    }
+
+    private string EvaluateReplacementTemplate(string template, int itemIndex)
+    {
+        if (string.IsNullOrEmpty(template)) return template;
+
+        string result = template;
+        DateTime now = DateTime.Now;
+
+        // 1. Evaluate Date/Time
+        // Replace in order from longest token to shortest to avoid nested replacement issues
+        var dateReplacements = new (string Token, string Format)[]
+        {
+            ("$YYYY", "yyyy"), ("$MMMM", "MMMM"), ("$DDDD", "dddd"),
+            ("$MMM", "MMM"), ("$DDD", "ddd"), ("$fff", "fff"),
+            ("$YY", "yy"), ("$MM", "MM"), ("$DD", "dd"),
+            ("$HH", "HH"), ("$hh", "hh"), ("$mm", "mm"), ("$ss", "ss"),
+            ("$ff", "ff"), ("$TT", "tt"), ("$tt", "tt"),
+            ("$Y", "y"), ("$M", "M"), ("$D", "d"),
+            ("$H", "H"), ("$h", "h"), ("$m", "m"), ("$s", "s"),
+            ("$f", "f")
+        };
+
+        foreach (var pair in dateReplacements)
+        {
+            if (result.Contains(pair.Token))
+            {
+                result = result.Replace(pair.Token, now.ToString(pair.Format));
+            }
+        }
+
+        // 2. Evaluate Counters and Random variables: ${...}
+        var counterRegex = new Regex(@"\$\{(.*?)\}");
+        result = counterRegex.Replace(result, match =>
+        {
+            string content = match.Groups[1].Value.Trim();
+            
+            // Check for UUID or Random strings
+            if (content.Equals("ruuidv4", StringComparison.OrdinalIgnoreCase))
+            {
+                return Guid.NewGuid().ToString();
+            }
+            else if (content.StartsWith("rstringalpha=", StringComparison.OrdinalIgnoreCase))
+            {
+                if (int.TryParse(content.Substring("rstringalpha=".Length), out int len))
+                    return GenerateRandomString(len, true, false);
+                return match.Value;
+            }
+            else if (content.StartsWith("rstringalphanum=", StringComparison.OrdinalIgnoreCase))
+            {
+                if (int.TryParse(content.Substring("rstringalphanum=".Length), out int len))
+                    return GenerateRandomString(len, true, true);
+                return match.Value;
+            }
+            else if (content.StartsWith("rstringdigit=", StringComparison.OrdinalIgnoreCase))
+            {
+                if (int.TryParse(content.Substring("rstringdigit=".Length), out int len))
+                    return GenerateRandomString(len, false, true);
+                return match.Value;
+            }
+
+            // Default to counter parsing
+            int start = 1;
+            int increment = 1;
+            int padding = 0;
+
+            if (!string.IsNullOrEmpty(content))
+            {
+                var parts = content.Split(',');
+                foreach (var part in parts)
+                {
+                    var kvp = part.Split('=');
+                    if (kvp.Length == 2)
+                    {
+                        string key = kvp[0].Trim().ToLower();
+                        string valStr = kvp[1].Trim();
+                        if (int.TryParse(valStr, out int val))
+                        {
+                            if (key == "start") start = val;
+                            else if (key == "increment") increment = val;
+                            else if (key == "padding") padding = val;
+                        }
+                    }
+                }
+            }
+
+            int currentValue = start + itemIndex * increment;
+            return currentValue.ToString().PadLeft(padding, '0');
+        });
+
+        return result;
+    }
+
+    private string GenerateRandomString(int length, bool includeLetters, bool includeDigits)
+    {
+        const string letters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+        const string digits = "0123456789";
+        string pool = "";
+        if (includeLetters) pool += letters;
+        if (includeDigits) pool += digits;
+
+        if (string.IsNullOrEmpty(pool)) return "";
+
+        var rnd = new Random();
+        var chars = new char[length];
+        for (int i = 0; i < length; i++)
+        {
+            chars[i] = pool[rnd.Next(pool.Length)];
+        }
+        return new string(chars);
     }
 
     [RelayCommand]
@@ -934,5 +1228,40 @@ public partial class TransferPlusViewModel : ObservableObject
     {
         var configView = new ConfigurationView();
         configView.ShowDialog();
+    }
+
+    [RelayCommand]
+    private void OpenNumberingSettings()
+    {
+        // Copy active to editing
+        EditNumTypeNumeric = NumTypeNumeric;
+        EditNumTypeAlphanumeric = NumTypeAlphanumeric;
+        EditNumOrderAscending = NumOrderAscending;
+        EditNumOrderDescending = NumOrderDescending;
+        EditNumMinDigits = NumMinDigits;
+        EditNumStartNumber = NumStartNumber;
+        EditNumStartLetter = NumStartLetter;
+        EditNumPrefix = NumPrefix;
+        EditNumSuffix = NumSuffix;
+        EditNumCustomSequence = NumCustomSequence;
+
+        // Open Dialog
+        var view = new NumberingSettingsView(this);
+        if (view.ShowDialog() == true)
+        {
+            // Copy editing back to active
+            NumTypeNumeric = EditNumTypeNumeric;
+            NumTypeAlphanumeric = EditNumTypeAlphanumeric;
+            NumOrderAscending = EditNumOrderAscending;
+            NumOrderDescending = EditNumOrderDescending;
+            NumMinDigits = EditNumMinDigits;
+            NumStartNumber = EditNumStartNumber;
+            NumStartLetter = EditNumStartLetter;
+            NumPrefix = EditNumPrefix;
+            NumSuffix = EditNumSuffix;
+            NumCustomSequence = EditNumCustomSequence;
+
+            UpdateRenamePreviews();
+        }
     }
 }

@@ -11,6 +11,9 @@ public partial class RenamePreviewItem : ObservableObject
     [ObservableProperty]
     private bool _isSelected = true;
 
+    [ObservableProperty]
+    private bool _isMatchingFilter;
+
     public ElementId SourceId { get; init; }
     public string OriginalName { get; init; }
 
