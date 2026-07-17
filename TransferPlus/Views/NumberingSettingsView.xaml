@@ -66,7 +66,7 @@
                         <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
                     <Label Content="Minimum number of digits:" Grid.Column="0"/>
-                    <TextBox Text="{Binding EditNumMinDigits, UpdateSourceTrigger=PropertyChanged}" Grid.Column="1" Height="26"/>
+                    <TextBox Text="{Binding EditNumMinDigits, UpdateSourceTrigger=PropertyChanged}" Grid.Column="1" Height="26" PreviewTextInput="NumberValidationTextBox"/>
                 </Grid>
 
                 <!-- Start number / Start letter on the same row -->
@@ -82,9 +82,9 @@
                             <ColumnDefinition Width="Auto" MinWidth="20"/>
                             <ColumnDefinition Width="*"/>
                         </Grid.ColumnDefinitions>
-                        <TextBox Text="{Binding EditNumStartNumber, UpdateSourceTrigger=PropertyChanged}" Grid.Column="0" Height="26" IsEnabled="{Binding EditNumTypeNumeric}"/>
+                        <TextBox Text="{Binding EditNumStartNumber, UpdateSourceTrigger=PropertyChanged}" Grid.Column="0" Height="26" IsEnabled="{Binding EditNumTypeNumeric}" PreviewTextInput="NumberValidationTextBox"/>
                         <Label Content="Start letter:" Grid.Column="1" Margin="8,0,4,0"/>
-                        <TextBox Text="{Binding EditNumStartLetter, UpdateSourceTrigger=PropertyChanged}" Grid.Column="2" Height="26" IsEnabled="{Binding EditNumTypeAlphanumeric}"/>
+                        <TextBox Text="{Binding EditNumStartLetter, UpdateSourceTrigger=PropertyChanged}" Grid.Column="2" Height="26" IsEnabled="{Binding EditNumTypeAlphanumeric}" PreviewTextInput="LetterValidationTextBox"/>
                     </Grid>
                 </Grid>
 

@@ -1,4 +1,6 @@
+using System.Text.RegularExpressions;
 using System.Windows;
+using System.Windows.Input;
 using TransferPlus.ViewModels;
 
 namespace TransferPlus.Views;
@@ -40,5 +42,17 @@ public partial class NumberingSettingsView : Window
     {
         DialogResult = false;
         Close();
+    }
+
+    private void NumberValidationTextBox(object sender, TextCompositionEventArgs e)
+    {
+        Regex regex = new Regex("[^0-9]+");
+        e.Handled = regex.IsMatch(e.Text);
+    }
+
+    private void LetterValidationTextBox(object sender, TextCompositionEventArgs e)
+    {
+        Regex regex = new Regex("[^a-zA-Z]+");
+        e.Handled = regex.IsMatch(e.Text);
     }
 }

@@ -614,7 +614,7 @@ public partial class TransferPlusViewModel : ObservableObject
         {
             // Diccionario de renombrado
             Dictionary<ElementId, string>? customNames = null;
-            if (RenamePreviewItems.Any())
+            if (IsRenamePanelOpen && RenamePreviewItems.Any())
             {
                 customNames = new Dictionary<ElementId, string>();
                 foreach (var item in RenamePreviewItems)
@@ -993,7 +993,7 @@ public partial class TransferPlusViewModel : ObservableObject
         {
             try
             {
-                regex = new Regex(RenameSearchText, options);
+                regex = new Regex(RenameSearchText, options, TimeSpan.FromMilliseconds(500));
             }
             catch
             {
@@ -1020,7 +1020,7 @@ public partial class TransferPlusViewModel : ObservableObject
                 else
                 {
                     string literalPattern = Regex.Escape(RenameSearchText);
-                    var re = new Regex(literalPattern, options);
+                    var re = new Regex(literalPattern, options, TimeSpan.FromMilliseconds(500));
                     isMatch = re.IsMatch(item.OriginalName);
                 }
             }
@@ -1053,7 +1053,7 @@ public partial class TransferPlusViewModel : ObservableObject
                 else
                 {
                     string literalPattern = Regex.Escape(RenameSearchText);
-                    var re = new Regex(literalPattern, options);
+                    var re = new Regex(literalPattern, options, TimeSpan.FromMilliseconds(500));
                     newName = RenameMatchAllOccurrences ? re.Replace(item.OriginalName, evaluatedReplaceText) : re.Replace(item.OriginalName, evaluatedReplaceText, 1);
                 }
             }
@@ -1355,7 +1355,7 @@ public partial class TransferPlusViewModel : ObservableObject
                         {
                             if (key == "start") start = val;
                             else if (key == "increment") increment = val;
-                            else if (key == "padding") padding = val;
+                            else if (key == "padding") padding = Math.Min(Math.Max(0, val), 100);
                         }
                     }
                 }
@@ -1370,6 +1370,7 @@ public partial class TransferPlusViewModel : ObservableObject
 
     private string GenerateRandomString(int length, bool includeLetters, bool includeDigits)
     {
+        length = Math.Min(Math.Max(0, length), 100); // Clamp to prevent OutOfMemoryException
         const string letters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
         const string digits = "0123456789";
         string pool = "";
