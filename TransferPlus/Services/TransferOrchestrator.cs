@@ -61,11 +61,31 @@ public class TransferOrchestrator
                 foreach (var wsItem in worksetsToCreate)
                 {
                     string wsName = customNames?.ContainsKey(wsItem.eID) == true ? customNames[wsItem.eID] : wsItem.Nombre;
+                    bool exists = !WorksetTable.IsWorksetNameUnique(targetDoc, wsName);
+                    if (exists)
+                    {
+                        if (config.cf_rbAbortTransaction)
+                        {
+                            t.RollBack();
+                            throw new OperationCanceledException("Transfer canceled: Workset name already exists in target model.");
+                        }
+                        else if (config.cf_rbAppendSuffix)
+                        {
+                            wsName += config.cf_suffixText;
+                        }
+                        else // Keep Original
+                        {
+                            continue;
+                        }
+                    }
+
                     Report($"Creating Workset: {wsName}");
                     try
                     {
-                        if (!WorksetTable.IsWorksetNameUnique(targetDoc, wsName)) continue;
-                        Workset.Create(targetDoc, wsName);
+                        if (WorksetTable.IsWorksetNameUnique(targetDoc, wsName))
+                        {
+                            Workset.Create(targetDoc, wsName);
+                        }
                     }
                     catch { }
                 }
@@ -84,11 +104,32 @@ public class TransferOrchestrator
                 {
                     if (sourceDoc.GetElement(famItem.eID) is Family family)
                     {
+                        string famName = family.Name;
+                        bool hasDuplicate = new FilteredElementCollector(targetDoc)
+                            .OfClass(typeof(Family))
+                            .Any(f => f.Name.Equals(famName, StringComparison.OrdinalIgnoreCase));
+
+                        if (hasDuplicate)
+                        {
+                            if (config.cf_rbAbortTransaction)
+                            {
+                                throw new OperationCanceledException("Transfer canceled: Family name already exists in target model.");
+                            }
+                            else if (config.cf_rbAppendSuffix)
+                            {
+                                famName += config.cf_suffixText;
+                            }
+                            else // Keep Original
+                            {
+                                continue;
+                            }
+                        }
+
                         Document famDoc = sourceDoc.EditFamily(family);
                         string tempDir = Path.Combine(Path.GetTempPath(), "TransferPlusTMP");
                         if (!Directory.Exists(tempDir)) Directory.CreateDirectory(tempDir);
 
-                        string tempPath = Path.Combine(tempDir, family.Name + ".rfa");
+                        string tempPath = Path.Combine(tempDir, famName + ".rfa");
                         if (File.Exists(tempPath)) File.Delete(tempPath);
 
                         famDoc.SaveAs(tempPath);
@@ -101,6 +142,10 @@ public class TransferOrchestrator
                         }
                         if (File.Exists(tempPath)) File.Delete(tempPath);
                     }
+                }
+                catch (OperationCanceledException)
+                {
+                    throw;
                 }
                 catch { }
             }
@@ -128,7 +173,28 @@ public class TransferOrchestrator
                             if (destParent != null)
                             {
                                 string catName = customNames?.ContainsKey(styleItem.eID) == true ? customNames[styleItem.eID] : sourceCat.Name;
-                                targetCat = targetDoc.Settings.Categories.NewSubcategory(destParent, catName);
+                                bool exists = destParent.SubCategories.Contains(catName);
+                                if (exists)
+                                {
+                                    if (config.cf_rbAbortTransaction)
+                                    {
+                                        t.RollBack();
+                                        throw new OperationCanceledException("Transfer canceled: Object Style already exists in target model.");
+                                    }
+                                    else if (config.cf_rbAppendSuffix)
+                                    {
+                                        catName += config.cf_suffixText;
+                                    }
+                                    else // Keep Original: use existing target category style
+                                    {
+                                        targetCat = destParent.SubCategories.get_Item(catName);
+                                    }
+                                }
+
+                                if (targetCat == null)
+                                {
+                                    targetCat = targetDoc.Settings.Categories.NewSubcategory(destParent, catName);
+                                }
                             }
                         }
 
@@ -136,6 +202,10 @@ public class TransferOrchestrator
                         {
                             TransferSingleCategoryStyle(sourceDoc, targetDoc, sourceCat, targetCat);
                         }
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        throw;
                     }
                     catch { }
                 }
@@ -151,10 +221,16 @@ public class TransferOrchestrator
                 t.Start();
                 WarningSwallower.AttachToTransaction(t);
 
+                CustomCopyHandlerAbort abortHandler = new CustomCopyHandlerAbort();
                 CopyPasteOptions options = new CopyPasteOptions();
-                options.SetDuplicateTypeNamesHandler(config.cf_rbOverride 
-                    ? new CustomCopyHandlerOk() 
-                    : new CustomCopyHandlerAbort());
+                if (config.cf_rbAbortTransaction)
+                {
+                    options.SetDuplicateTypeNamesHandler(abortHandler);
+                }
+                else
+                {
+                    options.SetDuplicateTypeNamesHandler(new CustomCopyHandlerOk());
+                }
 
                 Transform? transform = null;
                 if (config.cf_chk_GetTransformLink)
@@ -176,10 +252,64 @@ public class TransferOrchestrator
                     transform = targetDoc.ActiveProjectLocation.GetTotalTransform().Multiply(sourceTransform.Inverse);
                 }
 
+                bool hasDuplicates = false;
+                if (config.cf_rbAppendSuffix)
+                {
+                    foreach (var id in elementsCopyList)
+                    {
+                        Element elem = sourceDoc.GetElement(id);
+                        if (elem != null && TargetHasDuplicateName(targetDoc, elem))
+                        {
+                            hasDuplicates = true;
+                            break;
+                        }
+                    }
+                }
+
+                Document tempDoc = null;
                 try
                 {
-                    Report("Copying Standards Elements");
-                    ICollection<ElementId> copied = ElementTransformUtils.CopyElements(sourceDoc, elementsCopyList, targetDoc, transform, options);
+                    ICollection<ElementId> copied = null;
+                    if (config.cf_rbAppendSuffix && hasDuplicates)
+                    {
+                        Report("Preparing temporary document for renaming duplicates...");
+                        UnitSystem unitSys = targetDoc.DisplayUnitSystem == DisplayUnit.IMPERIAL ? UnitSystem.Imperial : UnitSystem.Metric;
+                        tempDoc = targetDoc.Application.NewProjectDocument(unitSys);
+
+                        ICollection<ElementId> tempCopied;
+                        using (Transaction tTemp = new Transaction(tempDoc, "Temp Copy"))
+                        {
+                            tTemp.Start();
+                            tempCopied = ElementTransformUtils.CopyElements(sourceDoc, elementsCopyList, tempDoc, null, new CopyPasteOptions());
+
+                            var tempCopiedList = tempCopied.ToList();
+                            for (int i = 0; i < elementsCopyList.Count; i++)
+                            {
+                                ElementId originalId = elementsCopyList[i];
+                                ElementId tempId = tempCopiedList.ElementAtOrDefault(i);
+                                if (tempId == null || tempId == ElementId.InvalidElementId) continue;
+
+                                Element srcElem = sourceDoc.GetElement(originalId);
+                                if (srcElem != null && TargetHasDuplicateName(targetDoc, srcElem))
+                                {
+                                    Element tempElem = tempDoc.GetElement(tempId);
+                                    if (tempElem != null)
+                                    {
+                                        try { tempElem.Name = srcElem.Name + config.cf_suffixText; } catch { }
+                                    }
+                                }
+                            }
+                            tTemp.Commit();
+                        }
+
+                        Report("Copying Standards Elements (with suffixes)");
+                        copied = ElementTransformUtils.CopyElements(tempDoc, tempCopied.ToList(), targetDoc, transform, options);
+                    }
+                    else
+                    {
+                        Report("Copying Standards Elements");
+                        copied = ElementTransformUtils.CopyElements(sourceDoc, elementsCopyList, targetDoc, transform, options);
+                    }
 
                     // If copy includes views, match templates, copy detail items and callouts recursively
                     for (int i = 0; i < elementsCopyList.Count; i++)
@@ -222,9 +352,26 @@ public class TransferOrchestrator
                         }
                     }
                 }
-                catch { }
+                catch (Exception ex)
+                {
+                    if (config.cf_rbAbortTransaction && abortHandler.Triggered)
+                    {
+                        t.RollBack();
+                        throw new OperationCanceledException("Transfer canceled: Duplicate element names found.", ex);
+                    }
+                }
+                finally
+                {
+                    if (tempDoc != null)
+                    {
+                        try { tempDoc.Close(false); } catch { }
+                    }
+                }
 
-                t.Commit();
+                if (t.GetStatus() == TransactionStatus.Started)
+                {
+                    t.Commit();
+                }
             }
         }
     }
@@ -397,8 +544,10 @@ public class TransferOrchestrator
 
     private class CustomCopyHandlerAbort : IDuplicateTypeNamesHandler
     {
+        public bool Triggered { get; set; } = false;
         public DuplicateTypeAction OnDuplicateTypeNamesFound(DuplicateTypeNamesHandlerArgs args)
         {
+            Triggered = true;
             return DuplicateTypeAction.Abort;
         }
     }
@@ -417,6 +566,48 @@ public class TransferOrchestrator
             overwriteParameterValues = true;
             return true;
         }
+    }
+
+    private static bool TargetHasDuplicateName(Document targetDoc, Element srcElem)
+    {
+        Type elemType = srcElem.GetType();
+        string srcName = srcElem.Name;
+        if (string.IsNullOrEmpty(srcName)) return false;
+
+        try
+        {
+            if (srcElem is ElementType)
+            {
+                return new FilteredElementCollector(targetDoc)
+                    .OfClass(elemType)
+                    .Any(e => e.Name.Equals(srcName, StringComparison.OrdinalIgnoreCase));
+            }
+            
+            if (srcElem is View || srcElem is ViewSheet || srcElem is Level || srcElem is ParameterFilterElement)
+            {
+                return new FilteredElementCollector(targetDoc)
+                    .OfClass(elemType)
+                    .Any(e => e.Name.Equals(srcName, StringComparison.OrdinalIgnoreCase));
+            }
+
+            if (srcElem.Category != null)
+            {
+                return new FilteredElementCollector(targetDoc)
+                    .OfCategoryId(srcElem.Category.Id)
+                    .Any(e => e.Name.Equals(srcName, StringComparison.OrdinalIgnoreCase));
+            }
+        }
+        catch
+        {
+            try
+            {
+                return new FilteredElementCollector(targetDoc)
+                    .WhereElementIsNotElementType()
+                    .Any(e => e.Name.Equals(srcName, StringComparison.OrdinalIgnoreCase));
+            }
+            catch { }
+        }
+        return false;
     }
 
     private static void TransferSingleCategoryStyle(Document sourceDoc, Document targetDoc, Category sourceCat, Category targetCat)

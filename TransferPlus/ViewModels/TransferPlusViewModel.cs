@@ -60,13 +60,16 @@ public partial class TransferPlusViewModel : ObservableObject
 
     // Options
     [ObservableProperty]
-    private bool _overrideDuplicates = true;
+    private bool _keepOriginal = true;
 
     [ObservableProperty]
-    private bool _cancelDuplicates;
+    private bool _abortTransaction;
 
     [ObservableProperty]
-    private bool _askDuplicates;
+    private bool _appendSuffix;
+
+    [ObservableProperty]
+    private string _duplicatesSuffixText = "_Copy";
 
     [ObservableProperty]
     private bool _includeCallouts;
@@ -572,9 +575,10 @@ public partial class TransferPlusViewModel : ObservableObject
 
     private void SyncConfig()
     {
-        _config.cf_rbOverride = OverrideDuplicates;
-        _config.cf_rbCancel = CancelDuplicates;
-        _config.cf_rbAsk = AskDuplicates;
+        _config.cf_rbKeepOriginal = KeepOriginal;
+        _config.cf_rbAbortTransaction = AbortTransaction;
+        _config.cf_rbAppendSuffix = AppendSuffix;
+        _config.cf_suffixText = DuplicatesSuffixText;
         _config.cf_chk_Callout = IncludeCallouts;
         _config.cf_chk_ViewElements = IncludeViewElements;
         _config.cf_chk_SheetWithViews = IncludeSheetsWithViews;
@@ -649,9 +653,15 @@ public partial class TransferPlusViewModel : ObservableObject
             TransferPlus.Services.LoggerService.LogInfo($"Transfer: Completed successfully. Transferred to {transferTargetCount} destination models.");
             TaskDialog.Show("TransferPlus", "Transfer complete!");
         }
+        catch (OperationCanceledException cancelEx)
+        {
+            TransferPlus.Services.LoggerService.LogError("Transfer Canceled", cancelEx);
+            TaskDialog.Show("TransferPlus", "Transfer canceled due to duplicate element names in the destination document.");
+        }
         catch (Exception ex)
         {
-            TransferPlus.Services.LoggerService.LogError("Transfer", ex);
+            TransferPlus.Services.LoggerService.LogError("Transfer Error", ex);
+            TaskDialog.Show("TransferPlus", $"Error during transfer: {ex.Message}");
         }
         finally
         {

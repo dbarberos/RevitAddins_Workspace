@@ -357,9 +357,10 @@
                                 </Grid.ColumnDefinitions>
                                 <TextBlock Grid.Column="0" Text="On Duplicates:" FontWeight="Bold" FontSize="12" Foreground="#999" VerticalAlignment="Center" Margin="0,0,15,0"/>
                                 <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
-                                    <RadioButton Content="Ok" IsChecked="{Binding OverrideDuplicates}" Margin="0,0,15,0"/>
-                                    <RadioButton Content="Abort" IsChecked="{Binding CancelDuplicates}" Margin="0,0,15,0"/>
-                                    <RadioButton Content="Ask User" IsChecked="{Binding AskDuplicates}"/>
+                                    <RadioButton Content="Keep Original" IsChecked="{Binding KeepOriginal}" Margin="0,0,15,0" VerticalAlignment="Center"/>
+                                    <RadioButton Content="Abort Transaction" IsChecked="{Binding AbortTransaction}" Margin="0,0,15,0" VerticalAlignment="Center"/>
+                                    <RadioButton Content="Append Suffix:" IsChecked="{Binding AppendSuffix}" Margin="0,0,5,0" VerticalAlignment="Center"/>
+                                    <TextBox Width="80" Height="22" VerticalContentAlignment="Center" Padding="2" Text="{Binding DuplicatesSuffixText, UpdateSourceTrigger=PropertyChanged}" IsEnabled="{Binding AppendSuffix}" VerticalAlignment="Center" BorderBrush="#e0e0e0" BorderThickness="1"/>
                                 </StackPanel>
                             </Grid>
                         </Border>
