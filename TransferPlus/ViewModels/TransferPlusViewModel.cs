@@ -656,7 +656,22 @@ public partial class TransferPlusViewModel : ObservableObject
         catch (OperationCanceledException cancelEx)
         {
             TransferPlus.Services.LoggerService.LogError("Transfer Canceled", cancelEx);
-            TaskDialog.Show("TransferPlus", "Transfer canceled due to duplicate element names in the destination document.");
+            if (cancelEx.Data.Contains("Duplicates") && cancelEx.Data["Duplicates"] is List<string> dups && dups.Any())
+            {
+                try
+                {
+                    var view = new TransferPlus.Views.DuplicatesAbortView(dups);
+                    view.ShowDialog();
+                }
+                catch
+                {
+                    TaskDialog.Show("TransferPlus", "Transfer canceled due to duplicate element names in the destination document.");
+                }
+            }
+            else
+            {
+                TaskDialog.Show("TransferPlus", "Transfer canceled due to duplicate element names in the destination document.");
+            }
         }
         catch (Exception ex)
         {

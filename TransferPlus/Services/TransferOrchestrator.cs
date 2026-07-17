@@ -21,6 +21,7 @@ public class TransferOrchestrator
         var familiesLoadList = new List<Elemento>();
         var worksetsToCreate = new List<Elemento>();
         var objectStylesToTransfer = new List<Elemento>();
+        var duplicateNames = new List<string>();
 
         foreach (var item in elementsToCopy)
         {
@@ -66,8 +67,11 @@ public class TransferOrchestrator
                     {
                         if (config.cf_rbAbortTransaction)
                         {
+                            duplicateNames.Add($"Workset: {wsName}");
                             t.RollBack();
-                            throw new OperationCanceledException("Transfer canceled: Workset name already exists in target model.");
+                            var cancelEx = new OperationCanceledException("Transfer canceled: Duplicate element names found.");
+                            cancelEx.Data["Duplicates"] = duplicateNames;
+                            throw cancelEx;
                         }
                         else if (config.cf_rbAppendSuffix)
                         {
@@ -104,7 +108,7 @@ public class TransferOrchestrator
                 {
                     if (sourceDoc.GetElement(famItem.eID) is Family family)
                     {
-                        string famName = family.Name;
+                        string famName = customNames?.ContainsKey(famItem.eID) == true ? customNames[famItem.eID] : family.Name;
                         bool hasDuplicate = new FilteredElementCollector(targetDoc)
                             .OfClass(typeof(Family))
                             .Any(f => f.Name.Equals(famName, StringComparison.OrdinalIgnoreCase));
@@ -113,7 +117,10 @@ public class TransferOrchestrator
                         {
                             if (config.cf_rbAbortTransaction)
                             {
-                                throw new OperationCanceledException("Transfer canceled: Family name already exists in target model.");
+                                duplicateNames.Add($"Family: {famName}");
+                                var cancelEx = new OperationCanceledException("Transfer canceled: Duplicate element names found.");
+                                cancelEx.Data["Duplicates"] = duplicateNames;
+                                throw cancelEx;
                             }
                             else if (config.cf_rbAppendSuffix)
                             {
@@ -178,8 +185,11 @@ public class TransferOrchestrator
                                 {
                                     if (config.cf_rbAbortTransaction)
                                     {
+                                        duplicateNames.Add($"Object Style: {catName}");
                                         t.RollBack();
-                                        throw new OperationCanceledException("Transfer canceled: Object Style already exists in target model.");
+                                        var cancelEx = new OperationCanceledException("Transfer canceled: Duplicate element names found.");
+                                        cancelEx.Data["Duplicates"] = duplicateNames;
+                                        throw cancelEx;
                                     }
                                     else if (config.cf_rbAppendSuffix)
                                     {
@@ -253,17 +263,29 @@ public class TransferOrchestrator
                 }
 
                 bool hasDuplicates = false;
-                if (config.cf_rbAppendSuffix)
+                foreach (var id in elementsCopyList)
                 {
-                    foreach (var id in elementsCopyList)
+                    Element elem = sourceDoc.GetElement(id);
+                    if (elem != null)
                     {
-                        Element elem = sourceDoc.GetElement(id);
-                        if (elem != null && TargetHasDuplicateName(targetDoc, elem))
+                        string evalName = customNames?.ContainsKey(id) == true ? customNames[id] : elem.Name;
+                        if (TargetHasDuplicateName(targetDoc, elem, evalName))
                         {
                             hasDuplicates = true;
-                            break;
+                            if (config.cf_rbAbortTransaction)
+                            {
+                                duplicateNames.Add("Type: " + evalName);
+                            }
                         }
                     }
+                }
+
+                if (config.cf_rbAbortTransaction && duplicateNames.Any())
+                {
+                    t.RollBack();
+                    var cancelEx = new OperationCanceledException("Transfer canceled: Duplicate element names found.");
+                    cancelEx.Data["Duplicates"] = duplicateNames;
+                    throw cancelEx;
                 }
 
                 Document tempDoc = null;
@@ -290,12 +312,20 @@ public class TransferOrchestrator
                                 if (tempId == null || tempId == ElementId.InvalidElementId) continue;
 
                                 Element srcElem = sourceDoc.GetElement(originalId);
-                                if (srcElem != null && TargetHasDuplicateName(targetDoc, srcElem))
+                                if (srcElem != null)
                                 {
+                                    string evalName = customNames?.ContainsKey(originalId) == true ? customNames[originalId] : srcElem.Name;
                                     Element tempElem = tempDoc.GetElement(tempId);
                                     if (tempElem != null)
                                     {
-                                        try { tempElem.Name = srcElem.Name + config.cf_suffixText; } catch { }
+                                        if (TargetHasDuplicateName(targetDoc, srcElem, evalName))
+                                        {
+                                            try { tempElem.Name = evalName + config.cf_suffixText; } catch { }
+                                        }
+                                        else if (customNames?.ContainsKey(originalId) == true)
+                                        {
+                                            try { tempElem.Name = evalName; } catch { }
+                                        }
                                     }
                                 }
                             }
@@ -334,7 +364,7 @@ public class TransferOrchestrator
                     }
 
                     // Apply renamed elements
-                    if (customNames != null)
+                    if (customNames != null && tempDoc == null)
                     {
                         for (int i = 0; i < elementsCopyList.Count; i++)
                         {
@@ -357,7 +387,9 @@ public class TransferOrchestrator
                     if (config.cf_rbAbortTransaction && abortHandler.Triggered)
                     {
                         t.RollBack();
-                        throw new OperationCanceledException("Transfer canceled: Duplicate element names found.", ex);
+                        var cancelEx = new OperationCanceledException("Transfer canceled: Duplicate element names found.", ex);
+                        cancelEx.Data["Duplicates"] = duplicateNames;
+                        throw cancelEx;
                     }
                 }
                 finally
@@ -568,10 +600,10 @@ public class TransferOrchestrator
         }
     }
 
-    private static bool TargetHasDuplicateName(Document targetDoc, Element srcElem)
+    private static bool TargetHasDuplicateName(Document targetDoc, Element srcElem, string evalName = null)
     {
         Type elemType = srcElem.GetType();
-        string srcName = srcElem.Name;
+        string srcName = !string.IsNullOrEmpty(evalName) ? evalName : srcElem.Name;
         if (string.IsNullOrEmpty(srcName)) return false;
 
         try
