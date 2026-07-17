@@ -197,7 +197,7 @@ public class TransferOrchestrator
                                     }
                                     else // Keep Original: use existing target category style
                                     {
-                                        targetCat = destParent.SubCategories.get_Item(catName);
+                                        continue;
                                     }
                                 }
 
@@ -262,6 +262,7 @@ public class TransferOrchestrator
                     transform = targetDoc.ActiveProjectLocation.GetTotalTransform().Multiply(sourceTransform.Inverse);
                 }
 
+                var finalCopyList = new List<ElementId>();
                 bool hasDuplicates = false;
                 foreach (var id in elementsCopyList)
                 {
@@ -276,7 +277,12 @@ public class TransferOrchestrator
                             {
                                 duplicateNames.Add("Type: " + evalName);
                             }
+                            else if (config.cf_rbKeepOriginal)
+                            {
+                                continue;
+                            }
                         }
+                        finalCopyList.Add(id);
                     }
                 }
 
@@ -291,60 +297,63 @@ public class TransferOrchestrator
                 Document tempDoc = null;
                 try
                 {
-                    ICollection<ElementId> copied = null;
-                    if (config.cf_rbAppendSuffix && hasDuplicates)
+                    ICollection<ElementId> copied = new List<ElementId>();
+                    if (finalCopyList.Any())
                     {
-                        Report("Preparing temporary document for renaming duplicates...");
-                        UnitSystem unitSys = targetDoc.DisplayUnitSystem == DisplayUnit.IMPERIAL ? UnitSystem.Imperial : UnitSystem.Metric;
-                        tempDoc = targetDoc.Application.NewProjectDocument(unitSys);
-
-                        ICollection<ElementId> tempCopied;
-                        using (Transaction tTemp = new Transaction(tempDoc, "Temp Copy"))
+                        if (config.cf_rbAppendSuffix && hasDuplicates)
                         {
-                            tTemp.Start();
-                            tempCopied = ElementTransformUtils.CopyElements(sourceDoc, elementsCopyList, tempDoc, null, new CopyPasteOptions());
+                            Report("Preparing temporary document for renaming duplicates...");
+                            UnitSystem unitSys = targetDoc.DisplayUnitSystem == DisplayUnit.IMPERIAL ? UnitSystem.Imperial : UnitSystem.Metric;
+                            tempDoc = targetDoc.Application.NewProjectDocument(unitSys);
 
-                            var tempCopiedList = tempCopied.ToList();
-                            for (int i = 0; i < elementsCopyList.Count; i++)
+                            ICollection<ElementId> tempCopied;
+                            using (Transaction tTemp = new Transaction(tempDoc, "Temp Copy"))
                             {
-                                ElementId originalId = elementsCopyList[i];
-                                ElementId tempId = tempCopiedList.ElementAtOrDefault(i);
-                                if (tempId == null || tempId == ElementId.InvalidElementId) continue;
+                                tTemp.Start();
+                                tempCopied = ElementTransformUtils.CopyElements(sourceDoc, finalCopyList, tempDoc, null, new CopyPasteOptions());
 
-                                Element srcElem = sourceDoc.GetElement(originalId);
-                                if (srcElem != null)
+                                var tempCopiedList = tempCopied.ToList();
+                                for (int i = 0; i < finalCopyList.Count; i++)
                                 {
-                                    string evalName = customNames?.ContainsKey(originalId) == true ? customNames[originalId] : srcElem.Name;
-                                    Element tempElem = tempDoc.GetElement(tempId);
-                                    if (tempElem != null)
+                                    ElementId originalId = finalCopyList[i];
+                                    ElementId tempId = tempCopiedList.ElementAtOrDefault(i);
+                                    if (tempId == null || tempId == ElementId.InvalidElementId) continue;
+
+                                    Element srcElem = sourceDoc.GetElement(originalId);
+                                    if (srcElem != null)
                                     {
-                                        if (TargetHasDuplicateName(targetDoc, srcElem, evalName))
+                                        string evalName = customNames?.ContainsKey(originalId) == true ? customNames[originalId] : srcElem.Name;
+                                        Element tempElem = tempDoc.GetElement(tempId);
+                                        if (tempElem != null)
                                         {
-                                            try { tempElem.Name = evalName + config.cf_suffixText; } catch { }
-                                        }
-                                        else if (customNames?.ContainsKey(originalId) == true)
-                                        {
-                                            try { tempElem.Name = evalName; } catch { }
+                                            if (TargetHasDuplicateName(targetDoc, srcElem, evalName))
+                                            {
+                                                try { tempElem.Name = evalName + config.cf_suffixText; } catch { }
+                                            }
+                                            else if (customNames?.ContainsKey(originalId) == true)
+                                            {
+                                                try { tempElem.Name = evalName; } catch { }
+                                            }
                                         }
                                     }
                                 }
+                                tTemp.Commit();
                             }
-                            tTemp.Commit();
-                        }
 
-                        Report("Copying Standards Elements (with suffixes)");
-                        copied = ElementTransformUtils.CopyElements(tempDoc, tempCopied.ToList(), targetDoc, transform, options);
-                    }
-                    else
-                    {
-                        Report("Copying Standards Elements");
-                        copied = ElementTransformUtils.CopyElements(sourceDoc, elementsCopyList, targetDoc, transform, options);
+                            Report("Copying Standards Elements (with suffixes)");
+                            copied = ElementTransformUtils.CopyElements(tempDoc, tempCopied.ToList(), targetDoc, transform, options);
+                        }
+                        else
+                        {
+                            Report("Copying Standards Elements");
+                            copied = ElementTransformUtils.CopyElements(sourceDoc, finalCopyList, targetDoc, transform, options);
+                        }
                     }
 
                     // If copy includes views, match templates, copy detail items and callouts recursively
-                    for (int i = 0; i < elementsCopyList.Count; i++)
+                    for (int i = 0; i < finalCopyList.Count; i++)
                     {
-                        ElementId originalId = elementsCopyList[i];
+                        ElementId originalId = finalCopyList[i];
                         ElementId newId = copied.ElementAtOrDefault(i);
                         if (newId == null || newId == ElementId.InvalidElementId) continue;
 
@@ -366,9 +375,9 @@ public class TransferOrchestrator
                     // Apply renamed elements
                     if (customNames != null && tempDoc == null)
                     {
-                        for (int i = 0; i < elementsCopyList.Count; i++)
+                        for (int i = 0; i < finalCopyList.Count; i++)
                         {
-                            ElementId originalId = elementsCopyList[i];
+                            ElementId originalId = finalCopyList[i];
                             ElementId newId = copied.ElementAtOrDefault(i);
                             if (newId != null && newId != ElementId.InvalidElementId && customNames.ContainsKey(originalId))
                             {
