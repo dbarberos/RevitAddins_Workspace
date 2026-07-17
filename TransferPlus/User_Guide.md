@@ -63,11 +63,28 @@ The application provides a main WPF Window (`TransferPlusView`) where users can 
 > [!TIP]
 > **Pro-Tip**: You can define the minimum number of padding digits and custom prefixes/suffixes for sequence generation by clicking on the settings gear icon in the numbering panel.
 
+### Duplication Resolution (On Duplicates)
+When transferring elements that share names with elements already in the target document, the add-in offers three strategies:
+*   **Keep Original** (Default): Discards the incoming element and uses the existing version in the target document.
+*   **Abort Transaction**: Rolls back the entire transfer and alerts the user if any duplicate names are detected.
+*   **Append Suffix**: Appends a user-defined text string (e.g. `_Copy`) to the incoming element's name, allowing it to be imported alongside the original without modifying the source file (works even for read-only linked files via the *Bridge Document* strategy).
+
 ---
 
 ## 6. Version History (Changelog)
 
 <!-- CRITICAL: Do NOT delete previous version entries. Append new version blocks at the top of this section to maintain a complete historical record. -->
+
+### v1.7.0 - 2026-07-17
+
+#### Added
+- Implemented "On Duplicates" strategy options in the main explorer UI (Keep Original, Abort Transaction, Append Suffix).
+- Added a suffix TextBox to define custom text for duplicate name mapping.
+- Integrated a programmatic "Bridge Document" mechanism to safely rename duplicate elements from read-only links during transfer.
+
+#### Changed
+- Redesigned the "On Duplicates" card in the UI to follow clean Fluent styling patterns.
+- Refactored `TransferOrchestrator` to catch copy abortions and perform graceful transaction rollbacks.
 
 ### v1.6.0 - 2026-07-16
 

@@ -15,13 +15,15 @@ namespace TransferPlus.Models
 		public static double convertareafactor = 1.0 / Math.Pow(Configuraciones.METERS_IN_FEET, 2.0);
 
 		// Token: 0x04000078 RID: 120
-		public bool cf_rbOverride = true;
+		public bool cf_rbKeepOriginal = true;
 
 		// Token: 0x04000079 RID: 121
-		public bool cf_rbCancel;
+		public bool cf_rbAbortTransaction;
 
 		// Token: 0x0400007A RID: 122
-		public bool cf_rbAsk;
+		public bool cf_rbAppendSuffix;
+
+		public string cf_suffixText = "_Copy";
 
 		// Token: 0x0400007B RID: 123
 		public bool cf_chk_Callout;
