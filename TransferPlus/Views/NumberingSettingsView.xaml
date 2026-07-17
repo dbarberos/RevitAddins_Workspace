@@ -1,0 +1,186 @@
+<Window x:Class="TransferPlus.Views.NumberingSettingsView"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Edit Numbering Sequence" 
+        Height="560" Width="420"
+        WindowStartupLocation="CenterScreen"
+        ResizeMode="NoResize"
+        Background="#F0F0F0"
+        FontFamily="Segoe UI"
+        FontSize="11.5">
+    <Window.Resources>
+        <Style TargetType="Label">
+            <Setter Property="Foreground" Value="#333"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+        <Style TargetType="TextBox">
+            <Setter Property="Padding" Value="5,4"/>
+            <Setter Property="BorderBrush" Value="#CCCCCC"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+        </Style>
+        <Style TargetType="RadioButton">
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="Foreground" Value="#333"/>
+        </Style>
+    </Window.Resources>
+    <Grid Margin="15">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/> <!-- Type Selection -->
+            <RowDefinition Height="Auto"/> <!-- Configuration Border -->
+            <RowDefinition Height="Auto"/> <!-- Custom Sequence Title -->
+            <RowDefinition Height="*"/>    <!-- Custom Sequence TextBox -->
+            <RowDefinition Height="Auto"/> <!-- Buttons Row -->
+        </Grid.RowDefinitions>
+
+        <!-- Type Row -->
+        <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,15">
+            <Label Content="Type:" Width="80" FontWeight="SemiBold"/>
+            <RadioButton Content="Numeric" IsChecked="{Binding EditNumTypeNumeric, Mode=TwoWay}" GroupName="NumTypeGroup" Margin="0,0,20,0"/>
+            <RadioButton Content="Alphanumeric" IsChecked="{Binding EditNumTypeAlphanumeric, Mode=TwoWay}" GroupName="NumTypeGroup"/>
+        </StackPanel>
+
+        <!-- Configuration Group Box (Styled Border) -->
+        <Border Grid.Row="1" BorderBrush="#D0D0D0" BorderThickness="1" CornerRadius="4" Padding="12" Margin="0,0,0,15" Background="#F9F9F9">
+            <StackPanel>
+                <TextBlock Text="Configuration" FontWeight="Bold" Margin="0,0,0,12" Foreground="#555"/>
+                
+                <!-- Order: Ascending / Descending -->
+                <Grid Margin="0,0,0,10">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="150"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <Label Content="Order:" Grid.Column="0"/>
+                    <StackPanel Orientation="Horizontal" Grid.Column="1">
+                        <RadioButton Content="Ascending" IsChecked="{Binding EditNumOrderAscending, Mode=TwoWay}" GroupName="NumOrderGroup" Margin="0,0,15,0"/>
+                        <RadioButton Content="Descending" IsChecked="{Binding EditNumOrderDescending, Mode=TwoWay}" GroupName="NumOrderGroup"/>
+                    </StackPanel>
+                </Grid>
+
+                <!-- Minimum number of digits -->
+                <Grid Margin="0,0,0,10">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="150"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <Label Content="Minimum number of digits:" Grid.Column="0"/>
+                    <TextBox Text="{Binding EditNumMinDigits, UpdateSourceTrigger=PropertyChanged}" Grid.Column="1" Height="26" PreviewTextInput="NumberValidationTextBox"/>
+                </Grid>
+
+                <!-- Start number / Start letter on the same row -->
+                <Grid Margin="0,0,0,10">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="150"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <Label Content="Start number:" Grid.Column="0"/>
+                    <Grid Grid.Column="1">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto" MinWidth="20"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBox Text="{Binding EditNumStartNumber, UpdateSourceTrigger=PropertyChanged}" Grid.Column="0" Height="26" IsEnabled="{Binding EditNumTypeNumeric}" PreviewTextInput="NumberValidationTextBox"/>
+                        <Label Content="Start letter:" Grid.Column="1" Margin="8,0,4,0"/>
+                        <TextBox Text="{Binding EditNumStartLetter, UpdateSourceTrigger=PropertyChanged}" Grid.Column="2" Height="26" IsEnabled="{Binding EditNumTypeAlphanumeric}" PreviewTextInput="LetterValidationTextBox"/>
+                    </Grid>
+                </Grid>
+
+                <!-- Prefix -->
+                <Grid Margin="0,0,0,10">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="150"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <Label Content="Prefix:" Grid.Column="0"/>
+                    <TextBox Text="{Binding EditNumPrefix, UpdateSourceTrigger=PropertyChanged}" Grid.Column="1" Height="26"/>
+                </Grid>
+
+                <!-- Suffix -->
+                <Grid Margin="0,0,0,10">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="150"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <Label Content="Suffix:" Grid.Column="0"/>
+                    <TextBox Text="{Binding EditNumSuffix, UpdateSourceTrigger=PropertyChanged}" Grid.Column="1" Height="26"/>
+                </Grid>
+
+                <!-- Location -->
+                <Grid Margin="0,0,0,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="150"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <Label Content="Location:" Grid.Column="0"/>
+                    <StackPanel Orientation="Horizontal" Grid.Column="1">
+                        <RadioButton Content="At beginning" IsChecked="{Binding EditNumLocationBeginning, Mode=TwoWay}" GroupName="NumLocationGroup" Margin="0,0,15,0"/>
+                        <RadioButton Content="At end" IsChecked="{Binding EditNumLocationEnd, Mode=TwoWay}" GroupName="NumLocationGroup"/>
+                    </StackPanel>
+                </Grid>
+            </StackPanel>
+        </Border>
+
+        <!-- Custom sequence Title -->
+        <Label Content="Custom sequence:" Grid.Row="2" FontWeight="SemiBold" Margin="0,0,0,2"/>
+
+        <!-- Custom sequence TextBox -->
+        <Grid Grid.Row="3" Margin="0,0,0,2">
+            <TextBox x:Name="CustomSeqTextBox" Text="{Binding EditNumCustomSequence, UpdateSourceTrigger=PropertyChanged}" TextWrapping="Wrap" AcceptsReturn="True" VerticalScrollBarVisibility="Auto" Height="70" VerticalContentAlignment="Top" Padding="6"/>
+            <TextBlock Text="Values must be separated by commas (e.g. A1, B2, C3, D4...)" TextWrapping="Wrap" Foreground="#AAAAAA" IsHitTestVisible="False" Margin="10,8,10,0" VerticalAlignment="Top">
+                <TextBlock.Style>
+                    <Style TargetType="TextBlock">
+                        <Setter Property="Visibility" Value="Collapsed"/>
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding Text, ElementName=CustomSeqTextBox}" Value="">
+                                <Setter Property="Visibility" Value="Visible"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </TextBlock.Style>
+            </TextBlock>
+        </Grid>
+
+        <!-- Buttons Row -->
+        <Grid Grid.Row="4">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <Button Content="Apply" Click="Accept_Click" Grid.Column="1" Width="90" Height="28" Margin="0,0,10,0" FontWeight="SemiBold" IsDefault="True">
+                <Button.Style>
+                    <Style TargetType="Button">
+                        <Setter Property="Background" Value="#007ACC"/>
+                        <Setter Property="Foreground" Value="White"/>
+                        <Setter Property="BorderThickness" Value="0"/>
+                        <Setter Property="Cursor" Value="Hand"/>
+                        <Style.Resources>
+                            <Style TargetType="Border">
+                                <Setter Property="CornerRadius" Value="4"/>
+                            </Style>
+                        </Style.Resources>
+                    </Style>
+                </Button.Style>
+            </Button>
+            <Button Content="Cancel" Click="Cancel_Click" Grid.Column="2" Width="90" Height="28" IsCancel="True">
+                <Button.Style>
+                    <Style TargetType="Button">
+                        <Setter Property="Background" Value="#E1E1E1"/>
+                        <Setter Property="Foreground" Value="Black"/>
+                        <Setter Property="BorderBrush" Value="#707070"/>
+                        <Setter Property="BorderThickness" Value="1"/>
+                        <Setter Property="Cursor" Value="Hand"/>
+                        <Style.Resources>
+                            <Style TargetType="Border">
+                                <Setter Property="CornerRadius" Value="4"/>
+                            </Style>
+                        </Style.Resources>
+                    </Style>
+                </Button.Style>
+            </Button>
+        </Grid>
+    </Grid>
+</Window>

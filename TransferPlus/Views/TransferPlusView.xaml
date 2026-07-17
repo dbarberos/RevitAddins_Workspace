@@ -6,9 +6,41 @@
         xmlns:local="clr-namespace:TransferPlus.Views"
         xmlns:viewmodels="clr-namespace:TransferPlus.ViewModels"
         mc:Ignorable="d"
-        Title="TransferPlus" Height="788" Width="940"
+        Title="TransferPlus" Height="788"
         WindowStartupLocation="CenterScreen"
         Background="#FAFAFA">
+
+    <Window.Style>
+        <Style TargetType="Window">
+            <Setter Property="Width" Value="810"/>
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding IsRenamePanelOpen}" Value="True">
+                    <DataTrigger.EnterActions>
+                        <BeginStoryboard>
+                            <Storyboard>
+                                <DoubleAnimation Storyboard.TargetProperty="Width" To="1310" Duration="0:0:0.3">
+                                    <DoubleAnimation.EasingFunction>
+                                        <CubicEase EasingMode="EaseOut"/>
+                                    </DoubleAnimation.EasingFunction>
+                                </DoubleAnimation>
+                            </Storyboard>
+                        </BeginStoryboard>
+                    </DataTrigger.EnterActions>
+                    <DataTrigger.ExitActions>
+                        <BeginStoryboard>
+                            <Storyboard>
+                                <DoubleAnimation Storyboard.TargetProperty="Width" To="810" Duration="0:0:0.3">
+                                    <DoubleAnimation.EasingFunction>
+                                        <CubicEase EasingMode="EaseOut"/>
+                                    </DoubleAnimation.EasingFunction>
+                                </DoubleAnimation>
+                            </Storyboard>
+                        </BeginStoryboard>
+                    </DataTrigger.ExitActions>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+    </Window.Style>
 
     <Window.Resources>
         <ResourceDictionary>
@@ -17,20 +49,26 @@
             </ResourceDictionary.MergedDictionaries>
             
             <BooleanToVisibilityConverter x:Key="BoolToVis"/>
+            <local:NegativeConverter x:Key="NegativeConverter"/>
             
             <HierarchicalDataTemplate x:Key="CheckboxTreeTemplate" DataType="{x:Type viewmodels:TreeItemViewModel}" ItemsSource="{Binding Children}">
-                <Grid>
+                <Grid Width="{Binding ViewportWidth, RelativeSource={RelativeSource AncestorType=ScrollViewer}}">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="80"/>
-                        <ColumnDefinition Width="80"/>
+                        <ColumnDefinition Width="60"/>
                     </Grid.ColumnDefinitions>
-                    <StackPanel Orientation="Horizontal" Grid.Column="0" Margin="2,4">
-                        <CheckBox IsChecked="{Binding IsChecked}" IsThreeState="True" VerticalAlignment="Center" Margin="0,0,5,0"/>
-                        <TextBlock Text="{Binding Name}" FontWeight="Normal" Margin="0" VerticalAlignment="Center"/>
-                    </StackPanel>
-                    <TextBlock Grid.Column="1" Text="{Binding NumText}" Foreground="#666" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,10,0"/>
-                    <TextBlock Grid.Column="2" Text="{Binding Count}" Foreground="LightGray" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                    
+                    <Grid Grid.Column="0" ClipToBounds="True">
+                        <StackPanel Orientation="Horizontal" Margin="2,4">
+                            <StackPanel.RenderTransform>
+                                <TranslateTransform X="{Binding Value, ElementName=TreeHScroll, Converter={StaticResource NegativeConverter}}"/>
+                            </StackPanel.RenderTransform>
+                            <CheckBox IsChecked="{Binding IsChecked}" IsThreeState="True" VerticalAlignment="Center" Margin="0,0,5,0"/>
+                            <TextBlock Text="{Binding Name}" FontWeight="Normal" Margin="0" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Grid>
+                    
+                    <TextBlock Grid.Column="1" Text="{Binding Count}" Foreground="LightGray" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,10,0"/>
                 </Grid>
             </HierarchicalDataTemplate>
 
@@ -57,12 +95,40 @@
         </ResourceDictionary>
     </Window.Resources>
 
-    <Grid Margin="15">
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/> <!-- Row 0: Apply filter from -->
-            <RowDefinition Height="*"/>    <!-- Row 1: Main Tree + Right Side Cards -->
-            <RowDefinition Height="Auto"/> <!-- Row 2: Submit Buttons -->
-        </Grid.RowDefinitions>
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition>
+                <ColumnDefinition.Style>
+                    <Style TargetType="ColumnDefinition">
+                        <Setter Property="Width" Value="*"/>
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding IsRenamePanelOpen}" Value="True">
+                                <Setter Property="Width" Value="Auto"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </ColumnDefinition.Style>
+            </ColumnDefinition>
+            <ColumnDefinition>
+                <ColumnDefinition.Style>
+                    <Style TargetType="ColumnDefinition">
+                        <Setter Property="Width" Value="0"/>
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding IsRenamePanelOpen}" Value="True">
+                                <Setter Property="Width" Value="*"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </ColumnDefinition.Style>
+            </ColumnDefinition>
+        </Grid.ColumnDefinitions>
+
+        <Grid Grid.Column="0" Margin="15">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/> <!-- Row 0: Apply filter from -->
+                <RowDefinition Height="*"/>    <!-- Row 1: Main Tree + Right Side Cards -->
+                <RowDefinition Height="Auto"/> <!-- Row 2: Submit Buttons -->
+            </Grid.RowDefinitions>
 
         <!-- TOP ROW: SOURCE SELECT AND INCLUDE LINKS -->
         <Border Grid.Row="0" Margin="0,0,0,5" Padding="0,0,0,8" BorderBrush="#E0E0E0" BorderThickness="0,0,0,1">
@@ -101,7 +167,7 @@
         <!-- MAIN ROW -->
         <Grid Grid.Row="1">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="4*"/>
+                <ColumnDefinition Width="376"/>
                 <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="376"/>
             </Grid.ColumnDefinitions>
@@ -122,7 +188,7 @@
                     <TextBlock Text="{Binding CheckedDestinationsText}" FontSize="11" Foreground="#666" Margin="10,1,0,0" VerticalAlignment="Center"/>
                 </StackPanel>
                 <Border Grid.Row="1" BorderBrush="#ddd" BorderThickness="1" Background="White" Margin="0,0,0,10">
-                    <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto">
                         <ItemsControl ItemsSource="{Binding DestinationDocuments}" Margin="10">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
@@ -141,8 +207,7 @@
                     <Grid>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="80"/>
-                            <ColumnDefinition Width="80"/>
+                            <ColumnDefinition Width="60"/>
                         </Grid.ColumnDefinitions>
                         <StackPanel Orientation="Horizontal" Grid.Column="0" VerticalAlignment="Center" Margin="0">
                             <TextBlock Text="Elements" FontWeight="SemiBold" FontSize="11" Foreground="#555" Margin="0,0,8,0" VerticalAlignment="Center"/>
@@ -153,91 +218,97 @@
                                 <Path Data="M5,0 L10,8 L0,8 Z" Fill="#666" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                             </Button>
                         </StackPanel>
-                        <TextBlock Grid.Column="1" Text="Num" FontWeight="SemiBold" FontSize="11" Foreground="#555" HorizontalAlignment="Right" Margin="0,0,10,0"/>
-                        <TextBlock Grid.Column="2" Text="Count" FontWeight="SemiBold" FontSize="11" Foreground="#555" HorizontalAlignment="Right" Margin="0,0,10,0"/>
+                        <TextBlock Grid.Column="1" Text="Count" FontWeight="SemiBold" FontSize="11" Foreground="#555" HorizontalAlignment="Right" Margin="0,0,10,0"/>
                     </Grid>
                 </Border>
 
-                <!-- TreeView -->
-                <Border Grid.Row="4" BorderBrush="#ddd" BorderThickness="1" Background="White">
-                    <TreeView FlowDirection="LeftToRight" 
-                              ItemsSource="{Binding RootNodes}" 
-                              ItemTemplate="{StaticResource CheckboxTreeTemplate}"
-                              VirtualizingStackPanel.IsVirtualizing="True"
-                              VirtualizingStackPanel.VirtualizationMode="Standard"
-                              ScrollViewer.VerticalScrollBarVisibility="Auto"
-                              ScrollViewer.HorizontalScrollBarVisibility="Disabled"
-                              BorderThickness="0" Background="Transparent">
-                        <TreeView.ItemContainerStyle>
-                            <Style TargetType="TreeViewItem">
-                                <Setter Property="Visibility" Value="{Binding IsVisible, Converter={StaticResource BoolToVis}}"/>
-                                <Setter Property="Background" Value="#f9f9f9"/>
-                                <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
-                                <Setter Property="IsExpanded" Value="{Binding IsExpanded, Mode=TwoWay}" />
-                                <Setter Property="Padding" Value="0"/>
-                                <Setter Property="Margin" Value="0"/>
-                                <Setter Property="BorderThickness" Value="0"/>
-                                <Setter Property="Template">
-                                    <Setter.Value>
-                                        <ControlTemplate TargetType="TreeViewItem">
-                                            <Grid>
-                                                <Grid.RowDefinitions>
-                                                    <RowDefinition Height="Auto"/>
-                                                    <RowDefinition/>
-                                                </Grid.RowDefinitions>
-                                                <!-- Header row acts as background for whole line. Border is White for gap -->
-                                                <Border Name="Bd" Background="{TemplateBinding Background}" BorderBrush="White" BorderThickness="0,0,0,1" SnapsToDevicePixels="true">
-                                                    <!-- The content is indented by IndentMargin from ViewModel -->
-                                                    <Grid Margin="{Binding IndentMargin}">
-                                                        <Grid.ColumnDefinitions>
-                                                            <ColumnDefinition Width="20"/>
-                                                            <ColumnDefinition Width="*"/>
-                                                        </Grid.ColumnDefinitions>
-                                                        <!-- Expander Toggle -->
-                                                        <ToggleButton x:Name="Expander" IsChecked="{Binding IsExpanded, RelativeSource={RelativeSource TemplatedParent}}" ClickMode="Press">
-                                                            <ToggleButton.Template>
-                                                                <ControlTemplate TargetType="ToggleButton">
-                                                                    <Border Width="20" Height="20" Background="Transparent" Cursor="Hand">
-                                                                        <TextBlock x:Name="ExpanderText" Text="▶" VerticalAlignment="Center" HorizontalAlignment="Center" FontSize="10" Foreground="Gray"/>
-                                                                    </Border>
-                                                                    <ControlTemplate.Triggers>
-                                                                        <Trigger Property="IsChecked" Value="True">
-                                                                            <Setter TargetName="ExpanderText" Property="Text" Value="▼"/>
-                                                                        </Trigger>
-                                                                    </ControlTemplate.Triggers>
-                                                                </ControlTemplate>
-                                                            </ToggleButton.Template>
-                                                        </ToggleButton>
-                                                        <!-- Content Row -->
-                                                        <ContentPresenter x:Name="PART_Header" Grid.Column="1" ContentSource="Header" HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"/>
-                                                    </Grid>
-                                                </Border>
-                                                <!-- No margin on ItemsHost to avoid WPF default indentation cutting off Backgrounds -->
-                                                <ItemsPresenter x:Name="ItemsHost" Grid.Row="1" />
-                                            </Grid>
-                                            <ControlTemplate.Triggers>
-                                                <Trigger Property="IsExpanded" Value="false">
-                                                    <Setter TargetName="ItemsHost" Property="Visibility" Value="Collapsed"/>
-                                                </Trigger>
-                                                <Trigger Property="HasItems" Value="false">
-                                                    <Setter TargetName="Expander" Property="Visibility" Value="Hidden"/>
-                                                </Trigger>
-                                            </ControlTemplate.Triggers>
-                                        </ControlTemplate>
-                                    </Setter.Value>
-                                </Setter>
-                                <Style.Triggers>
-                                    <DataTrigger Binding="{Binding IsChecked}" Value="True">
-                                        <Setter Property="Background" Value="#e8f5e9"/>
-                                    </DataTrigger>
-                                    <DataTrigger Binding="{Binding IsChecked}" Value="{x:Null}">
-                                        <Setter Property="Background" Value="#fff8e1"/>
-                                    </DataTrigger>
-                                </Style.Triggers>
-                            </Style>
-                        </TreeView.ItemContainerStyle>
-                    </TreeView>
-                </Border>
+                <!-- TreeView + Horizontal ScrollBar container -->
+                <Grid Grid.Row="4">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    
+                    <Border Grid.Row="0" BorderBrush="#ddd" BorderThickness="1" Background="White">
+                        <TreeView FlowDirection="LeftToRight" 
+                                  ItemsSource="{Binding RootNodes}" 
+                                  ItemTemplate="{StaticResource CheckboxTreeTemplate}"
+                                  VirtualizingStackPanel.IsVirtualizing="True"
+                                  VirtualizingStackPanel.VirtualizationMode="Standard"
+                                  ScrollViewer.VerticalScrollBarVisibility="Auto"
+                                  ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                                  BorderThickness="0" Background="Transparent">
+                            <TreeView.ItemContainerStyle>
+                                <Style TargetType="TreeViewItem">
+                                    <Setter Property="Visibility" Value="{Binding IsVisible, Converter={StaticResource BoolToVis}}"/>
+                                    <Setter Property="Background" Value="#f9f9f9"/>
+                                    <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                                    <Setter Property="IsExpanded" Value="{Binding IsExpanded, Mode=TwoWay}" />
+                                    <Setter Property="Padding" Value="0"/>
+                                    <Setter Property="Margin" Value="0"/>
+                                    <Setter Property="BorderThickness" Value="0"/>
+                                    <Setter Property="Template">
+                                        <Setter.Value>
+                                            <ControlTemplate TargetType="TreeViewItem">
+                                                <Grid>
+                                                    <Grid.RowDefinitions>
+                                                        <RowDefinition Height="Auto"/>
+                                                        <RowDefinition/>
+                                                    </Grid.RowDefinitions>
+                                                    <!-- Header row acts as background for whole line. Border is White for gap -->
+                                                    <Border Name="Bd" Background="{TemplateBinding Background}" BorderBrush="White" BorderThickness="0,0,0,1" SnapsToDevicePixels="true">
+                                                        <Grid>
+                                                             <Grid.ColumnDefinitions>
+                                                                 <ColumnDefinition Width="Auto"/>
+                                                                 <ColumnDefinition Width="*"/>
+                                                             </Grid.ColumnDefinitions>
+                                                             <!-- Expander Toggle -->
+                                                             <ToggleButton x:Name="Expander" Grid.Column="0" Margin="{Binding IndentMargin}" IsChecked="{Binding IsExpanded, RelativeSource={RelativeSource TemplatedParent}}" ClickMode="Press">
+                                                                 <ToggleButton.Template>
+                                                                     <ControlTemplate TargetType="ToggleButton">
+                                                                         <Border Width="20" Height="20" Background="Transparent" Cursor="Hand">
+                                                                             <TextBlock x:Name="ExpanderText" Text="▶" VerticalAlignment="Center" HorizontalAlignment="Center" FontSize="10" Foreground="Gray"/>
+                                                                         </Border>
+                                                                         <ControlTemplate.Triggers>
+                                                                             <Trigger Property="IsChecked" Value="True">
+                                                                                 <Setter TargetName="ExpanderText" Property="Text" Value="▼"/>
+                                                                             </Trigger>
+                                                                         </ControlTemplate.Triggers>
+                                                                     </ControlTemplate>
+                                                                 </ToggleButton.Template>
+                                                             </ToggleButton>
+                                                             <!-- Content Row -->
+                                                             <ContentPresenter x:Name="PART_Header" Grid.Column="1" ContentSource="Header" HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"/>
+                                                        </Grid>
+                                                    </Border>
+                                                    <!-- No margin on ItemsHost to avoid WPF default indentation cutting off Backgrounds -->
+                                                    <ItemsPresenter x:Name="ItemsHost" Grid.Row="1" />
+                                                </Grid>
+                                                <ControlTemplate.Triggers>
+                                                    <Trigger Property="IsExpanded" Value="false">
+                                                        <Setter TargetName="ItemsHost" Property="Visibility" Value="Collapsed"/>
+                                                    </Trigger>
+                                                    <Trigger Property="HasItems" Value="false">
+                                                        <Setter TargetName="Expander" Property="Visibility" Value="Hidden"/>
+                                                    </Trigger>
+                                                </ControlTemplate.Triggers>
+                                            </ControlTemplate>
+                                        </Setter.Value>
+                                    </Setter>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsChecked}" Value="True">
+                                            <Setter Property="Background" Value="#e8f5e9"/>
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding IsChecked}" Value="{x:Null}">
+                                            <Setter Property="Background" Value="#fff8e1"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TreeView.ItemContainerStyle>
+                        </TreeView>
+                    </Border>
+                <ScrollBar Grid.Row="1" Orientation="Horizontal" Name="TreeHScroll" Height="10" Minimum="0" Maximum="400" ViewportSize="100"/>
+            </Grid>
             </Grid>
 
             <!-- Separator -->
@@ -321,37 +392,33 @@
                                 </StackPanel>
                             </StackPanel>
                         </Border>
-
-                        <!-- Manage Checked Card -->
+                        <!-- Rename Card -->
                         <Border Style="{StaticResource CardBorderStyle}">
                             <StackPanel>
-                                <TextBlock Text="Manage Checked:" Style="{StaticResource FilterPlusTextBlockStyle}"/>
-                                <Grid>
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="*"/>
-                                        <ColumnDefinition Width="*"/>
-                                    </Grid.ColumnDefinitions>
-                                    <Grid.RowDefinitions>
-                                        <RowDefinition Height="Auto"/>
-                                        <RowDefinition Height="Auto"/>
-                                        <RowDefinition Height="Auto"/>
-                                        <RowDefinition Height="Auto"/>
-                                        <RowDefinition Height="Auto"/>
-                                    </Grid.RowDefinitions>
-                                    <Button Grid.Row="0" Grid.Column="0" Content="Delete" Command="{Binding DeleteElementsCommand}" Margin="2" Padding="6" Background="White" Foreground="#C80000" BorderBrush="#FFC1C1" BorderThickness="1"/>
-                                    <Button Grid.Row="0" Grid.Column="1" Content="UPPER Case" Command="{Binding ChangeCaseCommand}" CommandParameter="upper" Margin="2" Padding="6" Background="White" BorderBrush="#ccc"/>
-                                    
-                                    <Button Grid.Row="1" Grid.Column="0" Content="Add Prefix" Command="{Binding AddPrefixCommand}" Margin="2" Padding="6" Background="White" BorderBrush="#ccc"/>
-                                    <Button Grid.Row="1" Grid.Column="1" Content="lower Case" Command="{Binding ChangeCaseCommand}" CommandParameter="lower" Margin="2" Padding="6" Background="White" BorderBrush="#ccc"/>
-                                    
-                                    <Button Grid.Row="2" Grid.Column="0" Content="Add Suffix" Command="{Binding AddSuffixCommand}" Margin="2" Padding="6" Background="White" BorderBrush="#ccc"/>
-                                    <Button Grid.Row="2" Grid.Column="1" Content="Proper Case" Command="{Binding ChangeCaseCommand}" CommandParameter="proper" Margin="2" Padding="6" Background="White" BorderBrush="#ccc"/>
-                                    
-                                    <Button Grid.Row="3" Grid.Column="0" Content="Find Replace" Command="{Binding FindReplaceCommand}" Margin="2" Padding="6" Background="White" BorderBrush="#ccc"/>
-                                    
-                                    <Button Grid.Row="4" Grid.Column="0" Content="Find Replace Number:" Margin="2" Padding="6" Background="White" BorderBrush="#ccc"/>
-                                    <Button Grid.Row="4" Grid.Column="1" Content="Advanced Rename" Margin="2" Padding="6" Background="White" BorderBrush="#ccc"/>
-                                </Grid>
+                                <TextBlock Text="Rename:" FontWeight="Bold" FontSize="12" Foreground="#999" Margin="0,0,0,8"/>
+                                <Button Content="Apply" Command="{Binding OpenRenamePanelCommand}" Margin="2" Padding="6">
+                                    <Button.Style>
+                                        <Style TargetType="Button">
+                                            <Setter Property="Background" Value="#007ACC"/>
+                                            <Setter Property="Foreground" Value="White"/>
+                                            <Setter Property="BorderThickness" Value="0"/>
+                                            <Setter Property="Cursor" Value="Hand"/>
+                                            <Style.Resources>
+                                                <Style TargetType="Border">
+                                                    <Setter Property="CornerRadius" Value="4"/>
+                                                </Style>
+                                            </Style.Resources>
+                                            <Style.Triggers>
+                                                <Trigger Property="IsEnabled" Value="False">
+                                                    <Setter Property="Background" Value="#F3F3F3"/>
+                                                    <Setter Property="Foreground" Value="#B0B0B0"/>
+                                                    <Setter Property="BorderBrush" Value="Transparent"/>
+                                                    <Setter Property="BorderThickness" Value="0"/>
+                                                </Trigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Button.Style>
+                                </Button>
                             </StackPanel>
                         </Border>
 
@@ -400,39 +467,1214 @@
 
             <!-- Bottom Right: Execution Buttons -->
             <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Bottom">
-                <Button Content="Select" Width="90" Height="30" Background="White" BorderBrush="#ccc" Margin="0,0,5,0">
-                    <Button.Resources>
-                        <Style TargetType="Border">
-                            <Setter Property="CornerRadius" Value="4"/>
+                <Button Content="Select" Width="90" Height="30" Margin="0,0,5,0">
+                    <Button.Style>
+                        <Style TargetType="Button">
+                            <Setter Property="Background" Value="#E1E1E1"/>
+                            <Setter Property="BorderBrush" Value="#707070"/>
+                            <Setter Property="BorderThickness" Value="1"/>
+                            <Setter Property="Foreground" Value="Black"/>
+                            <Setter Property="Cursor" Value="Hand"/>
+                            <Style.Resources>
+                                <Style TargetType="Border">
+                                    <Setter Property="CornerRadius" Value="4"/>
+                                </Style>
+                            </Style.Resources>
+                            <Style.Triggers>
+                                <Trigger Property="IsEnabled" Value="False">
+                                    <Setter Property="Background" Value="#F3F3F3"/>
+                                    <Setter Property="Foreground" Value="#B0B0B0"/>
+                                    <Setter Property="BorderBrush" Value="Transparent"/>
+                                    <Setter Property="BorderThickness" Value="0"/>
+                                </Trigger>
+                            </Style.Triggers>
                         </Style>
-                    </Button.Resources>
+                    </Button.Style>
                 </Button>
-                <Button Content="View Log" Width="90" Height="30" Background="White" BorderBrush="#ccc" Margin="0,0,5,0">
-                    <Button.Resources>
-                        <Style TargetType="Border">
-                            <Setter Property="CornerRadius" Value="4"/>
+                <Button Content="View Log" Width="90" Height="30" Margin="0,0,5,0">
+                    <Button.Style>
+                        <Style TargetType="Button">
+                            <Setter Property="Background" Value="#E1E1E1"/>
+                            <Setter Property="BorderBrush" Value="#707070"/>
+                            <Setter Property="BorderThickness" Value="1"/>
+                            <Setter Property="Foreground" Value="Black"/>
+                            <Setter Property="Cursor" Value="Hand"/>
+                            <Style.Resources>
+                                <Style TargetType="Border">
+                                    <Setter Property="CornerRadius" Value="4"/>
+                                </Style>
+                            </Style.Resources>
+                            <Style.Triggers>
+                                <Trigger Property="IsEnabled" Value="False">
+                                    <Setter Property="Background" Value="#F3F3F3"/>
+                                    <Setter Property="Foreground" Value="#B0B0B0"/>
+                                    <Setter Property="BorderBrush" Value="Transparent"/>
+                                    <Setter Property="BorderThickness" Value="0"/>
+                                </Trigger>
+                            </Style.Triggers>
                         </Style>
-                    </Button.Resources>
+                    </Button.Style>
                 </Button>
-                <Button Content="Clear" Command="{Binding ClearFilterCommand}" Width="80" Height="30" Background="#f0f0f0" BorderBrush="#ccc" Margin="0,0,5,0" Cursor="Hand">
-                    <Button.Resources>
-                        <Style TargetType="Border">
-                            <Setter Property="CornerRadius" Value="4"/>
+                <Button Content="Clear" Command="{Binding ClearFilterCommand}" Width="80" Height="30" Margin="0,0,5,0">
+                    <Button.Style>
+                        <Style TargetType="Button">
+                            <Setter Property="Background" Value="#E1E1E1"/>
+                            <Setter Property="BorderBrush" Value="#707070"/>
+                            <Setter Property="BorderThickness" Value="1"/>
+                            <Setter Property="Foreground" Value="Black"/>
+                            <Setter Property="Cursor" Value="Hand"/>
+                            <Style.Resources>
+                                <Style TargetType="Border">
+                                    <Setter Property="CornerRadius" Value="4"/>
+                                </Style>
+                            </Style.Resources>
+                            <Style.Triggers>
+                                <Trigger Property="IsEnabled" Value="False">
+                                    <Setter Property="Background" Value="#F3F3F3"/>
+                                    <Setter Property="Foreground" Value="#B0B0B0"/>
+                                    <Setter Property="BorderBrush" Value="Transparent"/>
+                                    <Setter Property="BorderThickness" Value="0"/>
+                                </Trigger>
+                            </Style.Triggers>
                         </Style>
-                    </Button.Resources>
+                    </Button.Style>
                 </Button>
-                <Button Content="Transfer now." Command="{Binding TransferCommand}" Width="120" Height="30" Background="#007ACC" Foreground="White" FontWeight="Bold" BorderThickness="0" Margin="0" Cursor="Hand">
-                    <Button.Resources>
-                        <Style TargetType="Border">
-                            <Setter Property="CornerRadius" Value="4"/>
+                <Button Content="Transfer Now" Command="{Binding TransferCommand}" Width="120" Height="30" FontWeight="Bold" BorderThickness="0" Margin="0">
+                    <Button.Style>
+                        <Style TargetType="Button">
+                            <Setter Property="Background" Value="#007ACC"/>
+                            <Setter Property="Foreground" Value="White"/>
+                            <Setter Property="Cursor" Value="Hand"/>
+                            <Style.Resources>
+                                <Style TargetType="Border">
+                                    <Setter Property="CornerRadius" Value="4"/>
+                                </Style>
+                            </Style.Resources>
+                            <Style.Triggers>
+                                <Trigger Property="IsEnabled" Value="False">
+                                    <Setter Property="Background" Value="#F3F3F3"/>
+                                    <Setter Property="Foreground" Value="#B0B0B0"/>
+                                    <Setter Property="BorderBrush" Value="Transparent"/>
+                                    <Setter Property="BorderThickness" Value="0"/>
+                                </Trigger>
+                            </Style.Triggers>
                         </Style>
-                    </Button.Resources>
+                    </Button.Style>
                 </Button>
             </StackPanel>
         </Grid>
+        </Grid>
+        
+        <!-- PowerRename Panel (Sidebar) -->
+        <Grid Grid.Column="1" x:Name="ColRenameParent">
+            <Border x:Name="RenamePanel" ClipToBounds="True" Background="#FAFAFA" BorderBrush="#E0E0E0" BorderThickness="1,0,0,0"
+                    HorizontalAlignment="Left" Width="{Binding ElementName=ColRenameParent, Path=ActualWidth}">
+                <Border.Style>
+                    <Style TargetType="Border">
+                        <Setter Property="MaxWidth" Value="0"/>
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding IsRenamePanelOpen}" Value="True">
+                                <DataTrigger.EnterActions>
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <DoubleAnimation Storyboard.TargetProperty="MaxWidth" To="2000" Duration="0:0:0.3">
+                                                <DoubleAnimation.EasingFunction>
+                                                    <CubicEase EasingMode="EaseOut"/>
+                                                </DoubleAnimation.EasingFunction>
+                                            </DoubleAnimation>
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </DataTrigger.EnterActions>
+                                <DataTrigger.ExitActions>
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <DoubleAnimation Storyboard.TargetProperty="MaxWidth" To="0" Duration="0:0:0.3">
+                                                <DoubleAnimation.EasingFunction>
+                                                    <CubicEase EasingMode="EaseOut"/>
+                                                </DoubleAnimation.EasingFunction>
+                                            </DoubleAnimation>
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </DataTrigger.ExitActions>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Border.Style>
+                
+                <Grid Margin="15" HorizontalAlignment="Stretch">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <!-- Body (Controls and Previews) -->
+                <Grid Grid.Row="0">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <!-- Search Controls (aligned with Apply transfer from ComboBox) -->
+                    <StackPanel Grid.Row="0" Margin="0,21,0,15">
+                        <!-- Find Input -->
+                        <Grid Margin="0,0,0,10">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <Grid>
+                                <TextBox x:Name="FindTextBox" Text="{Binding RenameSearchText, UpdateSourceTrigger=PropertyChanged}" Padding="8,6" Height="32" VerticalContentAlignment="Center"/>
+                                <TextBlock Text="Find" Foreground="#aaa" Margin="10,0,0,0" VerticalAlignment="Center" IsHitTestVisible="False">
+                                    <TextBlock.Style>
+                                        <Style TargetType="TextBlock">
+                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding Text, ElementName=FindTextBox}" Value="">
+                                                    <Setter Property="Visibility" Value="Visible"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
+                            </Grid>
+                            
+                            <!-- RegEx Helper Button -->
+                            <ToggleButton x:Name="BtnRegexHelper" Grid.Column="1" Width="20" Height="20" Margin="5,0,0,0" Cursor="Hand" ToolTip="Regex help" ToolTipService.InitialShowDelay="600">
+                                <ToggleButton.Template>
+                                    <ControlTemplate TargetType="ToggleButton">
+                                        <Border CornerRadius="10" Background="#F3F3F3" BorderThickness="1" BorderBrush="#E0E0E0">
+                                            <TextBlock Text="i" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="#555" FontWeight="SemiBold" FontSize="10" FontStyle="Italic"/>
+                                        </Border>
+                                    </ControlTemplate>
+                                </ToggleButton.Template>
+                            </ToggleButton>
+                            
+                            <Popup IsOpen="{Binding IsChecked, ElementName=BtnRegexHelper, Mode=TwoWay}" StaysOpen="False" PlacementTarget="{Binding ElementName=BtnRegexHelper}" Placement="Bottom" AllowsTransparency="True" Margin="0,5,0,0">
+                                <Border Background="White" BorderBrush="#ccc" BorderThickness="1" CornerRadius="4" Padding="10" Width="400" MaxHeight="500">
+                                    <Border.Effect>
+                                        <DropShadowEffect Color="Black" Opacity="0.1" BlurRadius="10" ShadowDepth="2"/>
+                                    </Border.Effect>
+                                    <ScrollViewer MaxHeight="450" VerticalScrollBarVisibility="Auto">
+                                        <StackPanel>
+                                                <StackPanel.Resources>
+                                                    <Style TargetType="Button">
+                                                        <Setter Property="Background" Value="Transparent"/>
+                                                        <Setter Property="BorderThickness" Value="0"/>
+                                                        <Setter Property="Padding" Value="5"/>
+                                                        <Setter Property="HorizontalContentAlignment" Value="Left"/>
+                                                        <Setter Property="Cursor" Value="Hand"/>
+                                                    </Style>
+                                                </StackPanel.Resources>
+                                                <TextBlock Text="Regex Help" FontWeight="Bold" Margin="0,0,0,15" FontSize="14"/>
+                                                <!-- Category: Basic Matching & Anchors -->
+                                                <TextBlock Text="Basic Matching &amp; Anchors" FontWeight="Bold" Foreground="#333" Margin="0,10,0,5" FontSize="11"/>
+                                                <Button Command="{Binding InsertRegexHelperCommand}" CommandParameter="text" Click="CloseRegexPopup" HorizontalAlignment="Stretch">
+                                                    <Grid Margin="0,0,0,5" Width="355">
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="110"/>
+                                                            <ColumnDefinition Width="*"/>
+                                                        </Grid.ColumnDefinitions>
+                                                        <Border Grid.Column="0" Background="#F9F9F9" BorderBrush="#E0E0E0" BorderThickness="1" CornerRadius="4" Height="28" Margin="0,0,10,0">
+                                                            <TextBlock Text="text" HorizontalAlignment="Center" VerticalAlignment="Center" FontWeight="SemiBold" FontSize="10" Foreground="#111"/>
+                                                        </Border>
+                                                        <TextBlock Grid.Column="1" Text="Matches the exact text" VerticalAlignment="Center" TextWrapping="Wrap" Foreground="#555" FontSize="10.5"/>
+                                                    </Grid>
+                                                </Button>
+                                                <Button Command="{Binding InsertRegexHelperCommand}" CommandParameter="c.sa" Click="CloseRegexPopup" HorizontalAlignment="Stretch">
+                                                    <Grid Margin="0,0,0,5" Width="355">
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="110"/>
+                                                            <ColumnDefinition Width="*"/>
+                                                        </Grid.ColumnDefinitions>
+                                                        <Border Grid.Column="0" Background="#F9F9F9" BorderBrush="#E0E0E0" BorderThickness="1" CornerRadius="4" Height="28" Margin="0,0,10,0">
+                                                            <TextBlock Text="c.sa" HorizontalAlignment="Center" VerticalAlignment="Center" FontWeight="SemiBold" FontSize="10" Foreground="#111"/>
+                                                        </Border>
+                                                        <TextBlock Grid.Column="1" Text="Matches any single character (e.g. casa, cosa)" VerticalAlignment="Center" TextWrapping="Wrap" Foreground="#555" FontSize="10.5"/>
+                                                    </Grid>
+                                                </Button>
+                                                <Button Command="{Binding InsertRegexHelperCommand}" CommandParameter="^" Click="CloseRegexPopup" HorizontalAlignment="Stretch">
+                                                    <Grid Margin="0,0,0,5" Width="355">
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="110"/>
+                                                            <ColumnDefinition Width="*"/>
+                                                        </Grid.ColumnDefinitions>
+                                                        <Border Grid.Column="0" Background="#F9F9F9" BorderBrush="#E0E0E0" BorderThickness="1" CornerRadius="4" Height="28" Margin="0,0,10,0">
+                                                            <TextBlock Text="^" HorizontalAlignment="Center" VerticalAlignment="Center" FontWeight="SemiBold" FontSize="10" Foreground="#111"/>
+                                                        </Border>
+                                                        <TextBlock Grid.Column="1" Text="Matches the start of the string" VerticalAlignment="Center" TextWrapping="Wrap" Foreground="#555" FontSize="10.5"/>
+                                                    </Grid>
+                                                </Button>
+                                                <Button Command="{Binding InsertRegexHelperCommand}" CommandParameter="$" Click="CloseRegexPopup" HorizontalAlignment="Stretch">
+                                                    <Grid Margin="0,0,0,5" Width="355">
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="110"/>
+                                                            <ColumnDefinition Width="*"/>
+                                                        </Grid.ColumnDefinitions>
+                                                        <Border Grid.Column="0" Background="#F9F9F9" BorderBrush="#E0E0E0" BorderThickness="1" CornerRadius="4" Height="28" Margin="0,0,10,0">
+                                                            <TextBlock Text="$" HorizontalAlignment="Center" VerticalAlignment="Center" FontWeight="SemiBold" FontSize="10" Foreground="#111"/>
+                                                        </Border>
+                                                        <TextBlock Grid.Column="1" Text="Matches the end of the string" VerticalAlignment="Center" TextWrapping="Wrap" Foreground="#555" FontSize="10.5"/>
+                                                    </Grid>
+                                                </Button>
+                                                <Button Command="{Binding InsertRegexHelperCommand}" CommandParameter="^text" Click="CloseRegexPopup" HorizontalAlignment="Stretch">
+                                                    <Grid Margin="0,0,0,5" Width="355">
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="110"/>
+                                                            <ColumnDefinition Width="*"/>
+                                                        </Grid.ColumnDefinitions>
+                                                        <Border Grid.Column="0" Background="#F9F9F9" BorderBrush="#E0E0E0" BorderThickness="1" CornerRadius="4" Height="28" Margin="0,0,10,0">
+                                                            <TextBlock Text="^text" HorizontalAlignment="Center" VerticalAlignment="Center" FontWeight="SemiBold" FontSize="10" Foreground="#111"/>
+                                                        </Border>
+                                                        <TextBlock Grid.Column="1" Text="Matches text at the start" VerticalAlignment="Center" TextWrapping="Wrap" Foreground="#555" FontSize="10.5"/>
+                                                    </Grid>
+                                                </Button>
+                                                <Button Command="{Binding InsertRegexHelperCommand}" CommandParameter="text$" Click="CloseRegexPopup" HorizontalAlignment="Stretch">
+                                                    <Grid Margin="0,0,0,5" Width="355">
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="110"/>
+                                                            <ColumnDefinition Width="*"/>
+                                                        </Grid.ColumnDefinitions>
+                                                        <Border Grid.Column="0" Background="#F9F9F9" BorderBrush="#E0E0E0" BorderThickness="1" CornerRadius="4" Height="28" Margin="0,0,10,0">
+                                                            <TextBlock Text="text$" HorizontalAlignment="Center" VerticalAlignment="Center" FontWeight="SemiBold" FontSize="10" Foreground="#111"/>
+                                                        </Border>
+                                                        <TextBlock Grid.Column="1" Text="Matches text at the end" VerticalAlignment="Center" TextWrapping="Wrap" Foreground="#555" FontSize="10.5"/>
+                                                    </Grid>
+                                                </Button>
+                                                <Button Command="{Binding InsertRegexHelperCommand}" CommandParameter=".*text.*" Click="CloseRegexPopup" HorizontalAlignment="Stretch">
+                                                    <Grid Margin="0,0,0,5" Width="355">
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="110"/>
+                                                            <ColumnDefinition Width="*"/>
+                                                        </Grid.ColumnDefinitions>
+                                                        <Border Grid.Column="0" Background="#F9F9F9" BorderBrush="#E0E0E0" BorderThickness="1" CornerRadius="4" Height="28" Margin="0,0,10,0">
+                                                            <TextBlock Text=".*text.*" HorizontalAlignment="Center" VerticalAlignment="Center" FontWeight="SemiBold" FontSize="10" Foreground="#111"/>
+                                                        </Border>
+                                                        <TextBlock Grid.Column="1" Text="Matches text anywhere (contains)" VerticalAlignment="Center" TextWrapping="Wrap" Foreground="#555" FontSize="10.5"/>
+                                                    </Grid>
+                                                </Button>
+                                                <!-- Category: Character Classes & Sets -->
+                                                <TextBlock Text="Character Classes &amp; Sets" FontWeight="Bold" Foreground="#333" Margin="0,10,0,5" FontSize="11"/>
+                                                <Button Command="{Binding InsertRegexHelperCommand}" CommandParameter="\d" Click="CloseRegexPopup" HorizontalAlignment="Stretch">
+                                                    <Grid Margin="0,0,0,5" Width="355">
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="110"/>
+                                                            <ColumnDefinition Width="*"/>
+                                                        </Grid.ColumnDefinitions>
+                                                        <Border Grid.Column="0" Background="#F9F9F9" BorderBrush="#E0E0E0" BorderThickness="1" CornerRadius="4" Height="28" Margin="0,0,10,0">
+                                                            <TextBlock Text="\d" HorizontalAlignment="Center" VerticalAlignment="Center" FontWeight="SemiBold" FontSize="10" Foreground="#111"/>
+                                                        </Border>
+                                                        <TextBlock Grid.Column="1" Text="Any digit character [0-9]" VerticalAlignment="Center" TextWrapping="Wrap" Foreground="#555" FontSize="10.5"/>
+                                                    </Grid>
+                                                </Button>
+                                                <Button Command="{Binding InsertRegexHelperCommand}" CommandParameter="\D" Click="CloseRegexPopup" HorizontalAlignment="Stretch">
+                                                    <Grid Margin="0,0,0,5" Width="355">
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="110"/>
+                                                            <ColumnDefinition Width="*"/>
+                                                        </Grid.ColumnDefinitions>
+                                                        <Border Grid.Column="0" Background="#F9F9F9" BorderBrush="#E0E0E0" BorderThickness="1" CornerRadius="4" Height="28" Margin="0,0,10,0">
+                                                            <TextBlock Text="\D" HorizontalAlignment="Center" VerticalAlignment="Center" FontWeight="SemiBold" FontSize="10" Foreground="#111"/>
+                                                        </Border>
+                                                        <TextBlock Grid.Column="1" Text="Any non-digit character" VerticalAlignment="Center" TextWrapping="Wrap" Foreground="#555" FontSize="10.5"/>
+                                                    </Grid>
+                                                </Button>
+                                                <Button Command="{Binding InsertRegexHelperCommand}" CommandParameter="\w" Click="CloseRegexPopup" HorizontalAlignment="Stretch">
+                                                    <Grid Margin="0,0,0,5" Width="355">
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="110"/>
+                                                            <ColumnDefinition Width="*"/>
+                                                        </Grid.ColumnDefinitions>
+                                                        <Border Grid.Column="0" Background="#F9F9F9" BorderBrush="#E0E0E0" BorderThickness="1" CornerRadius="4" Height="28" Margin="0,0,10,0">
+                                                            <TextBlock Text="\w" HorizontalAlignment="Center" VerticalAlignment="Center" FontWeight="SemiBold" FontSize="10" Foreground="#111"/>
+                                                        </Border>
+                                                        <TextBlock Grid.Column="1" Text="Any word character (alphanumeric + _)" VerticalAlignment="Center" TextWrapping="Wrap" Foreground="#555" FontSize="10.5"/>
+                                                    </Grid>
+                                                </Button>
+                                                <Button Command="{Binding InsertRegexHelperCommand}" CommandParameter="\s" Click="CloseRegexPopup" HorizontalAlignment="Stretch">
+                                                    <Grid Margin="0,0,0,5" Width="355">
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="110"/>
+                                                            <ColumnDefinition Width="*"/>
+                                                        </Grid.ColumnDefinitions>
+                                                        <Border Grid.Column="0" Background="#F9F9F9" BorderBrush="#E0E0E0" BorderThickness="1" CornerRadius="4" Height="28" Margin="0,0,10,0">
+                                                            <TextBlock Text="\s" HorizontalAlignment="Center" VerticalAlignment="Center" FontWeight="SemiBold" FontSize="10" Foreground="#111"/>
+                                                        </Border>
+                                                        <TextBlock Grid.Column="1" Text="Any whitespace character (spaces, tabs)" VerticalAlignment="Center" TextWrapping="Wrap" Foreground="#555" FontSize="10.5"/>
+                                                    </Grid>
+                                                </Button>
+                                                <Button Command="{Binding InsertRegexHelperCommand}" CommandParameter="[aeiou]" Click="CloseRegexPopup" HorizontalAlignment="Stretch">
+                                                    <Grid Margin="0,0,0,5" Width="355">
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="110"/>
+                                                            <ColumnDefinition Width="*"/>
+                                                        </Grid.ColumnDefinitions>
+                                                        <Border Grid.Column="0" Background="#F9F9F9" BorderBrush="#E0E0E0" BorderThickness="1" CornerRadius="4" Height="28" Margin="0,0,10,0">
+                                                            <TextBlock Text="[aeiou]" HorizontalAlignment="Center" VerticalAlignment="Center" FontWeight="SemiBold" FontSize="10" Foreground="#111"/>
+                                                        </Border>
+                                                        <TextBlock Grid.Column="1" Text="Any character in the set (e.g. vowels)" VerticalAlignment="Center" TextWrapping="Wrap" Foreground="#555" FontSize="10.5"/>
+                                                    </Grid>
+                                                </Button>
+                                                <Button Command="{Binding InsertRegexHelperCommand}" CommandParameter="[^0-9]" Click="CloseRegexPopup" HorizontalAlignment="Stretch">
+                                                    <Grid Margin="0,0,0,5" Width="355">
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="110"/>
+                                                            <ColumnDefinition Width="*"/>
+                                                        </Grid.ColumnDefinitions>
+                                                        <Border Grid.Column="0" Background="#F9F9F9" BorderBrush="#E0E0E0" BorderThickness="1" CornerRadius="4" Height="28" Margin="0,0,10,0">
+                                                            <TextBlock Text="[^0-9]" HorizontalAlignment="Center" VerticalAlignment="Center" FontWeight="SemiBold" FontSize="10" Foreground="#111"/>
+                                                        </Border>
+                                                        <TextBlock Grid.Column="1" Text="Any character not in the set (negation)" VerticalAlignment="Center" TextWrapping="Wrap" Foreground="#555" FontSize="10.5"/>
+                                                    </Grid>
+                                                </Button>
+                                                <Button Command="{Binding InsertRegexHelperCommand}" CommandParameter="^[A-Za-z]+$" Click="CloseRegexPopup" HorizontalAlignment="Stretch">
+                                                    <Grid Margin="0,0,0,5" Width="355">
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="110"/>
+                                                            <ColumnDefinition Width="*"/>
+                                                        </Grid.ColumnDefinitions>
+                                                        <Border Grid.Column="0" Background="#F9F9F9" BorderBrush="#E0E0E0" BorderThickness="1" CornerRadius="4" Height="28" Margin="0,0,10,0">
+                                                            <TextBlock Text="^[A-Za-z]+$" HorizontalAlignment="Center" VerticalAlignment="Center" FontWeight="SemiBold" FontSize="10" Foreground="#111"/>
+                                                        </Border>
+                                                        <TextBlock Grid.Column="1" Text="Only letters" VerticalAlignment="Center" TextWrapping="Wrap" Foreground="#555" FontSize="10.5"/>
+                                                    </Grid>
+                                                </Button>
+                                                <Button Command="{Binding InsertRegexHelperCommand}" CommandParameter="^\d+$" Click="CloseRegexPopup" HorizontalAlignment="Stretch">
+                                                    <Grid Margin="0,0,0,5" Width="355">
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="110"/>
+                                                            <ColumnDefinition Width="*"/>
+                                                        </Grid.ColumnDefinitions>
+                                                        <Border Grid.Column="0" Background="#F9F9F9" BorderBrush="#E0E0E0" BorderThickness="1" CornerRadius="4" Height="28" Margin="0,0,10,0">
+                                                            <TextBlock Text="^\d+$" HorizontalAlignment="Center" VerticalAlignment="Center" FontWeight="SemiBold" FontSize="10" Foreground="#111"/>
+                                                        </Border>
+                                                        <TextBlock Grid.Column="1" Text="Only numbers" VerticalAlignment="Center" TextWrapping="Wrap" Foreground="#555" FontSize="10.5"/>
+                                                    </Grid>
+                                                </Button>
+                                                <!-- Category: Quantifiers (Repetitions) -->
+                                                <TextBlock Text="Quantifiers (Repetitions)" FontWeight="Bold" Foreground="#333" Margin="0,10,0,5" FontSize="11"/>
+                                                <Button Command="{Binding InsertRegexHelperCommand}" CommandParameter="+" Click="CloseRegexPopup" HorizontalAlignment="Stretch">
+                                                    <Grid Margin="0,0,0,5" Width="355">
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="110"/>
+                                                            <ColumnDefinition Width="*"/>
+                                                        </Grid.ColumnDefinitions>
+                                                        <Border Grid.Column="0" Background="#F9F9F9" BorderBrush="#E0E0E0" BorderThickness="1" CornerRadius="4" Height="28" Margin="0,0,10,0">
+                                                            <TextBlock Text="+" HorizontalAlignment="Center" VerticalAlignment="Center" FontWeight="SemiBold" FontSize="10" Foreground="#111"/>
+                                                        </Border>
+                                                        <TextBlock Grid.Column="1" Text="Matches one or more times" VerticalAlignment="Center" TextWrapping="Wrap" Foreground="#555" FontSize="10.5"/>
+                                                    </Grid>
+                                                </Button>
+                                                <Button Command="{Binding InsertRegexHelperCommand}" CommandParameter="?" Click="CloseRegexPopup" HorizontalAlignment="Stretch">
+                                                    <Grid Margin="0,0,0,5" Width="355">
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="110"/>
+                                                            <ColumnDefinition Width="*"/>
+                                                        </Grid.ColumnDefinitions>
+                                                        <Border Grid.Column="0" Background="#F9F9F9" BorderBrush="#E0E0E0" BorderThickness="1" CornerRadius="4" Height="28" Margin="0,0,10,0">
+                                                            <TextBlock Text="?" HorizontalAlignment="Center" VerticalAlignment="Center" FontWeight="SemiBold" FontSize="10" Foreground="#111"/>
+                                                        </Border>
+                                                        <TextBlock Grid.Column="1" Text="Matches zero or one time" VerticalAlignment="Center" TextWrapping="Wrap" Foreground="#555" FontSize="10.5"/>
+                                                    </Grid>
+                                                </Button>
+                                                <Button Command="{Binding InsertRegexHelperCommand}" CommandParameter="*" Click="CloseRegexPopup" HorizontalAlignment="Stretch">
+                                                    <Grid Margin="0,0,0,5" Width="355">
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="110"/>
+                                                            <ColumnDefinition Width="*"/>
+                                                        </Grid.ColumnDefinitions>
+                                                        <Border Grid.Column="0" Background="#F9F9F9" BorderBrush="#E0E0E0" BorderThickness="1" CornerRadius="4" Height="28" Margin="0,0,10,0">
+                                                            <TextBlock Text="*" HorizontalAlignment="Center" VerticalAlignment="Center" FontWeight="SemiBold" FontSize="10" Foreground="#111"/>
+                                                        </Border>
+                                                        <TextBlock Grid.Column="1" Text="Matches zero or more times" VerticalAlignment="Center" TextWrapping="Wrap" Foreground="#555" FontSize="10.5"/>
+                                                    </Grid>
+                                                </Button>
+                                                <Button Command="{Binding InsertRegexHelperCommand}" CommandParameter="ab*" Click="CloseRegexPopup" HorizontalAlignment="Stretch">
+                                                    <Grid Margin="0,0,0,5" Width="355">
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="110"/>
+                                                            <ColumnDefinition Width="*"/>
+                                                        </Grid.ColumnDefinitions>
+                                                        <Border Grid.Column="0" Background="#F9F9F9" BorderBrush="#E0E0E0" BorderThickness="1" CornerRadius="4" Height="28" Margin="0,0,10,0">
+                                                            <TextBlock Text="ab*" HorizontalAlignment="Center" VerticalAlignment="Center" FontWeight="SemiBold" FontSize="10" Foreground="#111"/>
+                                                        </Border>
+                                                        <TextBlock Grid.Column="1" Text="Matches 'a' followed by zero or more 'b'" VerticalAlignment="Center" TextWrapping="Wrap" Foreground="#555" FontSize="10.5"/>
+                                                    </Grid>
+                                                </Button>
+                                                <Button Command="{Binding InsertRegexHelperCommand}" CommandParameter="ab+" Click="CloseRegexPopup" HorizontalAlignment="Stretch">
+                                                    <Grid Margin="0,0,0,5" Width="355">
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="110"/>
+                                                            <ColumnDefinition Width="*"/>
+                                                        </Grid.ColumnDefinitions>
+                                                        <Border Grid.Column="0" Background="#F9F9F9" BorderBrush="#E0E0E0" BorderThickness="1" CornerRadius="4" Height="28" Margin="0,0,10,0">
+                                                            <TextBlock Text="ab+" HorizontalAlignment="Center" VerticalAlignment="Center" FontWeight="SemiBold" FontSize="10" Foreground="#111"/>
+                                                        </Border>
+                                                        <TextBlock Grid.Column="1" Text="Matches 'a' followed by one or more 'b'" VerticalAlignment="Center" TextWrapping="Wrap" Foreground="#555" FontSize="10.5"/>
+                                                    </Grid>
+                                                </Button>
+                                                <Button Command="{Binding InsertRegexHelperCommand}" CommandParameter="ab?" Click="CloseRegexPopup" HorizontalAlignment="Stretch">
+                                                    <Grid Margin="0,0,0,5" Width="355">
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="110"/>
+                                                            <ColumnDefinition Width="*"/>
+                                                        </Grid.ColumnDefinitions>
+                                                        <Border Grid.Column="0" Background="#F9F9F9" BorderBrush="#E0E0E0" BorderThickness="1" CornerRadius="4" Height="28" Margin="0,0,10,0">
+                                                            <TextBlock Text="ab?" HorizontalAlignment="Center" VerticalAlignment="Center" FontWeight="SemiBold" FontSize="10" Foreground="#111"/>
+                                                        </Border>
+                                                        <TextBlock Grid.Column="1" Text="Matches 'a' followed by zero or one 'b'" VerticalAlignment="Center" TextWrapping="Wrap" Foreground="#555" FontSize="10.5"/>
+                                                    </Grid>
+                                                </Button>
+                                                <Button Command="{Binding InsertRegexHelperCommand}" CommandParameter="\d{3}" Click="CloseRegexPopup" HorizontalAlignment="Stretch">
+                                                    <Grid Margin="0,0,0,5" Width="355">
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="110"/>
+                                                            <ColumnDefinition Width="*"/>
+                                                        </Grid.ColumnDefinitions>
+                                                        <Border Grid.Column="0" Background="#F9F9F9" BorderBrush="#E0E0E0" BorderThickness="1" CornerRadius="4" Height="28" Margin="0,0,10,0">
+                                                            <TextBlock Text="\d{3}" HorizontalAlignment="Center" VerticalAlignment="Center" FontWeight="SemiBold" FontSize="10" Foreground="#111"/>
+                                                        </Border>
+                                                        <TextBlock Grid.Column="1" Text="Matches exactly 3 digits" VerticalAlignment="Center" TextWrapping="Wrap" Foreground="#555" FontSize="10.5"/>
+                                                    </Grid>
+                                                </Button>
+                                                <Button Command="{Binding InsertRegexHelperCommand}" CommandParameter="\d{2,4}" Click="CloseRegexPopup" HorizontalAlignment="Stretch">
+                                                    <Grid Margin="0,0,0,5" Width="355">
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="110"/>
+                                                            <ColumnDefinition Width="*"/>
+                                                        </Grid.ColumnDefinitions>
+                                                        <Border Grid.Column="0" Background="#F9F9F9" BorderBrush="#E0E0E0" BorderThickness="1" CornerRadius="4" Height="28" Margin="0,0,10,0">
+                                                            <TextBlock Text="\d{2,4}" HorizontalAlignment="Center" VerticalAlignment="Center" FontWeight="SemiBold" FontSize="10" Foreground="#111"/>
+                                                        </Border>
+                                                        <TextBlock Grid.Column="1" Text="Matches between 2 and 4 digits" VerticalAlignment="Center" TextWrapping="Wrap" Foreground="#555" FontSize="10.5"/>
+                                                    </Grid>
+                                                </Button>
+                                                <Button Command="{Binding InsertRegexHelperCommand}" CommandParameter="\d{2,}" Click="CloseRegexPopup" HorizontalAlignment="Stretch">
+                                                    <Grid Margin="0,0,0,5" Width="355">
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="110"/>
+                                                            <ColumnDefinition Width="*"/>
+                                                        </Grid.ColumnDefinitions>
+                                                        <Border Grid.Column="0" Background="#F9F9F9" BorderBrush="#E0E0E0" BorderThickness="1" CornerRadius="4" Height="28" Margin="0,0,10,0">
+                                                            <TextBlock Text="\d{2,}" HorizontalAlignment="Center" VerticalAlignment="Center" FontWeight="SemiBold" FontSize="10" Foreground="#111"/>
+                                                        </Border>
+                                                        <TextBlock Grid.Column="1" Text="Matches 2 or more digits" VerticalAlignment="Center" TextWrapping="Wrap" Foreground="#555" FontSize="10.5"/>
+                                                    </Grid>
+                                                </Button>
+                                                <!-- Category: Alternation & Grouping -->
+                                                <TextBlock Text="Alternation &amp; Grouping" FontWeight="Bold" Foreground="#333" Margin="0,10,0,5" FontSize="11"/>
+                                                <Button Command="{Binding InsertRegexHelperCommand}" CommandParameter="gato|perro" Click="CloseRegexPopup" HorizontalAlignment="Stretch">
+                                                    <Grid Margin="0,0,0,5" Width="355">
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="110"/>
+                                                            <ColumnDefinition Width="*"/>
+                                                        </Grid.ColumnDefinitions>
+                                                        <Border Grid.Column="0" Background="#F9F9F9" BorderBrush="#E0E0E0" BorderThickness="1" CornerRadius="4" Height="28" Margin="0,0,10,0">
+                                                            <TextBlock Text="gato|perro" HorizontalAlignment="Center" VerticalAlignment="Center" FontWeight="SemiBold" FontSize="10" Foreground="#111"/>
+                                                        </Border>
+                                                        <TextBlock Grid.Column="1" Text="Matches either pattern (OR)" VerticalAlignment="Center" TextWrapping="Wrap" Foreground="#555" FontSize="10.5"/>
+                                                    </Grid>
+                                                </Button>
+                                                <Button Command="{Binding InsertRegexHelperCommand}" CommandParameter="(abc)+" Click="CloseRegexPopup" HorizontalAlignment="Stretch">
+                                                    <Grid Margin="0,0,0,5" Width="355">
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="110"/>
+                                                            <ColumnDefinition Width="*"/>
+                                                        </Grid.ColumnDefinitions>
+                                                        <Border Grid.Column="0" Background="#F9F9F9" BorderBrush="#E0E0E0" BorderThickness="1" CornerRadius="4" Height="28" Margin="0,0,10,0">
+                                                            <TextBlock Text="(abc)+" HorizontalAlignment="Center" VerticalAlignment="Center" FontWeight="SemiBold" FontSize="10" Foreground="#111"/>
+                                                        </Border>
+                                                        <TextBlock Grid.Column="1" Text="Matches one or more repetitions of the group" VerticalAlignment="Center" TextWrapping="Wrap" Foreground="#555" FontSize="10.5"/>
+                                                    </Grid>
+                                                </Button>
+                                                <!-- Category: Advanced Examples -->
+                                                <TextBlock Text="Advanced Examples" FontWeight="Bold" Foreground="#333" Margin="0,10,0,5" FontSize="11"/>
+                                                <Button Command="{Binding InsertRegexHelperCommand}" CommandParameter="\btext\b" Click="CloseRegexPopup" HorizontalAlignment="Stretch">
+                                                    <Grid Margin="0,0,0,5" Width="355">
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="110"/>
+                                                            <ColumnDefinition Width="*"/>
+                                                        </Grid.ColumnDefinitions>
+                                                        <Border Grid.Column="0" Background="#F9F9F9" BorderBrush="#E0E0E0" BorderThickness="1" CornerRadius="4" Height="28" Margin="0,0,10,0">
+                                                            <TextBlock Text="\btext\b" HorizontalAlignment="Center" VerticalAlignment="Center" FontWeight="SemiBold" FontSize="10" Foreground="#111"/>
+                                                        </Border>
+                                                        <TextBlock Grid.Column="1" Text="Matches a whole word only" VerticalAlignment="Center" TextWrapping="Wrap" Foreground="#555" FontSize="10.5"/>
+                                                    </Grid>
+                                                </Button>
+                                                <Button Command="{Binding InsertRegexHelperCommand}" CommandParameter="\b\w*data\w*\b" Click="CloseRegexPopup" HorizontalAlignment="Stretch">
+                                                    <Grid Margin="0,0,0,5" Width="355">
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="110"/>
+                                                            <ColumnDefinition Width="*"/>
+                                                        </Grid.ColumnDefinitions>
+                                                        <Border Grid.Column="0" Background="#F9F9F9" BorderBrush="#E0E0E0" BorderThickness="1" CornerRadius="4" Height="28" Margin="0,0,10,0">
+                                                            <TextBlock Text="\b\w*data\w*\b" HorizontalAlignment="Center" VerticalAlignment="Center" FontWeight="SemiBold" FontSize="10" Foreground="#111"/>
+                                                        </Border>
+                                                        <TextBlock Grid.Column="1" Text="Matches a word containing 'data'" VerticalAlignment="Center" TextWrapping="Wrap" Foreground="#555" FontSize="10.5"/>
+                                                    </Grid>
+                                                </Button>
+                                                <Button Command="{Binding InsertRegexHelperCommand}" CommandParameter="[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}" Click="CloseRegexPopup" HorizontalAlignment="Stretch">
+                                                    <Grid Margin="0,0,0,5" Width="355">
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="110"/>
+                                                            <ColumnDefinition Width="*"/>
+                                                        </Grid.ColumnDefinitions>
+                                                        <Border Grid.Column="0" Background="#F9F9F9" BorderBrush="#E0E0E0" BorderThickness="1" CornerRadius="4" Height="28" Margin="0,0,10,0">
+                                                            <TextBlock Text="Email" HorizontalAlignment="Center" VerticalAlignment="Center" FontWeight="SemiBold" FontSize="10" Foreground="#111"/>
+                                                        </Border>
+                                                        <TextBlock Grid.Column="1" Text="Matches a standard email address" VerticalAlignment="Center" TextWrapping="Wrap" Foreground="#555" FontSize="10.5"/>
+                                                    </Grid>
+                                                </Button>
+                                                <Button Command="{Binding InsertRegexHelperCommand}" CommandParameter="^\d{3}$" Click="CloseRegexPopup" HorizontalAlignment="Stretch">
+                                                    <Grid Margin="0,0,0,5" Width="355">
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="110"/>
+                                                            <ColumnDefinition Width="*"/>
+                                                        </Grid.ColumnDefinitions>
+                                                        <Border Grid.Column="0" Background="#F9F9F9" BorderBrush="#E0E0E0" BorderThickness="1" CornerRadius="4" Height="28" Margin="0,0,10,0">
+                                                            <TextBlock Text="^\d{3}$" HorizontalAlignment="Center" VerticalAlignment="Center" FontWeight="SemiBold" FontSize="10" Foreground="#111"/>
+                                                        </Border>
+                                                        <TextBlock Grid.Column="1" Text="Matches exactly 3 digits (whole string)" VerticalAlignment="Center" TextWrapping="Wrap" Foreground="#555" FontSize="10.5"/>
+                                                    </Grid>
+                                                </Button>
+                                            </StackPanel>
+                                        </ScrollViewer>
+                                </Border>
+                            </Popup>
+                        </Grid>
+
+                        <!-- Checkboxes -->
+                        <StackPanel Margin="0,0,0,15">
+                            <CheckBox Content="Use regular expressions" IsChecked="{Binding RenameUseRegex}" Margin="0,0,0,6"/>
+                            <CheckBox Content="Match all occurrences" IsChecked="{Binding RenameMatchAllOccurrences}" Margin="0,0,0,6"/>
+                            <CheckBox Content="Match case sensitive" IsChecked="{Binding RenameMatchCase}"/>
+                        </StackPanel>
+
+                        <!-- Replace Input -->
+                        <Grid Margin="0,0,0,15">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <Grid>
+                                <TextBox x:Name="ReplaceTextBox" Text="{Binding RenameReplaceText, UpdateSourceTrigger=PropertyChanged}" Padding="8,6" Height="32" VerticalContentAlignment="Center"/>
+                                <TextBlock Text="Changed by:" Foreground="#aaa" Margin="10,0,0,0" VerticalAlignment="Center" IsHitTestVisible="False">
+                                    <TextBlock.Style>
+                                        <Style TargetType="TextBlock">
+                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding Text, ElementName=ReplaceTextBox}" Value="">
+                                                    <Setter Property="Visibility" Value="Visible"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
+                            </Grid>
+                            
+                            <!-- Date Helper Button -->
+                            <ToggleButton x:Name="BtnDateHelper" Grid.Column="1" Width="20" Height="20" Margin="5,0,0,0" Cursor="Hand" ToolTip="Help replacing terms" ToolTipService.InitialShowDelay="600">
+                                <ToggleButton.Template>
+                                    <ControlTemplate TargetType="ToggleButton">
+                                        <Border CornerRadius="10" Background="#F3F3F3" BorderThickness="1" BorderBrush="#E0E0E0">
+                                            <TextBlock Text="i" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="#555" FontWeight="SemiBold" FontSize="10" FontStyle="Italic"/>
+                                        </Border>
+                                    </ControlTemplate>
+                                </ToggleButton.Template>
+                            </ToggleButton>
+                            
+                            <Popup IsOpen="{Binding IsChecked, ElementName=BtnDateHelper, Mode=TwoWay}" StaysOpen="False" PlacementTarget="{Binding ElementName=BtnDateHelper}" Placement="Bottom" AllowsTransparency="True" Margin="0,5,0,0">
+                                <Border Background="White" BorderBrush="#ccc" BorderThickness="1" CornerRadius="4" Padding="10" Width="540" MaxHeight="550">
+                                    <Border.Effect>
+                                        <DropShadowEffect Color="Black" Opacity="0.1" BlurRadius="10" ShadowDepth="2"/>
+                                    </Border.Effect>
+                                    <ScrollViewer MaxHeight="500" VerticalScrollBarVisibility="Auto">
+                                        <StackPanel>
+                                                <StackPanel.Resources>
+                                                    <Style TargetType="Button">
+                                                        <Setter Property="Background" Value="Transparent"/>
+                                                        <Setter Property="BorderThickness" Value="0"/>
+                                                        <Setter Property="Padding" Value="5"/>
+                                                        <Setter Property="HorizontalContentAlignment" Value="Left"/>
+                                                        <Setter Property="Cursor" Value="Hand"/>
+                                                    </Style>
+                                                </StackPanel.Resources>
+                                                <TextBlock Text="Replace with file creation date and time" FontWeight="Bold" Margin="0,0,0,15" FontSize="14"/>
+                                                
+                                                <Button Command="{Binding InsertDateHelperCommand}" CommandParameter="$YYYY" Click="CloseDatePopup">
+                                                    <Grid Margin="0,0,0,5" Width="470">
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="Auto" MinWidth="60"/>
+                                                            <ColumnDefinition Width="*"/>
+                                                        </Grid.ColumnDefinitions>
+                                                        <Border Grid.Column="0" Background="#F9F9F9" BorderBrush="#E0E0E0" BorderThickness="1" CornerRadius="4" Padding="8,0" MinHeight="35" Margin="0,0,10,0">
+                                                            <TextBlock Text="$YYYY" HorizontalAlignment="Center" VerticalAlignment="Center" FontWeight="SemiBold"/>
+                                                        </Border>
+                                                        <TextBlock Grid.Column="1" Text="Year represented by a full four or five digits, depending on the calendar used." VerticalAlignment="Center" Foreground="#555" TextWrapping="Wrap"/>
+                                                    </Grid>
+                                                </Button>
+                                                <Button Command="{Binding InsertDateHelperCommand}" CommandParameter="$YY" Click="CloseDatePopup">
+                                                    <Grid Margin="0,0,0,5" Width="470">
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="Auto" MinWidth="60"/>
+                                                            <ColumnDefinition Width="*"/>
+                                                        </Grid.ColumnDefinitions>
+                                                        <Border Grid.Column="0" Background="#F9F9F9" BorderBrush="#E0E0E0" BorderThickness="1" CornerRadius="4" Padding="8,0" MinHeight="35" Margin="0,0,10,0">
+                                                            <TextBlock Text="$YY" HorizontalAlignment="Center" VerticalAlignment="Center" FontWeight="SemiBold"/>
+                                                        </Border>
+                                                        <TextBlock Grid.Column="1" Text="Year represented only by the last two digits. A leading zero is added for single-digit years." VerticalAlignment="Center" Foreground="#555" TextWrapping="Wrap"/>
+                                                    </Grid>
+                                                </Button>
+                                                <Button Command="{Binding InsertDateHelperCommand}" CommandParameter="$Y" Click="CloseDatePopup">
+                                                    <Grid Margin="0,0,0,5" Width="470">
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="Auto" MinWidth="60"/>
+                                                            <ColumnDefinition Width="*"/>
+                                                        </Grid.ColumnDefinitions>
+                                                        <Border Grid.Column="0" Background="#F9F9F9" BorderBrush="#E0E0E0" BorderThickness="1" CornerRadius="4" Padding="8,0" MinHeight="35" Margin="0,0,10,0">
+                                                            <TextBlock Text="$Y" HorizontalAlignment="Center" VerticalAlignment="Center" FontWeight="SemiBold"/>
+                                                        </Border>
+                                                        <TextBlock Grid.Column="1" Text="Year represented only by the last digit." VerticalAlignment="Center" Foreground="#555" TextWrapping="Wrap"/>
+                                                    </Grid>
+                                                </Button>
+                                                <Button Command="{Binding InsertDateHelperCommand}" CommandParameter="$MMMM" Click="CloseDatePopup">
+                                                    <Grid Margin="0,0,0,5" Width="470">
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="Auto" MinWidth="60"/>
+                                                            <ColumnDefinition Width="*"/>
+                                                        </Grid.ColumnDefinitions>
+                                                        <Border Grid.Column="0" Background="#F9F9F9" BorderBrush="#E0E0E0" BorderThickness="1" CornerRadius="4" Padding="8,0" MinHeight="35" Margin="0,0,10,0">
+                                                            <TextBlock Text="$MMMM" HorizontalAlignment="Center" VerticalAlignment="Center" FontWeight="SemiBold"/>
+                                                        </Border>
+                                                        <TextBlock Grid.Column="1" Text="Name of the month." VerticalAlignment="Center" Foreground="#555" TextWrapping="Wrap"/>
+                                                    </Grid>
+                                                </Button>
+                                                <Button Command="{Binding InsertDateHelperCommand}" CommandParameter="$MMM" Click="CloseDatePopup">
+                                                    <Grid Margin="0,0,0,5" Width="470">
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="Auto" MinWidth="60"/>
+                                                            <ColumnDefinition Width="*"/>
+                                                        </Grid.ColumnDefinitions>
+                                                        <Border Grid.Column="0" Background="#F9F9F9" BorderBrush="#E0E0E0" BorderThickness="1" CornerRadius="4" Padding="8,0" MinHeight="35" Margin="0,0,10,0">
+                                                            <TextBlock Text="$MMM" HorizontalAlignment="Center" VerticalAlignment="Center" FontWeight="SemiBold"/>
+                                                        </Border>
+                                                        <TextBlock Grid.Column="1" Text="Abbreviated name of the month." VerticalAlignment="Center" Foreground="#555" TextWrapping="Wrap"/>
+                                                    </Grid>
+                                                </Button>
+                                                <Button Command="{Binding InsertDateHelperCommand}" CommandParameter="$MM" Click="CloseDatePopup">
+                                                    <Grid Margin="0,0,0,5" Width="470">
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="Auto" MinWidth="60"/>
+                                                            <ColumnDefinition Width="*"/>
+                                                        </Grid.ColumnDefinitions>
+                                                        <Border Grid.Column="0" Background="#F9F9F9" BorderBrush="#E0E0E0" BorderThickness="1" CornerRadius="4" Padding="8,0" MinHeight="35" Margin="0,0,10,0">
+                                                            <TextBlock Text="$MM" HorizontalAlignment="Center" VerticalAlignment="Center" FontWeight="SemiBold"/>
+                                                        </Border>
+                                                        <TextBlock Grid.Column="1" Text="Month as digits with leading zeros for single-digit months." VerticalAlignment="Center" Foreground="#555" TextWrapping="Wrap"/>
+                                                    </Grid>
+                                                </Button>
+                                                <Button Command="{Binding InsertDateHelperCommand}" CommandParameter="$M" Click="CloseDatePopup">
+                                                    <Grid Margin="0,0,0,5" Width="470">
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="Auto" MinWidth="60"/>
+                                                            <ColumnDefinition Width="*"/>
+                                                        </Grid.ColumnDefinitions>
+                                                        <Border Grid.Column="0" Background="#F9F9F9" BorderBrush="#E0E0E0" BorderThickness="1" CornerRadius="4" Padding="8,0" MinHeight="35" Margin="0,0,10,0">
+                                                            <TextBlock Text="$M" HorizontalAlignment="Center" VerticalAlignment="Center" FontWeight="SemiBold"/>
+                                                        </Border>
+                                                        <TextBlock Grid.Column="1" Text="Month as digits without leading zeros for single-digit months." VerticalAlignment="Center" Foreground="#555" TextWrapping="Wrap"/>
+                                                    </Grid>
+                                                </Button>
+                                                <Button Command="{Binding InsertDateHelperCommand}" CommandParameter="$DDDD" Click="CloseDatePopup">
+                                                    <Grid Margin="0,0,0,5" Width="470">
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="Auto" MinWidth="60"/>
+                                                            <ColumnDefinition Width="*"/>
+                                                        </Grid.ColumnDefinitions>
+                                                        <Border Grid.Column="0" Background="#F9F9F9" BorderBrush="#E0E0E0" BorderThickness="1" CornerRadius="4" Padding="8,0" MinHeight="35" Margin="0,0,10,0">
+                                                            <TextBlock Text="$DDDD" HorizontalAlignment="Center" VerticalAlignment="Center" FontWeight="SemiBold"/>
+                                                        </Border>
+                                                        <TextBlock Grid.Column="1" Text="Name of the day of the week." VerticalAlignment="Center" Foreground="#555" TextWrapping="Wrap"/>
+                                                    </Grid>
+                                                </Button>
+                                                <Button Command="{Binding InsertDateHelperCommand}" CommandParameter="$DDD" Click="CloseDatePopup">
+                                                    <Grid Margin="0,0,0,5" Width="470">
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="Auto" MinWidth="60"/>
+                                                            <ColumnDefinition Width="*"/>
+                                                        </Grid.ColumnDefinitions>
+                                                        <Border Grid.Column="0" Background="#F9F9F9" BorderBrush="#E0E0E0" BorderThickness="1" CornerRadius="4" Padding="8,0" MinHeight="35" Margin="0,0,10,0">
+                                                            <TextBlock Text="$DDD" HorizontalAlignment="Center" VerticalAlignment="Center" FontWeight="SemiBold"/>
+                                                        </Border>
+                                                        <TextBlock Grid.Column="1" Text="Abbreviated name of the day of the week." VerticalAlignment="Center" Foreground="#555" TextWrapping="Wrap"/>
+                                                    </Grid>
+                                                </Button>
+                                                <Button Command="{Binding InsertDateHelperCommand}" CommandParameter="$DD" Click="CloseDatePopup">
+                                                    <Grid Margin="0,0,0,5" Width="470">
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="Auto" MinWidth="60"/>
+                                                            <ColumnDefinition Width="*"/>
+                                                        </Grid.ColumnDefinitions>
+                                                        <Border Grid.Column="0" Background="#F9F9F9" BorderBrush="#E0E0E0" BorderThickness="1" CornerRadius="4" Padding="8,0" MinHeight="35" Margin="0,0,10,0">
+                                                            <TextBlock Text="$DD" HorizontalAlignment="Center" VerticalAlignment="Center" FontWeight="SemiBold"/>
+                                                        </Border>
+                                                        <TextBlock Grid.Column="1" Text="Day of the month as digits with leading zeros for single-digit days." VerticalAlignment="Center" Foreground="#555" TextWrapping="Wrap"/>
+                                                    </Grid>
+                                                </Button>
+                                                <Button Command="{Binding InsertDateHelperCommand}" CommandParameter="$D" Click="CloseDatePopup">
+                                                    <Grid Margin="0,0,0,5" Width="470">
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="Auto" MinWidth="60"/>
+                                                            <ColumnDefinition Width="*"/>
+                                                        </Grid.ColumnDefinitions>
+                                                        <Border Grid.Column="0" Background="#F9F9F9" BorderBrush="#E0E0E0" BorderThickness="1" CornerRadius="4" Padding="8,0" MinHeight="35" Margin="0,0,10,0">
+                                                            <TextBlock Text="$D" HorizontalAlignment="Center" VerticalAlignment="Center" FontWeight="SemiBold"/>
+                                                        </Border>
+                                                        <TextBlock Grid.Column="1" Text="Day of the month as digits without leading zeros for single-digit days." VerticalAlignment="Center" Foreground="#555" TextWrapping="Wrap"/>
+                                                    </Grid>
+                                                </Button>
+                                                <Button Command="{Binding InsertDateHelperCommand}" CommandParameter="$HH" Click="CloseDatePopup">
+                                                    <Grid Margin="0,0,0,5" Width="470">
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="Auto" MinWidth="60"/>
+                                                            <ColumnDefinition Width="*"/>
+                                                        </Grid.ColumnDefinitions>
+                                                        <Border Grid.Column="0" Background="#F9F9F9" BorderBrush="#E0E0E0" BorderThickness="1" CornerRadius="4" Padding="8,0" MinHeight="35" Margin="0,0,10,0">
+                                                            <TextBlock Text="$HH" HorizontalAlignment="Center" VerticalAlignment="Center" FontWeight="SemiBold"/>
+                                                        </Border>
+                                                        <TextBlock Grid.Column="1" Text="Hours in 12-hour format (01-12) with leading zero." VerticalAlignment="Center" Foreground="#555" TextWrapping="Wrap"/>
+                                                    </Grid>
+                                                </Button>
+                                                <Button Command="{Binding InsertDateHelperCommand}" CommandParameter="$H" Click="CloseDatePopup">
+                                                    <Grid Margin="0,0,0,5" Width="470">
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="Auto" MinWidth="60"/>
+                                                            <ColumnDefinition Width="*"/>
+                                                        </Grid.ColumnDefinitions>
+                                                        <Border Grid.Column="0" Background="#F9F9F9" BorderBrush="#E0E0E0" BorderThickness="1" CornerRadius="4" Padding="8,0" MinHeight="35" Margin="0,0,10,0">
+                                                            <TextBlock Text="$H" HorizontalAlignment="Center" VerticalAlignment="Center" FontWeight="SemiBold"/>
+                                                        </Border>
+                                                        <TextBlock Grid.Column="1" Text="Hours in 12-hour format (1-12) without leading zero." VerticalAlignment="Center" Foreground="#555" TextWrapping="Wrap"/>
+                                                    </Grid>
+                                                </Button>
+                                                <Button Command="{Binding InsertDateHelperCommand}" CommandParameter="$TT" Click="CloseDatePopup">
+                                                    <Grid Margin="0,0,0,5" Width="470">
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="Auto" MinWidth="60"/>
+                                                            <ColumnDefinition Width="*"/>
+                                                        </Grid.ColumnDefinitions>
+                                                        <Border Grid.Column="0" Background="#F9F9F9" BorderBrush="#E0E0E0" BorderThickness="1" CornerRadius="4" Padding="8,0" MinHeight="35" Margin="0,0,10,0">
+                                                            <TextBlock Text="$TT" HorizontalAlignment="Center" VerticalAlignment="Center" FontWeight="SemiBold"/>
+                                                        </Border>
+                                                        <TextBlock Grid.Column="1" Text="AM/PM indicator in uppercase (AM or PM)." VerticalAlignment="Center" Foreground="#555" TextWrapping="Wrap"/>
+                                                    </Grid>
+                                                </Button>
+                                                <Button Command="{Binding InsertDateHelperCommand}" CommandParameter="$tt" Click="CloseDatePopup">
+                                                    <Grid Margin="0,0,0,5" Width="470">
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="Auto" MinWidth="60"/>
+                                                            <ColumnDefinition Width="*"/>
+                                                        </Grid.ColumnDefinitions>
+                                                        <Border Grid.Column="0" Background="#F9F9F9" BorderBrush="#E0E0E0" BorderThickness="1" CornerRadius="4" Padding="8,0" MinHeight="35" Margin="0,0,10,0">
+                                                            <TextBlock Text="$tt" HorizontalAlignment="Center" VerticalAlignment="Center" FontWeight="SemiBold"/>
+                                                        </Border>
+                                                        <TextBlock Grid.Column="1" Text="AM/PM indicator in lowercase (am or pm)." VerticalAlignment="Center" Foreground="#555" TextWrapping="Wrap"/>
+                                                    </Grid>
+                                                </Button>
+                                                <Button Command="{Binding InsertDateHelperCommand}" CommandParameter="$hh" Click="CloseDatePopup">
+                                                    <Grid Margin="0,0,0,5" Width="470">
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="Auto" MinWidth="60"/>
+                                                            <ColumnDefinition Width="*"/>
+                                                        </Grid.ColumnDefinitions>
+                                                        <Border Grid.Column="0" Background="#F9F9F9" BorderBrush="#E0E0E0" BorderThickness="1" CornerRadius="4" Padding="8,0" MinHeight="35" Margin="0,0,10,0">
+                                                            <TextBlock Text="$hh" HorizontalAlignment="Center" VerticalAlignment="Center" FontWeight="SemiBold"/>
+                                                        </Border>
+                                                        <TextBlock Grid.Column="1" Text="Hours in 24-hour format (00-23) with leading zero." VerticalAlignment="Center" Foreground="#555" TextWrapping="Wrap"/>
+                                                    </Grid>
+                                                </Button>
+                                                <Button Command="{Binding InsertDateHelperCommand}" CommandParameter="$h" Click="CloseDatePopup">
+                                                    <Grid Margin="0,0,0,5" Width="470">
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="Auto" MinWidth="60"/>
+                                                            <ColumnDefinition Width="*"/>
+                                                        </Grid.ColumnDefinitions>
+                                                        <Border Grid.Column="0" Background="#F9F9F9" BorderBrush="#E0E0E0" BorderThickness="1" CornerRadius="4" Padding="8,0" MinHeight="35" Margin="0,0,10,0">
+                                                            <TextBlock Text="$h" HorizontalAlignment="Center" VerticalAlignment="Center" FontWeight="SemiBold"/>
+                                                        </Border>
+                                                        <TextBlock Grid.Column="1" Text="Hours in 24-hour format (0-23) without leading zero." VerticalAlignment="Center" Foreground="#555" TextWrapping="Wrap"/>
+                                                    </Grid>
+                                                </Button>
+                                                <Button Command="{Binding InsertDateHelperCommand}" CommandParameter="$mm" Click="CloseDatePopup">
+                                                    <Grid Margin="0,0,0,5" Width="470">
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="Auto" MinWidth="60"/>
+                                                            <ColumnDefinition Width="*"/>
+                                                        </Grid.ColumnDefinitions>
+                                                        <Border Grid.Column="0" Background="#F9F9F9" BorderBrush="#E0E0E0" BorderThickness="1" CornerRadius="4" Padding="8,0" MinHeight="35" Margin="0,0,10,0">
+                                                            <TextBlock Text="$mm" HorizontalAlignment="Center" VerticalAlignment="Center" FontWeight="SemiBold"/>
+                                                        </Border>
+                                                        <TextBlock Grid.Column="1" Text="Minutes with leading zeros for single-digit minutes." VerticalAlignment="Center" Foreground="#555" TextWrapping="Wrap"/>
+                                                    </Grid>
+                                                </Button>
+                                                <Button Command="{Binding InsertDateHelperCommand}" CommandParameter="$m" Click="CloseDatePopup">
+                                                    <Grid Margin="0,0,0,5" Width="470">
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="Auto" MinWidth="60"/>
+                                                            <ColumnDefinition Width="*"/>
+                                                        </Grid.ColumnDefinitions>
+                                                        <Border Grid.Column="0" Background="#F9F9F9" BorderBrush="#E0E0E0" BorderThickness="1" CornerRadius="4" Padding="8,0" MinHeight="35" Margin="0,0,10,0">
+                                                            <TextBlock Text="$m" HorizontalAlignment="Center" VerticalAlignment="Center" FontWeight="SemiBold"/>
+                                                        </Border>
+                                                        <TextBlock Grid.Column="1" Text="Minutes without leading zeros for single-digit minutes." VerticalAlignment="Center" Foreground="#555" TextWrapping="Wrap"/>
+                                                    </Grid>
+                                                </Button>
+                                                <Button Command="{Binding InsertDateHelperCommand}" CommandParameter="$ss" Click="CloseDatePopup">
+                                                    <Grid Margin="0,0,0,5" Width="470">
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="Auto" MinWidth="60"/>
+                                                            <ColumnDefinition Width="*"/>
+                                                        </Grid.ColumnDefinitions>
+                                                        <Border Grid.Column="0" Background="#F9F9F9" BorderBrush="#E0E0E0" BorderThickness="1" CornerRadius="4" Padding="8,0" MinHeight="35" Margin="0,0,10,0">
+                                                            <TextBlock Text="$ss" HorizontalAlignment="Center" VerticalAlignment="Center" FontWeight="SemiBold"/>
+                                                        </Border>
+                                                        <TextBlock Grid.Column="1" Text="Seconds with leading zeros for single-digit seconds." VerticalAlignment="Center" Foreground="#555" TextWrapping="Wrap"/>
+                                                    </Grid>
+                                                </Button>
+                                                <Button Command="{Binding InsertDateHelperCommand}" CommandParameter="$s" Click="CloseDatePopup">
+                                                    <Grid Margin="0,0,0,5" Width="470">
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="Auto" MinWidth="60"/>
+                                                            <ColumnDefinition Width="*"/>
+                                                        </Grid.ColumnDefinitions>
+                                                        <Border Grid.Column="0" Background="#F9F9F9" BorderBrush="#E0E0E0" BorderThickness="1" CornerRadius="4" Padding="8,0" MinHeight="35" Margin="0,0,10,0">
+                                                            <TextBlock Text="$s" HorizontalAlignment="Center" VerticalAlignment="Center" FontWeight="SemiBold"/>
+                                                        </Border>
+                                                        <TextBlock Grid.Column="1" Text="Seconds without leading zeros for single-digit seconds." VerticalAlignment="Center" Foreground="#555" TextWrapping="Wrap"/>
+                                                    </Grid>
+                                                </Button>
+                                                <Button Command="{Binding InsertDateHelperCommand}" CommandParameter="$fff" Click="CloseDatePopup">
+                                                    <Grid Margin="0,0,0,5" Width="470">
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="Auto" MinWidth="60"/>
+                                                            <ColumnDefinition Width="*"/>
+                                                        </Grid.ColumnDefinitions>
+                                                        <Border Grid.Column="0" Background="#F9F9F9" BorderBrush="#E0E0E0" BorderThickness="1" CornerRadius="4" Padding="8,0" MinHeight="35" Margin="0,0,10,0">
+                                                            <TextBlock Text="$fff" HorizontalAlignment="Center" VerticalAlignment="Center" FontWeight="SemiBold"/>
+                                                        </Border>
+                                                        <TextBlock Grid.Column="1" Text="Milliseconds represented by three full digits." VerticalAlignment="Center" Foreground="#555" TextWrapping="Wrap"/>
+                                                    </Grid>
+                                                </Button>
+                                                <Button Command="{Binding InsertDateHelperCommand}" CommandParameter="$ff" Click="CloseDatePopup">
+                                                    <Grid Margin="0,0,0,5" Width="470">
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="Auto" MinWidth="60"/>
+                                                            <ColumnDefinition Width="*"/>
+                                                        </Grid.ColumnDefinitions>
+                                                        <Border Grid.Column="0" Background="#F9F9F9" BorderBrush="#E0E0E0" BorderThickness="1" CornerRadius="4" Padding="8,0" MinHeight="35" Margin="0,0,10,0">
+                                                            <TextBlock Text="$ff" HorizontalAlignment="Center" VerticalAlignment="Center" FontWeight="SemiBold"/>
+                                                        </Border>
+                                                        <TextBlock Grid.Column="1" Text="Milliseconds represented only by the first two digits." VerticalAlignment="Center" Foreground="#555" TextWrapping="Wrap"/>
+                                                    </Grid>
+                                                </Button>
+                                                <Button Command="{Binding InsertDateHelperCommand}" CommandParameter="$f" Click="CloseDatePopup">
+                                                    <Grid Margin="0,0,0,5" Width="470">
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="Auto" MinWidth="60"/>
+                                                            <ColumnDefinition Width="*"/>
+                                                        </Grid.ColumnDefinitions>
+                                                        <Border Grid.Column="0" Background="#F9F9F9" BorderBrush="#E0E0E0" BorderThickness="1" CornerRadius="4" Padding="8,0" MinHeight="35" Margin="0,0,10,0">
+                                                            <TextBlock Text="$f" HorizontalAlignment="Center" VerticalAlignment="Center" FontWeight="SemiBold"/>
+                                                        </Border>
+                                                        <TextBlock Grid.Column="1" Text="Milliseconds represented only by the first digit." VerticalAlignment="Center" Foreground="#555" TextWrapping="Wrap"/>
+                                                    </Grid>
+                                                </Button>
+                                                <TextBlock Text="Replace using advanced counter syntax" FontWeight="Bold" Margin="0,15,0,10" FontSize="12" Foreground="#333"/>
+                                                <Button Command="{Binding InsertDateHelperCommand}" CommandParameter="${}" Click="CloseDatePopup">
+                                                    <Grid Margin="0,0,0,5" Width="470">
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="Auto" MinWidth="60"/>
+                                                            <ColumnDefinition Width="*"/>
+                                                        </Grid.ColumnDefinitions>
+                                                        <Border Grid.Column="0" Background="#F9F9F9" BorderBrush="#E0E0E0" BorderThickness="1" CornerRadius="4" Padding="8,0" MinHeight="35" Margin="0,0,10,0">
+                                                            <TextBlock Text="${}" HorizontalAlignment="Center" VerticalAlignment="Center" FontWeight="SemiBold"/>
+                                                        </Border>
+                                                        <TextBlock Grid.Column="1" Text="A simple counter that can be used anywhere in a string." VerticalAlignment="Center" Foreground="#555" TextWrapping="Wrap"/>
+                                                    </Grid>
+                                                </Button>
+                                                <Button Command="{Binding InsertDateHelperCommand}" CommandParameter="${start=10}" Click="CloseDatePopup">
+                                                    <Grid Margin="0,0,0,5" Width="470">
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="Auto" MinWidth="60"/>
+                                                            <ColumnDefinition Width="*"/>
+                                                        </Grid.ColumnDefinitions>
+                                                        <Border Grid.Column="0" Background="#F9F9F9" BorderBrush="#E0E0E0" BorderThickness="1" CornerRadius="4" Padding="8,0" MinHeight="35" Margin="0,0,10,0">
+                                                            <TextBlock Text="${start=10}" HorizontalAlignment="Center" VerticalAlignment="Center" FontWeight="SemiBold"/>
+                                                        </Border>
+                                                        <TextBlock Grid.Column="1" Text="A counter with a custom starting value." VerticalAlignment="Center" Foreground="#555" TextWrapping="Wrap"/>
+                                                    </Grid>
+                                                </Button>
+                                                <Button Command="{Binding InsertDateHelperCommand}" CommandParameter="${increment=5}" Click="CloseDatePopup">
+                                                    <Grid Margin="0,0,0,5" Width="470">
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="Auto" MinWidth="60"/>
+                                                            <ColumnDefinition Width="*"/>
+                                                        </Grid.ColumnDefinitions>
+                                                        <Border Grid.Column="0" Background="#F9F9F9" BorderBrush="#E0E0E0" BorderThickness="1" CornerRadius="4" Padding="8,0" MinHeight="35" Margin="0,0,10,0">
+                                                            <TextBlock Text="${increment=5}" HorizontalAlignment="Center" VerticalAlignment="Center" FontWeight="SemiBold"/>
+                                                        </Border>
+                                                        <TextBlock Grid.Column="1" Text="A counter with a custom increment value." VerticalAlignment="Center" Foreground="#555" TextWrapping="Wrap"/>
+                                                    </Grid>
+                                                </Button>
+                                                <Button Command="{Binding InsertDateHelperCommand}" CommandParameter="${padding=8}" Click="CloseDatePopup">
+                                                    <Grid Margin="0,0,0,5" Width="470">
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="Auto" MinWidth="60"/>
+                                                            <ColumnDefinition Width="*"/>
+                                                        </Grid.ColumnDefinitions>
+                                                        <Border Grid.Column="0" Background="#F9F9F9" BorderBrush="#E0E0E0" BorderThickness="1" CornerRadius="4" Padding="8,0" MinHeight="35" Margin="0,0,10,0">
+                                                            <TextBlock Text="${padding=8}" HorizontalAlignment="Center" VerticalAlignment="Center" FontWeight="SemiBold"/>
+                                                        </Border>
+                                                        <TextBlock Grid.Column="1" Text="Counter with a custom number of padding zeros." VerticalAlignment="Center" Foreground="#555" TextWrapping="Wrap"/>
+                                                    </Grid>
+                                                </Button>
+                                                <Button Command="{Binding InsertDateHelperCommand}" CommandParameter="${increment=3,padding=4,start=900}" Click="CloseDatePopup">
+                                                    <Grid Margin="0,0,0,5" Width="470">
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="Auto" MinWidth="60"/>
+                                                            <ColumnDefinition Width="*"/>
+                                                        </Grid.ColumnDefinitions>
+                                                        <Border Grid.Column="0" Background="#F9F9F9" BorderBrush="#E0E0E0" BorderThickness="1" CornerRadius="4" Padding="8,0" MinHeight="35" Margin="0,0,10,0">
+                                                            <TextBlock Text="${increment=3,padding=4,start=900}" HorizontalAlignment="Center" VerticalAlignment="Center" FontWeight="SemiBold"/>
+                                                        </Border>
+                                                        <TextBlock Grid.Column="1" Text="A counter that displays numbers with custom increment, padding and start." VerticalAlignment="Center" Foreground="#555" TextWrapping="Wrap"/>
+                                                    </Grid>
+                                                </Button>
+                                                <TextBlock Text="Replace with random values" FontWeight="Bold" Margin="0,15,0,10" FontSize="12" Foreground="#333"/>
+                                                <Button Command="{Binding InsertDateHelperCommand}" CommandParameter="${rstringalnum=9}" Click="CloseDatePopup">
+                                                    <Grid Margin="0,0,0,5" Width="470">
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="Auto" MinWidth="60"/>
+                                                            <ColumnDefinition Width="*"/>
+                                                        </Grid.ColumnDefinitions>
+                                                        <Border Grid.Column="0" Background="#F9F9F9" BorderBrush="#E0E0E0" BorderThickness="1" CornerRadius="4" Padding="8,0" MinHeight="35" Margin="0,0,10,0">
+                                                            <TextBlock Text="${rstringalnum=9}" HorizontalAlignment="Center" VerticalAlignment="Center" FontWeight="SemiBold"/>
+                                                        </Border>
+                                                        <TextBlock Grid.Column="1" Text="Random string with uppercase letters, lowercase letters, and numbers." VerticalAlignment="Center" Foreground="#555" TextWrapping="Wrap"/>
+                                                    </Grid>
+                                                </Button>
+                                                <Button Command="{Binding InsertDateHelperCommand}" CommandParameter="${rstringalpha=13}" Click="CloseDatePopup">
+                                                    <Grid Margin="0,0,0,5" Width="470">
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="Auto" MinWidth="60"/>
+                                                            <ColumnDefinition Width="*"/>
+                                                        </Grid.ColumnDefinitions>
+                                                        <Border Grid.Column="0" Background="#F9F9F9" BorderBrush="#E0E0E0" BorderThickness="1" CornerRadius="4" Padding="8,0" MinHeight="35" Margin="0,0,10,0">
+                                                            <TextBlock Text="${rstringalpha=13}" HorizontalAlignment="Center" VerticalAlignment="Center" FontWeight="SemiBold"/>
+                                                        </Border>
+                                                        <TextBlock Grid.Column="1" Text="Random string with uppercase and lowercase letters." VerticalAlignment="Center" Foreground="#555" TextWrapping="Wrap"/>
+                                                    </Grid>
+                                                </Button>
+                                                <Button Command="{Binding InsertDateHelperCommand}" CommandParameter="${rstringdigit=36}" Click="CloseDatePopup">
+                                                    <Grid Margin="0,0,0,5" Width="470">
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="Auto" MinWidth="60"/>
+                                                            <ColumnDefinition Width="*"/>
+                                                        </Grid.ColumnDefinitions>
+                                                        <Border Grid.Column="0" Background="#F9F9F9" BorderBrush="#E0E0E0" BorderThickness="1" CornerRadius="4" Padding="8,0" MinHeight="35" Margin="0,0,10,0">
+                                                            <TextBlock Text="${rstringdigit=36}" HorizontalAlignment="Center" VerticalAlignment="Center" FontWeight="SemiBold"/>
+                                                        </Border>
+                                                        <TextBlock Grid.Column="1" Text="Random string with digits between 0 and 9, length 36." VerticalAlignment="Center" Foreground="#555" TextWrapping="Wrap"/>
+                                                    </Grid>
+                                                </Button>
+                                                <Button Command="{Binding InsertDateHelperCommand}" CommandParameter="${ruuidv4}" Click="CloseDatePopup">
+                                                    <Grid Margin="0,0,0,5" Width="470">
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="Auto" MinWidth="60"/>
+                                                            <ColumnDefinition Width="*"/>
+                                                        </Grid.ColumnDefinitions>
+                                                        <Border Grid.Column="0" Background="#F9F9F9" BorderBrush="#E0E0E0" BorderThickness="1" CornerRadius="4" Padding="8,0" MinHeight="35" Margin="0,0,10,0">
+                                                            <TextBlock Text="${ruuidv4}" HorizontalAlignment="Center" VerticalAlignment="Center" FontWeight="SemiBold"/>
+                                                        </Border>
+                                                        <TextBlock Grid.Column="1" Text="Random UUID according to v4 specification." VerticalAlignment="Center" Foreground="#555" TextWrapping="Wrap"/>
+                                                    </Grid>
+                                                </Button>
+                                            </StackPanel>
+                                        </ScrollViewer>
+                                </Border>
+                            </Popup>
+                        </Grid>
+
+                        <!-- Text Format -->
+                        <TextBlock Text="Text format:" Margin="0,0,0,8" Foreground="#555" FontSize="12"/>
+                        <StackPanel Orientation="Horizontal">
+                            <StackPanel.Resources>
+                                <Style TargetType="ToggleButton">
+                                    <Setter Property="Foreground" Value="#333"/>
+                                    <Setter Property="Background" Value="#F3F3F3"/>
+                                    <Setter Property="BorderBrush" Value="#E0E0E0"/>
+                                    <Setter Property="BorderThickness" Value="1"/>
+                                    <Setter Property="Margin" Value="0,0,4,0"/>
+                                    <Setter Property="Cursor" Value="Hand"/>
+                                    <Setter Property="Template">
+                                        <Setter.Value>
+                                            <ControlTemplate TargetType="ToggleButton">
+                                                <Border CornerRadius="4" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}">
+                                                    <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                </Border>
+                                            </ControlTemplate>
+                                        </Setter.Value>
+                                    </Setter>
+                                    <Style.Triggers>
+                                        <Trigger Property="IsChecked" Value="True">
+                                            <Setter Property="Background" Value="#007ACC"/>
+                                            <Setter Property="BorderBrush" Value="#007ACC"/>
+                                            <Setter Property="Foreground" Value="White"/>
+                                        </Trigger>
+                                        <Trigger Property="IsMouseOver" Value="True">
+                                            <Setter Property="Background" Value="#EBEBEB"/>
+                                        </Trigger>
+                                        <MultiTrigger>
+                                            <MultiTrigger.Conditions>
+                                                <Condition Property="IsChecked" Value="True"/>
+                                                <Condition Property="IsMouseOver" Value="True"/>
+                                            </MultiTrigger.Conditions>
+                                            <Setter Property="Background" Value="#005A9E"/>
+                                        </MultiTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </StackPanel.Resources>
+                            <!-- ToggleButtons for Casing -->
+                            <ToggleButton Content="aa" ToolTip="Lowercase" IsChecked="{Binding IsFormatLowercase, Mode=TwoWay}" Width="36" Height="32"/>
+                            <ToggleButton Content="AA" ToolTip="Uppercase" IsChecked="{Binding IsFormatUppercase, Mode=TwoWay}" Width="36" Height="32"/>
+                            <ToggleButton Content="Aa" ToolTip="Title Case" IsChecked="{Binding IsFormatTitleCase, Mode=TwoWay}" Width="36" Height="32"/>
+                            <ToggleButton Content="Aa Aa" ToolTip="Capitalize Each Word" IsChecked="{Binding IsFormatCapitalizeEach, Mode=TwoWay}" Width="52" Height="32" Margin="0,0,15,0"/>
+                            
+                            <!-- ToggleButtons for Enumeration and Random -->
+                            <ToggleButton ToolTip="Enumerate Items" IsChecked="{Binding RenameEnumerateItems, Mode=TwoWay}" Width="36" Height="32">
+                                <Viewbox Width="16" Height="16">
+                                    <Path Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ToggleButton}}" 
+                                          Data="M2 3h2v1.5h-1v1h1v1.5H2v1h3v-5H2v1zm0 7h3v-1H3v-1h2v-1H2v-1h3v5H2v-1zm1 5h1v1.5H3v1h1V20H2v1h3v-5H2v1zm4-12h14v2H7V4zm0 7h14v2H7v-2zm0 7h14v2H7v-2z"/>
+                                </Viewbox>
+                            </ToggleButton>
+                            <ToggleButton Content="🔀" ToolTip="Randomize Items" IsChecked="{Binding RenameRandomizeItems, Mode=TwoWay}" Width="36" Height="32"/>
+
+                            <!-- Help Info Button for Text Format -->
+                            <Button Command="{Binding OpenNumberingSettingsCommand}" Width="36" Height="32" Margin="0,0,15,0" ToolTip="Configure numbering sequence">
+                                <Button.Style>
+                                    <Style TargetType="Button">
+                                        <Setter Property="Foreground" Value="#333"/>
+                                        <Setter Property="Background" Value="#F3F3F3"/>
+                                        <Setter Property="BorderBrush" Value="#E0E0E0"/>
+                                        <Setter Property="BorderThickness" Value="1"/>
+                                        <Setter Property="Cursor" Value="Hand"/>
+                                        <Setter Property="Template">
+                                            <Setter.Value>
+                                                <ControlTemplate TargetType="Button">
+                                                    <Border CornerRadius="4" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}">
+                                                        <TextBlock Text="i" HorizontalAlignment="Center" VerticalAlignment="Center" FontWeight="SemiBold" FontSize="11" FontStyle="Italic"/>
+                                                    </Border>
+                                                </ControlTemplate>
+                                            </Setter.Value>
+                                        </Setter>
+                                        <Style.Triggers>
+                                            <Trigger Property="IsMouseOver" Value="True">
+                                                <Setter Property="Background" Value="#EBEBEB"/>
+                                            </Trigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Button.Style>
+                            </Button>
+
+                            <!-- RadioButtons stacked vertically -->
+                            <StackPanel Orientation="Vertical" VerticalAlignment="Center">
+                                <RadioButton Content="Apply all" GroupName="RenameApplyGroup" IsChecked="{Binding RenameApplyAll, Mode=TwoWay}" FontSize="10.5" Foreground="#555" Margin="0,0,0,3"/>
+                                <RadioButton Content="Apply only filtered" GroupName="RenameApplyGroup" IsChecked="{Binding RenameApplyOnlyFiltered, Mode=TwoWay}" FontSize="10.5" Foreground="#555"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </StackPanel>
+
+                    <!-- Preview DataGrid -->
+                    <Border Grid.Row="1" Background="White" BorderBrush="#E0E0E0" BorderThickness="1" CornerRadius="6" Padding="1">
+                        <DataGrid ItemsSource="{Binding RenamePreviewItems}" 
+                                  AutoGenerateColumns="False" 
+                                  CanUserAddRows="False" 
+                                  IsReadOnly="False"
+                                  HeadersVisibility="Column"
+                                  Background="Transparent"
+                                  BorderThickness="0"
+                                  GridLinesVisibility="Horizontal"
+                                  HorizontalGridLinesBrush="#f0f0f0">
+                            <DataGrid.RowStyle>
+                                <Style TargetType="DataGridRow">
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsMatchingFilter}" Value="True">
+                                            <Setter Property="Background" Value="#CCE8FF"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </DataGrid.RowStyle>
+                            <DataGrid.Columns>
+                                <DataGridTemplateColumn Width="30">
+                                    <DataGridTemplateColumn.Header>
+                                        <CheckBox IsChecked="{Binding DataContext.SelectAllRenameItems, RelativeSource={RelativeSource AncestorType=DataGrid}, Mode=TwoWay}"/>
+                                    </DataGridTemplateColumn.Header>
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <CheckBox IsChecked="{Binding IsSelected, UpdateSourceTrigger=PropertyChanged}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+                                <DataGridTextColumn Header="Original" Binding="{Binding OriginalName}" Width="*" IsReadOnly="True"/>
+                                <DataGridTextColumn Header="New Name" Binding="{Binding NewName}" Width="*" IsReadOnly="True">
+                                    <DataGridTextColumn.ElementStyle>
+                                        <Style TargetType="TextBlock">
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding IsSelected}" Value="True">
+                                                    <Setter Property="Foreground" Value="#007ACC"/>
+                                                    <Setter Property="FontWeight" Value="SemiBold"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </DataGridTextColumn.ElementStyle>
+                                </DataGridTextColumn>
+                            </DataGrid.Columns>
+                        </DataGrid>
+                    </Border>
+                </Grid>
+
+                <!-- Actions Footer -->
+                <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,15,0,0">
+                    <Button Content="Cancel" Command="{Binding CloseRenamePanelCommand}" Width="100" Height="30">
+                        <Button.Style>
+                            <Style TargetType="Button">
+                                <Setter Property="Background" Value="#E1E1E1"/>
+                                <Setter Property="BorderBrush" Value="#707070"/>
+                                <Setter Property="BorderThickness" Value="1"/>
+                                <Setter Property="Foreground" Value="Black"/>
+                                <Setter Property="Cursor" Value="Hand"/>
+                                <Style.Resources>
+                                    <Style TargetType="Border">
+                                        <Setter Property="CornerRadius" Value="4"/>
+                                    </Style>
+                                </Style.Resources>
+                                <Style.Triggers>
+                                    <Trigger Property="IsEnabled" Value="False">
+                                        <Setter Property="Background" Value="#F3F3F3"/>
+                                        <Setter Property="Foreground" Value="#B0B0B0"/>
+                                        <Setter Property="BorderBrush" Value="Transparent"/>
+                                        <Setter Property="BorderThickness" Value="0"/>
+                                    </Trigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Button.Style>
+                    </Button>
+                </StackPanel>
+            </Grid>
+        </Border>
+    </Grid>
 
         <!-- Busy Overlay -->
-        <Grid Grid.RowSpan="3" Background="#80FFFFFF" Visibility="{Binding IsBusy, Converter={StaticResource BoolToVis}}">
+        <Grid Grid.ColumnSpan="2" Background="#80FFFFFF" Visibility="{Binding IsBusy, Converter={StaticResource BoolToVis}}">
             <Border Background="White" CornerRadius="10" Padding="25" HorizontalAlignment="Center" VerticalAlignment="Center" BorderThickness="1" BorderBrush="#ddd">
                 <StackPanel>
                     <TextBlock Text="{Binding StatusMessage}" FontSize="14" FontWeight="SemiBold" HorizontalAlignment="Center" Margin="0,0,0,15"/>

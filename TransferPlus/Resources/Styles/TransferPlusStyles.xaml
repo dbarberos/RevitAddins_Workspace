@@ -4,6 +4,7 @@
 
     <!-- Scrollbar Width adjustment -->
     <sys:Double x:Key="{x:Static SystemParameters.VerticalScrollBarWidthKey}">10</sys:Double>
+    <sys:Double x:Key="{x:Static SystemParameters.HorizontalScrollBarHeightKey}">10</sys:Double>
 
     <!-- Global TextBlock Style (Matches FilterPlus) -->
     <Style TargetType="TextBlock">

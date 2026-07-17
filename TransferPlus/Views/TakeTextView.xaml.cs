@@ -4,27 +4,25 @@ namespace TransferPlus.Views;
 
 public partial class TakeTextView : Window
 {
-    public static string texto_out = "";
-    public static bool cancelado = false;
+    public string TextoOut { get; private set; } = string.Empty;
+    public bool Cancelado { get; private set; } = true;
 
     public TakeTextView()
     {
         InitializeComponent();
-        texto_out = "";
-        cancelado = true;
     }
 
     private void Ok_Click(object sender, RoutedEventArgs e)
     {
-        texto_out = InputTextBox.Text;
-        cancelado = false;
+        TextoOut = InputTextBox.Text;
+        Cancelado = false;
         DialogResult = true;
         Close();
     }
 
     private void Cancel_Click(object sender, RoutedEventArgs e)
     {
-        cancelado = true;
+        Cancelado = true;
         DialogResult = false;
         Close();
     }
