@@ -15,13 +15,14 @@ public class TransferOrchestrator
         List<Elemento> elementsToCopy,
         Configuraciones config,
         Action<string, int, int>? progressCallback = null,
-        Dictionary<ElementId, string>? customNames = null)
+        Dictionary<ElementId, string>? customNames = null,
+        Dictionary<string, string>? levelMappings = null)
     {
         var elementsCopyList = new List<ElementId>();
         var familiesLoadList = new List<Elemento>();
         var worksetsToCreate = new List<Elemento>();
         var objectStylesToTransfer = new List<Elemento>();
-        var duplicateNames = new List<string>();
+        var duplicateItems = new List<TransferPlus.Models.DuplicateElementInfo>();
 
         foreach (var item in elementsToCopy)
         {
@@ -58,7 +59,10 @@ public class TransferOrchestrator
             using (Transaction t = new Transaction(targetDoc, "TransferPlus: Worksets"))
             {
                 t.Start();
-                WarningSwallower.AttachToTransaction(t);
+                if (config.cf_chk_AcceptAll)
+                {
+                    WarningSwallower.AttachToTransaction(t);
+                }
                 foreach (var wsItem in worksetsToCreate)
                 {
                     string wsName = customNames?.ContainsKey(wsItem.eID) == true ? customNames[wsItem.eID] : wsItem.Nombre;
@@ -67,10 +71,10 @@ public class TransferOrchestrator
                     {
                         if (config.cf_rbAbortTransaction)
                         {
-                            duplicateNames.Add($"Workset: {wsName}");
+                            duplicateItems.Add(new TransferPlus.Models.DuplicateElementInfo("Worksets", "Workset", "Workset", wsName));
                             t.RollBack();
                             var cancelEx = new OperationCanceledException("Transfer canceled: Duplicate element names found.");
-                            cancelEx.Data["Duplicates"] = duplicateNames;
+                            cancelEx.Data["Duplicates"] = duplicateItems;
                             throw cancelEx;
                         }
                         else if (config.cf_rbAppendSuffix)
@@ -91,7 +95,10 @@ public class TransferOrchestrator
                             Workset.Create(targetDoc, wsName);
                         }
                     }
-                    catch { }
+                    catch (Exception ex)
+                    {
+                        LoggerService.LogExceptionSilently("Creating Workset", ex);
+                    }
                 }
                 t.Commit();
             }
@@ -117,9 +124,9 @@ public class TransferOrchestrator
                         {
                             if (config.cf_rbAbortTransaction)
                             {
-                                duplicateNames.Add($"Family: {famName}");
+                                duplicateItems.Add(new TransferPlus.Models.DuplicateElementInfo(famItem.Categoria ?? "Families", famItem.Familia ?? "Loadable Family", "Family", famName));
                                 var cancelEx = new OperationCanceledException("Transfer canceled: Duplicate element names found.");
-                                cancelEx.Data["Duplicates"] = duplicateNames;
+                                cancelEx.Data["Duplicates"] = duplicateItems;
                                 throw cancelEx;
                             }
                             else if (config.cf_rbAppendSuffix)
@@ -164,7 +171,10 @@ public class TransferOrchestrator
             using (Transaction t = new Transaction(targetDoc, "TransferPlus: Object Styles"))
             {
                 t.Start();
-                WarningSwallower.AttachToTransaction(t);
+                if (config.cf_chk_AcceptAll)
+                {
+                    WarningSwallower.AttachToTransaction(t);
+                }
                 foreach (var styleItem in objectStylesToTransfer)
                 {
                     Report($"Transferring Object Style: {styleItem.Nombre}");
@@ -185,10 +195,10 @@ public class TransferOrchestrator
                                 {
                                     if (config.cf_rbAbortTransaction)
                                     {
-                                        duplicateNames.Add($"Object Style: {catName}");
+                                        duplicateItems.Add(new TransferPlus.Models.DuplicateElementInfo(styleItem.Categoria ?? "Object Styles", styleItem.Familia ?? "Category", "GraphicsStyle", catName));
                                         t.RollBack();
                                         var cancelEx = new OperationCanceledException("Transfer canceled: Duplicate element names found.");
-                                        cancelEx.Data["Duplicates"] = duplicateNames;
+                                        cancelEx.Data["Duplicates"] = duplicateItems;
                                         throw cancelEx;
                                     }
                                     else if (config.cf_rbAppendSuffix)
@@ -223,13 +233,79 @@ public class TransferOrchestrator
             }
         }
 
+        // 2.8. Process Level Mapping and Creation
+        var temporaryRenamedLevels = new List<(Level level, string originalName)>();
+        if (levelMappings != null)
+        {
+            // 2.8.1 Create missing levels
+            using (Transaction tLevels = new Transaction(targetDoc, "TransferPlus: Create Missing Levels"))
+            {
+                tLevels.Start();
+                if (config.cf_chk_AcceptAll) WarningSwallower.AttachToTransaction(tLevels);
+                foreach (var mapping in levelMappings)
+                {
+                    string srcLevelName = mapping.Key;
+                    string targetAction = mapping.Value;
+                    if (targetAction == "CREATE_NEW")
+                    {
+                        var srcLevel = new FilteredElementCollector(sourceDoc)
+                            .OfClass(typeof(Level))
+                            .Cast<Level>()
+                            .FirstOrDefault(l => l.Name.Equals(srcLevelName, StringComparison.OrdinalIgnoreCase));
+                        if (srcLevel != null)
+                        {
+                            try
+                            {
+                                var newLevel = Level.Create(targetDoc, srcLevel.ProjectElevation);
+                                newLevel.Name = srcLevelName;
+                            }
+                            catch { }
+                        }
+                    }
+                }
+                tLevels.Commit();
+            }
+
+            // 2.8.2 Temporarily rename mapped levels
+            using (Transaction tRename = new Transaction(targetDoc, "TransferPlus: Prep Mapped Levels"))
+            {
+                tRename.Start();
+                if (config.cf_chk_AcceptAll) WarningSwallower.AttachToTransaction(tRename);
+                foreach (var mapping in levelMappings)
+                {
+                    string srcLevelName = mapping.Key;
+                    string targetAction = mapping.Value;
+                    if (targetAction != "CREATE_NEW")
+                    {
+                        var targetLevel = new FilteredElementCollector(targetDoc)
+                            .OfClass(typeof(Level))
+                            .Cast<Level>()
+                            .FirstOrDefault(l => l.Name.Equals(targetAction, StringComparison.OrdinalIgnoreCase));
+                        if (targetLevel != null)
+                        {
+                            try
+                            {
+                                temporaryRenamedLevels.Add((targetLevel, targetAction));
+                                targetLevel.Name = srcLevelName;
+                            }
+                            catch { }
+                        }
+                    }
+                }
+                tRename.Commit();
+            }
+        }
+
         // 3. Process Standards and View elements (CopyElements)
         if (elementsCopyList.Any())
         {
             using (Transaction t = new Transaction(targetDoc, "TransferPlus: Standards"))
             {
                 t.Start();
-                WarningSwallower.AttachToTransaction(t);
+                if (config.cf_chk_AcceptAll)
+                {
+                    WarningSwallower.AttachToTransaction(t);
+                }
 
                 CustomCopyHandlerAbort abortHandler = new CustomCopyHandlerAbort();
                 CopyPasteOptions options = new CopyPasteOptions();
@@ -275,7 +351,11 @@ public class TransferOrchestrator
                             hasDuplicates = true;
                             if (config.cf_rbAbortTransaction)
                             {
-                                duplicateNames.Add("Type: " + evalName);
+                                var matchingItem = elementsToCopy.FirstOrDefault(x => x.eID == id);
+                                string cat = matchingItem?.Categoria ?? elem.Category?.Name ?? "General";
+                                string fam = matchingItem?.Familia ?? "Standard";
+                                string cls = elem.GetType().Name;
+                                duplicateItems.Add(new TransferPlus.Models.DuplicateElementInfo(cat, fam, cls, evalName));
                             }
                             else if (config.cf_rbKeepOriginal)
                             {
@@ -286,11 +366,11 @@ public class TransferOrchestrator
                     }
                 }
 
-                if (config.cf_rbAbortTransaction && duplicateNames.Any())
+                if (config.cf_rbAbortTransaction && duplicateItems.Any())
                 {
                     t.RollBack();
                     var cancelEx = new OperationCanceledException("Transfer canceled: Duplicate element names found.");
-                    cancelEx.Data["Duplicates"] = duplicateNames;
+                    cancelEx.Data["Duplicates"] = duplicateItems;
                     throw cancelEx;
                 }
 
@@ -357,7 +437,10 @@ public class TransferOrchestrator
                         ElementId newId = copied.ElementAtOrDefault(i);
                         if (newId == null || newId == ElementId.InvalidElementId) continue;
 
-                        if (sourceDoc.GetElement(originalId) is View sourceView && targetDoc.GetElement(newId) is View targetView)
+                        Element srcElem = sourceDoc.GetElement(originalId);
+                        Element destElem = targetDoc.GetElement(newId);
+
+                        if (srcElem is View sourceView && destElem is View targetView)
                         {
                             matchPlantilla(sourceDoc, targetDoc, sourceView, targetView);
                             
@@ -368,6 +451,154 @@ public class TransferOrchestrator
                             else if (config.cf_chk_ViewElements)
                             {
                                 ponDependientes(sourceDoc, sourceView.GetDependentElements(null), sourceView, targetView, options);
+                            }
+
+                            // Replicate sheet views and viewports
+                            if (sourceView is ViewSheet sourceSheet && targetView is ViewSheet targetSheet)
+                            {
+                                if (config.cf_chk_SheetWithViews)
+                                {
+                                    foreach (ElementId placedViewId in sourceSheet.GetAllPlacedViews())
+                                    {
+                                        try
+                                        {
+                                            View srcPlacedView = sourceDoc.GetElement(placedViewId) as View;
+                                            if (srcPlacedView == null) continue;
+
+                                            ElementId targetViewId = ElementId.InvalidElementId;
+                                            bool shouldCopyView = true;
+
+                                            // Check if Legend, Schedule, or Assembly View
+                                            bool isLegend = srcPlacedView.ViewType == ViewType.Legend;
+                                            bool isSchedule = srcPlacedView.ViewType == ViewType.Schedule;
+                                            bool isAssembly = srcPlacedView.IsAssemblyView;
+
+                                            if ((isLegend && config.cf_chk_UseLegendIfExists) ||
+                                                (isSchedule && config.cf_chk_UseScheduleIfExists) ||
+                                                (isAssembly && config.cf_chk_UseAssemblyViewsIfExists))
+                                            {
+                                                var existingTargetView = new FilteredElementCollector(targetDoc)
+                                                    .OfClass(typeof(View))
+                                                    .Cast<View>()
+                                                    .FirstOrDefault(v => v.ViewType == srcPlacedView.ViewType && v.Name.Equals(srcPlacedView.Name, StringComparison.OrdinalIgnoreCase));
+
+                                                if (existingTargetView != null)
+                                                {
+                                                    shouldCopyView = false;
+                                                    if (config.cf_rbKeepOriginal)
+                                                    {
+                                                        targetViewId = existingTargetView.Id;
+                                                    }
+                                                    else if (config.cf_rbAbortTransaction)
+                                                    {
+                                                        duplicateItems.Add(new TransferPlus.Models.DuplicateElementInfo("Views & Sheets", srcPlacedView.ViewType.ToString(), srcPlacedView.GetType().Name, srcPlacedView.Name));
+                                                        var cancelEx = new OperationCanceledException("Transfer canceled: Duplicate element names found.");
+                                                        cancelEx.Data["Duplicates"] = duplicateItems;
+                                                        throw cancelEx;
+                                                    }
+                                                    else if (config.cf_rbAppendSuffix)
+                                                    {
+                                                        shouldCopyView = true;
+                                                    }
+                                                }
+                                            }
+
+                                            if (shouldCopyView)
+                                            {
+                                                var copiedViewIds = ElementTransformUtils.CopyElements(sourceDoc, new List<ElementId> { placedViewId }, targetDoc, transform, options);
+                                                targetViewId = copiedViewIds.FirstOrDefault() ?? ElementId.InvalidElementId;
+
+                                                if (targetViewId != ElementId.InvalidElementId)
+                                                {
+                                                    View newPlacedView = targetDoc.GetElement(targetViewId) as View;
+                                                    if (newPlacedView != null)
+                                                    {
+                                                        if (config.cf_rbAppendSuffix)
+                                                        {
+                                                            var existingTargetView = new FilteredElementCollector(targetDoc)
+                                                                .OfClass(typeof(View))
+                                                                .Cast<View>()
+                                                                .FirstOrDefault(v => v.Id != targetViewId && v.ViewType == srcPlacedView.ViewType && v.Name.Equals(srcPlacedView.Name, StringComparison.OrdinalIgnoreCase));
+                                                            if (existingTargetView != null)
+                                                            {
+                                                                try { newPlacedView.Name = srcPlacedView.Name + config.cf_suffixText; } catch { }
+                                                            }
+                                                        }
+
+                                                        if (transform != null)
+                                                        {
+                                                            try
+                                                            {
+                                                                if (!transform.Origin.IsAlmostEqualTo(XYZ.Zero))
+                                                                {
+                                                                    ElementTransformUtils.MoveElement(targetDoc, GetCropBoxFor(newPlacedView), transform.Origin);
+                                                                }
+                                                            }
+                                                            catch { }
+
+                                                            try
+                                                            {
+                                                                Line rotationAxis = GetRotationAxisFromTransform(transform);
+                                                                double angle = GetRotationAngleFromTransform(transform);
+                                                                if (angle != 0.0)
+                                                                {
+                                                                    ElementTransformUtils.RotateElement(targetDoc, GetCropBoxFor(newPlacedView), rotationAxis, angle);
+                                                                }
+                                                            }
+                                                            catch { }
+                                                        }
+
+                                                        matchPlantilla(sourceDoc, targetDoc, srcPlacedView, newPlacedView);
+
+                                                        if (config.cf_chk_ViewElements)
+                                                        {
+                                                            ponDependientes(sourceDoc, srcPlacedView.GetDependentElements(null), srcPlacedView, newPlacedView, options);
+                                                        }
+
+                                                        if (config.cf_chk_Callout && srcPlacedView.ViewType != ViewType.DraftingView)
+                                                        {
+                                                            ponCallouts(sourceDoc, targetDoc, srcPlacedView, newPlacedView, options, config.cf_chk_ViewElements, 3, transform != null, transform);
+                                                        }
+                                                    }
+                                                }
+                                            }
+
+                                            if (targetViewId != ElementId.InvalidElementId)
+                                            {
+                                                foreach (Element element3 in new FilteredElementCollector(sourceDoc).OfClass(typeof(Viewport)))
+                                                {
+                                                    Viewport srcViewport = (Viewport)element3;
+                                                    if (srcViewport.SheetId == sourceSheet.Id && srcViewport.ViewId == placedViewId)
+                                                    {
+                                                        BoundingBoxXYZ boundingBoxXYZ = srcViewport.get_BoundingBox(sourceSheet);
+                                                        XYZ xyz = (boundingBoxXYZ.Max + boundingBoxXYZ.Min) / 2.0;
+                                                        string name = srcViewport.Name;
+
+                                                        Viewport targetViewport = Viewport.Create(targetDoc, targetSheet.Id, targetViewId, XYZ.Zero);
+                                                        foreach (ElementId typeId in targetViewport.GetValidTypes())
+                                                        {
+                                                            if ((targetDoc.GetElement(typeId) as ElementType).Name.Equals(name))
+                                                            {
+                                                                targetViewport.ChangeTypeId(typeId);
+                                                            }
+                                                        }
+                                                        BoundingBoxXYZ boundingBoxXYZ2 = targetViewport.get_BoundingBox(targetSheet);
+                                                        XYZ xyz2 = (boundingBoxXYZ2.Max + boundingBoxXYZ2.Min) / 2.0;
+                                                        ElementTransformUtils.MoveElement(targetDoc, targetViewport.Id, new XYZ(xyz.X - xyz2.X, xyz.Y - xyz2.Y, 0.0));
+                                                    }
+                                                }
+                                            }
+                                        }
+                                        catch (OperationCanceledException)
+                                        {
+                                            throw;
+                                        }
+                                        catch (Exception ex)
+                                        {
+                                            LoggerService.LogExceptionSilently("Replicating sheet viewport/view", ex);
+                                        }
+                                    }
+                                }
                             }
                         }
                     }
@@ -397,7 +628,7 @@ public class TransferOrchestrator
                     {
                         t.RollBack();
                         var cancelEx = new OperationCanceledException("Transfer canceled: Duplicate element names found.", ex);
-                        cancelEx.Data["Duplicates"] = duplicateNames;
+                        cancelEx.Data["Duplicates"] = duplicateItems;
                         throw cancelEx;
                     }
                 }
@@ -406,6 +637,25 @@ public class TransferOrchestrator
                     if (tempDoc != null)
                     {
                         try { tempDoc.Close(false); } catch { }
+                    }
+
+                    // Restore renamed levels
+                    if (temporaryRenamedLevels.Any())
+                    {
+                        using (Transaction tRestore = new Transaction(targetDoc, "TransferPlus: Restore Mapped Levels"))
+                        {
+                            tRestore.Start();
+                            if (config.cf_chk_AcceptAll) WarningSwallower.AttachToTransaction(tRestore);
+                            foreach (var renamed in temporaryRenamedLevels)
+                            {
+                                try
+                                {
+                                    renamed.level.Name = renamed.originalName;
+                                }
+                                catch { }
+                            }
+                            tRestore.Commit();
+                        }
                     }
                 }
 
@@ -438,7 +688,10 @@ public class TransferOrchestrator
                 ElementTransformUtils.CopyElements(vistaorigen, collection, vistadestino, Transform.Identity, copyOptions);
             }
         }
-        catch { }
+        catch (Exception ex)
+        {
+            LoggerService.LogExceptionSilently("Copying ViewSpecific elements (ponDependientes)", ex);
+        }
     }
 
     public static void ponCallouts(
@@ -479,7 +732,10 @@ public class TransferOrchestrator
                                         ElementTransformUtils.MoveElement(destino, GetCropBoxFor(view), T.Origin);
                                     }
                                 }
-                                catch { }
+                                catch (Exception ex)
+                                {
+                                    LoggerService.LogExceptionSilently("ponCallouts - move CropBox", ex);
+                                }
 
                                 try
                                 {
@@ -490,7 +746,10 @@ public class TransferOrchestrator
                                         ElementTransformUtils.RotateElement(destino, GetCropBoxFor(view), rotationAxis, angle);
                                     }
                                 }
-                                catch { }
+                                catch (Exception ex)
+                                {
+                                    LoggerService.LogExceptionSilently("ponCallouts - rotate CropBox", ex);
+                                }
 
                                 try
                                 {
@@ -500,7 +759,10 @@ public class TransferOrchestrator
                                         ElementTransformUtils.MoveElement(destino, GetCropBoxFor(view), offset);
                                     }
                                 }
-                                catch { }
+                                catch (Exception ex)
+                                {
+                                    LoggerService.LogExceptionSilently("ponCallouts - reposition CropBox", ex);
+                                }
                             }
 
                             if (CopiaDetalles)
@@ -511,7 +773,10 @@ public class TransferOrchestrator
                             ponCallouts(origen, destino, view2, view, copyOptions, CopiaDetalles, Contador + 1, transforma, T);
                         }
                     }
-                    catch { }
+                    catch (Exception ex)
+                    {
+                        LoggerService.LogExceptionSilently("ponCallouts - copying callout view", ex);
+                    }
                 }
             }
         }

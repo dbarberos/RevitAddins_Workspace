@@ -693,17 +693,33 @@ public partial class TransferPlusViewModel : ObservableObject
         }
         catch (OperationCanceledException cancelEx)
         {
-            TransferPlus.Services.LoggerService.LogError("Transfer Canceled", cancelEx);
-            if (cancelEx.Data.Contains("Duplicates") && cancelEx.Data["Duplicates"] is List<string> dups && dups.Any())
+            TransferPlus.Services.LoggerService.LogExceptionSilently("Transfer Canceled", cancelEx);
+            if (cancelEx.Data.Contains("Duplicates"))
             {
-                try
+                var dupsObj = cancelEx.Data["Duplicates"];
+                if (dupsObj is List<TransferPlus.Models.DuplicateElementInfo> dupInfos && dupInfos.Any())
                 {
-                    var view = new TransferPlus.Views.DuplicatesAbortView(dups);
-                    view.ShowDialog();
+                    try
+                    {
+                        var view = new TransferPlus.Views.DuplicatesAbortView(dupInfos);
+                        view.ShowDialog();
+                    }
+                    catch
+                    {
+                        TaskDialog.Show("TransferPlus", "Transfer canceled due to duplicate element names in the destination document.");
+                    }
                 }
-                catch
+                else if (dupsObj is List<string> dups && dups.Any())
                 {
-                    TaskDialog.Show("TransferPlus", "Transfer canceled due to duplicate element names in the destination document.");
+                    try
+                    {
+                        var view = new TransferPlus.Views.DuplicatesAbortView(dups);
+                        view.ShowDialog();
+                    }
+                    catch
+                    {
+                        TaskDialog.Show("TransferPlus", "Transfer canceled due to duplicate element names in the destination document.");
+                    }
                 }
             }
             else

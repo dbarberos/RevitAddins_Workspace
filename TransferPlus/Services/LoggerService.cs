@@ -66,7 +66,40 @@ public static class LoggerService
         System.Diagnostics.Debug.WriteLine(ex.StackTrace);
         WriteToFile(entry, ex.StackTrace);
 
-        string userMessage = $"An error occurred in {context}: {ex.Message}\n\nCheck Debug Log for details.";
+        string userMessage = $"An error occurred in {context}: {ex.Message}";
         System.Windows.MessageBox.Show(userMessage, "TransferPlus Error", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
+    }
+
+    public static void LogWarning(string message)
+    {
+        string timestamp = DateTime.Now.ToString("HH:mm:ss.fff");
+        string entry = $"[{timestamp}] WARNING: {message}";
+        
+        var dispatcher = _uiDispatcher ?? System.Windows.Application.Current?.Dispatcher ?? System.Windows.Threading.Dispatcher.CurrentDispatcher;
+        if (dispatcher != null)
+        {
+            dispatcher.BeginInvoke(new Action(() => {
+                Logs.Insert(0, entry);
+            }));
+        }
+        
+        System.Diagnostics.Debug.WriteLine(entry);
+        WriteToFile(entry);
+    }
+
+    public static void LogExceptionSilently(string context, Exception ex)
+    {
+        string timestamp = DateTime.Now.ToString("HH:mm:ss.fff");
+        string entry = $"[{timestamp}] EXCEPTION in {context}: {ex.Message}";
+        
+        var dispatcher = _uiDispatcher ?? System.Windows.Application.Current?.Dispatcher ?? System.Windows.Threading.Dispatcher.CurrentDispatcher;
+        if (dispatcher != null)
+        {
+            dispatcher.BeginInvoke(new Action(() => Logs.Insert(0, entry)));
+        }
+
+        System.Diagnostics.Debug.WriteLine(entry);
+        System.Diagnostics.Debug.WriteLine(ex.StackTrace);
+        WriteToFile(entry, ex.StackTrace);
     }
 }
