@@ -1059,6 +1059,15 @@ public partial class TransferPlusViewModel : ObservableObject
     private void InsertDateHelper(string snippet)
     {
         RenameReplaceText += snippet;
+
+        if (snippet.Contains("$1"))
+        {
+            if (string.IsNullOrEmpty(RenameSearchText) || !RenameSearchText.Contains("(.*)"))
+            {
+                RenameSearchText = "(.*)";
+            }
+            RenameUseRegex = true;
+        }
     }
 
     private void UpdateRenamePreviews()

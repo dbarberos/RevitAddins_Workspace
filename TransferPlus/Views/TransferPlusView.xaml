@@ -1124,7 +1124,36 @@
                                                         <Setter Property="Cursor" Value="Hand"/>
                                                     </Style>
                                                 </StackPanel.Resources>
-                                                <TextBlock Text="Replace with file creation date and time" FontWeight="Bold" Margin="0,0,0,15" FontSize="14"/>
+                                                <!-- Category: Regex Prefix & Suffix -->
+                                                <TextBlock Text="Regex Prefix &amp; Suffix" FontWeight="Bold" Margin="0,0,0,10" FontSize="13"/>
+                                                
+                                                <Button Command="{Binding InsertDateHelperCommand}" CommandParameter="prefix_text$1" Click="CloseDatePopup">
+                                                    <Grid Margin="0,0,0,5" Width="470">
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="Auto" MinWidth="110"/>
+                                                            <ColumnDefinition Width="*"/>
+                                                        </Grid.ColumnDefinitions>
+                                                        <Border Grid.Column="0" Background="#F9F9F9" BorderBrush="#E0E0E0" BorderThickness="1" CornerRadius="4" Padding="8,0" MinHeight="32" Margin="0,0,10,0">
+                                                            <TextBlock Text="prefix_text$1" HorizontalAlignment="Center" VerticalAlignment="Center" FontWeight="SemiBold"/>
+                                                        </Border>
+                                                        <TextBlock Grid.Column="1" Text="Adds a prefix using regex capture group $1 (auto-sets Find to (.*) and enables regex)." VerticalAlignment="Center" Foreground="#555" TextWrapping="Wrap" FontSize="10.5"/>
+                                                    </Grid>
+                                                </Button>
+
+                                                <Button Command="{Binding InsertDateHelperCommand}" CommandParameter="$1suffix_text" Click="CloseDatePopup">
+                                                    <Grid Margin="0,0,0,5" Width="470">
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="Auto" MinWidth="110"/>
+                                                            <ColumnDefinition Width="*"/>
+                                                        </Grid.ColumnDefinitions>
+                                                        <Border Grid.Column="0" Background="#F9F9F9" BorderBrush="#E0E0E0" BorderThickness="1" CornerRadius="4" Padding="8,0" MinHeight="32" Margin="0,0,10,0">
+                                                            <TextBlock Text="$1suffix_text" HorizontalAlignment="Center" VerticalAlignment="Center" FontWeight="SemiBold"/>
+                                                        </Border>
+                                                        <TextBlock Grid.Column="1" Text="Adds a suffix using regex capture group $1 (auto-sets Find to (.*) and enables regex)." VerticalAlignment="Center" Foreground="#555" TextWrapping="Wrap" FontSize="10.5"/>
+                                                    </Grid>
+                                                </Button>
+
+                                                <TextBlock Text="Replace with file creation date and time" FontWeight="Bold" Margin="0,15,0,10" FontSize="13"/>
                                                 
                                                 <Button Command="{Binding InsertDateHelperCommand}" CommandParameter="$YYYY" Click="CloseDatePopup">
                                                     <Grid Margin="0,0,0,5" Width="470">
