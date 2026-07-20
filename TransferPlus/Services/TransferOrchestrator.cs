@@ -383,14 +383,17 @@ public class TransferOrchestrator
                         if (config.cf_rbAppendSuffix && hasDuplicates)
                         {
                             Report("Preparing temporary document for renaming duplicates...");
+                            LoggerService.LogInfo("TempDoc: Creating temporary project document for suffix renaming...");
                             UnitSystem unitSys = targetDoc.DisplayUnitSystem == DisplayUnit.IMPERIAL ? UnitSystem.Imperial : UnitSystem.Metric;
                             tempDoc = targetDoc.Application.NewProjectDocument(unitSys);
+                            LoggerService.LogInfo($"TempDoc: Temporary document '{tempDoc.Title}' created successfully.");
 
                             ICollection<ElementId> tempCopied;
                             using (Transaction tTemp = new Transaction(tempDoc, "Temp Copy"))
                             {
                                 tTemp.Start();
                                 tempCopied = ElementTransformUtils.CopyElements(sourceDoc, finalCopyList, tempDoc, null, new CopyPasteOptions());
+                                LoggerService.LogInfo($"TempDoc: Copied {tempCopied.Count} elements to temporary document.");
 
                                 var tempCopiedList = tempCopied.ToList();
                                 for (int i = 0; i < finalCopyList.Count; i++)
@@ -408,7 +411,16 @@ public class TransferOrchestrator
                                         {
                                             if (TargetHasDuplicateName(targetDoc, srcElem, evalName))
                                             {
-                                                try { tempElem.Name = evalName + config.cf_suffixText; } catch { }
+                                                string newName = evalName + config.cf_suffixText;
+                                                try 
+                                                { 
+                                                    tempElem.Name = newName; 
+                                                    LoggerService.LogInfo($"TempDoc: Renamed duplicate element '{evalName}' -> '{newName}'.");
+                                                } 
+                                                catch (Exception exRename)
+                                                {
+                                                    LoggerService.LogWarning($"TempDoc: Could not rename element '{evalName}': {exRename.Message}");
+                                                }
                                             }
                                             else if (customNames?.ContainsKey(originalId) == true)
                                             {
@@ -421,12 +433,16 @@ public class TransferOrchestrator
                             }
 
                             Report("Copying Standards Elements (with suffixes)");
+                            LoggerService.LogInfo($"TempDoc: Transferring {tempCopied.Count} renamed elements from temporary document to target document...");
                             copied = ElementTransformUtils.CopyElements(tempDoc, tempCopied.ToList(), targetDoc, transform, options);
+                            LoggerService.LogInfo($"TempDoc: Successfully transferred {copied.Count} elements into target document.");
                         }
                         else
                         {
                             Report("Copying Standards Elements");
+                            LoggerService.LogInfo($"Transfer: Copying {finalCopyList.Count} elements directly from source to target document...");
                             copied = ElementTransformUtils.CopyElements(sourceDoc, finalCopyList, targetDoc, transform, options);
+                            LoggerService.LogInfo($"Transfer: Successfully copied {copied.Count} elements into target document.");
                         }
                     }
 
@@ -453,11 +469,35 @@ public class TransferOrchestrator
                                 ponDependientes(sourceDoc, sourceView.GetDependentElements(null), sourceView, targetView, options);
                             }
 
-                            // Replicate sheet views and viewports
+                            // Replicate sheet TitleBlocks, 2D elements, views and viewports
                             if (sourceView is ViewSheet sourceSheet && targetView is ViewSheet targetSheet)
                             {
+                                LoggerService.LogInfo($"SheetTransfer: Processing Sheet '{sourceSheet.SheetNumber} - {sourceSheet.Name}' (Id: {sourceSheet.Id.Value}) -> Target Sheet '{targetSheet.SheetNumber} - {targetSheet.Name}' (Id: {targetSheet.Id.Value})");
+
+                                try
+                                {
+                                    var sheetElementsToCopy = new FilteredElementCollector(sourceDoc, sourceSheet.Id)
+                                        .WhereElementIsNotElementType()
+                                        .Where(e => e is not Viewport && e is not View && e is not SunAndShadowSettings && e is not Level && e is not SketchPlane)
+                                        .Select(e => e.Id)
+                                        .ToList();
+
+                                    LoggerService.LogInfo($"SheetTransfer: Found {sheetElementsToCopy.Count} TitleBlocks/2D elements on source sheet '{sourceSheet.SheetNumber}'.");
+
+                                    if (sheetElementsToCopy.Any())
+                                    {
+                                        var copiedSheetElements = ElementTransformUtils.CopyElements(sourceSheet, sheetElementsToCopy, targetSheet, Transform.Identity, options);
+                                        LoggerService.LogInfo($"SheetTransfer: Successfully copied {copiedSheetElements.Count} TitleBlocks/2D elements to target sheet '{targetSheet.SheetNumber}'.");
+                                    }
+                                }
+                                catch (Exception exSheetElements)
+                                {
+                                    LoggerService.LogError($"SheetTransfer: Failed copying TitleBlock/2D elements for sheet '{sourceSheet.SheetNumber}'", exSheetElements);
+                                }
+
                                 if (config.cf_chk_SheetWithViews)
                                 {
+                                    LoggerService.LogInfo($"SheetTransfer: Replicating placed views and viewports for Sheet '{sourceSheet.SheetNumber}'...");
                                     foreach (ElementId placedViewId in sourceSheet.GetAllPlacedViews())
                                     {
                                         try
@@ -636,7 +676,15 @@ public class TransferOrchestrator
                 {
                     if (tempDoc != null)
                     {
-                        try { tempDoc.Close(false); } catch { }
+                        try 
+                        { 
+                            tempDoc.Close(false); 
+                            LoggerService.LogInfo("TempDoc: Closed temporary document cleanly.");
+                        } 
+                        catch (Exception exCloseTemp)
+                        {
+                            LoggerService.LogExceptionSilently("Closing TempDoc", exCloseTemp);
+                        }
                     }
 
                     // Restore renamed levels
