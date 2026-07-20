@@ -582,6 +582,10 @@ public partial class TransferPlusViewModel : ObservableObject
         _config.cf_chk_Callout = IncludeCallouts;
         _config.cf_chk_ViewElements = IncludeViewElements;
         _config.cf_chk_SheetWithViews = IncludeSheetsWithViews;
+        _config.cf_chk_UseLegendIfExists = UseLegendIfExists;
+        _config.cf_chk_UseScheduleIfExists = UseScheduleIfExists;
+        _config.cf_chk_UseAssemblyViewsIfExists = UseAssemblyViewsIfExists;
+        _config.cf_chk_ForceLevelInLevelBaseViews = ForceLevelInLevelBaseViews;
         _config.cf_chk_Links = CopyLinks;
         _config.cf_chk_GetTransformNone = TransformNone;
         _config.cf_chk_GetTransformLink = TransformLink;
@@ -636,6 +640,40 @@ public partial class TransferPlusViewModel : ObservableObject
             {
                 if (destDoc.Checked)
                 {
+                    Dictionary<string, string>? levelMappings = null;
+                    if (ForceLevelInLevelBaseViews)
+                    {
+                        var missingLevels = DetectMissingLevels(SelectedSourceDocument.Adoc, elementsToCopy, destDoc.Adoc);
+                        if (missingLevels.Any())
+                        {
+                            var levelView = new TransferPlus.Views.LevelMappingView(missingLevels);
+                            if (levelView.ShowDialog() == true)
+                            {
+                                var vm = levelView.DataContext as LevelMappingViewModel;
+                                if (vm != null)
+                                {
+                                    levelMappings = new Dictionary<string, string>();
+                                    foreach (var conflict in vm.Conflicts)
+                                    {
+                                        if (conflict.SelectedAction == LevelMappingAction.CreateNew)
+                                        {
+                                            levelMappings[conflict.SourceLevelName] = "CREATE_NEW";
+                                        }
+                                        else if (conflict.SelectedAction == LevelMappingAction.MapToExisting && !string.IsNullOrEmpty(conflict.SelectedTargetLevelName))
+                                        {
+                                            levelMappings[conflict.SourceLevelName] = conflict.SelectedTargetLevelName;
+                                        }
+                                    }
+                                }
+                            }
+                            else
+                            {
+                                TransferPlus.Services.LoggerService.LogInfo($"Transfer: Operation canceled by user at level mapping phase for '{destDoc.Nombre}'.");
+                                continue;
+                            }
+                        }
+                    }
+
                     transferTargetCount++;
                     TransferPlus.Services.LoggerService.LogInfo($"Transfer: Copying elements to target model '{destDoc.Nombre}'...");
                     TransferOrchestrator.TransferElements(SelectedSourceDocument.Adoc, destDoc.Adoc, elementsToCopy, _config, (msg, current, total) =>
@@ -646,7 +684,7 @@ public partial class TransferPlusViewModel : ObservableObject
                         {
                             TransferPlus.Services.LoggerService.LogInfo($"Transfer: [{msg}] {current}/{total} elements processed ({ProgressPercentage}%)");
                         }
-                    }, customNames);
+                    }, customNames, levelMappings);
                 }
             }
 
@@ -683,6 +721,18 @@ public partial class TransferPlusViewModel : ObservableObject
             IsBusy = false;
             StatusMessage = "Ready";
             ProgressPercentage = 0;
+            BringMainWindowToFront();
+        }
+    }
+
+    private void BringMainWindowToFront()
+    {
+        var activeWindow = System.Windows.Application.Current?.Windows.OfType<System.Windows.Window>()
+            .FirstOrDefault(w => w is TransferPlus.Views.TransferPlusView);
+        if (activeWindow != null)
+        {
+            activeWindow.Activate();
+            activeWindow.Focus();
         }
     }
 
@@ -1517,5 +1567,103 @@ public partial class TransferPlusViewModel : ObservableObject
         {
             TransferPlus.Services.LoggerService.LogError("OpenNumberingSettings", ex);
         }
+    }
+
+    private List<LevelConflict> DetectMissingLevels(Document sourceDoc, List<Elemento> checkedItems, Document targetDoc)
+    {
+        var missingConflicts = new List<LevelConflict>();
+        var checkedViews = checkedItems.Where(i => i.IsView).ToList();
+        if (!checkedViews.Any()) return missingConflicts;
+
+        var targetLevels = new FilteredElementCollector(targetDoc)
+            .OfClass(typeof(Level))
+            .Cast<Level>()
+            .ToList();
+
+        var targetLevelNames = targetLevels.Select(l => l.Name).ToList();
+
+        // Find all levels required by the checked plan views
+        var neededSourceLevels = new Dictionary<string, Level>();
+        foreach (var item in checkedViews)
+        {
+            if (sourceDoc.GetElement(item.eID) is ViewPlan viewPlan && viewPlan.GenLevel != null)
+            {
+                var srcLevel = viewPlan.GenLevel;
+                if (!neededSourceLevels.ContainsKey(srcLevel.Name))
+                {
+                    neededSourceLevels[srcLevel.Name] = srcLevel;
+                }
+            }
+        }
+
+        foreach (var kvp in neededSourceLevels)
+        {
+            var srcLevel = kvp.Value;
+            if (!targetLevelNames.Contains(srcLevel.Name, StringComparer.OrdinalIgnoreCase))
+            {
+                // Conflict found!
+                double elev = srcLevel.ProjectElevation; // in feet
+                // Convert elevation to formatted string
+                string elevText;
+                try
+                {
+                    double meters = elev * 0.3048;
+                    elevText = $"{meters:N3} m";
+                }
+                catch
+                {
+                    elevText = $"{elev:N3} ft";
+                }
+
+                // Find exact match, closest lower, closest upper
+                string? exactMatch = null;
+                string? closestLower = null;
+                string? closestUpper = null;
+                double lowerDiff = double.MaxValue;
+                double upperDiff = double.MaxValue;
+
+                foreach (var tl in targetLevels)
+                {
+                    double diff = tl.ProjectElevation - srcLevel.ProjectElevation;
+                    if (Math.Abs(diff) < 0.001)
+                    {
+                        exactMatch = tl.Name;
+                    }
+                    else if (diff < 0)
+                     {
+                         double absDiff = Math.Abs(diff);
+                         if (absDiff < lowerDiff)
+                         {
+                             lowerDiff = absDiff;
+                             closestLower = tl.Name;
+                         }
+                     }
+                     else if (diff > 0)
+                     {
+                         if (diff < upperDiff)
+                         {
+                             upperDiff = diff;
+                             closestUpper = tl.Name;
+                         }
+                     }
+                }
+
+                var conflict = new LevelConflict
+                {
+                    SourceLevelName = srcLevel.Name,
+                    SourceElevation = srcLevel.ProjectElevation,
+                    SourceElevationText = elevText,
+                    AvailableTargetLevels = targetLevelNames,
+                    ExactMatchLevelName = exactMatch,
+                    ClosestLowerLevelName = closestLower,
+                    ClosestUpperLevelName = closestUpper,
+                    SelectedTargetLevelName = exactMatch ?? closestLower ?? closestUpper ?? targetLevelNames.FirstOrDefault()
+                };
+
+                missingConflicts.Add(conflict);
+            }
+        }
+
+        return missingConflicts;
     }
 }
