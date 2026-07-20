@@ -46,6 +46,11 @@ public partial class TransferPlusView : Window
     {
         BtnDateHelper.IsChecked = false;
     }
+
+    private void Cancel_Click(object sender, RoutedEventArgs e)
+    {
+        this.Close();
+    }
 }
 
 public class NegativeConverter : System.Windows.Data.IValueConverter

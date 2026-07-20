@@ -505,7 +505,7 @@
                         </Style>
                     </Button.Style>
                 </Button>
-                <Button Content="View Log" Width="90" Height="30" Margin="0,0,5,0">
+                <Button Content="Cancel" Click="Cancel_Click" IsCancel="True" Width="90" Height="30" Margin="0,0,5,0">
                     <Button.Style>
                         <Style TargetType="Button">
                             <Setter Property="Background" Value="#E1E1E1"/>
