@@ -1052,6 +1052,7 @@ public partial class TransferPlusViewModel : ObservableObject
     private void InsertRegexHelper(string snippet)
     {
         RenameSearchText += snippet;
+        RenameUseRegex = true;
     }
 
     [RelayCommand]

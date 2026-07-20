@@ -682,6 +682,18 @@
                                                 <TextBlock Text="Regex Help" FontWeight="Bold" Margin="0,0,0,15" FontSize="14"/>
                                                 <!-- Category: Basic Matching & Anchors -->
                                                 <TextBlock Text="Basic Matching &amp; Anchors" FontWeight="Bold" Foreground="#333" Margin="0,10,0,5" FontSize="11"/>
+                                                <Button Command="{Binding InsertRegexHelperCommand}" CommandParameter="^[\w\s\W]+$" Click="CloseRegexPopup" HorizontalAlignment="Stretch">
+                                                    <Grid Margin="0,0,0,5" Width="355">
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="110"/>
+                                                            <ColumnDefinition Width="*"/>
+                                                        </Grid.ColumnDefinitions>
+                                                        <Border Grid.Column="0" Background="#F9F9F9" BorderBrush="#E0E0E0" BorderThickness="1" CornerRadius="4" Height="28" Margin="0,0,10,0">
+                                                            <TextBlock Text="^[\w\s\W]+$" HorizontalAlignment="Center" VerticalAlignment="Center" FontWeight="SemiBold" FontSize="9.5" Foreground="#111"/>
+                                                        </Border>
+                                                        <TextBlock Grid.Column="1" Text="Selects the full title completely" VerticalAlignment="Center" TextWrapping="Wrap" Foreground="#555" FontSize="10.5"/>
+                                                    </Grid>
+                                                </Button>
                                                 <Button Command="{Binding InsertRegexHelperCommand}" CommandParameter="text" Click="CloseRegexPopup" HorizontalAlignment="Stretch">
                                                     <Grid Margin="0,0,0,5" Width="355">
                                                         <Grid.ColumnDefinitions>
