@@ -476,18 +476,42 @@ public class TransferOrchestrator
 
                                 try
                                 {
-                                    var sheetElementsToCopy = new FilteredElementCollector(sourceDoc, sourceSheet.Id)
+                                    var allSheetElements = new FilteredElementCollector(sourceDoc, sourceSheet.Id)
                                         .WhereElementIsNotElementType()
                                         .Where(e => e is not Viewport && e is not View && e is not SunAndShadowSettings && e is not Level && e is not SketchPlane)
+                                        .ToList();
+
+                                    var titleBlockIds = allSheetElements
+                                        .Where(e => e.Category != null && e.Category.Id.Value == (long)BuiltInCategory.OST_TitleBlocks)
                                         .Select(e => e.Id)
                                         .ToList();
 
-                                    LoggerService.LogInfo($"SheetTransfer: Found {sheetElementsToCopy.Count} TitleBlocks/2D elements on source sheet '{sourceSheet.SheetNumber}'.");
+                                    var detailElementIds = allSheetElements
+                                        .Where(e => e.Category == null || e.Category.Id.Value != (long)BuiltInCategory.OST_TitleBlocks)
+                                        .Select(e => e.Id)
+                                        .ToList();
+
+                                    var sheetElementsToCopy = new List<ElementId>();
+
+                                    // TitleBlocks are ALWAYS copied for the sheet
+                                    sheetElementsToCopy.AddRange(titleBlockIds);
+                                    LoggerService.LogInfo($"SheetTransfer: Found {titleBlockIds.Count} TitleBlocks on source sheet '{sourceSheet.SheetNumber}'.");
+
+                                    // Other 2D annotation/detail elements on the sheet are included ONLY IF config.cf_chk_ViewElements is enabled
+                                    if (config.cf_chk_ViewElements && detailElementIds.Any())
+                                    {
+                                        sheetElementsToCopy.AddRange(detailElementIds);
+                                        LoggerService.LogInfo($"SheetTransfer: 'Transfer View Elements' is enabled. Including {detailElementIds.Count} 2D detail/annotation elements from sheet '{sourceSheet.SheetNumber}'.");
+                                    }
+                                    else if (detailElementIds.Any())
+                                    {
+                                        LoggerService.LogInfo($"SheetTransfer: 'Transfer View Elements' is disabled. Omitting {detailElementIds.Count} 2D detail/annotation elements from sheet '{sourceSheet.SheetNumber}'.");
+                                    }
 
                                     if (sheetElementsToCopy.Any())
                                     {
                                         var copiedSheetElements = ElementTransformUtils.CopyElements(sourceSheet, sheetElementsToCopy, targetSheet, Transform.Identity, options);
-                                        LoggerService.LogInfo($"SheetTransfer: Successfully copied {copiedSheetElements.Count} TitleBlocks/2D elements to target sheet '{targetSheet.SheetNumber}'.");
+                                        LoggerService.LogInfo($"SheetTransfer: Successfully copied {copiedSheetElements.Count} elements (TitleBlocks & 2D) to target sheet '{targetSheet.SheetNumber}'.");
                                     }
                                 }
                                 catch (Exception exSheetElements)
