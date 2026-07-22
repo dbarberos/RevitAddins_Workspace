@@ -82,13 +82,13 @@ public partial class TransferPlusViewModel : ObservableObject
 
     // Sub-options for Sheets
     [ObservableProperty]
-    private bool _useLegendIfExists = true;
+    private bool _useLegendIfExists = false;
 
     [ObservableProperty]
-    private bool _useScheduleIfExists = true;
+    private bool _useScheduleIfExists = false;
 
     [ObservableProperty]
-    private bool _useAssemblyViewsIfExists = true;
+    private bool _useAssemblyViewsIfExists = false;
 
     [ObservableProperty]
     private bool _copyLinks;
@@ -110,6 +110,37 @@ public partial class TransferPlusViewModel : ObservableObject
 
     private List<Elemento> _allSourceItems = new();
     private Configuraciones _config = new();
+
+    partial void OnIncludeSheetsWithViewsChanged(bool oldValue, bool newValue)
+    {
+        if (newValue)
+        {
+            AppendSuffix = true;
+            KeepOriginal = false;
+            AbortTransaction = false;
+        }
+        else
+        {
+            UseLegendIfExists = false;
+            UseScheduleIfExists = false;
+            UseAssemblyViewsIfExists = false;
+        }
+    }
+
+    partial void OnUseLegendIfExistsChanged(bool oldValue, bool newValue)
+    {
+        if (newValue) IncludeSheetsWithViews = true;
+    }
+
+    partial void OnUseScheduleIfExistsChanged(bool oldValue, bool newValue)
+    {
+        if (newValue) IncludeSheetsWithViews = true;
+    }
+
+    partial void OnUseAssemblyViewsIfExistsChanged(bool oldValue, bool newValue)
+    {
+        if (newValue) IncludeSheetsWithViews = true;
+    }
 
     public TransferPlusViewModel(UIApplication app, Document targetDoc)
     {
@@ -657,7 +688,7 @@ public partial class TransferPlusViewModel : ObservableObject
                                     {
                                         if (conflict.SelectedAction == LevelMappingAction.CreateNew)
                                         {
-                                            levelMappings[conflict.SourceLevelName] = "CREATE_NEW";
+                                            levelMappings[conflict.SourceLevelName] = "CREATE_NEW:" + conflict.NewLevelName;
                                         }
                                         else if (conflict.SelectedAction == LevelMappingAction.MapToExisting && !string.IsNullOrEmpty(conflict.SelectedTargetLevelName))
                                         {

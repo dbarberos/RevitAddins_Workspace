@@ -34,6 +34,14 @@ namespace TransferPlus.Models
 		// Token: 0x0400008D RID: 141
 		public bool cf_chk_SheetWithViews;
 
+		public bool cf_chk_UseLegendIfExists = true;
+
+		public bool cf_chk_UseScheduleIfExists = true;
+
+		public bool cf_chk_UseAssemblyViewsIfExists = true;
+
+		public bool cf_chk_ForceLevelInLevelBaseViews;
+
 		// Token: 0x0400007E RID: 126
 		public bool cf_chk_Links = true;
 

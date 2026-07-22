@@ -28,6 +28,7 @@ When specific creation concepts are needed, locate the following files in the re
   * *Use cases:* Placing point-based components, line-based components, face-based hosting, and Type activation.
 * **Views, Sheets & Annotation:** [09_Documentation_and_Views.md](file:///c:/Users/david.barbero/Documents/DOCUMENTOS/ALTEN/Workbench/RevitAddins_Workspace/RevitAddins_Workspace/.agents/skills/revit-api-families/references/09_Documentation_and_Views.md)
   * *Use cases:* Creating ViewPlans, generating TitleBlocks, placing Viewports, Tagging, and Dimensioning.
+* **Debugging ViewSheet TitleBlock & 2D Elements Copy:** [debugging_viewsheet_titleblock_2d_elements_copy_2026-07-20.md](file:///c:/Users/david.barbero/Documents/DOCUMENTOS/ALTEN/Workbench/RevitAddins_Workspace/RevitAddins_Workspace/.agents/skills/revit-api-families/references/debugging_viewsheet_titleblock_2d_elements_copy_2026-07-20.md)
 * **Parametric Content Creation:** [25_FamilyAPI_and_Generation.md](file:///c:/Users/david.barbero/Documents/DOCUMENTOS/ALTEN/Workbench/RevitAddins_Workspace/RevitAddins_Workspace/.agents/skills/revit-api-families/references/25_FamilyAPI_and_Generation.md)
   * *Use cases:* Opening family templates, drawing Reference Planes, creating Extrusions, and binding FamilyParameters.
 

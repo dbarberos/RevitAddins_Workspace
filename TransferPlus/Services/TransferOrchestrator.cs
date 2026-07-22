@@ -24,6 +24,8 @@ public class TransferOrchestrator
         var objectStylesToTransfer = new List<Elemento>();
         var duplicateItems = new List<TransferPlus.Models.DuplicateElementInfo>();
 
+        var sheetsToTransfer = new List<Elemento>();
+
         foreach (var item in elementsToCopy)
         {
             if (item.IsWorkset)
@@ -40,11 +42,47 @@ public class TransferOrchestrator
             }
             else
             {
-                elementsCopyList.Add(item.eID);
+                Element elem = sourceDoc.GetElement(item.eID);
+                if (elem is Phase || (elem != null && elem.Category != null && elem.Category.Id.Value == (long)BuiltInCategory.OST_Phases))
+                {
+                    LoggerService.LogWarning($"Transfer: Element '{item.Nombre}' (Category: Fases, Id: {item.eID.Value}) is a Project Phase. Revit API restricts direct Phase copying between documents. Skipping.");
+                    continue;
+                }
+                if (elem is ViewSheet)
+                {
+                    sheetsToTransfer.Add(item);
+                    LoggerService.LogInfo($"Transfer: Sheet '{item.Nombre}' (Id: {item.eID.Value}) queued for programmatic sheet creation.");
+                }
+                else if (elem is View v)
+                {
+                    bool isCopyableViaDocumentCopy = v.IsTemplate ||
+                                                     v.ViewType == ViewType.DraftingView ||
+                                                     v.ViewType == ViewType.Legend ||
+                                                     v.ViewType == ViewType.ThreeD ||
+                                                     v.ViewType == ViewType.Section ||
+                                                     v.ViewType == ViewType.Elevation ||
+                                                     (v is ViewSchedule vs && !vs.IsTitleblockRevisionSchedule);
+
+                    if (!isCopyableViaDocumentCopy)
+                    {
+                        LoggerService.LogInfo($"Transfer: Model view '{v.Name}' (type {v.ViewType}, Id: {v.Id.Value}) excluded from direct CopyElements. Handled separately in plan/sheet processing.");
+                    }
+                    else
+                    {
+                        elementsCopyList.Add(item.eID);
+                        string viewKind = v.IsTemplate ? "ViewTemplate" : v.ViewType.ToString();
+                        LoggerService.LogInfo($"Transfer: {viewKind} '{elem.Name}' [Id: {elem.Id.Value}] queued for document CopyElements.");
+                    }
+                }
+                else if (elem != null)
+                {
+                    elementsCopyList.Add(item.eID);
+                    LoggerService.LogInfo($"Transfer: Standards Element '{elem.Name}' [Category: {elem.Category?.Name ?? "None"}, Class: {elem.GetType().Name}, Id: {elem.Id.Value}] queued for document CopyElements.");
+                }
             }
         }
 
-        int totalCount = worksetsToCreate.Count + familiesLoadList.Count + elementsCopyList.Count + objectStylesToTransfer.Count;
+        int totalCount = worksetsToCreate.Count + familiesLoadList.Count + elementsCopyList.Count + objectStylesToTransfer.Count + sheetsToTransfer.Count;
         int currentCount = 0;
 
         void Report(string msg)
@@ -359,6 +397,7 @@ public class TransferOrchestrator
                             }
                             else if (config.cf_rbKeepOriginal)
                             {
+                                LoggerService.LogInfo($"DuplicateCheck: Element '{evalName}' (Id: {id.Value}) already exists in target. Option 'Keep Original' selected. Skipping transfer for this element.");
                                 continue;
                             }
                         }
@@ -416,6 +455,19 @@ public class TransferOrchestrator
                                                 { 
                                                     tempElem.Name = newName; 
                                                     LoggerService.LogInfo($"TempDoc: Renamed duplicate element '{evalName}' -> '{newName}'.");
+                                                    
+                                                    if (tempElem is ViewSheet tempSheet)
+                                                    {
+                                                        try
+                                                        {
+                                                            tempSheet.SheetNumber = tempSheet.SheetNumber + config.cf_suffixText;
+                                                            LoggerService.LogInfo($"TempDoc: Renamed duplicate SheetNumber to '{tempSheet.SheetNumber}'.");
+                                                        }
+                                                        catch (Exception exSheetNum)
+                                                        {
+                                                            LoggerService.LogWarning($"TempDoc: Could not rename SheetNumber for '{evalName}': {exSheetNum.Message}");
+                                                        }
+                                                    }
                                                 } 
                                                 catch (Exception exRename)
                                                 {
@@ -428,6 +480,7 @@ public class TransferOrchestrator
                                             }
                                         }
                                     }
+
                                 }
                                 tTemp.Commit();
                             }
@@ -444,6 +497,12 @@ public class TransferOrchestrator
                             copied = ElementTransformUtils.CopyElements(sourceDoc, finalCopyList, targetDoc, transform, options);
                             LoggerService.LogInfo($"Transfer: Successfully copied {copied.Count} elements into target document.");
                         }
+
+                        if (copied.Any())
+                        {
+                            targetDoc.Regenerate();
+                            LoggerService.LogInfo("Transfer: Regenerated target document after main copy.");
+                        }
                     }
 
                     // If copy includes views, match templates, copy detail items and callouts recursively
@@ -451,14 +510,18 @@ public class TransferOrchestrator
                     {
                         ElementId originalId = finalCopyList[i];
                         ElementId newId = copied.ElementAtOrDefault(i);
-                        if (newId == null || newId == ElementId.InvalidElementId) continue;
+                        if (newId == null || newId == ElementId.InvalidElementId)
+                        {
+                            LoggerService.LogWarning($"Transfer: Element Id '{originalId.Value}' was in finalCopyList but resulted in InvalidElementId/null in target document. Skipping subsequent processing for this element.");
+                            continue;
+                        }
 
                         Element srcElem = sourceDoc.GetElement(originalId);
                         Element destElem = targetDoc.GetElement(newId);
 
                         if (srcElem is View sourceView && destElem is View targetView)
                         {
-                            matchPlantilla(sourceDoc, targetDoc, sourceView, targetView);
+                            matchPlantilla(sourceDoc, targetDoc, sourceView, targetView, options, config, duplicateItems);
                             
                             if (config.cf_chk_Callout)
                             {
@@ -468,233 +531,25 @@ public class TransferOrchestrator
                             {
                                 ponDependientes(sourceDoc, sourceView.GetDependentElements(null), sourceView, targetView, options);
                             }
-
-                            // Replicate sheet TitleBlocks, 2D elements, views and viewports
-                            if (sourceView is ViewSheet sourceSheet && targetView is ViewSheet targetSheet)
-                            {
-                                LoggerService.LogInfo($"SheetTransfer: Processing Sheet '{sourceSheet.SheetNumber} - {sourceSheet.Name}' (Id: {sourceSheet.Id.Value}) -> Target Sheet '{targetSheet.SheetNumber} - {targetSheet.Name}' (Id: {targetSheet.Id.Value})");
-
-                                try
-                                {
-                                    var allSheetElements = new FilteredElementCollector(sourceDoc, sourceSheet.Id)
-                                        .WhereElementIsNotElementType()
-                                        .Where(e => e is not Viewport && e is not View && e is not SunAndShadowSettings && e is not Level && e is not SketchPlane)
-                                        .ToList();
-
-                                    var titleBlockIds = allSheetElements
-                                        .Where(e => e.Category != null && e.Category.Id.Value == (long)BuiltInCategory.OST_TitleBlocks)
-                                        .Select(e => e.Id)
-                                        .ToList();
-
-                                    var detailElementIds = allSheetElements
-                                        .Where(e => e.Category == null || e.Category.Id.Value != (long)BuiltInCategory.OST_TitleBlocks)
-                                        .Select(e => e.Id)
-                                        .ToList();
-
-                                    var sheetElementsToCopy = new List<ElementId>();
-
-                                    // TitleBlocks are ALWAYS copied for the sheet
-                                    sheetElementsToCopy.AddRange(titleBlockIds);
-                                    LoggerService.LogInfo($"SheetTransfer: Found {titleBlockIds.Count} TitleBlocks on source sheet '{sourceSheet.SheetNumber}'.");
-
-                                    // Other 2D annotation/detail elements on the sheet are included ONLY IF config.cf_chk_ViewElements is enabled
-                                    if (config.cf_chk_ViewElements && detailElementIds.Any())
-                                    {
-                                        sheetElementsToCopy.AddRange(detailElementIds);
-                                        LoggerService.LogInfo($"SheetTransfer: 'Transfer View Elements' is enabled. Including {detailElementIds.Count} 2D detail/annotation elements from sheet '{sourceSheet.SheetNumber}'.");
-                                    }
-                                    else if (detailElementIds.Any())
-                                    {
-                                        LoggerService.LogInfo($"SheetTransfer: 'Transfer View Elements' is disabled. Omitting {detailElementIds.Count} 2D detail/annotation elements from sheet '{sourceSheet.SheetNumber}'.");
-                                    }
-
-                                    if (sheetElementsToCopy.Any())
-                                    {
-                                        var copiedSheetElements = ElementTransformUtils.CopyElements(sourceSheet, sheetElementsToCopy, targetSheet, Transform.Identity, options);
-                                        LoggerService.LogInfo($"SheetTransfer: Successfully copied {copiedSheetElements.Count} elements (TitleBlocks & 2D) to target sheet '{targetSheet.SheetNumber}'.");
-                                    }
-                                }
-                                catch (Exception exSheetElements)
-                                {
-                                    LoggerService.LogError($"SheetTransfer: Failed copying TitleBlock/2D elements for sheet '{sourceSheet.SheetNumber}'", exSheetElements);
-                                }
-
-                                if (config.cf_chk_SheetWithViews)
-                                {
-                                    LoggerService.LogInfo($"SheetTransfer: Replicating placed views and viewports for Sheet '{sourceSheet.SheetNumber}'...");
-                                    foreach (ElementId placedViewId in sourceSheet.GetAllPlacedViews())
-                                    {
-                                        try
-                                        {
-                                            View srcPlacedView = sourceDoc.GetElement(placedViewId) as View;
-                                            if (srcPlacedView == null) continue;
-
-                                            ElementId targetViewId = ElementId.InvalidElementId;
-                                            bool shouldCopyView = true;
-
-                                            // Check if Legend, Schedule, or Assembly View
-                                            bool isLegend = srcPlacedView.ViewType == ViewType.Legend;
-                                            bool isSchedule = srcPlacedView.ViewType == ViewType.Schedule;
-                                            bool isAssembly = srcPlacedView.IsAssemblyView;
-
-                                            if ((isLegend && config.cf_chk_UseLegendIfExists) ||
-                                                (isSchedule && config.cf_chk_UseScheduleIfExists) ||
-                                                (isAssembly && config.cf_chk_UseAssemblyViewsIfExists))
-                                            {
-                                                var existingTargetView = new FilteredElementCollector(targetDoc)
-                                                    .OfClass(typeof(View))
-                                                    .Cast<View>()
-                                                    .FirstOrDefault(v => v.ViewType == srcPlacedView.ViewType && v.Name.Equals(srcPlacedView.Name, StringComparison.OrdinalIgnoreCase));
-
-                                                if (existingTargetView != null)
-                                                {
-                                                    shouldCopyView = false;
-                                                    if (config.cf_rbKeepOriginal)
-                                                    {
-                                                        targetViewId = existingTargetView.Id;
-                                                    }
-                                                    else if (config.cf_rbAbortTransaction)
-                                                    {
-                                                        duplicateItems.Add(new TransferPlus.Models.DuplicateElementInfo("Views & Sheets", srcPlacedView.ViewType.ToString(), srcPlacedView.GetType().Name, srcPlacedView.Name));
-                                                        var cancelEx = new OperationCanceledException("Transfer canceled: Duplicate element names found.");
-                                                        cancelEx.Data["Duplicates"] = duplicateItems;
-                                                        throw cancelEx;
-                                                    }
-                                                    else if (config.cf_rbAppendSuffix)
-                                                    {
-                                                        shouldCopyView = true;
-                                                    }
-                                                }
-                                            }
-
-                                            if (shouldCopyView)
-                                            {
-                                                var copiedViewIds = ElementTransformUtils.CopyElements(sourceDoc, new List<ElementId> { placedViewId }, targetDoc, transform, options);
-                                                targetViewId = copiedViewIds.FirstOrDefault() ?? ElementId.InvalidElementId;
-
-                                                if (targetViewId != ElementId.InvalidElementId)
-                                                {
-                                                    View newPlacedView = targetDoc.GetElement(targetViewId) as View;
-                                                    if (newPlacedView != null)
-                                                    {
-                                                        if (config.cf_rbAppendSuffix)
-                                                        {
-                                                            var existingTargetView = new FilteredElementCollector(targetDoc)
-                                                                .OfClass(typeof(View))
-                                                                .Cast<View>()
-                                                                .FirstOrDefault(v => v.Id != targetViewId && v.ViewType == srcPlacedView.ViewType && v.Name.Equals(srcPlacedView.Name, StringComparison.OrdinalIgnoreCase));
-                                                            if (existingTargetView != null)
-                                                            {
-                                                                try { newPlacedView.Name = srcPlacedView.Name + config.cf_suffixText; } catch { }
-                                                            }
-                                                        }
-
-                                                        if (transform != null)
-                                                        {
-                                                            try
-                                                            {
-                                                                if (!transform.Origin.IsAlmostEqualTo(XYZ.Zero))
-                                                                {
-                                                                    ElementTransformUtils.MoveElement(targetDoc, GetCropBoxFor(newPlacedView), transform.Origin);
-                                                                }
-                                                            }
-                                                            catch { }
-
-                                                            try
-                                                            {
-                                                                Line rotationAxis = GetRotationAxisFromTransform(transform);
-                                                                double angle = GetRotationAngleFromTransform(transform);
-                                                                if (angle != 0.0)
-                                                                {
-                                                                    ElementTransformUtils.RotateElement(targetDoc, GetCropBoxFor(newPlacedView), rotationAxis, angle);
-                                                                }
-                                                            }
-                                                            catch { }
-                                                        }
-
-                                                        matchPlantilla(sourceDoc, targetDoc, srcPlacedView, newPlacedView);
-
-                                                        if (config.cf_chk_ViewElements)
-                                                        {
-                                                            ponDependientes(sourceDoc, srcPlacedView.GetDependentElements(null), srcPlacedView, newPlacedView, options);
-                                                        }
-
-                                                        if (config.cf_chk_Callout && srcPlacedView.ViewType != ViewType.DraftingView)
-                                                        {
-                                                            ponCallouts(sourceDoc, targetDoc, srcPlacedView, newPlacedView, options, config.cf_chk_ViewElements, 3, transform != null, transform);
-                                                        }
-                                                    }
-                                                }
-                                            }
-
-                                            if (targetViewId != ElementId.InvalidElementId)
-                                            {
-                                                foreach (Element element3 in new FilteredElementCollector(sourceDoc).OfClass(typeof(Viewport)))
-                                                {
-                                                    Viewport srcViewport = (Viewport)element3;
-                                                    if (srcViewport.SheetId == sourceSheet.Id && srcViewport.ViewId == placedViewId)
-                                                    {
-                                                        BoundingBoxXYZ boundingBoxXYZ = srcViewport.get_BoundingBox(sourceSheet);
-                                                        XYZ xyz = (boundingBoxXYZ.Max + boundingBoxXYZ.Min) / 2.0;
-                                                        string name = srcViewport.Name;
-
-                                                        Viewport targetViewport = Viewport.Create(targetDoc, targetSheet.Id, targetViewId, XYZ.Zero);
-                                                        foreach (ElementId typeId in targetViewport.GetValidTypes())
-                                                        {
-                                                            if ((targetDoc.GetElement(typeId) as ElementType).Name.Equals(name))
-                                                            {
-                                                                targetViewport.ChangeTypeId(typeId);
-                                                            }
-                                                        }
-                                                        BoundingBoxXYZ boundingBoxXYZ2 = targetViewport.get_BoundingBox(targetSheet);
-                                                        XYZ xyz2 = (boundingBoxXYZ2.Max + boundingBoxXYZ2.Min) / 2.0;
-                                                        ElementTransformUtils.MoveElement(targetDoc, targetViewport.Id, new XYZ(xyz.X - xyz2.X, xyz.Y - xyz2.Y, 0.0));
-                                                    }
-                                                }
-                                            }
-                                        }
-                                        catch (OperationCanceledException)
-                                        {
-                                            throw;
-                                        }
-                                        catch (Exception ex)
-                                        {
-                                            LoggerService.LogExceptionSilently("Replicating sheet viewport/view", ex);
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-
-                    // Apply renamed elements
-                    if (customNames != null && tempDoc == null)
-                    {
-                        for (int i = 0; i < finalCopyList.Count; i++)
-                        {
-                            ElementId originalId = finalCopyList[i];
-                            ElementId newId = copied.ElementAtOrDefault(i);
-                            if (newId != null && newId != ElementId.InvalidElementId && customNames.ContainsKey(originalId))
-                            {
-                                try
-                                {
-                                    Element newElem = targetDoc.GetElement(newId);
-                                    if (newElem != null) newElem.Name = customNames[originalId];
-                                }
-                                catch { }
-                            }
                         }
                     }
                 }
                 catch (Exception ex)
                 {
-                    if (config.cf_rbAbortTransaction && abortHandler.Triggered)
+                    LoggerService.LogError("Transfer Elements", ex);
+                    try
                     {
                         t.RollBack();
+                    }
+                    catch { }
+
+                    if (config.cf_rbAbortTransaction && abortHandler.Triggered)
+                    {
                         var cancelEx = new OperationCanceledException("Transfer canceled: Duplicate element names found.", ex);
                         cancelEx.Data["Duplicates"] = duplicateItems;
                         throw cancelEx;
                     }
+                    throw;
                 }
                 finally
                 {
@@ -737,32 +592,618 @@ public class TransferOrchestrator
                 }
             }
         }
+
+        // 4. Process Sheets programmatically (sheetsToTransfer)
+        if (sheetsToTransfer.Any())
+        {
+            LoggerService.LogInfo($"Transfer: Processing {sheetsToTransfer.Count} sheets programmatically...");
+            using (Transaction tSheets = new Transaction(targetDoc, "TransferPlus: Sheets"))
+            {
+                tSheets.Start();
+                if (config.cf_chk_AcceptAll)
+                {
+                    WarningSwallower.AttachToTransaction(tSheets);
+                }
+
+                CustomCopyHandlerAbort abortHandler = new CustomCopyHandlerAbort();
+                CopyPasteOptions options = new CopyPasteOptions();
+                if (config.cf_rbAbortTransaction)
+                {
+                    options.SetDuplicateTypeNamesHandler(abortHandler);
+                }
+                else
+                {
+                    options.SetDuplicateTypeNamesHandler(new CustomCopyHandlerOk());
+                }
+
+                Transform? transform = null;
+                if (config.cf_chk_GetTransformLink)
+                {
+                    var linkInstances = new FilteredElementCollector(targetDoc)
+                        .OfClass(typeof(RevitLinkInstance))
+                        .Cast<RevitLinkInstance>()
+                        .Where(i => i.GetLinkDocument()?.Title?.Equals(sourceDoc.Title) == true)
+                        .ToList();
+
+                    if (linkInstances.Any())
+                    {
+                        transform = linkInstances.First().GetTotalTransform();
+                    }
+                }
+                else if (config.cf_chk_GetTransformShared)
+                {
+                    Transform sourceTransform = sourceDoc.ActiveProjectLocation.GetTotalTransform();
+                    transform = targetDoc.ActiveProjectLocation.GetTotalTransform().Multiply(sourceTransform.Inverse);
+                }
+
+                foreach (var item in sheetsToTransfer)
+                {
+                    ViewSheet sourceSheet = sourceDoc.GetElement(item.eID) as ViewSheet;
+                    if (sourceSheet == null) continue;
+
+                    Report($"Transferring Sheet: {sourceSheet.SheetNumber} - {sourceSheet.Name}");
+                    LoggerService.LogInfo($"SheetTransfer: Initiating transfer for Sheet '{sourceSheet.SheetNumber} - {sourceSheet.Name}' (Id: {sourceSheet.Id.Value})...");
+
+                    ViewSheet targetSheet = CreateViewSheet(sourceDoc, targetDoc, sourceSheet, config);
+                    if (targetSheet == null)
+                    {
+                        LoggerService.LogWarning($"SheetTransfer: Failed to create target sheet for '{sourceSheet.SheetNumber}'.");
+                        continue;
+                    }
+
+                    try
+                    {
+                        var allSheetElements = new FilteredElementCollector(sourceDoc, sourceSheet.Id)
+                            .WhereElementIsNotElementType()
+                            .Where(e => e is not Viewport && 
+                                        e is not View && 
+                                        e is not ScheduleSheetInstance && 
+                                        e.GetType().Name != "PanelScheduleSheetInstance" && 
+                                        e is not SunAndShadowSettings && 
+                                        e is not Level && 
+                                        e is not SketchPlane)
+                            .ToList();
+
+                        var titleBlockIds = allSheetElements
+                            .Where(e => e.Category != null && e.Category.Id.Value == (long)BuiltInCategory.OST_TitleBlocks)
+                            .Select(e => e.Id)
+                            .ToList();
+
+                        var detailElementIds = allSheetElements
+                            .Where(e => e.Category == null || e.Category.Id.Value != (long)BuiltInCategory.OST_TitleBlocks)
+                            .Select(e => e.Id)
+                            .ToList();
+
+                        var sheetElementsToCopy = new List<ElementId>();
+                        sheetElementsToCopy.AddRange(titleBlockIds);
+                        LoggerService.LogInfo($"SheetTransfer: Found {titleBlockIds.Count} TitleBlocks on source sheet '{sourceSheet.SheetNumber}'.");
+
+                        if (config.cf_chk_ViewElements && detailElementIds.Any())
+                        {
+                            sheetElementsToCopy.AddRange(detailElementIds);
+                            LoggerService.LogInfo($"SheetTransfer: 'Transfer View Elements' is enabled. Including {detailElementIds.Count} 2D detail/annotation elements from sheet '{sourceSheet.SheetNumber}'.");
+                        }
+
+                        if (sheetElementsToCopy.Any())
+                        {
+                            var typeIdsToCopy = new List<ElementId>();
+                            foreach (ElementId elId in sheetElementsToCopy)
+                            {
+                                Element el = sourceDoc.GetElement(elId);
+                                if (el != null)
+                                {
+                                    ElementId typeId = el.GetTypeId();
+                                    if (typeId != ElementId.InvalidElementId)
+                                    {
+                                        typeIdsToCopy.Add(typeId);
+                                    }
+                                }
+                            }
+
+                            if (typeIdsToCopy.Any())
+                            {
+                                var distinctTypes = typeIdsToCopy.Distinct().ToList();
+                                try
+                                {
+                                    ElementTransformUtils.CopyElements(sourceDoc, distinctTypes, targetDoc, null, options);
+                                    targetDoc.Regenerate();
+                                }
+                                catch { }
+                            }
+
+                            ElementTransformUtils.CopyElements(sourceSheet, sheetElementsToCopy, targetSheet, Transform.Identity, options);
+                            LoggerService.LogInfo($"SheetTransfer: Successfully copied {sheetElementsToCopy.Count} TitleBlock/2D elements to target sheet '{targetSheet.SheetNumber}'.");
+                        }
+                    }
+                    catch (Exception exSheetElements)
+                    {
+                        LoggerService.LogError($"SheetTransfer: Failed copying TitleBlock/2D elements for sheet '{sourceSheet.SheetNumber}'", exSheetElements);
+                    }
+
+                    if (config.cf_chk_SheetWithViews)
+                    {
+                        try
+                        {
+                            targetDoc.Regenerate();
+                            LoggerService.LogInfo("SheetTransfer: Regenerated target document to update geometry before placing viewports.");
+                        }
+                        catch (Exception exRegen)
+                        {
+                            LoggerService.LogWarning($"SheetTransfer: Notice during document regeneration: {exRegen.Message}");
+                        }
+
+                        LoggerService.LogInfo($"SheetTransfer: Replicating placed views and viewports/schedules for Sheet '{sourceSheet.SheetNumber}'...");
+                        var placedViewIds = sourceSheet.GetAllPlacedViews().ToList();
+
+                        // Query for ScheduleSheetInstances to retrieve the IDs of placed schedules (ViewSchedule)
+                        var scheduleInstances = new FilteredElementCollector(sourceDoc, sourceSheet.Id)
+                            .OfClass(typeof(ScheduleSheetInstance))
+                            .Cast<ScheduleSheetInstance>();
+
+                        foreach (var inst in scheduleInstances)
+                        {
+                            if (inst.ScheduleId != ElementId.InvalidElementId)
+                            {
+                                if (sourceDoc.GetElement(inst.ScheduleId) is ViewSchedule vs && !vs.IsTitleblockRevisionSchedule)
+                                {
+                                    if (!placedViewIds.Contains(inst.ScheduleId))
+                                    {
+                                        placedViewIds.Add(inst.ScheduleId);
+                                    }
+                                }
+                            }
+                        }
+
+                        foreach (ElementId placedViewId in placedViewIds)
+                        {
+                            try
+                            {
+                                View srcPlacedView = sourceDoc.GetElement(placedViewId) as View;
+                                if (srcPlacedView == null) continue;
+
+                                ElementId targetViewId = ElementId.InvalidElementId;
+                                bool shouldCopyView = false;
+                                bool viewWasNewlyCreated = false;
+
+                                bool isLegend = srcPlacedView.ViewType == ViewType.Legend;
+                                bool isSchedule = srcPlacedView.ViewType == ViewType.Schedule;
+                                bool isAssembly = srcPlacedView.IsAssemblyView;
+
+                                bool isTitleblockRevisionSchedule = false;
+                                if (srcPlacedView is ViewSchedule vs)
+                                {
+                                    isTitleblockRevisionSchedule = vs.IsTitleblockRevisionSchedule;
+                                }
+                        bool isCopyable = srcPlacedView.ViewType == ViewType.DraftingView ||
+                                                  isLegend ||
+                                                  (isSchedule && !isTitleblockRevisionSchedule);
+
+                                if (isCopyable)
+                                {
+                                    shouldCopyView = true;
+                                    var existingTargetView = new FilteredElementCollector(targetDoc)
+                                        .OfClass(typeof(View))
+                                        .Cast<View>()
+                                        .FirstOrDefault(v => v.ViewType == srcPlacedView.ViewType && v.Name.Equals(srcPlacedView.Name, StringComparison.OrdinalIgnoreCase));
+
+                                    if (existingTargetView != null)
+                                    {
+                                        bool useExistingSetting = (isLegend && config.cf_chk_UseLegendIfExists) ||
+                                                                  (isSchedule && config.cf_chk_UseScheduleIfExists) ||
+                                                                  (isAssembly && config.cf_chk_UseAssemblyViewsIfExists);
+
+                                        if (useExistingSetting)
+                                        {
+                                            shouldCopyView = false;
+                                            targetViewId = existingTargetView.Id;
+                                            LoggerService.LogInfo($"SheetTransfer: Option 'Use if exists in Target' active for '{srcPlacedView.Name}' ({srcPlacedView.ViewType}). Re-using existing target view.");
+                                        }
+                                        else
+                                        {
+                                            shouldCopyView = false;
+                                            if (config.cf_rbKeepOriginal)
+                                            {
+                                                targetViewId = existingTargetView.Id;
+                                                LoggerService.LogInfo($"SheetTransfer: Duplicate view '{srcPlacedView.Name}' already exists. Re-using target view.");
+                                            }
+                                            else if (config.cf_rbAbortTransaction)
+                                            {
+                                                duplicateItems.Add(new TransferPlus.Models.DuplicateElementInfo("Views & Sheets", srcPlacedView.ViewType.ToString(), srcPlacedView.GetType().Name, srcPlacedView.Name));
+                                                var cancelEx = new OperationCanceledException("Transfer canceled: Duplicate element names found.");
+                                                cancelEx.Data["Duplicates"] = duplicateItems;
+                                                throw cancelEx;
+                                            }
+                                            else if (config.cf_rbAppendSuffix)
+                                            {
+                                                shouldCopyView = true;
+                                            }
+                                        }
+                                    }
+                                }
+                                else
+                                {
+                                    shouldCopyView = false;
+                                    var existingTargetView = new FilteredElementCollector(targetDoc)
+                                        .OfClass(typeof(View))
+                                        .Cast<View>()
+                                        .FirstOrDefault(v => v.ViewType == srcPlacedView.ViewType && v.Name.Equals(srcPlacedView.Name, StringComparison.OrdinalIgnoreCase));
+
+                                    if (existingTargetView != null)
+                                    {
+                                        if (config.cf_rbAbortTransaction)
+                                        {
+                                            duplicateItems.Add(new TransferPlus.Models.DuplicateElementInfo("Views & Sheets", srcPlacedView.ViewType.ToString(), srcPlacedView.GetType().Name, srcPlacedView.Name));
+                                            var cancelEx = new OperationCanceledException("Transfer canceled: Duplicate element names found.");
+                                            cancelEx.Data["Duplicates"] = duplicateItems;
+                                            throw cancelEx;
+                                        }
+                                        else if (config.cf_rbAppendSuffix)
+                                        {
+                                            if (srcPlacedView is ViewPlan srcViewPlanSuffix)
+                                            {
+                                                LoggerService.LogInfo($"SheetTransfer: Duplicate view '{srcPlacedView.Name}' exists in target. Option 'Append Suffix' active. Creating new ViewPlan with suffix...");
+                                                ViewPlan newPlan = CreateViewPlan(sourceDoc, targetDoc, srcViewPlanSuffix, levelMappings, config.cf_chk_ForceLevelInLevelBaseViews);
+                                                if (newPlan != null)
+                                                {
+                                                    try { newPlan.Name = srcPlacedView.Name + config.cf_suffixText; }
+                                                    catch { newPlan.Name = GetUniqueViewName(targetDoc, srcPlacedView.Name + config.cf_suffixText, srcPlacedView.ViewType); }
+                                                    targetViewId = newPlan.Id;
+                                                    viewWasNewlyCreated = true;
+                                                }
+                                            }
+                                            else
+                                            {
+                                                shouldCopyView = true;
+                                                LoggerService.LogInfo($"SheetTransfer: Duplicate non-plan view '{srcPlacedView.Name}' exists. Option 'Append Suffix' active. Copying view...");
+                                            }
+                                        }
+                                        else if (config.cf_rbKeepOriginal)
+                                        {
+                                            bool canAddExisting = Viewport.CanAddViewToSheet(targetDoc, targetSheet.Id, existingTargetView.Id);
+                                            if (canAddExisting)
+                                            {
+                                                targetViewId = existingTargetView.Id;
+                                                LoggerService.LogInfo($"SheetTransfer: Model view '{srcPlacedView.Name}' already exists in target document and is unplaced. Re-using target view for viewport.");
+                                            }
+                                            else
+                                            {
+                                                if (srcPlacedView is ViewPlan srcViewPlanKeep)
+                                                {
+                                                    LoggerService.LogInfo($"SheetTransfer: Model view '{srcPlacedView.Name}' exists in target but is ALREADY placed on another sheet. Creating new ViewPlan for target sheet...");
+                                                    ViewPlan newPlan = CreateViewPlan(sourceDoc, targetDoc, srcViewPlanKeep, levelMappings, config.cf_chk_ForceLevelInLevelBaseViews);
+                                                    if (newPlan != null)
+                                                    {
+                                                        targetViewId = newPlan.Id;
+                                                        viewWasNewlyCreated = true;
+                                                    }
+                                                }
+                                                else if (isLegend)
+                                                {
+                                                    targetViewId = existingTargetView.Id;
+                                                    LoggerService.LogInfo($"SheetTransfer: Legend view '{srcPlacedView.Name}' is already placed but can be placed on multiple sheets. Re-using target legend.");
+                                                }
+                                                else
+                                                {
+                                                    shouldCopyView = true;
+                                                    LoggerService.LogInfo($"SheetTransfer: View '{srcPlacedView.Name}' already exists and is placed on another sheet. Copying view...");
+                                                }
+                                            }
+                                        }
+                                    }
+                                    else
+                                    {
+                                        if (srcPlacedView is ViewPlan srcViewPlan)
+                                        {
+                                            LoggerService.LogInfo($"SheetTransfer: Model view '{srcPlacedView.Name}' is a level-based ViewPlan and does not exist in target. Creating a new ViewPlan...");
+                                            ViewPlan newPlan = CreateViewPlan(sourceDoc, targetDoc, srcViewPlan, levelMappings, config.cf_chk_ForceLevelInLevelBaseViews);
+                                            if (newPlan != null)
+                                            {
+                                                targetViewId = newPlan.Id;
+                                                viewWasNewlyCreated = true;
+                                            }
+                                        }
+                                        else
+                                        {
+                                            shouldCopyView = true;
+                                            LoggerService.LogInfo($"SheetTransfer: Non-plan view '{srcPlacedView.Name}' does not exist in target document. Copying view...");
+                                        }
+                                    }
+
+                                    if (targetViewId == ElementId.InvalidElementId && !shouldCopyView)
+                                    {
+                                        LoggerService.LogWarning($"SheetTransfer: View '{srcPlacedView.Name}' of type '{srcPlacedView.ViewType}' cannot be copied or created. Skipping viewport placement.");
+                                    }
+                                }
+
+                                if (shouldCopyView)
+                                {
+                                    var copiedViewIds = ElementTransformUtils.CopyElements(sourceDoc, new List<ElementId> { placedViewId }, targetDoc, Transform.Identity, options);
+                                    targetViewId = (copiedViewIds != null && copiedViewIds.Any()) ? copiedViewIds.FirstOrDefault() : ElementId.InvalidElementId;
+                                    if (targetViewId != ElementId.InvalidElementId)
+                                    {
+                                        viewWasNewlyCreated = true;
+                                    }
+                                }
+
+                                if (targetViewId != ElementId.InvalidElementId)
+                                {
+                                    View newPlacedView = targetDoc.GetElement(targetViewId) as View;
+                                    if (newPlacedView != null && viewWasNewlyCreated)
+                                    {
+                                        if (config.cf_rbAppendSuffix)
+                                        {
+                                            var existingTargetView = new FilteredElementCollector(targetDoc)
+                                                .OfClass(typeof(View))
+                                                .Cast<View>()
+                                                .FirstOrDefault(v => v.Id != targetViewId && v.ViewType == srcPlacedView.ViewType && v.Name.Equals(srcPlacedView.Name, StringComparison.OrdinalIgnoreCase));
+                                            if (existingTargetView != null)
+                                            {
+                                                try { newPlacedView.Name = srcPlacedView.Name + config.cf_suffixText; } catch { }
+                                            }
+                                        }
+
+                                        matchPlantilla(sourceDoc, targetDoc, srcPlacedView, newPlacedView, options, config, duplicateItems);
+
+                                        // For sheet-placed views, we ALWAYS copy the dependent 2D elements (dimensions, tags, detail lines, text)
+                                        ponDependientes(sourceDoc, srcPlacedView.GetDependentElements(null), srcPlacedView, newPlacedView, options);
+
+                                        if (config.cf_chk_Callout && srcPlacedView.ViewType != ViewType.DraftingView)
+                                        {
+                                            ponCallouts(sourceDoc, targetDoc, srcPlacedView, newPlacedView, options, true, 3, transform != null, transform);
+                                        }
+                                    }
+
+                                     if (srcPlacedView.ViewType != ViewType.Schedule)
+                                     {
+                                         LoggerService.LogInfo($"SheetTransfer: Evaluating Viewport placement for view '{srcPlacedView.Name}' (Target ViewId: {targetViewId.Value}) on sheet '{targetSheet.SheetNumber}'...");
+                                         bool canAdd = Viewport.CanAddViewToSheet(targetDoc, targetSheet.Id, targetViewId);
+                                         if (!canAdd)
+                                         {
+                                             LoggerService.LogWarning($"SheetTransfer: View '{srcPlacedView.Name}' (Target ViewId: {targetViewId.Value}) CANNOT be added to sheet '{targetSheet.SheetNumber}' (Viewport.CanAddViewToSheet returned false). Skipping viewport placement.");
+                                         }
+                                         else
+                                         {
+                                             var srcViewports = new FilteredElementCollector(sourceDoc, sourceSheet.Id)
+                                                 .OfClass(typeof(Viewport))
+                                                 .Cast<Viewport>()
+                                                 .Where(vp => vp.ViewId == placedViewId)
+                                                 .ToList();
+
+                                             LoggerService.LogInfo($"SheetTransfer: Found {srcViewports.Count} matching viewports for view '{srcPlacedView.Name}' on source sheet '{sourceSheet.SheetNumber}'.");
+
+                                             foreach (Viewport srcViewport in srcViewports)
+                                             {
+                                                 try
+                                                 {
+                                                     string name = srcViewport.Name;
+                                                     XYZ center = null;
+                                                     try
+                                                     {
+                                                         center = srcViewport.GetBoxCenter();
+                                                     }
+                                                     catch { }
+
+                                                     if (center == null)
+                                                     {
+                                                         try
+                                                         {
+                                                             Outline boxOutline = srcViewport.GetBoxOutline();
+                                                             if (boxOutline != null)
+                                                             {
+                                                                 center = (boxOutline.MaximumPoint + boxOutline.MinimumPoint) / 2.0;
+                                                             }
+                                                         }
+                                                         catch { }
+                                                     }
+
+                                                     if (center == null)
+                                                     {
+                                                         center = new XYZ(1.5, 1.0, 0.0);
+                                                     }
+
+                                                     LoggerService.LogInfo($"SheetTransfer: Creating Viewport for '{srcPlacedView.Name}' at center point ({center.X:F2}, {center.Y:F2}, {center.Z:F2})...");
+
+                                                      Viewport targetViewport = Viewport.Create(targetDoc, targetSheet.Id, targetViewId, center);
+                                                      if (targetViewport != null)
+                                                      {
+                                                          foreach (ElementId typeId in targetViewport.GetValidTypes())
+                                                          {
+                                                              if ((targetDoc.GetElement(typeId) as ElementType)?.Name.Equals(name) == true)
+                                                              {
+                                                                  targetViewport.ChangeTypeId(typeId);
+                                                              }
+                                                          }
+                                                          try
+                                                          {
+                                                              targetViewport.SetBoxCenter(center);
+                                                              targetViewport.Rotation = srcViewport.Rotation;
+                                                          }
+                                                          catch (Exception exPos)
+                                                          {
+                                                              LoggerService.LogWarning($"SheetTransfer: Non-fatal notice when setting Viewport center/rotation for '{srcPlacedView.Name}': {exPos.Message}");
+                                                          }
+                                                          LoggerService.LogInfo($"SheetTransfer: Successfully placed Viewport for '{srcPlacedView.Name}' on target sheet '{targetSheet.SheetNumber}'.");
+                                                      }
+                                                      else
+                                                      {
+                                                          LoggerService.LogWarning($"SheetTransfer: Viewport.Create returned null for view '{srcPlacedView.Name}' on sheet '{targetSheet.SheetNumber}'.");
+                                                      }
+                                                 }
+                                                 catch (Exception exVpCreate)
+                                                 {
+                                                     LoggerService.LogError($"SheetTransfer: Failed creating Viewport for '{srcPlacedView.Name}' on sheet '{targetSheet.SheetNumber}'", exVpCreate);
+                                                 }
+                                             }
+                                         }
+                                     }
+                                    else
+                                    {
+                                        foreach (Element element3 in new FilteredElementCollector(sourceDoc, sourceSheet.Id).OfClass(typeof(ScheduleSheetInstance)))
+                                        {
+                                            ScheduleSheetInstance srcScheduleInstance = (ScheduleSheetInstance)element3;
+                                            if (srcScheduleInstance.ScheduleId == placedViewId)
+                                            {
+                                                XYZ point = srcScheduleInstance.Point;
+                                                try
+                                                {
+                                                    ScheduleSheetInstance.Create(targetDoc, targetSheet.Id, targetViewId, point);
+                                                    LoggerService.LogInfo($"SheetTransfer: Placed Schedule '{srcPlacedView.Name}' on sheet '{targetSheet.SheetNumber}'.");
+                                                }
+                                                catch (Exception exSched)
+                                                {
+                                                    LoggerService.LogWarning($"SheetTransfer: Failed to place Schedule '{srcPlacedView.Name}' on sheet '{targetSheet.SheetNumber}': {exSched.Message}");
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                            catch (Exception exViewPlacement)
+                            {
+                                LoggerService.LogError($"SheetTransfer: Failed processing view '{placedViewId.Value}' on sheet '{sourceSheet.SheetNumber}'", exViewPlacement);
+                            }
+                        }
+                    }
+                }
+
+                tSheets.Commit();
+                LoggerService.LogInfo("SheetTransfer: Sheet transfer transaction committed successfully.");
+            }
+        }
+
+        // 5. Create plan views that were directly selected
+        var planViewsToTransfer = elementsToCopy.Where(item => !item.IsWorkset && !item.IsLoadable && !item.IsObjectStyle && sourceDoc.GetElement(item.eID) is ViewPlan).ToList();
+        if (planViewsToTransfer.Any())
+        {
+            LoggerService.LogInfo($"Transfer: Processing {planViewsToTransfer.Count} selected plan views...");
+            using (Transaction tPlans = new Transaction(targetDoc, "TransferPlus: Plan Views"))
+            {
+                tPlans.Start();
+                if (config.cf_chk_AcceptAll) WarningSwallower.AttachToTransaction(tPlans);
+                CopyPasteOptions options = new CopyPasteOptions();
+
+                foreach (var item in planViewsToTransfer)
+                {
+                    ViewPlan srcViewPlan = sourceDoc.GetElement(item.eID) as ViewPlan;
+                    if (srcViewPlan != null)
+                    {
+                        var existingTargetView = new FilteredElementCollector(targetDoc)
+                            .OfClass(typeof(View))
+                            .Cast<View>()
+                            .FirstOrDefault(v => v.ViewType == srcViewPlan.ViewType && v.Name.Equals(srcViewPlan.Name, StringComparison.OrdinalIgnoreCase));
+
+                        ViewPlan targetPlanToUse = null;
+
+                        if (existingTargetView != null)
+                        {
+                            if (config.cf_rbAbortTransaction)
+                            {
+                                duplicateItems.Add(new TransferPlus.Models.DuplicateElementInfo("Views", srcViewPlan.ViewType.ToString(), srcViewPlan.GetType().Name, srcViewPlan.Name));
+                                var cancelEx = new OperationCanceledException("Transfer canceled: Duplicate element names found.");
+                                cancelEx.Data["Duplicates"] = duplicateItems;
+                                throw cancelEx;
+                            }
+                            else if (config.cf_rbAppendSuffix)
+                            {
+                                LoggerService.LogInfo($"Transfer: ViewPlan '{srcViewPlan.Name}' already exists in target document. Option 'Append Suffix' active. Creating new ViewPlan with suffix...");
+                                targetPlanToUse = CreateViewPlan(sourceDoc, targetDoc, srcViewPlan, levelMappings, config.cf_chk_ForceLevelInLevelBaseViews);
+                                if (targetPlanToUse != null)
+                                {
+                                    try { targetPlanToUse.Name = srcViewPlan.Name + config.cf_suffixText; }
+                                    catch { targetPlanToUse.Name = GetUniqueViewName(targetDoc, srcViewPlan.Name + config.cf_suffixText, srcViewPlan.ViewType); }
+                                }
+                            }
+                            else if (config.cf_rbKeepOriginal)
+                            {
+                                LoggerService.LogInfo($"Transfer: ViewPlan '{srcViewPlan.Name}' already exists in target document. Option 'Keep Original' active. Re-using existing target view for graphics/2D synchronization.");
+                                targetPlanToUse = existingTargetView as ViewPlan;
+                            }
+                        }
+                        else
+                        {
+                            LoggerService.LogInfo($"Transfer: Creating new ViewPlan '{srcViewPlan.Name}' in target document...");
+                            targetPlanToUse = CreateViewPlan(sourceDoc, targetDoc, srcViewPlan, levelMappings, config.cf_chk_ForceLevelInLevelBaseViews);
+                        }
+
+                        if (targetPlanToUse != null)
+                        {
+                            matchPlantilla(sourceDoc, targetDoc, srcViewPlan, targetPlanToUse, options, config, duplicateItems);
+                            if (config.cf_chk_ViewElements)
+                            {
+                                ponDependientes(sourceDoc, srcViewPlan, targetPlanToUse, options);
+                            }
+                            if (config.cf_chk_Callout)
+                            {
+                                ponCallouts(sourceDoc, targetDoc, srcViewPlan, targetPlanToUse, options, config.cf_chk_ViewElements, 3, false, null);
+                            }
+                            LoggerService.LogInfo($"Transfer: Successfully processed plan view '{srcViewPlan.Name}'.");
+                        }
+                        else
+                        {
+                            LoggerService.LogWarning($"Transfer: Failed to obtain target ViewPlan for '{srcViewPlan.Name}'.");
+                        }
+                    }
+                }
+                tPlans.Commit();
+            }
+        }
     }
 
     public static void ponDependientes(Document origen, ICollection<ElementId> dependientes, View vistaorigen, View vistadestino, CopyPasteOptions copyOptions)
     {
-        var collection = new List<ElementId>();
-        foreach (ElementId elementId in dependientes)
+        ponDependientes(origen, vistaorigen, vistadestino, copyOptions);
+    }
+
+    public static void ponDependientes(Document origen, View vistaorigen, View vistadestino, CopyPasteOptions copyOptions)
+    {
+        if (vistaorigen == null || vistadestino == null) return;
+
+        LoggerService.LogInfo($"ponDependientes: Collecting 2D view elements for view '{vistaorigen.Name}' (Source ViewId: {vistaorigen.Id.Value})...");
+
+        var viewElements = new FilteredElementCollector(origen, vistaorigen.Id)
+            .WhereElementIsNotElementType()
+            .Where(e => e.ViewSpecific && 
+                        e is not View && 
+                        e is not Viewport && 
+                        e is not SunAndShadowSettings && 
+                        e is not Level && 
+                        e is not SketchPlane)
+            .ToList();
+
+        LoggerService.LogInfo($"ponDependientes: Collected {viewElements.Count} 2D detail/annotation elements from source view '{vistaorigen.Name}'.");
+
+        var collection = viewElements.Select(e => e.Id).ToList();
+
+        if (!collection.Any())
         {
-            Element element = origen.GetElement(elementId);
-            if (element != null && element is not View && element is not SunAndShadowSettings && element is not Level && element is not Viewport && element is not SketchPlane)
-            {
-                if (element.OwnerViewId == vistaorigen.Id)
-                {
-                    collection.Add(elementId);
-                }
-            }
+            LoggerService.LogInfo($"ponDependientes: No 2D view elements found to copy for view '{vistaorigen.Name}'.");
+            return;
         }
+
         try
         {
-            if (collection.Any())
-            {
-                ElementTransformUtils.CopyElements(vistaorigen, collection, vistadestino, Transform.Identity, copyOptions);
-            }
+            ElementTransformUtils.CopyElements(vistaorigen, collection, vistadestino, Transform.Identity, copyOptions);
+            LoggerService.LogInfo($"ponDependientes: Batch copied all {collection.Count} 2D view elements into target view '{vistadestino.Name}'.");
         }
-        catch (Exception ex)
+        catch (Exception exBatch)
         {
-            LoggerService.LogExceptionSilently("Copying ViewSpecific elements (ponDependientes)", ex);
+            LoggerService.LogWarning($"ponDependientes: Batch copy of {collection.Count} 2D view elements from '{vistaorigen.Name}' failed ({exBatch.Message}). Retrying element-by-element...");
+            int copiedCount = 0;
+            int failedCount = 0;
+            foreach (Element elem in viewElements)
+            {
+                try
+                {
+                    ElementTransformUtils.CopyElements(vistaorigen, new List<ElementId> { elem.Id }, vistadestino, Transform.Identity, copyOptions);
+                    copiedCount++;
+                }
+                catch (Exception exSingle)
+                {
+                    failedCount++;
+                    LoggerService.LogWarning($"ponDependientes: Could not copy 2D element '{elem.Name}' (Category: {elem.Category?.Name ?? "NoCategory"}, Id: {elem.Id.Value}) into target view '{vistadestino.Name}': {exSingle.Message}");
+                }
+            }
+            LoggerService.LogInfo($"ponDependientes: Element-by-element copy complete for '{vistadestino.Name}'. Successfully Copied: {copiedCount}, Skipped/Failed: {failedCount}.");
         }
     }
 
@@ -854,28 +1295,420 @@ public class TransferOrchestrator
         }
     }
 
-    public static void matchPlantilla(Document origen, Document destino, View vistaorigen, View vistadestino)
+    private static void CopyFilters(Document origen, Document destino, View vistaorigen, View vistadestino, CopyPasteOptions copyOptions, Configuraciones config, List<TransferPlus.Models.DuplicateElementInfo> duplicateItems)
     {
-        if (vistaorigen.ViewTemplateId == ElementId.InvalidElementId) return;
+        if (vistaorigen == null || vistadestino == null) return;
+        if (vistaorigen is ViewSchedule vs && vs.IsTitleblockRevisionSchedule) return;
+        if (vistaorigen is ViewSchedule) return;
+        if (!vistaorigen.AreGraphicsOverridesAllowed()) return;
 
-        if (origen.GetElement(vistaorigen.ViewTemplateId) is View templateView)
+        try
         {
-            string tName = templateView.Name;
-            var list = new FilteredElementCollector(destino)
-                .OfClass(typeof(View))
-                .Cast<View>()
-                .Where(v => v.IsTemplate && v.Name.Equals(tName))
-                .Select(v => v.Id)
+            var filters = vistaorigen.GetFilters();
+            if (filters == null || !filters.Any()) return;
+
+            foreach (ElementId filterId in filters)
+            {
+                ParameterFilterElement srcFilter = origen.GetElement(filterId) as ParameterFilterElement;
+                if (srcFilter == null) continue;
+
+                ElementId targetFilterId = ElementId.InvalidElementId;
+                ParameterFilterElement existingFilter = new FilteredElementCollector(destino)
+                    .OfClass(typeof(ParameterFilterElement))
+                    .Cast<ParameterFilterElement>()
+                    .FirstOrDefault(f => f.Name.Equals(srcFilter.Name, StringComparison.OrdinalIgnoreCase));
+
+                if (existingFilter != null)
+                {
+                    if (config.cf_rbKeepOriginal)
+                    {
+                        targetFilterId = existingFilter.Id;
+                    }
+                    else if (config.cf_rbAbortTransaction)
+                    {
+                        duplicateItems.Add(new TransferPlus.Models.DuplicateElementInfo("Filters", "Filter", "ParameterFilterElement", srcFilter.Name));
+                        var cancelEx = new OperationCanceledException("Transfer canceled: Duplicate view filter names found.");
+                        cancelEx.Data["Duplicates"] = duplicateItems;
+                        throw cancelEx;
+                    }
+                    else if (config.cf_rbAppendSuffix)
+                    {
+                        try
+                        {
+                            var copiedIds = ElementTransformUtils.CopyElements(origen, new List<ElementId> { filterId }, destino, Transform.Identity, copyOptions);
+                            var newFilterId = (copiedIds != null && copiedIds.Any()) ? copiedIds.FirstOrDefault() : ElementId.InvalidElementId;
+                            if (newFilterId != ElementId.InvalidElementId)
+                            {
+                                ParameterFilterElement newFilter = destino.GetElement(newFilterId) as ParameterFilterElement;
+                                if (newFilter != null)
+                                {
+                                    try { newFilter.Name = srcFilter.Name + config.cf_suffixText; } catch { }
+                                    targetFilterId = newFilter.Id;
+                                }
+                            }
+                        }
+                        catch (Exception exCopyFilter)
+                        {
+                            LoggerService.LogError($"ViewFilter: Failed copying filter '{srcFilter.Name}'", exCopyFilter);
+                        }
+                    }
+                }
+                else
+                {
+                    try
+                    {
+                        var copiedIds = ElementTransformUtils.CopyElements(origen, new List<ElementId> { filterId }, destino, Transform.Identity, copyOptions);
+                        var newFilterId = (copiedIds != null && copiedIds.Any()) ? copiedIds.FirstOrDefault() : ElementId.InvalidElementId;
+                        if (newFilterId != ElementId.InvalidElementId)
+                        {
+                            ParameterFilterElement newFilter = destino.GetElement(newFilterId) as ParameterFilterElement;
+                            if (newFilter != null)
+                            {
+                                targetFilterId = newFilter.Id;
+                            }
+                        }
+                    }
+                    catch (Exception exCopyFilter)
+                    {
+                        LoggerService.LogError($"ViewFilter: Failed copying filter '{srcFilter.Name}'", exCopyFilter);
+                    }
+                }
+
+                if (targetFilterId != ElementId.InvalidElementId)
+                {
+                    try
+                    {
+                        if (!vistadestino.GetFilters().Contains(targetFilterId))
+                        {
+                            vistadestino.AddFilter(targetFilterId);
+                        }
+                        vistadestino.SetFilterVisibility(targetFilterId, vistaorigen.GetFilterVisibility(filterId));
+                        vistadestino.SetFilterOverrides(targetFilterId, vistaorigen.GetFilterOverrides(filterId));
+                        vistadestino.SetIsFilterEnabled(targetFilterId, vistaorigen.GetIsFilterEnabled(filterId));
+                    }
+                    catch (Exception exApplyFilter)
+                    {
+                        LoggerService.LogWarning($"ViewFilter: Failed to apply filter '{srcFilter.Name}' to view '{vistadestino.Name}': {exApplyFilter.Message}");
+                    }
+                }
+            }
+        }
+        catch (Exception exFilters)
+        {
+            LoggerService.LogExceptionSilently($"CopyFilters from '{vistaorigen.Name}' to '{vistadestino.Name}'", exFilters);
+        }
+    }
+
+    public static void matchPlantilla(
+        Document origen,
+        Document destino,
+        View vistaorigen,
+        View vistadestino,
+        CopyPasteOptions copyOptions,
+        Configuraciones config,
+        List<TransferPlus.Models.DuplicateElementInfo> duplicateItems)
+    {
+        ElementId targetTemplateId = ElementId.InvalidElementId;
+        View templateView = null;
+        View newTemplate = null;
+
+        if (vistaorigen.ViewTemplateId != ElementId.InvalidElementId)
+        {
+            templateView = origen.GetElement(vistaorigen.ViewTemplateId) as View;
+            if (templateView != null)
+            {
+                View existingTemplate = new FilteredElementCollector(destino)
+                    .OfClass(typeof(View))
+                    .Cast<View>()
+                    .FirstOrDefault(v => v.IsTemplate && v.Name.Equals(templateView.Name, StringComparison.OrdinalIgnoreCase));
+
+                if (existingTemplate != null)
+                {
+                    if (config.cf_rbKeepOriginal)
+                    {
+                        targetTemplateId = existingTemplate.Id;
+                        newTemplate = existingTemplate;
+                        LoggerService.LogInfo($"ViewTemplate: Re-using existing template '{templateView.Name}' in target document.");
+                    }
+                    else if (config.cf_rbAbortTransaction)
+                    {
+                        duplicateItems.Add(new TransferPlus.Models.DuplicateElementInfo("View Templates", "ViewTemplate", "View", templateView.Name));
+                        var cancelEx = new OperationCanceledException("Transfer canceled: Duplicate view template names found.");
+                        cancelEx.Data["Duplicates"] = duplicateItems;
+                        throw cancelEx;
+                    }
+                    else if (config.cf_rbAppendSuffix)
+                    {
+                        try
+                        {
+                            var copiedIds = ElementTransformUtils.CopyElements(origen, new List<ElementId> { templateView.Id }, destino, Transform.Identity, copyOptions);
+                            var newTemplateId = (copiedIds != null && copiedIds.Any()) ? copiedIds.FirstOrDefault() : ElementId.InvalidElementId;
+                            if (newTemplateId != ElementId.InvalidElementId)
+                            {
+                                newTemplate = destino.GetElement(newTemplateId) as View;
+                                if (newTemplate != null)
+                                {
+                                    try { newTemplate.Name = templateView.Name + config.cf_suffixText; }
+                                    catch { newTemplate.Name = GetUniqueViewName(destino, templateView.Name + config.cf_suffixText, templateView.ViewType); }
+                                    targetTemplateId = newTemplate.Id;
+                                    LoggerService.LogInfo($"ViewTemplate: Copied template '{templateView.Name}' and renamed to '{newTemplate.Name}'.");
+                                }
+                            }
+                        }
+                        catch (Exception exCopyTmpl)
+                        {
+                            LoggerService.LogError($"ViewTemplate: Failed copying template '{templateView.Name}'", exCopyTmpl);
+                        }
+                    }
+                }
+                else
+                {
+                    try
+                    {
+                        var copiedIds = ElementTransformUtils.CopyElements(origen, new List<ElementId> { templateView.Id }, destino, Transform.Identity, copyOptions);
+                        var newTemplateId = (copiedIds != null && copiedIds.Any()) ? copiedIds.FirstOrDefault() : ElementId.InvalidElementId;
+                        if (newTemplateId != ElementId.InvalidElementId)
+                        {
+                            newTemplate = destino.GetElement(newTemplateId) as View;
+                            if (newTemplate != null)
+                            {
+                                targetTemplateId = newTemplate.Id;
+                                LoggerService.LogInfo($"ViewTemplate: Copied template '{templateView.Name}' to target document.");
+                            }
+                        }
+                    }
+                    catch (Exception exCopyTmpl)
+                    {
+                        LoggerService.LogError($"ViewTemplate: Failed copying template '{templateView.Name}'", exCopyTmpl);
+                    }
+                }
+            }
+        }
+
+        // STEP 1: Apply all filters directly to the target view (without the template applied yet)
+        CopyFilters(origen, destino, vistaorigen, vistadestino, copyOptions, config, duplicateItems);
+
+        // STEP 2: Apply all category/workset/link visibility overrides directly to the target view (without the template applied yet)
+        CopyViewGraphicsAndOverrides(origen, destino, vistaorigen, vistadestino, copyOptions, config, duplicateItems);
+
+        // STEP 3: If there is a template, also populate the template itself with overrides and filters
+        if (templateView != null && newTemplate != null)
+        {
+            CopyFilters(origen, destino, templateView, newTemplate, copyOptions, config, duplicateItems);
+            CopyViewGraphicsAndOverrides(origen, destino, templateView, newTemplate, copyOptions, config, duplicateItems);
+        }
+
+        // STEP 4: Finally, apply the template to the target view
+        if (targetTemplateId != ElementId.InvalidElementId && templateView != null)
+        {
+            try
+            {
+                vistadestino.ViewTemplateId = targetTemplateId;
+            }
+            catch (Exception exApplyTmpl)
+            {
+                LoggerService.LogWarning($"ViewTemplate: Failed to apply template '{templateView.Name}' to view '{vistadestino.Name}': {exApplyTmpl.Message}");
+            }
+        }
+    }
+
+    private static void CopyViewGraphicsAndOverrides(
+        Document sourceDoc,
+        Document targetDoc,
+        View srcView,
+        View targetView,
+        CopyPasteOptions options,
+        Configuraciones config,
+        List<TransferPlus.Models.DuplicateElementInfo> duplicateItems)
+    {
+        if (srcView == null || targetView == null) return;
+        if (srcView is ViewSchedule vs && vs.IsTitleblockRevisionSchedule) return;
+        if (srcView is ViewSchedule) return;
+        if (!srcView.AreGraphicsOverridesAllowed()) return;
+
+        // Resolve target graphic view: if it has a template, we apply overrides to the template itself so they are not locked/ignored
+        View targetGraphicsView = targetView;
+        if (targetView.ViewTemplateId != ElementId.InvalidElementId)
+        {
+            targetGraphicsView = targetDoc.GetElement(targetView.ViewTemplateId) as View ?? targetView;
+        }
+
+        // Synchronize Crop Box settings (Cuadro de Recorte)
+        if (!srcView.IsTemplate && !targetView.IsTemplate)
+        {
+            try
+            {
+                targetView.CropBoxActive = srcView.CropBoxActive;
+                targetView.CropBoxVisible = srcView.CropBoxVisible;
+                if (srcView.CropBoxActive && srcView.CropBox != null)
+                {
+                    targetView.CropBox = srcView.CropBox;
+                }
+                LoggerService.LogInfo($"ViewGraphics: Synchronized CropBox settings (Active: {srcView.CropBoxActive}, Visible: {srcView.CropBoxVisible}) for view '{targetView.Name}'.");
+            }
+            catch (Exception exCrop)
+            {
+                LoggerService.LogExceptionSilently($"ViewGraphics: Could not sync CropBox for view '{targetView.Name}'", exCrop);
+            }
+        }
+
+        // 1. Transfer Categories (Model, Annotation, Imported)
+        foreach (Category srcCat in sourceDoc.Settings.Categories)
+        {
+            try
+            {
+                if (targetDoc.Settings.Categories.Contains(srcCat.Name))
+                {
+                    Category targetCat = targetDoc.Settings.Categories.get_Item(srcCat.Name);
+                    if (targetCat != null)
+                    {
+                        try { targetGraphicsView.SetCategoryHidden(targetCat.Id, srcView.GetCategoryHidden(srcCat.Id)); } catch { }
+                        try { targetGraphicsView.SetCategoryOverrides(targetCat.Id, srcView.GetCategoryOverrides(srcCat.Id)); } catch { }
+                    }
+                }
+            }
+            catch { }
+        }
+
+        // 2. Transfer Worksets (Subproyectos)
+        if (sourceDoc.IsWorkshared && targetDoc.IsWorkshared)
+        {
+            try
+            {
+                FilteredWorksetCollector srcWorksets = new FilteredWorksetCollector(sourceDoc).OfKind(WorksetKind.UserWorkset);
+                foreach (Workset srcWs in srcWorksets)
+                {
+                    try
+                    {
+                        WorksetVisibility srcWsVisibility = srcView.GetWorksetVisibility(srcWs.Id);
+                        Workset targetWs = new FilteredWorksetCollector(targetDoc)
+                            .OfKind(WorksetKind.UserWorkset)
+                            .FirstOrDefault(w => w.Name.Equals(srcWs.Name, StringComparison.OrdinalIgnoreCase));
+
+                        if (targetWs == null)
+                        {
+                            targetWs = Workset.Create(targetDoc, srcWs.Name);
+                            LoggerService.LogInfo($"Worksets: Created missing workset '{srcWs.Name}' in target document to preserve view visibility overrides.");
+                        }
+
+                        if (targetWs != null)
+                        {
+                            targetGraphicsView.SetWorksetVisibility(targetWs.Id, srcWsVisibility);
+                        }
+                    }
+                    catch { }
+                }
+            }
+            catch (Exception exWs)
+            {
+                LoggerService.LogExceptionSilently($"Transferring Worksets visibility for view '{targetView.Name}'", exWs);
+            }
+        }
+
+        // 3. Transfer Revit Link Overrides (Vínculos de Revit)
+        try
+        {
+            var srcLinks = new FilteredElementCollector(sourceDoc)
+                .OfClass(typeof(RevitLinkInstance))
+                .Cast<RevitLinkInstance>()
                 .ToList();
 
-            if (list.Any())
+            var missingLinkNames = new List<string>();
+
+            foreach (var srcLink in srcLinks)
             {
-                try
+                RevitLinkInstance targetLink = new FilteredElementCollector(targetDoc)
+                    .OfClass(typeof(RevitLinkInstance))
+                    .Cast<RevitLinkInstance>()
+                    .FirstOrDefault(l => l.Name.Equals(srcLink.Name, StringComparison.OrdinalIgnoreCase) ||
+                                         l.GetLinkDocument()?.Title?.Equals(srcLink.GetLinkDocument()?.Title, StringComparison.OrdinalIgnoreCase) == true);
+
+                if (targetLink != null)
                 {
-                    vistadestino.ViewTemplateId = list.First();
+                    try
+                    {
+                        bool isHidden = srcLink.IsHidden(srcView);
+                        bool isTargetHidden = targetLink.IsHidden(targetGraphicsView);
+                        if (isHidden && !isTargetHidden)
+                        {
+                            targetGraphicsView.HideElements(new List<ElementId> { targetLink.Id });
+                            LoggerService.LogInfo($"LinkOverrides: Hidden link '{srcLink.Name}' in view '{targetGraphicsView.Name}'.");
+                        }
+                        else if (!isHidden && isTargetHidden)
+                        {
+                            targetGraphicsView.UnhideElements(new List<ElementId> { targetLink.Id });
+                            LoggerService.LogInfo($"LinkOverrides: Unhidden link '{srcLink.Name}' in view '{targetGraphicsView.Name}'.");
+                        }
+                    }
+                    catch (Exception exHide)
+                    {
+                        LoggerService.LogWarning($"LinkOverrides: Failed to sync hide/show visibility for link '{srcLink.Name}' in view '{targetGraphicsView.Name}': {exHide.Message}");
+                    }
+
+                    try
+                    {
+                        RevitLinkGraphicsSettings srcSettings = srcView.GetLinkOverrides(srcLink.Id);
+                        if (srcSettings != null)
+                        {
+                            RevitLinkGraphicsSettings targetSettings = new RevitLinkGraphicsSettings();
+                            targetSettings.LinkVisibilityType = srcSettings.LinkVisibilityType;
+
+                            if (srcSettings.LinkVisibilityType == LinkVisibility.ByLinkView && srcSettings.LinkedViewId != ElementId.InvalidElementId)
+                            {
+                                Document srcLinkDoc = srcLink.GetLinkDocument();
+                                Document targetLinkDoc = targetLink.GetLinkDocument();
+                                if (srcLinkDoc != null && targetLinkDoc != null)
+                                {
+                                    View srcLinkedView = srcLinkDoc.GetElement(srcSettings.LinkedViewId) as View;
+                                    if (srcLinkedView != null)
+                                    {
+                                        View targetLinkedView = new FilteredElementCollector(targetLinkDoc)
+                                            .OfClass(typeof(View))
+                                            .Cast<View>()
+                                            .FirstOrDefault(v => v.Name.Equals(srcLinkedView.Name, StringComparison.OrdinalIgnoreCase));
+                                        if (targetLinkedView != null)
+                                        {
+                                            targetSettings.LinkedViewId = targetLinkedView.Id;
+                                        }
+                                    }
+                                }
+                            }
+                            targetGraphicsView.SetLinkOverrides(targetLink.Id, targetSettings);
+                            LoggerService.LogInfo($"LinkOverrides: Applied overrides for link '{srcLink.Name}' onto target view '{targetView.Name}'.");
+                        }
+                    }
+                    catch (Exception exLinkOverrides)
+                    {
+                        LoggerService.LogExceptionSilently($"LinkOverrides: Failed override settings for link '{srcLink.Name}' in view '{targetView.Name}'", exLinkOverrides);
+                    }
                 }
-                catch { }
+                else
+                {
+                    try
+                    {
+                        RevitLinkGraphicsSettings srcSettings = srcView.GetLinkOverrides(srcLink.Id);
+                        if (srcSettings != null)
+                        {
+                            string linkDisplayName = srcLink.GetLinkDocument()?.Title ?? srcLink.Name;
+                            if (!missingLinkNames.Contains(linkDisplayName))
+                            {
+                                missingLinkNames.Add(linkDisplayName);
+                            }
+                        }
+                    }
+                    catch { }
+                }
             }
+
+            if (missingLinkNames.Any())
+            {
+                string missingList = string.Join(", ", missingLinkNames);
+                LoggerService.LogWarning($"LinkOverrides: The following linked models were NOT found in the target document. Skipping overrides for: [{missingList}]");
+            }
+        }
+        catch (Exception exLinksAll)
+        {
+            LoggerService.LogExceptionSilently($"Processing Revit Link overrides for view '{targetView.Name}'", exLinksAll);
         }
     }
 
@@ -1110,5 +1943,279 @@ public class TransferOrchestrator
         {
             return ElementId.InvalidElementId;
         }
+    }
+
+    private static ViewPlan CreateViewPlan(Document sourceDoc, Document targetDoc, ViewPlan srcViewPlan, Dictionary<string, string>? levelMappings, bool forceLevel)
+    {
+        // 1. Get the ViewFamily of the source view
+        ViewFamilyType srcVft = sourceDoc.GetElement(srcViewPlan.GetTypeId()) as ViewFamilyType;
+        if (srcVft == null) return null;
+        ViewFamily family = srcVft.ViewFamily;
+
+        // 2. Find a matching ViewFamilyType in targetDoc
+        ViewFamilyType targetVft = new FilteredElementCollector(targetDoc)
+            .OfClass(typeof(ViewFamilyType))
+            .Cast<ViewFamilyType>()
+            .FirstOrDefault(vft => vft.ViewFamily == family);
+
+        if (targetVft == null)
+        {
+            LoggerService.LogWarning($"CreateViewPlan: Could not find matching ViewFamilyType for ViewFamily '{family}' in target document.");
+            return null;
+        }
+
+        // 3. Resolve target Level
+        Level srcLevel = srcViewPlan.GenLevel;
+        if (srcLevel == null)
+        {
+            LoggerService.LogWarning($"CreateViewPlan: Source view plan '{srcViewPlan.Name}' does not have a GenLevel. Cannot create plan view.");
+            return null;
+        }
+
+        ElementId targetLevelId = ElementId.InvalidElementId;
+        string srcLevelName = srcLevel.Name;
+
+        // Fetch all levels in targetDoc
+        var targetLevels = new FilteredElementCollector(targetDoc)
+            .OfClass(typeof(Level))
+            .Cast<Level>()
+            .ToList();
+
+        if (forceLevel && levelMappings != null && levelMappings.ContainsKey(srcLevelName))
+        {
+            string mappedActionOrLevel = levelMappings[srcLevelName];
+            if (mappedActionOrLevel.StartsWith("CREATE_NEW"))
+            {
+                string customName = srcLevelName;
+                if (mappedActionOrLevel.StartsWith("CREATE_NEW:"))
+                {
+                    customName = mappedActionOrLevel.Substring(11);
+                }
+
+                // Create a new level
+                Level newLevel = Level.Create(targetDoc, srcLevel.ProjectElevation);
+                try
+                {
+                    newLevel.Name = customName;
+                }
+                catch
+                {
+                    newLevel.Name = GetUniqueLevelName(targetDoc, customName);
+                }
+                targetLevelId = newLevel.Id;
+                LoggerService.LogInfo($"CreateViewPlan: Created new Level '{newLevel.Name}' at elevation {newLevel.ProjectElevation} ft (mapped from '{srcLevelName}').");
+            }
+            else
+            {
+                // Map to existing target level
+                var matchedLevel = targetLevels.FirstOrDefault(l => l.Name.Equals(mappedActionOrLevel, StringComparison.OrdinalIgnoreCase));
+                if (matchedLevel != null)
+                {
+                    targetLevelId = matchedLevel.Id;
+                    LoggerService.LogInfo($"CreateViewPlan: Mapped view level to existing Level '{matchedLevel.Name}'.");
+                }
+                else
+                {
+                    // Fallback: create level
+                    Level newLevel = Level.Create(targetDoc, srcLevel.ProjectElevation);
+                    newLevel.Name = GetUniqueLevelName(targetDoc, srcLevelName);
+                    targetLevelId = newLevel.Id;
+                }
+            }
+        }
+        else
+        {
+            // Not forcing level mapping, or mapping not found. Search by name.
+            var existingLevel = targetLevels.FirstOrDefault(l => l.Name.Equals(srcLevelName, StringComparison.OrdinalIgnoreCase));
+            if (existingLevel != null)
+            {
+                targetLevelId = existingLevel.Id;
+                LoggerService.LogInfo($"CreateViewPlan: Found existing Level '{existingLevel.Name}' in target document. Using it.");
+            }
+            else
+            {
+                // Create new level with same name and elevation
+                Level newLevel = Level.Create(targetDoc, srcLevel.ProjectElevation);
+                try
+                {
+                    newLevel.Name = srcLevelName;
+                }
+                catch
+                {
+                    newLevel.Name = GetUniqueLevelName(targetDoc, srcLevelName);
+                }
+                targetLevelId = newLevel.Id;
+                LoggerService.LogInfo($"CreateViewPlan: Created new Level '{newLevel.Name}' at elevation {newLevel.ProjectElevation} ft.");
+            }
+        }
+
+        if (targetLevelId == ElementId.InvalidElementId)
+        {
+            LoggerService.LogWarning($"CreateViewPlan: Failed to resolve level for ViewPlan '{srcViewPlan.Name}'.");
+            return null;
+        }
+
+        // 4. Create the ViewPlan
+        ViewPlan targetViewPlan = ViewPlan.Create(targetDoc, targetVft.Id, targetLevelId);
+        try
+        {
+            targetViewPlan.Name = srcViewPlan.Name;
+        }
+        catch
+        {
+            targetViewPlan.Name = GetUniqueViewName(targetDoc, srcViewPlan.Name, srcViewPlan.ViewType);
+        }
+
+        LoggerService.LogInfo($"CreateViewPlan: Successfully created ViewPlan '{targetViewPlan.Name}' (Id: {targetViewPlan.Id.Value}) on Level '{targetDoc.GetElement(targetLevelId).Name}'.");
+
+        // 5. Copy view settings (templates, filters, scale, crop box)
+        CopyViewSettings(srcViewPlan, targetViewPlan);
+
+        return targetViewPlan;
+    }
+
+    private static string GetUniqueLevelName(Document doc, string baseName)
+    {
+        var levelNames = new FilteredElementCollector(doc)
+            .OfClass(typeof(Level))
+            .Cast<Level>()
+            .Select(l => l.Name)
+            .ToList();
+
+        string uniqueName = baseName;
+        int counter = 1;
+        while (levelNames.Contains(uniqueName, StringComparer.OrdinalIgnoreCase))
+        {
+            uniqueName = $"{baseName}_{counter}";
+            counter++;
+        }
+        return uniqueName;
+    }
+
+    private static string GetUniqueViewName(Document doc, string baseName, ViewType viewType)
+    {
+        var viewNames = new FilteredElementCollector(doc)
+            .OfClass(typeof(View))
+            .Cast<View>()
+            .Where(v => v.ViewType == viewType)
+            .Select(v => v.Name)
+            .ToList();
+
+        string uniqueName = baseName;
+        int counter = 1;
+        while (viewNames.Contains(uniqueName, StringComparer.OrdinalIgnoreCase))
+        {
+            uniqueName = $"{baseName}_{counter}";
+            counter++;
+        }
+        return uniqueName;
+    }
+
+    private static void CopyViewSettings(View srcView, View targetView)
+    {
+        try
+        {
+            targetView.Scale = srcView.Scale;
+            targetView.DetailLevel = srcView.DetailLevel;
+            targetView.DisplayStyle = srcView.DisplayStyle;
+            
+            // Crop Box
+            targetView.CropBoxActive = srcView.CropBoxActive;
+            targetView.CropBoxVisible = srcView.CropBoxVisible;
+            if (srcView.CropBoxActive)
+            {
+                targetView.CropBox = srcView.CropBox;
+            }
+        }
+        catch (Exception ex)
+        {
+            LoggerService.LogWarning($"CopyViewSettings: Failed to copy some view properties for '{srcView.Name}': {ex.Message}");
+        }
+    }
+
+    private static ViewSheet CreateViewSheet(Document sourceDoc, Document targetDoc, ViewSheet srcSheet, Configuraciones config)
+    {
+        // 1. Resolve TitleBlock type
+        ElementId titleBlockTypeId = ElementId.InvalidElementId;
+        var srcTitleBlocks = new FilteredElementCollector(sourceDoc, srcSheet.Id)
+            .OfCategory(BuiltInCategory.OST_TitleBlocks)
+            .WhereElementIsNotElementType()
+            .ToList();
+
+        if (srcTitleBlocks.Any())
+        {
+            ElementId srcTbTypeId = srcTitleBlocks.First().GetTypeId();
+            Element srcTbType = sourceDoc.GetElement(srcTbTypeId);
+            if (srcTbType != null)
+            {
+                Element targetTbType = new FilteredElementCollector(targetDoc)
+                    .OfCategory(BuiltInCategory.OST_TitleBlocks)
+                    .WhereElementIsElementType()
+                    .FirstOrDefault(e => e.Name.Equals(srcTbType.Name, StringComparison.OrdinalIgnoreCase));
+
+                if (targetTbType != null)
+                {
+                    titleBlockTypeId = targetTbType.Id;
+                }
+                else
+                {
+                    try
+                    {
+                        var copiedTbTypes = ElementTransformUtils.CopyElements(sourceDoc, new List<ElementId> { srcTbTypeId }, targetDoc, null, new CopyPasteOptions());
+                        titleBlockTypeId = copiedTbTypes.FirstOrDefault() ?? ElementId.InvalidElementId;
+                    }
+                    catch { }
+                }
+            }
+        }
+
+        // 2. Create the ViewSheet
+        ViewSheet targetSheet = ViewSheet.Create(targetDoc, titleBlockTypeId);
+
+        // 3. Resolve SheetNumber and Name according to duplicate config
+        string evalSheetNumber = srcSheet.SheetNumber;
+        string evalName = srcSheet.Name;
+
+        var existingSheet = new FilteredElementCollector(targetDoc)
+            .OfClass(typeof(ViewSheet))
+            .Cast<ViewSheet>()
+            .FirstOrDefault(s => s.SheetNumber.Equals(srcSheet.SheetNumber, StringComparison.OrdinalIgnoreCase));
+
+        if (existingSheet != null)
+        {
+            if (config.cf_rbAppendSuffix)
+            {
+                evalSheetNumber += config.cf_suffixText;
+                evalName += config.cf_suffixText;
+            }
+            else if (config.cf_rbKeepOriginal)
+            {
+                evalSheetNumber = GetUniqueSheetNumber(targetDoc, srcSheet.SheetNumber);
+            }
+        }
+
+        try { targetSheet.SheetNumber = evalSheetNumber; } catch { }
+        try { targetSheet.Name = evalName; } catch { }
+
+        LoggerService.LogInfo($"CreateViewSheet: Successfully created ViewSheet '{targetSheet.SheetNumber} - {targetSheet.Name}' (Id: {targetSheet.Id.Value}).");
+        return targetSheet;
+    }
+
+    private static string GetUniqueSheetNumber(Document doc, string baseNumber)
+    {
+        var sheetNumbers = new FilteredElementCollector(doc)
+            .OfClass(typeof(ViewSheet))
+            .Cast<ViewSheet>()
+            .Select(s => s.SheetNumber)
+            .ToList();
+
+        string uniqueNum = baseNumber;
+        int counter = 1;
+        while (sheetNumbers.Contains(uniqueNum, StringComparer.OrdinalIgnoreCase))
+        {
+            uniqueNum = $"{baseNumber}_{counter}";
+            counter++;
+        }
+        return uniqueNum;
     }
 }

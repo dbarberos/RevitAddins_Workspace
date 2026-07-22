@@ -109,7 +109,6 @@ public static class DocumentCollector
         var filteredElementCollector2 = new FilteredElementCollector(_doc_origen);
         filteredElementCollector2.WherePasses(new LogicalOrFilter(new List<ElementFilter>
         {
-            new ElementCategoryFilter((BuiltInCategory)(-2000552)),
             new ElementCategoryFilter((BuiltInCategory)(-2003201)),
             new ElementCategoryFilter((BuiltInCategory)(-2000112)),
             new ElementCategoryFilter((BuiltInCategory)(-2006000))
@@ -123,6 +122,10 @@ public static class DocumentCollector
             {
                 try
                 {
+                    if (element6 is Phase || (element6.Category != null && element6.Category.Id.Value == (long)BuiltInCategory.OST_Phases))
+                    {
+                        continue; // Exclude Project Phases completely from TreeView
+                    }
                     Elemento item6 = new Elemento(element6, 0);
                     elementsAFiltrar.Add(item6);
                 }
