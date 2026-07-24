@@ -25,10 +25,11 @@ public class TransferOrchestrator
         var duplicateItems = new List<TransferPlus.Models.DuplicateElementInfo>();
 
         var sheetsToTransfer = new List<Elemento>();
+        var processedViewsMap = new Dictionary<ElementId, ElementId>();
 
         foreach (var item in elementsToCopy)
         {
-            if (item.IsWorkset)
+            if (item.IsWorkset || item.Categoria == "Worksets" || (item.wID != null && item.wID != WorksetId.InvalidWorksetId))
             {
                 worksetsToCreate.Add(item);
             }
@@ -92,8 +93,16 @@ public class TransferOrchestrator
         }
 
         // 1. Process Worksets
-        if (targetDoc.IsWorkshared && worksetsToCreate.Any())
+        if (worksetsToCreate.Any())
         {
+            if (!targetDoc.IsWorkshared)
+            {
+                LoggerService.LogWarning($"Transfer: Cannot transfer worksets to target model '{targetDoc.Title}' because worksharing is not enabled on the destination project.");
+                var cancelEx = new OperationCanceledException("Cannot transfer worksets to a non-workshared project.");
+                cancelEx.Data["NotWorkshared"] = targetDoc.Title;
+                throw cancelEx;
+            }
+
             using (Transaction t = new Transaction(targetDoc, "TransferPlus: Worksets"))
             {
                 t.Start();
@@ -272,10 +281,8 @@ public class TransferOrchestrator
         }
 
         // 2.8. Process Level Mapping and Creation
-        var temporaryRenamedLevels = new List<(Level level, string originalName)>();
         if (levelMappings != null)
         {
-            // 2.8.1 Create missing levels
             using (Transaction tLevels = new Transaction(targetDoc, "TransferPlus: Create Missing Levels"))
             {
                 tLevels.Start();
@@ -284,53 +291,43 @@ public class TransferOrchestrator
                 {
                     string srcLevelName = mapping.Key;
                     string targetAction = mapping.Value;
-                    if (targetAction == "CREATE_NEW")
+                    if (targetAction.StartsWith("CREATE_NEW"))
                     {
-                        var srcLevel = new FilteredElementCollector(sourceDoc)
+                        string customName = srcLevelName;
+                        if (targetAction.StartsWith("CREATE_NEW:"))
+                        {
+                            customName = targetAction.Substring(11);
+                        }
+
+                        var existingTargetLevel = new FilteredElementCollector(targetDoc)
                             .OfClass(typeof(Level))
                             .Cast<Level>()
-                            .FirstOrDefault(l => l.Name.Equals(srcLevelName, StringComparison.OrdinalIgnoreCase));
-                        if (srcLevel != null)
+                            .FirstOrDefault(l => l.Name.Equals(customName, StringComparison.OrdinalIgnoreCase));
+
+                        if (existingTargetLevel == null)
                         {
-                            try
+                            var srcLevel = new FilteredElementCollector(sourceDoc)
+                                .OfClass(typeof(Level))
+                                .Cast<Level>()
+                                .FirstOrDefault(l => l.Name.Equals(srcLevelName, StringComparison.OrdinalIgnoreCase));
+
+                            if (srcLevel != null)
                             {
-                                var newLevel = Level.Create(targetDoc, srcLevel.ProjectElevation);
-                                newLevel.Name = srcLevelName;
+                                try
+                                {
+                                    var newLevel = Level.Create(targetDoc, srcLevel.ProjectElevation);
+                                    newLevel.Name = customName;
+                                    LoggerService.LogInfo($"LevelMapping: Created new level '{newLevel.Name}' at elevation {newLevel.ProjectElevation}.");
+                                }
+                                catch (Exception exLevel)
+                                {
+                                    LoggerService.LogWarning($"LevelMapping: Could not create level '{customName}': {exLevel.Message}");
+                                }
                             }
-                            catch { }
                         }
                     }
                 }
                 tLevels.Commit();
-            }
-
-            // 2.8.2 Temporarily rename mapped levels
-            using (Transaction tRename = new Transaction(targetDoc, "TransferPlus: Prep Mapped Levels"))
-            {
-                tRename.Start();
-                if (config.cf_chk_AcceptAll) WarningSwallower.AttachToTransaction(tRename);
-                foreach (var mapping in levelMappings)
-                {
-                    string srcLevelName = mapping.Key;
-                    string targetAction = mapping.Value;
-                    if (targetAction != "CREATE_NEW")
-                    {
-                        var targetLevel = new FilteredElementCollector(targetDoc)
-                            .OfClass(typeof(Level))
-                            .Cast<Level>()
-                            .FirstOrDefault(l => l.Name.Equals(targetAction, StringComparison.OrdinalIgnoreCase));
-                        if (targetLevel != null)
-                        {
-                            try
-                            {
-                                temporaryRenamedLevels.Add((targetLevel, targetAction));
-                                targetLevel.Name = srcLevelName;
-                            }
-                            catch { }
-                        }
-                    }
-                }
-                tRename.Commit();
             }
         }
 
@@ -521,11 +518,12 @@ public class TransferOrchestrator
 
                         if (srcElem is View sourceView && destElem is View targetView)
                         {
+                            processedViewsMap[sourceView.Id] = targetView.Id;
                             matchPlantilla(sourceDoc, targetDoc, sourceView, targetView, options, config, duplicateItems);
                             
                             if (config.cf_chk_Callout)
                             {
-                                ponCallouts(sourceDoc, targetDoc, sourceView, targetView, options, config.cf_chk_ViewElements, 1, transform != null, transform);
+                                 ponCallouts(sourceDoc, targetDoc, sourceView, targetView, options, config.cf_chk_ViewElements, 1, transform != null, transform, config, processedViewsMap);
                             }
                             else if (config.cf_chk_ViewElements)
                             {
@@ -563,25 +561,6 @@ public class TransferOrchestrator
                         catch (Exception exCloseTemp)
                         {
                             LoggerService.LogExceptionSilently("Closing TempDoc", exCloseTemp);
-                        }
-                    }
-
-                    // Restore renamed levels
-                    if (temporaryRenamedLevels.Any())
-                    {
-                        using (Transaction tRestore = new Transaction(targetDoc, "TransferPlus: Restore Mapped Levels"))
-                        {
-                            tRestore.Start();
-                            if (config.cf_chk_AcceptAll) WarningSwallower.AttachToTransaction(tRestore);
-                            foreach (var renamed in temporaryRenamedLevels)
-                            {
-                                try
-                                {
-                                    renamed.level.Name = renamed.originalName;
-                                }
-                                catch { }
-                            }
-                            tRestore.Commit();
                         }
                     }
                 }
@@ -774,17 +753,23 @@ public class TransferOrchestrator
                                 {
                                     isTitleblockRevisionSchedule = vs.IsTitleblockRevisionSchedule;
                                 }
-                        bool isCopyable = srcPlacedView.ViewType == ViewType.DraftingView ||
-                                                  isLegend ||
-                                                  (isSchedule && !isTitleblockRevisionSchedule);
 
-                                if (isCopyable)
+                                if (processedViewsMap.TryGetValue(placedViewId, out ElementId mappedViewId))
                                 {
-                                    shouldCopyView = true;
-                                    var existingTargetView = new FilteredElementCollector(targetDoc)
-                                        .OfClass(typeof(View))
-                                        .Cast<View>()
-                                        .FirstOrDefault(v => v.ViewType == srcPlacedView.ViewType && v.Name.Equals(srcPlacedView.Name, StringComparison.OrdinalIgnoreCase));
+                                    targetViewId = mappedViewId;
+                                    shouldCopyView = false;
+                                    LoggerService.LogInfo($"SheetTransfer: View '{srcPlacedView.Name}' [Id: {placedViewId.Value}] was already processed in this transfer run (Target ViewId: {targetViewId.Value}). Re-using mapped view.");
+                                }
+                                else
+                                {
+                                    bool isCopyable = srcPlacedView.ViewType == ViewType.DraftingView ||
+                                                      isLegend ||
+                                                      (isSchedule && !isTitleblockRevisionSchedule);
+
+                                    if (isCopyable)
+                                    {
+                                        shouldCopyView = true;
+                                        var existingTargetView = FindExistingViewByName(targetDoc, srcPlacedView.Name);
 
                                     if (existingTargetView != null)
                                     {
@@ -823,10 +808,7 @@ public class TransferOrchestrator
                                 else
                                 {
                                     shouldCopyView = false;
-                                    var existingTargetView = new FilteredElementCollector(targetDoc)
-                                        .OfClass(typeof(View))
-                                        .Cast<View>()
-                                        .FirstOrDefault(v => v.ViewType == srcPlacedView.ViewType && v.Name.Equals(srcPlacedView.Name, StringComparison.OrdinalIgnoreCase));
+                                    var existingTargetView = FindExistingViewByName(targetDoc, srcPlacedView.Name);
 
                                     if (existingTargetView != null)
                                     {
@@ -841,14 +823,13 @@ public class TransferOrchestrator
                                         {
                                             if (srcPlacedView is ViewPlan srcViewPlanSuffix)
                                             {
-                                                LoggerService.LogInfo($"SheetTransfer: Duplicate view '{srcPlacedView.Name}' exists in target. Option 'Append Suffix' active. Creating new ViewPlan with suffix...");
-                                                ViewPlan newPlan = CreateViewPlan(sourceDoc, targetDoc, srcViewPlanSuffix, levelMappings, config.cf_chk_ForceLevelInLevelBaseViews);
+                                                LoggerService.LogInfo($"SheetTransfer [APPEND SUFFIX]: Duplicate plan view '{srcPlacedView.Name}' exists in target. Creating new ViewPlan with suffix...");
+                                                ViewPlan newPlan = CreateViewPlan(sourceDoc, targetDoc, srcViewPlanSuffix, levelMappings, config.cf_chk_ForceLevelInLevelBaseViews, config, forceNewSuffixedView: true);
                                                 if (newPlan != null)
                                                 {
-                                                    try { newPlan.Name = srcPlacedView.Name + config.cf_suffixText; }
-                                                    catch { newPlan.Name = GetUniqueViewName(targetDoc, srcPlacedView.Name + config.cf_suffixText, srcPlacedView.ViewType); }
                                                     targetViewId = newPlan.Id;
                                                     viewWasNewlyCreated = true;
+                                                    LoggerService.LogInfo($"SheetTransfer [APPEND SUFFIX SUCCESS]: Created suffixed ViewPlan '{newPlan.Name}' (Target ViewId: {newPlan.Id.Value}).");
                                                 }
                                             }
                                             else
@@ -859,34 +840,19 @@ public class TransferOrchestrator
                                         }
                                         else if (config.cf_rbKeepOriginal)
                                         {
+                                            targetViewId = existingTargetView.Id;
                                             bool canAddExisting = Viewport.CanAddViewToSheet(targetDoc, targetSheet.Id, existingTargetView.Id);
                                             if (canAddExisting)
                                             {
-                                                targetViewId = existingTargetView.Id;
                                                 LoggerService.LogInfo($"SheetTransfer: Model view '{srcPlacedView.Name}' already exists in target document and is unplaced. Re-using target view for viewport.");
+                                            }
+                                            else if (isLegend)
+                                            {
+                                                LoggerService.LogInfo($"SheetTransfer: Legend view '{srcPlacedView.Name}' is already placed but can be placed on multiple sheets. Re-using target legend.");
                                             }
                                             else
                                             {
-                                                if (srcPlacedView is ViewPlan srcViewPlanKeep)
-                                                {
-                                                    LoggerService.LogInfo($"SheetTransfer: Model view '{srcPlacedView.Name}' exists in target but is ALREADY placed on another sheet. Creating new ViewPlan for target sheet...");
-                                                    ViewPlan newPlan = CreateViewPlan(sourceDoc, targetDoc, srcViewPlanKeep, levelMappings, config.cf_chk_ForceLevelInLevelBaseViews);
-                                                    if (newPlan != null)
-                                                    {
-                                                        targetViewId = newPlan.Id;
-                                                        viewWasNewlyCreated = true;
-                                                    }
-                                                }
-                                                else if (isLegend)
-                                                {
-                                                    targetViewId = existingTargetView.Id;
-                                                    LoggerService.LogInfo($"SheetTransfer: Legend view '{srcPlacedView.Name}' is already placed but can be placed on multiple sheets. Re-using target legend.");
-                                                }
-                                                else
-                                                {
-                                                    shouldCopyView = true;
-                                                    LoggerService.LogInfo($"SheetTransfer: View '{srcPlacedView.Name}' already exists and is placed on another sheet. Copying view...");
-                                                }
+                                                LoggerService.LogInfo($"SheetTransfer: Model view '{srcPlacedView.Name}' already exists in target document and is placed on another sheet. Option 'Keep Original' active. Re-using target view reference without creating duplicate.");
                                             }
                                         }
                                     }
@@ -925,8 +891,11 @@ public class TransferOrchestrator
                                     }
                                 }
 
+                                }
+
                                 if (targetViewId != ElementId.InvalidElementId)
                                 {
+                                    processedViewsMap[placedViewId] = targetViewId;
                                     View newPlacedView = targetDoc.GetElement(targetViewId) as View;
                                     if (newPlacedView != null && viewWasNewlyCreated)
                                     {
@@ -949,7 +918,7 @@ public class TransferOrchestrator
 
                                         if (config.cf_chk_Callout && srcPlacedView.ViewType != ViewType.DraftingView)
                                         {
-                                            ponCallouts(sourceDoc, targetDoc, srcPlacedView, newPlacedView, options, true, 3, transform != null, transform);
+                                             ponCallouts(sourceDoc, targetDoc, srcPlacedView, newPlacedView, options, true, 3, transform != null, transform, config, processedViewsMap);
                                         }
                                     }
 
@@ -1082,60 +1051,77 @@ public class TransferOrchestrator
                 if (config.cf_chk_AcceptAll) WarningSwallower.AttachToTransaction(tPlans);
                 CopyPasteOptions options = new CopyPasteOptions();
 
+                LogTargetViewsCheckpoint(targetDoc, "4-BEFORE_PLAN_VIEWS_LOOP");
                 foreach (var item in planViewsToTransfer)
                 {
                     ViewPlan srcViewPlan = sourceDoc.GetElement(item.eID) as ViewPlan;
                     if (srcViewPlan != null)
                     {
-                        var existingTargetView = new FilteredElementCollector(targetDoc)
-                            .OfClass(typeof(View))
-                            .Cast<View>()
-                            .FirstOrDefault(v => v.ViewType == srcViewPlan.ViewType && v.Name.Equals(srcViewPlan.Name, StringComparison.OrdinalIgnoreCase));
-
                         ViewPlan targetPlanToUse = null;
 
-                        if (existingTargetView != null)
+                        if (processedViewsMap.TryGetValue(srcViewPlan.Id, out ElementId mappedPlanId))
                         {
-                            if (config.cf_rbAbortTransaction)
-                            {
-                                duplicateItems.Add(new TransferPlus.Models.DuplicateElementInfo("Views", srcViewPlan.ViewType.ToString(), srcViewPlan.GetType().Name, srcViewPlan.Name));
-                                var cancelEx = new OperationCanceledException("Transfer canceled: Duplicate element names found.");
-                                cancelEx.Data["Duplicates"] = duplicateItems;
-                                throw cancelEx;
-                            }
-                            else if (config.cf_rbAppendSuffix)
-                            {
-                                LoggerService.LogInfo($"Transfer: ViewPlan '{srcViewPlan.Name}' already exists in target document. Option 'Append Suffix' active. Creating new ViewPlan with suffix...");
-                                targetPlanToUse = CreateViewPlan(sourceDoc, targetDoc, srcViewPlan, levelMappings, config.cf_chk_ForceLevelInLevelBaseViews);
-                                if (targetPlanToUse != null)
-                                {
-                                    try { targetPlanToUse.Name = srcViewPlan.Name + config.cf_suffixText; }
-                                    catch { targetPlanToUse.Name = GetUniqueViewName(targetDoc, srcViewPlan.Name + config.cf_suffixText, srcViewPlan.ViewType); }
-                                }
-                            }
-                            else if (config.cf_rbKeepOriginal)
-                            {
-                                LoggerService.LogInfo($"Transfer: ViewPlan '{srcViewPlan.Name}' already exists in target document. Option 'Keep Original' active. Re-using existing target view for graphics/2D synchronization.");
-                                targetPlanToUse = existingTargetView as ViewPlan;
-                            }
+                            targetPlanToUse = targetDoc.GetElement(mappedPlanId) as ViewPlan;
+                            LoggerService.LogInfo($"Transfer: ViewPlan '{srcViewPlan.Name}' [Id: {srcViewPlan.Id.Value}] was already processed during sheet processing in this run (Target ViewId: {mappedPlanId.Value}). Re-using mapped view.");
                         }
                         else
                         {
-                            LoggerService.LogInfo($"Transfer: Creating new ViewPlan '{srcViewPlan.Name}' in target document...");
-                            targetPlanToUse = CreateViewPlan(sourceDoc, targetDoc, srcViewPlan, levelMappings, config.cf_chk_ForceLevelInLevelBaseViews);
+                            View existingTargetView = FindExistingViewByName(targetDoc, srcViewPlan.Name);
+
+                            if (existingTargetView != null)
+                            {
+                                if (config.cf_rbAbortTransaction)
+                                {
+                                    duplicateItems.Add(new TransferPlus.Models.DuplicateElementInfo("Views", srcViewPlan.ViewType.ToString(), srcViewPlan.GetType().Name, srcViewPlan.Name));
+                                    var cancelEx = new OperationCanceledException("Transfer canceled: Duplicate element names found.");
+                                    cancelEx.Data["Duplicates"] = duplicateItems;
+                                    throw cancelEx;
+                                }
+                                else if (config.cf_rbAppendSuffix)
+                                {
+                                    LoggerService.LogInfo($"Transfer [PLAN VIEW APPEND SUFFIX]: ViewPlan '{srcViewPlan.Name}' already exists in target document. Option 'Append Suffix' active. Creating new ViewPlan with suffix...");
+                                    targetPlanToUse = CreateViewPlan(sourceDoc, targetDoc, srcViewPlan, levelMappings, config.cf_chk_ForceLevelInLevelBaseViews, config, forceNewSuffixedView: true);
+                                }
+                                else if (config.cf_rbKeepOriginal)
+                                {
+                                    LoggerService.LogInfo($"Transfer: ViewPlan '{srcViewPlan.Name}' already exists in target document. Option 'Keep Original' active. Re-using existing target view for graphics/2D synchronization.");
+                                    targetPlanToUse = existingTargetView as ViewPlan;
+                                }
+                            }
+                            else
+                            {
+                                LoggerService.LogInfo($"Transfer: Creating new ViewPlan '{srcViewPlan.Name}' in target document...");
+                                targetPlanToUse = CreateViewPlan(sourceDoc, targetDoc, srcViewPlan, levelMappings, config.cf_chk_ForceLevelInLevelBaseViews, config);
+                            }
+
+                            if (targetPlanToUse != null)
+                            {
+                                processedViewsMap[srcViewPlan.Id] = targetPlanToUse.Id;
+                            }
                         }
+
+                        LogTargetViewsCheckpoint(targetDoc, "11-AFTER_CREATE_VIEW_PLAN_RETURNED");
 
                         if (targetPlanToUse != null)
                         {
+                            LoggerService.LogInfo($"Transfer: Calling matchPlantilla for '{targetPlanToUse.Name}'...");
                             matchPlantilla(sourceDoc, targetDoc, srcViewPlan, targetPlanToUse, options, config, duplicateItems);
+                            LogTargetViewsCheckpoint(targetDoc, "12-AFTER_MATCH_PLANTILLA");
+
                             if (config.cf_chk_ViewElements)
                             {
+                                LoggerService.LogInfo($"Transfer: Calling ponDependientes for '{targetPlanToUse.Name}'...");
                                 ponDependientes(sourceDoc, srcViewPlan, targetPlanToUse, options);
+                                LogTargetViewsCheckpoint(targetDoc, "13-AFTER_PON_DEPENDIENTES");
                             }
+
                             if (config.cf_chk_Callout)
                             {
-                                ponCallouts(sourceDoc, targetDoc, srcViewPlan, targetPlanToUse, options, config.cf_chk_ViewElements, 3, false, null);
+                                LoggerService.LogInfo($"Transfer: Calling ponCallouts for '{targetPlanToUse.Name}'...");
+                                ponCallouts(sourceDoc, targetDoc, srcViewPlan, targetPlanToUse, options, config.cf_chk_ViewElements, 3, false, null, config, processedViewsMap);
+                                LogTargetViewsCheckpoint(targetDoc, "14-AFTER_PON_CALLOUTS");
                             }
+
                             LoggerService.LogInfo($"Transfer: Successfully processed plan view '{srcViewPlan.Name}'.");
                         }
                         else
@@ -1158,53 +1144,172 @@ public class TransferOrchestrator
     {
         if (vistaorigen == null || vistadestino == null) return;
 
+        if (copyOptions == null) copyOptions = new CopyPasteOptions();
+        copyOptions.SetDuplicateTypeNamesHandler(new CustomCopyHandlerOk());
+
         LoggerService.LogInfo($"ponDependientes: Collecting 2D view elements for view '{vistaorigen.Name}' (Source ViewId: {vistaorigen.Id.Value})...");
 
         var viewElements = new FilteredElementCollector(origen, vistaorigen.Id)
             .WhereElementIsNotElementType()
-            .Where(e => e.ViewSpecific && 
+            .Where(e => e != null && e.IsValidObject && e.ViewSpecific && 
                         e is not View && 
                         e is not Viewport && 
                         e is not SunAndShadowSettings && 
                         e is not Level && 
-                        e is not SketchPlane)
+                        e is not SketchPlane &&
+                        e is not ElevationMarker &&
+                        e.GetType().Name != "ReferenceViewer" &&
+                        e.Name != "extentElem" &&
+                        e.GetType().Name != "ViewCrop" &&
+                        e.GetType().Name != "ExtentElem" &&
+                        (e.Category == null || (
+                            e.Category.Id.Value != (long)BuiltInCategory.OST_Viewers &&
+                            e.Category.Id.Value != (long)BuiltInCategory.OST_ReferenceViewer &&
+                            e.Category.Id.Value != (long)BuiltInCategory.OST_CalloutBoundary &&
+                            e.Category.Id.Value != (long)BuiltInCategory.OST_Elev
+                        )))
             .ToList();
 
-        LoggerService.LogInfo($"ponDependientes: Collected {viewElements.Count} 2D detail/annotation elements from source view '{vistaorigen.Name}'.");
+        LoggerService.LogInfo($"ponDependientes: Filtered {viewElements.Count} pure 2D detail/annotation elements from source view '{vistaorigen.Name}'.");
 
-        var collection = viewElements.Select(e => e.Id).ToList();
-
-        if (!collection.Any())
+        if (!viewElements.Any())
         {
             LoggerService.LogInfo($"ponDependientes: No 2D view elements found to copy for view '{vistaorigen.Name}'.");
             return;
         }
 
-        try
+        Document destino = vistadestino.Document;
+        EnsureViewWorkplane(vistadestino);
+
+        double targetZ = vistadestino.GenLevel != null ? vistadestino.GenLevel.Elevation : 0.0;
+        double srcZ = vistaorigen.GenLevel != null ? vistaorigen.GenLevel.Elevation : 0.0;
+        double deltaZ = targetZ - srcZ;
+
+        LoggerService.LogInfo($"ponDependientes [ELEVATION INFO]: Source Level '{vistaorigen.GenLevel?.Name}' Z={srcZ:F3} ft, Target Level '{vistadestino.GenLevel?.Name}' Z={targetZ:F3} ft => DeltaZ={deltaZ:F3} ft.");
+
+        // CopyElements between views requires Transform.Identity.
+        // Revit API handles cross-view 2D projection automatically when transform is Identity.
+        Transform copyTransform = Transform.Identity;
+
+        int copiedCount = 0;
+        int skippedTriggerCount = 0;
+
+        foreach (Element elem in viewElements)
         {
-            ElementTransformUtils.CopyElements(vistaorigen, collection, vistadestino, Transform.Identity, copyOptions);
-            LoggerService.LogInfo($"ponDependientes: Batch copied all {collection.Count} 2D view elements into target view '{vistadestino.Name}'.");
-        }
-        catch (Exception exBatch)
-        {
-            LoggerService.LogWarning($"ponDependientes: Batch copy of {collection.Count} 2D view elements from '{vistaorigen.Name}' failed ({exBatch.Message}). Retrying element-by-element...");
-            int copiedCount = 0;
-            int failedCount = 0;
-            foreach (Element elem in viewElements)
+            string catName = elem.Category?.Name ?? "NoCategory";
+            long catId = elem.Category?.Id.Value ?? -1;
+            string className = elem.GetType().Name;
+
+            if (elem.Name.StartsWith("extentElem", StringComparison.OrdinalIgnoreCase) ||
+                elem.Name.StartsWith("ViewCrop", StringComparison.OrdinalIgnoreCase) ||
+                className.Equals("ViewCrop", StringComparison.OrdinalIgnoreCase) ||
+                className.Equals("ExtentElem", StringComparison.OrdinalIgnoreCase))
             {
-                try
+                LoggerService.LogInfo($"ponDependientes: Excluding view extent element '{elem.Name}' [Id: {elem.Id.Value}] from CopyElements.");
+                continue;
+            }
+
+            var existingViewIdsBeforeCopy = new HashSet<ElementId>(
+                new FilteredElementCollector(destino)
+                    .OfClass(typeof(View))
+                    .WhereElementIsNotElementType()
+                    .Select(v => v.Id)
+            );
+
+            int viewsBefore = existingViewIdsBeforeCopy.Count;
+
+            try
+            {
+                LoggerService.LogInfo($"ponDependientes [ATTEMPT COPY]: Copying 2D element '{elem.Name}' (Category: '{catName}', Class: '{className}', Id: {elem.Id.Value}) via CopyElements(Transform.Identity)...");
+                var copiedIds = ElementTransformUtils.CopyElements(vistaorigen, new List<ElementId> { elem.Id }, vistadestino, copyTransform, copyOptions);
+                int viewsAfter = new FilteredElementCollector(destino).OfClass(typeof(ViewPlan)).WhereElementIsNotElementType().Count();
+
+                if (viewsAfter > viewsBefore)
                 {
-                    ElementTransformUtils.CopyElements(vistaorigen, new List<ElementId> { elem.Id }, vistadestino, Transform.Identity, copyOptions);
-                    copiedCount++;
+                    LoggerService.LogWarning($"ponDependientes [VIEW DUPLICATION TRIGGER DETECTED!]: Element '{elem.Name}' (Category: '{catName}' [Id: {catId}], Class: '{className}', Id: {elem.Id.Value}) CAUSED REVIT TO DUPLICATE THE VIEW! Target ViewPlans increased from {viewsBefore} to {viewsAfter}.");
+                    
+                    var newlyCreatedViews = new FilteredElementCollector(destino)
+                        .OfClass(typeof(View))
+                        .WhereElementIsNotElementType()
+                        .Cast<View>()
+                        .Where(v => !existingViewIdsBeforeCopy.Contains(v.Id) && v.Id != vistadestino.Id)
+                        .ToList();
+
+                    foreach (var dupView in newlyCreatedViews)
+                    {
+                        try
+                        {
+                            LoggerService.LogWarning($"ponDependientes [CLEANUP SAFE]: Deleting newly spawned side-effect view duplicate '{dupView.Name}' (Id: {dupView.Id.Value}) created by copying element '{elem.Name}'...");
+                            destino.Delete(dupView.Id);
+                        }
+                        catch (Exception exDel)
+                        {
+                            LoggerService.LogWarning($"ponDependientes [CLEANUP WARNING]: Could not delete side-effect view '{dupView.Name}': {exDel.Message}");
+                        }
+                    }
+                    skippedTriggerCount++;
                 }
-                catch (Exception exSingle)
+                else
                 {
-                    failedCount++;
-                    LoggerService.LogWarning($"ponDependientes: Could not copy 2D element '{elem.Name}' (Category: {elem.Category?.Name ?? "NoCategory"}, Id: {elem.Id.Value}) into target view '{vistadestino.Name}': {exSingle.Message}");
+                    copiedCount++;
+                    LoggerService.LogInfo($"ponDependientes [OK]: Successfully copied 2D element '{elem.Name}' (Category: '{catName}', Class: '{className}', Id: {elem.Id.Value}).");
                 }
             }
-            LoggerService.LogInfo($"ponDependientes: Element-by-element copy complete for '{vistadestino.Name}'. Successfully Copied: {copiedCount}, Skipped/Failed: {failedCount}.");
+            catch (Exception exElem)
+            {
+                LoggerService.LogWarning($"ponDependientes [COPY EXCEPTION]: ElementTransformUtils.CopyElements failed for 2D element '{elem.Name}' (Id: {elem.Id.Value}): {exElem.Message}. Attempting programmatic fallback...");
+
+                if (elem is DetailCurve dc && dc.GeometryCurve != null)
+                {
+                    try
+                    {
+                        EnsureViewWorkplane(vistadestino);
+
+                        Curve srcCurve = dc.GeometryCurve;
+                        Curve projectedCurve = srcCurve;
+
+                        // Explicitly project endpoints onto target Z plane
+                        if (srcCurve is Line line)
+                        {
+                            XYZ p0 = line.GetEndPoint(0);
+                            XYZ p1 = line.GetEndPoint(1);
+                            projectedCurve = Line.CreateBound(new XYZ(p0.X, p0.Y, targetZ), new XYZ(p1.X, p1.Y, targetZ));
+                        }
+                        else if (srcCurve is Arc arc)
+                        {
+                            XYZ p0 = arc.GetEndPoint(0);
+                            XYZ p1 = arc.GetEndPoint(1);
+                            XYZ pm = arc.Evaluate(0.5, true);
+                            projectedCurve = Arc.Create(
+                                new XYZ(p0.X, p0.Y, targetZ),
+                                new XYZ(p1.X, p1.Y, targetZ),
+                                new XYZ(pm.X, pm.Y, targetZ));
+                        }
+                        else if (Math.Abs(deltaZ) > 0.0001)
+                        {
+                            projectedCurve = srcCurve.CreateTransformed(Transform.CreateTranslation(new XYZ(0, 0, deltaZ)));
+                        }
+
+                        DetailCurve newDc = destino.Create.NewDetailCurve(vistadestino, projectedCurve);
+                        if (dc.LineStyle != null && newDc != null)
+                        {
+                            try { newDc.LineStyle = dc.LineStyle; } catch { }
+                        }
+                        copiedCount++;
+                        LoggerService.LogInfo($"ponDependientes [PROGRAMMATIC FALLBACK SUCCESS]: Recreated DetailCurve '{elem.Name}' (Id: {elem.Id.Value}) programmatically in target view '{vistadestino.Name}' at target Z={targetZ:F3} ft.");
+                        continue;
+                    }
+                    catch (Exception exDc)
+                    {
+                        LoggerService.LogWarning($"ponDependientes [PROGRAMMATIC FALLBACK FAILED]: NewDetailCurve failed for element {elem.Id.Value}: {exDc.Message}");
+                    }
+                }
+
+                LoggerService.LogWarning($"ponDependientes [FAILED]: Could not copy 2D element '{elem.Name}' (Category: '{catName}', Id: {elem.Id.Value}) into target view '{vistadestino.Name}': {exElem.Message}");
+            }
         }
+
+        LoggerService.LogInfo($"ponDependientes [SUMMARY]: Element-by-element copy complete for '{vistadestino.Name}'. Successfully Copied: {copiedCount}, Skipped/Cleaned Duplicating Triggers: {skippedTriggerCount}.");
     }
 
     public static void ponCallouts(
@@ -1216,13 +1321,30 @@ public class TransferOrchestrator
         bool CopiaDetalles,
         int Contador,
         bool transforma,
-        Transform? T)
+        Transform? T,
+        Configuraciones? config = null,
+        Dictionary<ElementId, ElementId>? processedViewsMap = null)
     {
         foreach (ElementId elementId in vistaorigen.GetDependentElements(null))
         {
             Element elem = origen.GetElement(elementId);
-            if (elem != null && elem is View && elem.Id != vistaorigen.Id)
+            if (elem != null && elem is View calloutView && elem.Id != vistaorigen.Id)
             {
+                if (processedViewsMap != null && processedViewsMap.TryGetValue(calloutView.Id, out ElementId mappedCalloutId))
+                {
+                    View mappedCallout = destino.GetElement(mappedCalloutId) as View;
+                    if (mappedCallout != null)
+                    {
+                        LoggerService.LogInfo($"ponCallouts: Callout view '{calloutView.Name}' was already processed in this transfer run (Target ViewId: {mappedCalloutId.Value}). Re-using mapped callout.");
+                        if (CopiaDetalles)
+                        {
+                            ponDependientes(origen, calloutView.GetDependentElements(null), calloutView, mappedCallout, copyOptions);
+                        }
+                        ponCallouts(origen, destino, calloutView, mappedCallout, copyOptions, CopiaDetalles, Contador + 1, transforma, T, config, processedViewsMap);
+                        continue;
+                    }
+                }
+
                 var viewTemplatesCount = new FilteredElementCollector(origen)
                     .OfClass(typeof(View))
                     .Cast<View>()
@@ -1233,9 +1355,37 @@ public class TransferOrchestrator
                 {
                     try
                     {
+                        var existingCallout = FindExistingViewByName(destino, calloutView.Name);
+
+                        if (existingCallout != null)
+                        {
+                            if (config != null && config.cf_rbKeepOriginal)
+                            {
+                                LoggerService.LogInfo($"ponCallouts: Callout view '{calloutView.Name}' already exists in target document. Option 'Keep Original' active. Re-using target callout view.");
+                                if (CopiaDetalles)
+                                {
+                                    ponDependientes(origen, calloutView.GetDependentElements(null), calloutView, existingCallout, copyOptions);
+                                }
+                                if (processedViewsMap != null) processedViewsMap[calloutView.Id] = existingCallout.Id;
+                                ponCallouts(origen, destino, calloutView, existingCallout, copyOptions, CopiaDetalles, Contador + 1, transforma, T, config, processedViewsMap);
+                                continue;
+                            }
+                            else if (config != null && config.cf_rbAbortTransaction)
+                            {
+                                LoggerService.LogWarning($"ponCallouts: Callout view '{calloutView.Name}' already exists in target document. Option 'Abort Transaction' active. Skipping.");
+                                continue;
+                            }
+                        }
+
                         var source = ElementTransformUtils.CopyElements(vistaorigen, new List<ElementId> { elem.Id }, vistadestino, null, copyOptions);
                         if (destino.GetElement(source.FirstOrDefault()) is View view && origen.GetElement(elem.Id) is View view2)
                         {
+                            if (processedViewsMap != null) processedViewsMap[calloutView.Id] = view.Id;
+                            if (existingCallout != null && config != null && config.cf_rbAppendSuffix)
+                            {
+                                try { view.Name = calloutView.Name + config.cf_suffixText; } catch { }
+                            }
+
                             if (transforma && T != null)
                             {
                                 try
@@ -1283,7 +1433,7 @@ public class TransferOrchestrator
                                 ponDependientes(origen, vistaorigen.GetDependentElements(null), view2, view, copyOptions);
                             }
 
-                            ponCallouts(origen, destino, view2, view, copyOptions, CopiaDetalles, Contador + 1, transforma, T);
+                            ponCallouts(origen, destino, view2, view, copyOptions, CopiaDetalles, Contador + 1, transforma, T, config, processedViewsMap);
                         }
                     }
                     catch (Exception ex)
@@ -1779,6 +1929,136 @@ public class TransferOrchestrator
         }
     }
 
+    public static string ToAlphaNumericOnly(string input)
+    {
+        if (string.IsNullOrEmpty(input)) return string.Empty;
+        var sb = new System.Text.StringBuilder();
+        foreach (char c in input)
+        {
+            if (char.IsLetterOrDigit(c))
+            {
+                sb.Append(char.ToLowerInvariant(c));
+            }
+        }
+        return sb.ToString();
+    }
+
+    public static string NormalizeName(string text)
+    {
+        if (string.IsNullOrEmpty(text)) return string.Empty;
+
+        char[] dashes = new char[] { '\u2010', '\u2011', '\u2012', '\u2013', '\u2014', '\u2015', '\u2212', '\u00AD' };
+        foreach (char d in dashes)
+        {
+            text = text.Replace(d, '-');
+        }
+
+        char[] whitespaces = new char[] { '\u00A0', '\u200B', '\uFEFF', '\r', '\n', '\t', '\u2000', '\u2001', '\u2002', '\u2003', '\u2004', '\u2005', '\u2006', '\u2007', '\u2008', '\u2009', '\u200A', '\u202F', '\u205F', '\u3000' };
+        foreach (char ws in whitespaces)
+        {
+            text = text.Replace(ws, ' ');
+        }
+
+        return System.Text.RegularExpressions.Regex.Replace(text, @"\s+", " ").Trim();
+    }
+
+    public static View FindExistingViewByName(Document doc, string viewName)
+    {
+        if (doc == null || string.IsNullOrWhiteSpace(viewName)) return null;
+
+        string exactTarget = viewName.Trim();
+        string cleanTarget = NormalizeName(viewName);
+        string alphaTarget = ToAlphaNumericOnly(viewName);
+
+        var views = new FilteredElementCollector(doc)
+            .OfClass(typeof(View))
+            .WhereElementIsNotElementType()
+            .Cast<View>()
+            .Where(v => v != null && v.IsValidObject && !v.IsTemplate)
+            .ToList();
+
+        // Tier 1: Exact match
+        foreach (View v in views)
+        {
+            try
+            {
+                if (v.Name.Trim().Equals(exactTarget, StringComparison.OrdinalIgnoreCase))
+                    return v;
+            }
+            catch { }
+        }
+
+        // Tier 2: Normalized match (whitespace, dashes, hyphens)
+        foreach (View v in views)
+        {
+            try
+            {
+                if (NormalizeName(v.Name).Equals(cleanTarget, StringComparison.OrdinalIgnoreCase))
+                    return v;
+            }
+            catch { }
+        }
+
+        // Tier 3: BuiltInParameter.VIEW_NAME match
+        foreach (View v in views)
+        {
+            try
+            {
+                Parameter p = v.get_Parameter(BuiltInParameter.VIEW_NAME);
+                if (p != null && p.HasValue)
+                {
+                    string pVal = NormalizeName(p.AsString());
+                    if (pVal.Equals(cleanTarget, StringComparison.OrdinalIgnoreCase))
+                        return v;
+                }
+            }
+            catch { }
+        }
+
+        // Tier 4: AlphaNumeric-only match (ignores all hyphens, spaces, underscores, case)
+        if (!string.IsNullOrEmpty(alphaTarget))
+        {
+            foreach (View v in views)
+            {
+                try
+                {
+                    if (ToAlphaNumericOnly(v.Name).Equals(alphaTarget, StringComparison.OrdinalIgnoreCase))
+                        return v;
+                }
+                catch { }
+            }
+        }
+
+        return null;
+    }
+
+    public static ViewSheet FindExistingSheetByNumberOrName(Document doc, string sheetNumber, string sheetName)
+    {
+        if (doc == null) return null;
+        string cleanNum = NormalizeName(sheetNumber);
+        string cleanName = NormalizeName(sheetName);
+
+        var sheets = new FilteredElementCollector(doc)
+            .OfClass(typeof(ViewSheet))
+            .Cast<ViewSheet>();
+
+        foreach (ViewSheet s in sheets)
+        {
+            try
+            {
+                if (s != null && s.IsValidObject)
+                {
+                    if (!string.IsNullOrEmpty(cleanNum) && NormalizeName(s.SheetNumber).Equals(cleanNum, StringComparison.OrdinalIgnoreCase))
+                        return s;
+                    if (!string.IsNullOrEmpty(cleanName) && NormalizeName(s.Name).Equals(cleanName, StringComparison.OrdinalIgnoreCase))
+                        return s;
+                }
+            }
+            catch { }
+        }
+        return null;
+    }
+
     private static bool TargetHasDuplicateName(Document targetDoc, Element srcElem, string evalName = null)
     {
         Type elemType = srcElem.GetType();
@@ -1789,32 +2069,46 @@ public class TransferOrchestrator
         {
             if (srcElem is ElementType)
             {
+                string cleanType = NormalizeName(srcName);
                 return new FilteredElementCollector(targetDoc)
                     .OfClass(elemType)
-                    .Any(e => e.Name.Equals(srcName, StringComparison.OrdinalIgnoreCase));
+                    .Any(e => NormalizeName(e.Name).Equals(cleanType, StringComparison.OrdinalIgnoreCase));
             }
             
-            if (srcElem is View || srcElem is ViewSheet || srcElem is Level || srcElem is ParameterFilterElement)
+            if (srcElem is ViewSheet srcSheet)
             {
+                return FindExistingSheetByNumberOrName(targetDoc, srcSheet.SheetNumber, srcName) != null;
+            }
+
+            if (srcElem is View)
+            {
+                return FindExistingViewByName(targetDoc, srcName) != null;
+            }
+
+            if (srcElem is Level || srcElem is ParameterFilterElement)
+            {
+                string cleanElem = NormalizeName(srcName);
                 return new FilteredElementCollector(targetDoc)
-                    .OfClass(elemType)
-                    .Any(e => e.Name.Equals(srcName, StringComparison.OrdinalIgnoreCase));
+                    .OfClass(srcElem.GetType())
+                    .Any(e => NormalizeName(e.Name).Equals(cleanElem, StringComparison.OrdinalIgnoreCase));
             }
 
             if (srcElem.Category != null)
             {
+                string cleanCatName = NormalizeName(srcName);
                 return new FilteredElementCollector(targetDoc)
                     .OfCategoryId(srcElem.Category.Id)
-                    .Any(e => e.Name.Equals(srcName, StringComparison.OrdinalIgnoreCase));
+                    .Any(e => NormalizeName(e.Name).Equals(cleanCatName, StringComparison.OrdinalIgnoreCase));
             }
         }
         catch
         {
             try
             {
+                string cleanFallback = NormalizeName(srcName);
                 return new FilteredElementCollector(targetDoc)
                     .WhereElementIsNotElementType()
-                    .Any(e => e.Name.Equals(srcName, StringComparison.OrdinalIgnoreCase));
+                    .Any(e => NormalizeName(e.Name).Equals(cleanFallback, StringComparison.OrdinalIgnoreCase));
             }
             catch { }
         }
@@ -1944,12 +2238,36 @@ public class TransferOrchestrator
             return ElementId.InvalidElementId;
         }
     }
-
-    private static ViewPlan CreateViewPlan(Document sourceDoc, Document targetDoc, ViewPlan srcViewPlan, Dictionary<string, string>? levelMappings, bool forceLevel)
+    public static void LogTargetViewsCheckpoint(Document targetDoc, string checkpointName)
     {
+        try
+        {
+            var planViews = new FilteredElementCollector(targetDoc)
+                .OfClass(typeof(ViewPlan))
+                .Cast<ViewPlan>()
+                .Where(v => !v.IsTemplate)
+                .Select(v => $"'{v.Name}'(Id:{v.Id.Value})")
+                .ToList();
+            LoggerService.LogInfo($"[VIEW CHECKPOINT - {checkpointName}]: Total ViewPlans in targetDoc: {planViews.Count}. List: [{string.Join(", ", planViews)}]");
+        }
+        catch (Exception ex)
+        {
+            LoggerService.LogWarning($"[VIEW CHECKPOINT - {checkpointName}]: Error listing target views: {ex.Message}");
+        }
+    }
+
+    private static ViewPlan CreateViewPlan(Document sourceDoc, Document targetDoc, ViewPlan srcViewPlan, Dictionary<string, string>? levelMappings, bool forceLevel, Configuraciones? config = null, bool forceNewSuffixedView = false)
+    {
+        LoggerService.LogInfo($"CreateViewPlan [START]: Processing ViewPlan '{srcViewPlan.Name}' (Source ViewId: {srcViewPlan.Id.Value}, ForceNewSuffixed: {forceNewSuffixedView})...");
+        LogTargetViewsCheckpoint(targetDoc, "6-CREATE_VIEW_PLAN_START");
+
         // 1. Get the ViewFamily of the source view
         ViewFamilyType srcVft = sourceDoc.GetElement(srcViewPlan.GetTypeId()) as ViewFamilyType;
-        if (srcVft == null) return null;
+        if (srcVft == null)
+        {
+            LoggerService.LogWarning($"CreateViewPlan [ABORT]: Source ViewFamilyType is null for '{srcViewPlan.Name}'.");
+            return null;
+        }
         ViewFamily family = srcVft.ViewFamily;
 
         // 2. Find a matching ViewFamilyType in targetDoc
@@ -1960,22 +2278,40 @@ public class TransferOrchestrator
 
         if (targetVft == null)
         {
-            LoggerService.LogWarning($"CreateViewPlan: Could not find matching ViewFamilyType for ViewFamily '{family}' in target document.");
+            LoggerService.LogWarning($"CreateViewPlan [ABORT]: Could not find matching ViewFamilyType for ViewFamily '{family}' in target document.");
             return null;
+        }
+
+        string desiredName = srcViewPlan.Name;
+        View existingByName = FindExistingViewByName(targetDoc, desiredName);
+
+        if (existingByName != null && !forceNewSuffixedView)
+        {
+            if (config == null || config.cf_rbKeepOriginal)
+            {
+                LoggerService.LogInfo($"CreateViewPlan [RE-USE EXISTING]: View '{desiredName}' already exists in target document (Target Id: {existingByName.Id.Value}). Re-using existing view without creating a new copy.");
+                return existingByName as ViewPlan;
+            }
+        }
+
+        if (existingByName != null && (forceNewSuffixedView || (config != null && config.cf_rbAppendSuffix)))
+        {
+            string suffixText = !string.IsNullOrEmpty(config?.cf_suffixText) ? config.cf_suffixText : " 1";
+            desiredName = GetUniqueViewName(targetDoc, srcViewPlan.Name + suffixText, srcViewPlan.ViewType);
+            LoggerService.LogInfo($"CreateViewPlan [SUFFIX NAME GENERATED]: View '{srcViewPlan.Name}' exists in target. Generated suffixed target view name: '{desiredName}'.");
         }
 
         // 3. Resolve target Level
         Level srcLevel = srcViewPlan.GenLevel;
         if (srcLevel == null)
         {
-            LoggerService.LogWarning($"CreateViewPlan: Source view plan '{srcViewPlan.Name}' does not have a GenLevel. Cannot create plan view.");
+            LoggerService.LogWarning($"CreateViewPlan [ABORT]: Source view plan '{srcViewPlan.Name}' does not have a GenLevel. Cannot create plan view.");
             return null;
         }
 
         ElementId targetLevelId = ElementId.InvalidElementId;
         string srcLevelName = srcLevel.Name;
 
-        // Fetch all levels in targetDoc
         var targetLevels = new FilteredElementCollector(targetDoc)
             .OfClass(typeof(Level))
             .Cast<Level>()
@@ -1992,86 +2328,153 @@ public class TransferOrchestrator
                     customName = mappedActionOrLevel.Substring(11);
                 }
 
-                // Create a new level
-                Level newLevel = Level.Create(targetDoc, srcLevel.ProjectElevation);
-                try
+                var existingLevel = targetLevels.FirstOrDefault(l => l.Name.Equals(customName, StringComparison.OrdinalIgnoreCase));
+                if (existingLevel != null)
                 {
-                    newLevel.Name = customName;
+                    targetLevelId = existingLevel.Id;
+                    LoggerService.LogInfo($"CreateViewPlan [LEVEL RESOLVED]: Using newly created or existing Level '{existingLevel.Name}' (Id: {existingLevel.Id.Value}).");
                 }
-                catch
+                else
                 {
-                    newLevel.Name = GetUniqueLevelName(targetDoc, customName);
+                    Level newLevel = Level.Create(targetDoc, srcLevel.ProjectElevation);
+                    try { newLevel.Name = customName; }
+                    catch { newLevel.Name = GetUniqueLevelName(targetDoc, customName); }
+                    targetLevelId = newLevel.Id;
+                    LoggerService.LogInfo($"CreateViewPlan [LEVEL CREATED]: Created new Level '{newLevel.Name}' (Id: {newLevel.Id.Value}) at elevation {newLevel.ProjectElevation} ft (mapped from '{srcLevelName}').");
                 }
-                targetLevelId = newLevel.Id;
-                LoggerService.LogInfo($"CreateViewPlan: Created new Level '{newLevel.Name}' at elevation {newLevel.ProjectElevation} ft (mapped from '{srcLevelName}').");
             }
             else
             {
-                // Map to existing target level
                 var matchedLevel = targetLevels.FirstOrDefault(l => l.Name.Equals(mappedActionOrLevel, StringComparison.OrdinalIgnoreCase));
                 if (matchedLevel != null)
                 {
                     targetLevelId = matchedLevel.Id;
-                    LoggerService.LogInfo($"CreateViewPlan: Mapped view level to existing Level '{matchedLevel.Name}'.");
+                    LoggerService.LogInfo($"CreateViewPlan [LEVEL MAPPED]: Mapped view level '{srcLevelName}' -> existing Level '{matchedLevel.Name}' (Id: {matchedLevel.Id.Value}).");
                 }
                 else
                 {
-                    // Fallback: create level
-                    Level newLevel = Level.Create(targetDoc, srcLevel.ProjectElevation);
-                    newLevel.Name = GetUniqueLevelName(targetDoc, srcLevelName);
-                    targetLevelId = newLevel.Id;
+                    LoggerService.LogWarning($"CreateViewPlan [LEVEL FALLBACK]: Mapped target level '{mappedActionOrLevel}' not found by name. Falling back to first available level.");
+                    var fallbackLevel = targetLevels.FirstOrDefault();
+                    if (fallbackLevel != null) targetLevelId = fallbackLevel.Id;
                 }
             }
         }
         else
         {
-            // Not forcing level mapping, or mapping not found. Search by name.
-            var existingLevel = targetLevels.FirstOrDefault(l => l.Name.Equals(srcLevelName, StringComparison.OrdinalIgnoreCase));
-            if (existingLevel != null)
+            var matchedLevel = targetLevels.FirstOrDefault(l => l.Name.Equals(srcLevelName, StringComparison.OrdinalIgnoreCase));
+            if (matchedLevel != null)
             {
-                targetLevelId = existingLevel.Id;
-                LoggerService.LogInfo($"CreateViewPlan: Found existing Level '{existingLevel.Name}' in target document. Using it.");
+                targetLevelId = matchedLevel.Id;
+                LoggerService.LogInfo($"CreateViewPlan [LEVEL MATCHED]: Found matching Level '{matchedLevel.Name}' (Id: {matchedLevel.Id.Value}) in target document.");
             }
             else
             {
-                // Create new level with same name and elevation
                 Level newLevel = Level.Create(targetDoc, srcLevel.ProjectElevation);
-                try
-                {
-                    newLevel.Name = srcLevelName;
-                }
-                catch
-                {
-                    newLevel.Name = GetUniqueLevelName(targetDoc, srcLevelName);
-                }
+                try { newLevel.Name = srcLevelName; }
+                catch { newLevel.Name = GetUniqueLevelName(targetDoc, srcLevelName); }
                 targetLevelId = newLevel.Id;
-                LoggerService.LogInfo($"CreateViewPlan: Created new Level '{newLevel.Name}' at elevation {newLevel.ProjectElevation} ft.");
+                LoggerService.LogInfo($"CreateViewPlan [LEVEL CREATED]: Created new Level '{newLevel.Name}' (Id: {newLevel.Id.Value}) at elevation {newLevel.ProjectElevation} ft.");
             }
         }
 
+        LogTargetViewsCheckpoint(targetDoc, "7-AFTER_LEVEL_RESOLUTION");
+
         if (targetLevelId == ElementId.InvalidElementId)
         {
-            LoggerService.LogWarning($"CreateViewPlan: Failed to resolve level for ViewPlan '{srcViewPlan.Name}'.");
+            LoggerService.LogWarning($"CreateViewPlan [ABORT]: Could not resolve a target Level for '{srcViewPlan.Name}'.");
             return null;
         }
 
-        // 4. Create the ViewPlan
-        ViewPlan targetViewPlan = ViewPlan.Create(targetDoc, targetVft.Id, targetLevelId);
+        // 4. Create the new ViewPlan
+        ViewPlan targetViewPlan = null;
         try
         {
-            targetViewPlan.Name = srcViewPlan.Name;
-        }
-        catch
-        {
-            targetViewPlan.Name = GetUniqueViewName(targetDoc, srcViewPlan.Name, srcViewPlan.ViewType);
-        }
+            LoggerService.LogInfo($"CreateViewPlan [API CALL]: Calling ViewPlan.Create(targetDoc, targetVftId: {targetVft.Id.Value}, targetLevelId: {targetLevelId.Value})...");
+            targetViewPlan = ViewPlan.Create(targetDoc, targetVft.Id, targetLevelId);
+            LogTargetViewsCheckpoint(targetDoc, "8-AFTER_VIEWPLAN_CREATE_API");
+            LoggerService.LogInfo($"CreateViewPlan [API SUCCESS]: ViewPlan.Create succeeded! (Target ViewId: {targetViewPlan.Id.Value}, Initial Default Name: '{targetViewPlan.Name}'). Setting name to '{desiredName}'...");
 
-        LoggerService.LogInfo($"CreateViewPlan: Successfully created ViewPlan '{targetViewPlan.Name}' (Id: {targetViewPlan.Id.Value}) on Level '{targetDoc.GetElement(targetLevelId).Name}'.");
+            try
+            {
+                targetViewPlan.Name = desiredName;
+                LoggerService.LogInfo($"CreateViewPlan [NAME ASSIGNED]: Successfully set view name to '{targetViewPlan.Name}' (Target ViewId: {targetViewPlan.Id.Value}).");
+            }
+            catch (Exception exName)
+            {
+                LoggerService.LogWarning($"CreateViewPlan [NAME COLLISION CATCH]: Failed to set view name to '{desiredName}' ({exName.Message}). Falling back to GetUniqueViewName...");
+                string uniqueFallbackName = GetUniqueViewName(targetDoc, desiredName, srcViewPlan.ViewType);
+                targetViewPlan.Name = uniqueFallbackName;
+                LoggerService.LogInfo($"CreateViewPlan [FALLBACK NAME ASSIGNED]: Assigned unique fallback name '{uniqueFallbackName}' to target ViewPlan (Id: {targetViewPlan.Id.Value}).");
+            }
+
+            LogTargetViewsCheckpoint(targetDoc, "9-AFTER_VIEWPLAN_NAME_SET");
+        }
+        catch (Exception exCreate)
+        {
+            LoggerService.LogError($"CreateViewPlan [API EXCEPTION]: ViewPlan.Create failed for '{srcViewPlan.Name}': {exCreate.Message}", exCreate);
+            return null;
+        }
 
         // 5. Copy view settings (templates, filters, scale, crop box)
+        LoggerService.LogInfo($"CreateViewPlan [COPY SETTINGS]: Copying scale, discipline, crop box, and templates from '{srcViewPlan.Name}' to '{targetViewPlan.Name}'...");
         CopyViewSettings(srcViewPlan, targetViewPlan);
+        targetDoc.Regenerate();
+        EnsureViewWorkplane(targetViewPlan);
 
+        LoggerService.LogInfo($"CreateViewPlan [COMPLETE]: Successfully initialized ViewPlan '{targetViewPlan.Name}' (Id: {targetViewPlan.Id.Value}).");
         return targetViewPlan;
+    }
+
+    public static void EnsureViewWorkplane(View targetView)
+    {
+        if (targetView == null || targetView.Document == null || !targetView.IsValidObject) return;
+
+        try
+        {
+            Document doc = targetView.Document;
+            doc.Regenerate();
+
+            double z = 0.0;
+            if (targetView.GenLevel != null && targetView.GenLevel.IsValidObject)
+            {
+                z = targetView.GenLevel.Elevation;
+            }
+
+            LoggerService.LogInfo($"EnsureViewWorkplane [START]: View '{targetView.Name}' (GenLevel: '{targetView.GenLevel?.Name}', Z={z:F3} ft). Initial SketchPlane Id: {(targetView.SketchPlane != null ? targetView.SketchPlane.Id.Value.ToString() : "NULL")}.");
+
+            try
+            {
+                Plane fixedPlane = Plane.CreateByNormalAndOrigin(XYZ.BasisZ, new XYZ(0, 0, z));
+                SketchPlane skPlane = SketchPlane.Create(doc, fixedPlane);
+                targetView.SketchPlane = skPlane;
+                doc.Regenerate();
+                LoggerService.LogInfo($"EnsureViewWorkplane [FIXED PLANE CREATED]: Assigned FIXED geometric SketchPlane (Id: {skPlane.Id.Value}, Z={z:F3} ft) to view '{targetView.Name}'.");
+            }
+            catch (Exception exFixed)
+            {
+                LoggerService.LogWarning($"EnsureViewWorkplane [FIXED PLANE FALLBACK]: Could not assign FIXED geometric SketchPlane: {exFixed.Message}. Attempting Level-based SketchPlane...");
+                if (targetView.GenLevel != null && targetView.GenLevel.IsValidObject)
+                {
+                    try
+                    {
+                        SketchPlane lvlSkPlane = SketchPlane.Create(doc, targetView.GenLevel.Id);
+                        targetView.SketchPlane = lvlSkPlane;
+                        doc.Regenerate();
+                        LoggerService.LogInfo($"EnsureViewWorkplane [LEVEL SKETCHPLANE CREATED]: Assigned Level SketchPlane '{targetView.GenLevel.Name}' (Id: {lvlSkPlane.Id.Value}) to view '{targetView.Name}'.");
+                    }
+                    catch (Exception exLvl)
+                    {
+                        LoggerService.LogWarning($"EnsureViewWorkplane [LEVEL SKETCHPLANE WARNING]: {exLvl.Message}");
+                    }
+                }
+            }
+
+            LoggerService.LogInfo($"EnsureViewWorkplane [FINAL STATUS]: View '{targetView.Name}' active SketchPlane Id: {(targetView.SketchPlane != null ? targetView.SketchPlane.Id.Value.ToString() : "NULL")}.");
+        }
+        catch (Exception ex)
+        {
+            LoggerService.LogWarning($"EnsureViewWorkplane [EXCEPTION]: Exception ensuring SketchPlane for '{targetView.Name}': {ex.Message}");
+        }
     }
 
     private static string GetUniqueLevelName(Document doc, string baseName)
@@ -2111,6 +2514,69 @@ public class TransferOrchestrator
         return uniqueName;
     }
 
+    public static void CopyViewInstanceParameters(View srcView, View targetView)
+    {
+        if (srcView == null || targetView == null) return;
+
+        foreach (Parameter srcParam in srcView.Parameters)
+        {
+            if (srcParam == null || srcParam.IsReadOnly || !srcParam.HasValue) continue;
+
+            string paramName = srcParam.Definition?.Name ?? string.Empty;
+            if (string.IsNullOrWhiteSpace(paramName)) continue;
+
+            if (paramName.Equals("Nombre de vista", StringComparison.OrdinalIgnoreCase) ||
+                paramName.Equals("View Name", StringComparison.OrdinalIgnoreCase) ||
+                paramName.Equals("Nivel asociado", StringComparison.OrdinalIgnoreCase) ||
+                paramName.Equals("Associated Level", StringComparison.OrdinalIgnoreCase) ||
+                paramName.Equals("Plantilla de vista", StringComparison.OrdinalIgnoreCase) ||
+                paramName.Equals("View Template", StringComparison.OrdinalIgnoreCase) ||
+                paramName.Equals("Escala de vista", StringComparison.OrdinalIgnoreCase) ||
+                paramName.Equals("View Scale", StringComparison.OrdinalIgnoreCase) ||
+                paramName.Equals("Dependencia", StringComparison.OrdinalIgnoreCase) ||
+                paramName.Equals("Dependency", StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+
+            Parameter targetParam = targetView.LookupParameter(paramName);
+            if (targetParam != null && !targetParam.IsReadOnly)
+            {
+                try
+                {
+                    switch (srcParam.StorageType)
+                    {
+                        case StorageType.String:
+                            string strVal = srcParam.AsString();
+                            if (strVal != null) targetParam.Set(strVal);
+                            break;
+
+                        case StorageType.Integer:
+                            targetParam.Set(srcParam.AsInteger());
+                            break;
+
+                        case StorageType.Double:
+                            targetParam.Set(srcParam.AsDouble());
+                            break;
+
+                        case StorageType.ElementId:
+                            ElementId idVal = srcParam.AsElementId();
+                            if (idVal != ElementId.InvalidElementId)
+                            {
+                                try { targetParam.Set(idVal); } catch { }
+                            }
+                            break;
+                    }
+                    LoggerService.LogInfo($"CopyViewInstanceParameters: Transferred parameter '{paramName}' = '{srcParam.AsValueString() ?? srcParam.AsString()}' to view '{targetView.Name}'.");
+                }
+                catch (Exception exParam)
+                {
+                    LoggerService.LogWarning($"CopyViewInstanceParameters: Could not set parameter '{paramName}' on '{targetView.Name}': {exParam.Message}");
+                }
+            }
+        }
+    }
+
     private static void CopyViewSettings(View srcView, View targetView)
     {
         try
@@ -2126,6 +2592,9 @@ public class TransferOrchestrator
             {
                 targetView.CropBox = srcView.CropBox;
             }
+
+            // Copy custom and user project/shared instance parameters (e.g. KRN_Grupo 1, KRN_Grupo 2, KRN_Grupo 3)
+            CopyViewInstanceParameters(srcView, targetView);
         }
         catch (Exception ex)
         {
@@ -2135,6 +2604,24 @@ public class TransferOrchestrator
 
     private static ViewSheet CreateViewSheet(Document sourceDoc, Document targetDoc, ViewSheet srcSheet, Configuraciones config)
     {
+        LoggerService.LogInfo($"CreateViewSheet: Pre-check for existing sheet '{srcSheet.SheetNumber} - {srcSheet.Name}' in target document...");
+
+        var existingSheet = FindExistingSheetByNumberOrName(targetDoc, srcSheet.SheetNumber, srcSheet.Name);
+
+        if (existingSheet != null)
+        {
+            if (config.cf_rbKeepOriginal)
+            {
+                LoggerService.LogInfo($"CreateViewSheet: ViewSheet '{srcSheet.SheetNumber} - {srcSheet.Name}' (Id: {existingSheet.Id.Value}) already exists in target document. Option 'Keep Original' active. Re-using existing target sheet.");
+                return existingSheet;
+            }
+            else if (config.cf_rbAbortTransaction)
+            {
+                LoggerService.LogWarning($"CreateViewSheet: ViewSheet '{srcSheet.SheetNumber} - {srcSheet.Name}' already exists in target document. Option 'Abort Transaction' active.");
+                return null;
+            }
+        }
+
         // 1. Resolve TitleBlock type
         ElementId titleBlockTypeId = ElementId.InvalidElementId;
         var srcTitleBlocks = new FilteredElementCollector(sourceDoc, srcSheet.Id)
@@ -2156,6 +2643,7 @@ public class TransferOrchestrator
                 if (targetTbType != null)
                 {
                     titleBlockTypeId = targetTbType.Id;
+                    LoggerService.LogInfo($"CreateViewSheet: Matched TitleBlock family type '{srcTbType.Name}' in target document.");
                 }
                 else
                 {
@@ -2163,35 +2651,29 @@ public class TransferOrchestrator
                     {
                         var copiedTbTypes = ElementTransformUtils.CopyElements(sourceDoc, new List<ElementId> { srcTbTypeId }, targetDoc, null, new CopyPasteOptions());
                         titleBlockTypeId = copiedTbTypes.FirstOrDefault() ?? ElementId.InvalidElementId;
+                        LoggerService.LogInfo($"CreateViewSheet: Copied TitleBlock family type '{srcTbType.Name}' into target document.");
                     }
-                    catch { }
+                    catch (Exception exTb)
+                    {
+                        LoggerService.LogWarning($"CreateViewSheet: Could not copy TitleBlock type '{srcTbType.Name}': {exTb.Message}");
+                    }
                 }
             }
         }
 
         // 2. Create the ViewSheet
+        LoggerService.LogInfo($"CreateViewSheet: Executing ViewSheet.Create for '{srcSheet.SheetNumber} - {srcSheet.Name}'...");
         ViewSheet targetSheet = ViewSheet.Create(targetDoc, titleBlockTypeId);
 
         // 3. Resolve SheetNumber and Name according to duplicate config
         string evalSheetNumber = srcSheet.SheetNumber;
         string evalName = srcSheet.Name;
 
-        var existingSheet = new FilteredElementCollector(targetDoc)
-            .OfClass(typeof(ViewSheet))
-            .Cast<ViewSheet>()
-            .FirstOrDefault(s => s.SheetNumber.Equals(srcSheet.SheetNumber, StringComparison.OrdinalIgnoreCase));
-
-        if (existingSheet != null)
+        if (existingSheet != null && config.cf_rbAppendSuffix)
         {
-            if (config.cf_rbAppendSuffix)
-            {
-                evalSheetNumber += config.cf_suffixText;
-                evalName += config.cf_suffixText;
-            }
-            else if (config.cf_rbKeepOriginal)
-            {
-                evalSheetNumber = GetUniqueSheetNumber(targetDoc, srcSheet.SheetNumber);
-            }
+            evalSheetNumber += config.cf_suffixText;
+            evalName += config.cf_suffixText;
+            LoggerService.LogInfo($"CreateViewSheet: Option 'Append Suffix' active. Assigned sheet number '{evalSheetNumber}'.");
         }
 
         try { targetSheet.SheetNumber = evalSheetNumber; } catch { }

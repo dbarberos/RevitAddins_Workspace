@@ -2,19 +2,51 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:viewmodels="clr-namespace:TransferPlus.ViewModels"
-        Title="TransferPlus Debug Log" Height="400" Width="600"
+        Title="TransferPlus Debug Log" Height="450" Width="650"
         WindowStartupLocation="Manual"
         Topmost="True" Background="#1e1e1e">
     <Window.DataContext>
         <viewmodels:LogViewModel/>
     </Window.DataContext>
     <Grid Margin="10">
-        <ListBox ItemsSource="{Binding Logs}" Background="#252526" Foreground="#d4d4d4" BorderThickness="0" FontFamily="Consolas" FontSize="11">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <ListBox Grid.Row="0" ItemsSource="{Binding Logs}" Background="#252526" Foreground="#d4d4d4" BorderThickness="0" FontFamily="Consolas" FontSize="11" Margin="0,0,0,10">
             <ListBox.ItemContainerStyle>
                 <Style TargetType="ListBoxItem">
                     <Setter Property="Padding" Value="2"/>
                 </Style>
             </ListBox.ItemContainerStyle>
         </ListBox>
+
+        <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Right">
+            <Button Content="Exportar Logs (.txt)" 
+                    Command="{Binding ExportLogsCommand}"
+                    Background="#007acc" 
+                    Foreground="White" 
+                    BorderThickness="0" 
+                    Padding="12,6" 
+                    FontSize="12" 
+                    FontWeight="SemiBold"
+                    Cursor="Hand">
+                <Button.Resources>
+                    <Style TargetType="Border">
+                        <Setter Property="CornerRadius" Value="3"/>
+                    </Style>
+                </Button.Resources>
+                <Button.Style>
+                    <Style TargetType="Button">
+                        <Style.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background" Value="#0098ff"/>
+                            </Trigger>
+                        </Style.Triggers>
+                    </Style>
+                </Button.Style>
+            </Button>
+        </StackPanel>
     </Grid>
 </Window>

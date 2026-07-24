@@ -68,6 +68,7 @@ You have structured expert knowledge in the following 30 domains. Use the concep
 * [debugging_revit_wpf_thread_deadlock_2026-07-07.md](file:///c:/Users/david.barbero/Documents/DOCUMENTOS/ALTEN/Workbench/RevitAddins_Workspace/RevitAddins_Workspace/.agents/skills/revit-api/references/debugging_revit_wpf_thread_deadlock_2026-07-07.md)
 * [debugging_pickobjects_mixed_selection_2026-07-08.md](file:///c:/Users/david.barbero/Documents/DOCUMENTOS/ALTEN/Workbench/RevitAddins_Workspace/RevitAddins_Workspace/.agents/skills/revit-api/references/debugging_pickobjects_mixed_selection_2026-07-08.md)
 * [debugging_linked_elements_tree_starvation_2026-07-08.md](file:///c:/Users/david.barbero/Documents/DOCUMENTOS/ALTEN/Workbench/RevitAddins_Workspace/RevitAddins_Workspace/.agents/skills/revit-api/references/debugging_linked_elements_tree_starvation_2026-07-08.md)
+* [debugging_view_sheet_transfer_duplication_2026-07-23.md](file:///c:/Users/david.barbero/Documents/DOCUMENTOS/ALTEN/Workbench/RevitAddins_Workspace/RevitAddins_Workspace/.agents/skills/revit-api/references/debugging_view_sheet_transfer_duplication_2026-07-23.md)
 
 ## 4. RESPONSE FORMAT
 * Provides clean, structured and documented code in modern C#.

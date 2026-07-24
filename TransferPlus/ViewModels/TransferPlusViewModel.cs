@@ -645,6 +645,28 @@ public partial class TransferPlusViewModel : ObservableObject
         var elementsToCopy = checkedItems;
         TransferPlus.Services.LoggerService.LogInfo($"Transfer: Collected {elementsToCopy.Count} elements to transfer.");
 
+        // Pre-flight check: Worksets on Non-Workshared Destination Models
+        bool hasWorksetsSelected = elementsToCopy.Any(x => x.IsWorkset || x.Categoria == "Worksets" || (x.wID != null && x.wID != WorksetId.InvalidWorksetId));
+        if (hasWorksetsSelected)
+        {
+            var invalidDestinations = DestinationDocuments.Where(d => d.Checked && d.Adoc != null && !d.Adoc.IsWorkshared).ToList();
+            if (invalidDestinations.Any())
+            {
+                string targetTitles = string.Join(", ", invalidDestinations.Select(d => $"'{d.Nombre}'"));
+                TransferPlus.Services.LoggerService.LogWarning($"Transfer Aborted: Cannot transfer worksets to non-workshared destination model(s): {targetTitles}");
+
+                TaskDialog mainDialog = new TaskDialog("TransferPlus - Warning")
+                {
+                    MainInstruction = "Transfer Canceled - Worksets Selected",
+                    MainContent = $"Revit does not allow transferring worksets to projects that are not workshared.\n\nThe destination model(s) {targetTitles} are not in collaborative (workshared) mode. Because worksets were included in the selection, the transfer of ALL elements has been canceled.\n\nPlease enable worksharing on the destination project(s) first, or uncheck worksets from the transfer selection to proceed.",
+                    CommonButtons = TaskDialogCommonButtons.Ok,
+                    MainIcon = TaskDialogIcon.TaskDialogIconWarning
+                };
+                mainDialog.Show();
+                return;
+            }
+        }
+
         IsBusy = true;
         StatusMessage = "Transferring elements...";
         ProgressPercentage = 0;
@@ -725,7 +747,19 @@ public partial class TransferPlusViewModel : ObservableObject
         catch (OperationCanceledException cancelEx)
         {
             TransferPlus.Services.LoggerService.LogExceptionSilently("Transfer Canceled", cancelEx);
-            if (cancelEx.Data.Contains("Duplicates"))
+            if (cancelEx.Data.Contains("NotWorkshared"))
+            {
+                string targetTitle = cancelEx.Data["NotWorkshared"]?.ToString() ?? "Destination Document";
+                TaskDialog mainDialog = new TaskDialog("TransferPlus - Warning")
+                {
+                    MainInstruction = "Transfer Canceled - Worksets Selected",
+                    MainContent = $"Revit does not allow transferring worksets to projects that are not workshared.\n\nThe destination model '{targetTitle}' is not in collaborative (workshared) mode. Because worksets were included in the selection, the transfer of ALL elements has been canceled.\n\nPlease enable worksharing on the destination project first, or uncheck worksets from the transfer selection to proceed.",
+                    CommonButtons = TaskDialogCommonButtons.Ok,
+                    MainIcon = TaskDialogIcon.TaskDialogIconWarning
+                };
+                mainDialog.Show();
+            }
+            else if (cancelEx.Data.Contains("Duplicates"))
             {
                 var dupsObj = cancelEx.Data["Duplicates"];
                 if (dupsObj is List<TransferPlus.Models.DuplicateElementInfo> dupInfos && dupInfos.Any())
@@ -1639,16 +1673,31 @@ public partial class TransferPlusViewModel : ObservableObject
 
         var targetLevelNames = targetLevels.Select(l => l.Name).ToList();
 
-        // Find all levels required by the checked plan views
+        // Find all levels required by the checked plan views or plan views placed on checked sheets
         var neededSourceLevels = new Dictionary<string, Level>();
-        foreach (var item in checkedViews)
+        foreach (var item in checkedItems)
         {
-            if (sourceDoc.GetElement(item.eID) is ViewPlan viewPlan && viewPlan.GenLevel != null)
+            Element elem = sourceDoc.GetElement(item.eID);
+            if (elem is ViewPlan viewPlan && viewPlan.GenLevel != null)
             {
                 var srcLevel = viewPlan.GenLevel;
                 if (!neededSourceLevels.ContainsKey(srcLevel.Name))
                 {
                     neededSourceLevels[srcLevel.Name] = srcLevel;
+                }
+            }
+            else if (elem is ViewSheet viewSheet)
+            {
+                foreach (ElementId pvId in viewSheet.GetAllPlacedViews())
+                {
+                    if (sourceDoc.GetElement(pvId) is ViewPlan sheetViewPlan && sheetViewPlan.GenLevel != null)
+                    {
+                        var srcLevel = sheetViewPlan.GenLevel;
+                        if (!neededSourceLevels.ContainsKey(srcLevel.Name))
+                        {
+                            neededSourceLevels[srcLevel.Name] = srcLevel;
+                        }
+                    }
                 }
             }
         }

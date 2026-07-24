@@ -67,6 +67,10 @@ namespace TransferPlus.Models
                 if (value)
                 {
                     SelectedAction = LevelMappingAction.MapToExisting;
+                    if (string.IsNullOrEmpty(SelectedTargetLevelName))
+                    {
+                        SelectedTargetLevelName = ExactMatchLevelName ?? ClosestUpperLevelName ?? ClosestLowerLevelName ?? AvailableTargetLevels.FirstOrDefault();
+                    }
                 }
             }
         }
@@ -86,8 +90,11 @@ namespace TransferPlus.Models
         [RelayCommand]
         private void SelectLevelAndMap(string levelName)
         {
-            SelectedTargetLevelName = levelName;
-            SelectedAction = LevelMappingAction.MapToExisting;
+            if (!string.IsNullOrEmpty(levelName))
+            {
+                SelectedTargetLevelName = levelName;
+                SelectedAction = LevelMappingAction.MapToExisting;
+            }
         }
     }
 }
