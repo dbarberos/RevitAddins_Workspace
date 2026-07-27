@@ -1,6 +1,6 @@
 # Debugging Log: Revit API View-Specific Copy vs 3D Model Elements Prohibition
 
-**Date:** 2026-07-22  
+**Date:** 2026-07-22  ![alt text](image.png)
 **Add-in:** TransferPlus  
 **Component:** `TransferOrchestrator.cs`  
 

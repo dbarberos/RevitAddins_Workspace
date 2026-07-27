@@ -1140,6 +1140,74 @@ public class TransferOrchestrator
         ponDependientes(origen, vistaorigen, vistadestino, copyOptions);
     }
 
+    public static List<ElementId> Copy2DElementsViaDraftingBridge(
+        View vistaorigen,
+        List<ElementId> elementIdsToCopy,
+        View vistadestino,
+        CopyPasteOptions copyOptions)
+    {
+        var resultIds = new List<ElementId>();
+        if (vistaorigen == null || vistadestino == null || elementIdsToCopy == null || !elementIdsToCopy.Any()) return resultIds;
+
+        Document targetDoc = vistadestino.Document;
+
+        ViewFamilyType draftingVft = new FilteredElementCollector(targetDoc)
+            .OfClass(typeof(ViewFamilyType))
+            .Cast<ViewFamilyType>()
+            .FirstOrDefault(vft => vft.ViewFamily == ViewFamily.Drafting);
+
+        if (draftingVft == null)
+        {
+            LoggerService.LogWarning("Copy2DElementsViaDraftingBridge: No ViewFamilyType found for ViewFamily.Drafting in target document.");
+            return resultIds;
+        }
+
+        ViewDrafting tempDrafting = null;
+        try
+        {
+            tempDrafting = ViewDrafting.Create(targetDoc, draftingVft.Id);
+            tempDrafting.Name = "TransferPlus_DraftingBridge_" + Guid.NewGuid().ToString().Substring(0, 8);
+            targetDoc.Regenerate();
+
+            LoggerService.LogInfo($"Copy2DElementsViaDraftingBridge: Step 1 - Copying {elementIdsToCopy.Count} 2D elements from '{vistaorigen.Name}' to temporary Drafting View '{tempDrafting.Name}'...");
+            var tempCopiedIds = ElementTransformUtils.CopyElements(vistaorigen, elementIdsToCopy, tempDrafting, Transform.Identity, copyOptions);
+
+            if (tempCopiedIds != null && tempCopiedIds.Any())
+            {
+                targetDoc.Regenerate();
+                LoggerService.LogInfo($"Copy2DElementsViaDraftingBridge: Step 2 - Copying {tempCopiedIds.Count} 2D elements from temporary Drafting View to target view '{vistadestino.Name}'...");
+                var finalCopiedIds = ElementTransformUtils.CopyElements(tempDrafting, tempCopiedIds.ToList(), vistadestino, Transform.Identity, copyOptions);
+
+                if (finalCopiedIds != null)
+                {
+                    resultIds.AddRange(finalCopiedIds);
+                    LoggerService.LogInfo($"Copy2DElementsViaDraftingBridge [SUCCESS]: Successfully transferred {resultIds.Count} 2D elements to '{vistadestino.Name}' via Drafting View Bridge!");
+                }
+            }
+        }
+        catch (Exception exBridge)
+        {
+            LoggerService.LogWarning($"Copy2DElementsViaDraftingBridge [EXCEPTION]: {exBridge.Message}");
+        }
+        finally
+        {
+            if (tempDrafting != null && tempDrafting.IsValidObject)
+            {
+                try
+                {
+                    targetDoc.Delete(tempDrafting.Id);
+                    LoggerService.LogInfo($"Copy2DElementsViaDraftingBridge: Cleaned up temporary Drafting View (Id: {tempDrafting.Id.Value}).");
+                }
+                catch (Exception exDel)
+                {
+                    LoggerService.LogWarning($"Copy2DElementsViaDraftingBridge: Could not delete temp Drafting View: {exDel.Message}");
+                }
+            }
+        }
+
+        return resultIds;
+    }
+
     public static void ponDependientes(Document origen, View vistaorigen, View vistadestino, CopyPasteOptions copyOptions)
     {
         if (vistaorigen == null || vistadestino == null) return;
@@ -1179,20 +1247,130 @@ public class TransferOrchestrator
         }
 
         Document destino = vistadestino.Document;
+        EnsureSourceLevelExistsInTarget(destino, vistaorigen.GenLevel);
         EnsureViewWorkplane(vistadestino);
 
         double targetZ = vistadestino.GenLevel != null ? vistadestino.GenLevel.Elevation : 0.0;
         double srcZ = vistaorigen.GenLevel != null ? vistaorigen.GenLevel.Elevation : 0.0;
         double deltaZ = targetZ - srcZ;
 
-        LoggerService.LogInfo($"ponDependientes [ELEVATION INFO]: Source Level '{vistaorigen.GenLevel?.Name}' Z={srcZ:F3} ft, Target Level '{vistadestino.GenLevel?.Name}' Z={targetZ:F3} ft => DeltaZ={deltaZ:F3} ft.");
+        LoggerService.LogInfo($"ponDependientes [ELEVATION TRACE]: Source View '{vistaorigen.Name}' (Level: '{vistaorigen.GenLevel?.Name}', Z={srcZ:F3} ft) -> Target View '{vistadestino.Name}' (Level: '{vistadestino.GenLevel?.Name}', Z={targetZ:F3} ft) | DeltaZ={deltaZ:F3} ft.");
 
-        // CopyElements between views requires Transform.Identity.
-        // Revit API handles cross-view 2D projection automatically when transform is Identity.
-        Transform copyTransform = Transform.Identity;
+        var all2DIds = viewElements.Select(e => e.Id).ToList();
 
+        var existingViewIdsBeforeCopy = new HashSet<ElementId>(
+            new FilteredElementCollector(destino)
+                .OfClass(typeof(View))
+                .WhereElementIsNotElementType()
+                .Select(v => v.Id)
+        );
+        int viewsBefore = existingViewIdsBeforeCopy.Count;
+
+        // Strategy 1: Batch View-level CopyElements (Preserves connected line joins & 2D references!)
+        try
+        {
+            LoggerService.LogInfo($"ponDependientes [BATCH VIEW COPY]: Copying {all2DIds.Count} 2D elements in batch via View-level CopyElements(Transform.Identity)...");
+            var copiedBatchIds = ElementTransformUtils.CopyElements(vistaorigen, all2DIds, vistadestino, Transform.Identity, copyOptions);
+            int viewsAfter = new FilteredElementCollector(destino).OfClass(typeof(View)).WhereElementIsNotElementType().Count();
+
+            if (viewsAfter > viewsBefore)
+            {
+                var newlyCreatedViews = new FilteredElementCollector(destino)
+                    .OfClass(typeof(View))
+                    .WhereElementIsNotElementType()
+                    .Cast<View>()
+                    .Where(v => !existingViewIdsBeforeCopy.Contains(v.Id) && v.Id != vistadestino.Id)
+                    .ToList();
+
+                View sideEffectView = newlyCreatedViews.FirstOrDefault();
+                if (sideEffectView != null && sideEffectView.IsValidObject)
+                {
+                    LoggerService.LogInfo($"ponDependientes [SIDE-EFFECT VIEW CONSOLIDATION]: Revit created view '{sideEffectView.Name}' (Id: {sideEffectView.Id.Value}) containing the copied {all2DIds.Count} 2D elements. Consolidating into single target view...");
+
+                    string targetName = vistadestino.Name;
+                    ElementId emptyViewId = vistadestino.Id;
+
+                    // Copy view settings & instance parameters to sideEffectView
+                    CopyViewSettings(vistaorigen, sideEffectView);
+                    CopyViewInstanceParameters(vistaorigen, sideEffectView);
+
+                    // Delete the initial empty target view to free up the desired view name
+                    try
+                    {
+                        destino.Delete(emptyViewId);
+                        LoggerService.LogInfo($"ponDependientes [CONSOLIDATION]: Deleted empty initial view (Id: {emptyViewId.Value}).");
+                    }
+                    catch (Exception exDel)
+                    {
+                        LoggerService.LogWarning($"ponDependientes [CONSOLIDATION]: Could not delete initial empty view: {exDel.Message}");
+                    }
+
+                    // Rename sideEffectView to targetName
+                    try
+                    {
+                        sideEffectView.Name = targetName;
+                        LoggerService.LogInfo($"ponDependientes [CONSOLIDATION SUCCESS]: Renamed view '{sideEffectView.Id.Value}' to '{sideEffectView.Name}'. 100% 2D elements consolidated into single view!");
+                    }
+                    catch (Exception exRename)
+                    {
+                        LoggerService.LogWarning($"ponDependientes [CONSOLIDATION RENAME FALLBACK]: Could not set name '{targetName}': {exRename.Message}");
+                    }
+
+                    return;
+                }
+            }
+            else if (copiedBatchIds != null && copiedBatchIds.Any())
+            {
+                LoggerService.LogInfo($"ponDependientes [BATCH VIEW OK]: Successfully copied {copiedBatchIds.Count} 2D elements into '{vistadestino.Name}' in a single batch!");
+                return;
+            }
+        }
+        catch (Exception exBatchView)
+        {
+            LoggerService.LogWarning($"ponDependientes [BATCH VIEW FALLBACK]: Batch view-level copy failed: {exBatchView.Message}. Trying Batch Doc-level copy...");
+        }
+
+        // Strategy 2: Batch Document-level CopyElements with 3D deltaZ translation vector
+        if (Math.Abs(deltaZ) > 0.0001)
+        {
+            try
+            {
+                Transform docCopyTransform = Transform.CreateTranslation(new XYZ(0, 0, deltaZ));
+                LoggerService.LogInfo($"ponDependientes [BATCH DOC COPY]: Copying {all2DIds.Count} 2D elements in batch via Document-level CopyElements...");
+                var copiedDocIds = ElementTransformUtils.CopyElements(origen, all2DIds, destino, docCopyTransform, copyOptions);
+                int viewsAfter = new FilteredElementCollector(destino).OfClass(typeof(View)).WhereElementIsNotElementType().Count();
+
+                if (viewsAfter > viewsBefore)
+                {
+                    LoggerService.LogWarning($"ponDependientes [BATCH DOC DUPLICATION DETECTED!]: Batch doc copy caused Revit to duplicate the view! Deleting duplicated view...");
+                    var newlyCreatedViews = new FilteredElementCollector(destino)
+                        .OfClass(typeof(View))
+                        .WhereElementIsNotElementType()
+                        .Cast<View>()
+                        .Where(v => !existingViewIdsBeforeCopy.Contains(v.Id) && v.Id != vistadestino.Id)
+                        .ToList();
+
+                    foreach (var dupView in newlyCreatedViews)
+                    {
+                        try { destino.Delete(dupView.Id); } catch { }
+                    }
+                }
+                else if (copiedDocIds != null && copiedDocIds.Any())
+                {
+                    LoggerService.LogInfo($"ponDependientes [BATCH DOC OK]: Successfully copied {copiedDocIds.Count} 2D elements via Document-level CopyElements!");
+                    return;
+                }
+            }
+            catch (Exception exBatchDoc)
+            {
+                LoggerService.LogWarning($"ponDependientes [BATCH DOC FALLBACK]: Batch doc-level copy failed: {exBatchDoc.Message}. Falling back to element-by-element copy...");
+            }
+        }
+
+        // Strategy 3: Element-by-element fallback with failure tracking and duplication protection
         int copiedCount = 0;
         int skippedTriggerCount = 0;
+        var failedElementsSummary = new List<string>();
 
         foreach (Element elem in viewElements)
         {
@@ -1205,29 +1383,22 @@ public class TransferOrchestrator
                 className.Equals("ViewCrop", StringComparison.OrdinalIgnoreCase) ||
                 className.Equals("ExtentElem", StringComparison.OrdinalIgnoreCase))
             {
-                LoggerService.LogInfo($"ponDependientes: Excluding view extent element '{elem.Name}' [Id: {elem.Id.Value}] from CopyElements.");
+                LoggerService.LogInfo($"ponDependientes [SKIP EXTENT]: Excluding view extent element '{elem.Name}' [Id: {elem.Id.Value}] from 2D copy.");
                 continue;
             }
 
-            var existingViewIdsBeforeCopy = new HashSet<ElementId>(
-                new FilteredElementCollector(destino)
-                    .OfClass(typeof(View))
-                    .WhereElementIsNotElementType()
-                    .Select(v => v.Id)
-            );
-
-            int viewsBefore = existingViewIdsBeforeCopy.Count;
+            int vBefore = new FilteredElementCollector(destino).OfClass(typeof(View)).WhereElementIsNotElementType().Count();
 
             try
             {
-                LoggerService.LogInfo($"ponDependientes [ATTEMPT COPY]: Copying 2D element '{elem.Name}' (Category: '{catName}', Class: '{className}', Id: {elem.Id.Value}) via CopyElements(Transform.Identity)...");
-                var copiedIds = ElementTransformUtils.CopyElements(vistaorigen, new List<ElementId> { elem.Id }, vistadestino, copyTransform, copyOptions);
-                int viewsAfter = new FilteredElementCollector(destino).OfClass(typeof(ViewPlan)).WhereElementIsNotElementType().Count();
+                LoggerService.LogInfo($"ponDependientes [VIEW-LEVEL COPY]: Copying 2D element '{elem.Name}' (Category: '{catName}', Class: '{className}', Id: {elem.Id.Value}) via View-level CopyElements(Transform.Identity)...");
+                var copiedIds = ElementTransformUtils.CopyElements(vistaorigen, new List<ElementId> { elem.Id }, vistadestino, Transform.Identity, copyOptions);
+                int vAfter = new FilteredElementCollector(destino).OfClass(typeof(View)).WhereElementIsNotElementType().Count();
 
-                if (viewsAfter > viewsBefore)
+                if (vAfter > vBefore)
                 {
-                    LoggerService.LogWarning($"ponDependientes [VIEW DUPLICATION TRIGGER DETECTED!]: Element '{elem.Name}' (Category: '{catName}' [Id: {catId}], Class: '{className}', Id: {elem.Id.Value}) CAUSED REVIT TO DUPLICATE THE VIEW! Target ViewPlans increased from {viewsBefore} to {viewsAfter}.");
-                    
+                    LoggerService.LogWarning($"ponDependientes [VIEW DUPLICATION TRIGGER DETECTED!]: Element '{elem.Name}' (Category: '{catName}' [Id: {catId}], Class: '{className}', Id: {elem.Id.Value}) CAUSED REVIT TO DUPLICATE THE VIEW!");
+
                     var newlyCreatedViews = new FilteredElementCollector(destino)
                         .OfClass(typeof(View))
                         .WhereElementIsNotElementType()
@@ -1239,77 +1410,58 @@ public class TransferOrchestrator
                     {
                         try
                         {
-                            LoggerService.LogWarning($"ponDependientes [CLEANUP SAFE]: Deleting newly spawned side-effect view duplicate '{dupView.Name}' (Id: {dupView.Id.Value}) created by copying element '{elem.Name}'...");
                             destino.Delete(dupView.Id);
+                            LoggerService.LogInfo($"ponDependientes [CLEANUP DUP VIEW]: Deleted side-effect duplicated view '{dupView.Name}' (Id: {dupView.Id.Value}).");
                         }
-                        catch (Exception exDel)
-                        {
-                            LoggerService.LogWarning($"ponDependientes [CLEANUP WARNING]: Could not delete side-effect view '{dupView.Name}': {exDel.Message}");
-                        }
+                        catch { }
                     }
                     skippedTriggerCount++;
                 }
-                else
+                else if (copiedIds != null && copiedIds.Any())
                 {
                     copiedCount++;
-                    LoggerService.LogInfo($"ponDependientes [OK]: Successfully copied 2D element '{elem.Name}' (Category: '{catName}', Class: '{className}', Id: {elem.Id.Value}).");
+                    LoggerService.LogInfo($"ponDependientes [VIEW-LEVEL OK]: Successfully copied 2D element '{elem.Name}' (Category: '{catName}', Class: '{className}', Id: {elem.Id.Value}).");
                 }
             }
             catch (Exception exElem)
             {
-                LoggerService.LogWarning($"ponDependientes [COPY EXCEPTION]: ElementTransformUtils.CopyElements failed for 2D element '{elem.Name}' (Id: {elem.Id.Value}): {exElem.Message}. Attempting programmatic fallback...");
-
-                if (elem is DetailCurve dc && dc.GeometryCurve != null)
-                {
-                    try
-                    {
-                        EnsureViewWorkplane(vistadestino);
-
-                        Curve srcCurve = dc.GeometryCurve;
-                        Curve projectedCurve = srcCurve;
-
-                        // Explicitly project endpoints onto target Z plane
-                        if (srcCurve is Line line)
-                        {
-                            XYZ p0 = line.GetEndPoint(0);
-                            XYZ p1 = line.GetEndPoint(1);
-                            projectedCurve = Line.CreateBound(new XYZ(p0.X, p0.Y, targetZ), new XYZ(p1.X, p1.Y, targetZ));
-                        }
-                        else if (srcCurve is Arc arc)
-                        {
-                            XYZ p0 = arc.GetEndPoint(0);
-                            XYZ p1 = arc.GetEndPoint(1);
-                            XYZ pm = arc.Evaluate(0.5, true);
-                            projectedCurve = Arc.Create(
-                                new XYZ(p0.X, p0.Y, targetZ),
-                                new XYZ(p1.X, p1.Y, targetZ),
-                                new XYZ(pm.X, pm.Y, targetZ));
-                        }
-                        else if (Math.Abs(deltaZ) > 0.0001)
-                        {
-                            projectedCurve = srcCurve.CreateTransformed(Transform.CreateTranslation(new XYZ(0, 0, deltaZ)));
-                        }
-
-                        DetailCurve newDc = destino.Create.NewDetailCurve(vistadestino, projectedCurve);
-                        if (dc.LineStyle != null && newDc != null)
-                        {
-                            try { newDc.LineStyle = dc.LineStyle; } catch { }
-                        }
-                        copiedCount++;
-                        LoggerService.LogInfo($"ponDependientes [PROGRAMMATIC FALLBACK SUCCESS]: Recreated DetailCurve '{elem.Name}' (Id: {elem.Id.Value}) programmatically in target view '{vistadestino.Name}' at target Z={targetZ:F3} ft.");
-                        continue;
-                    }
-                    catch (Exception exDc)
-                    {
-                        LoggerService.LogWarning($"ponDependientes [PROGRAMMATIC FALLBACK FAILED]: NewDetailCurve failed for element {elem.Id.Value}: {exDc.Message}");
-                    }
-                }
-
+                string failMsg = $"• '{elem.Name}' (Id: {elem.Id.Value}, Categoría: '{catName}') - {exElem.Message}";
+                failedElementsSummary.Add(failMsg);
                 LoggerService.LogWarning($"ponDependientes [FAILED]: Could not copy 2D element '{elem.Name}' (Category: '{catName}', Id: {elem.Id.Value}) into target view '{vistadestino.Name}': {exElem.Message}");
             }
         }
 
-        LoggerService.LogInfo($"ponDependientes [SUMMARY]: Element-by-element copy complete for '{vistadestino.Name}'. Successfully Copied: {copiedCount}, Skipped/Cleaned Duplicating Triggers: {skippedTriggerCount}.");
+        LoggerService.LogInfo($"ponDependientes [SUMMARY]: Element-by-element copy complete for '{vistadestino.Name}'. Successfully Copied: {copiedCount}, Failed 2D Elements: {failedElementsSummary.Count}, Skipped/Cleaned Duplicating Triggers: {skippedTriggerCount}.");
+
+        if (failedElementsSummary.Any())
+        {
+            string msgDetails = string.Join("\n", failedElementsSummary.Take(10));
+            if (failedElementsSummary.Count > 10)
+            {
+                msgDetails += $"\n... y {failedElementsSummary.Count - 10} elementos 2D adicionales.";
+            }
+
+            try
+            {
+                Autodesk.Revit.UI.TaskDialog mainDialog = new Autodesk.Revit.UI.TaskDialog("TransferPlus - Advertencia de Elementos 2D")
+                {
+                    MainInstruction = $"No se pudieron transferir {failedElementsSummary.Count} elementos 2D a la vista '{vistadestino.Name}'.",
+                    MainContent = $"Causa: Restricción de la API de Revit al copiar elementos 2D (Líneas de detalle/Anotaciones) entre niveles con diferente elevación.\n\n" +
+                                  $"• Nivel Origen ({vistaorigen.GenLevel?.Name}): Z = {srcZ:F3} ft\n" +
+                                  $"• Nivel Destino ({vistadestino.GenLevel?.Name}): Z = {targetZ:F3} ft\n" +
+                                  $"• Salto de Elevación (DeltaZ): {deltaZ:F3} ft\n\n" +
+                                  $"La vista destino se ha creado correctamente, pero Revit API impide trasladar fuera del plano los siguientes elementos 2D:\n\n{msgDetails}",
+                    CommonButtons = Autodesk.Revit.UI.TaskDialogCommonButtons.Ok,
+                    DefaultButton = Autodesk.Revit.UI.TaskDialogResult.Ok,
+                    MainIcon = Autodesk.Revit.UI.TaskDialogIcon.TaskDialogIconWarning
+                };
+                mainDialog.Show();
+            }
+            catch (Exception exDlg)
+            {
+                LoggerService.LogWarning($"ponDependientes: Could not display TaskDialog: {exDlg.Message}");
+            }
+        }
     }
 
     public static void ponCallouts(
@@ -2425,51 +2577,120 @@ public class TransferOrchestrator
         return targetViewPlan;
     }
 
+    public static Level EnsureSourceLevelExistsInTarget(Document targetDoc, Level srcLevel)
+    {
+        if (srcLevel == null || !srcLevel.IsValidObject) return null;
+
+        double srcZ = srcLevel.Elevation;
+        string srcName = srcLevel.Name;
+
+        var existingLevels = new FilteredElementCollector(targetDoc)
+            .OfClass(typeof(Level))
+            .Cast<Level>()
+            .ToList();
+
+        Level matchLevel = existingLevels.FirstOrDefault(l => 
+            string.Equals(l.Name, srcName, StringComparison.OrdinalIgnoreCase) ||
+            Math.Abs(l.Elevation - srcZ) < 0.001);
+
+        if (matchLevel != null) return matchLevel;
+
+        try
+        {
+            Level tempLvl = Level.Create(targetDoc, srcZ);
+            tempLvl.Name = GetUniqueLevelName(targetDoc, srcName);
+            targetDoc.Regenerate();
+            LoggerService.LogInfo($"EnsureSourceLevelExistsInTarget: Created level '{tempLvl.Name}' (Id: {tempLvl.Id.Value}, Z={srcZ:F3} ft) in target doc to satisfy CopyElements workplane matching.");
+            return tempLvl;
+        }
+        catch (Exception ex)
+        {
+            LoggerService.LogWarning($"EnsureSourceLevelExistsInTarget: Could not create level in target: {ex.Message}");
+            return null;
+        }
+    }
+
+    public static SketchPlane GetOrCreateLevelSketchPlane(Document doc, Level level)
+    {
+        if (level == null || !level.IsValidObject) return null;
+
+        try
+        {
+            var levelSketchPlanes = new FilteredElementCollector(doc)
+                .OfClass(typeof(SketchPlane))
+                .Cast<SketchPlane>()
+                .ToList();
+
+            foreach (var sk in levelSketchPlanes)
+            {
+                try
+                {
+                    Plane p = sk.GetPlane();
+                    if (p != null)
+                    {
+                        if (Math.Abs(p.Origin.Z - level.Elevation) < 0.001 &&
+                            Math.Abs(p.Normal.Z - 1.0) < 0.001)
+                        {
+                            return sk;
+                        }
+                    }
+                }
+                catch { }
+            }
+        }
+        catch { }
+
+        try
+        {
+            return SketchPlane.Create(doc, level.Id);
+        }
+        catch
+        {
+            try
+            {
+                Plane plane = Plane.CreateByNormalAndOrigin(XYZ.BasisZ, new XYZ(0, 0, level.Elevation));
+                return SketchPlane.Create(doc, plane);
+            }
+            catch
+            {
+                return null;
+            }
+        }
+    }
+
     public static void EnsureViewWorkplane(View targetView)
     {
         if (targetView == null || targetView.Document == null || !targetView.IsValidObject) return;
 
+        // ViewPlan views cannot have an explicitly assigned SketchPlane in Revit API.
+        // Assigning one causes NewDetailCurve to throw "View does not and may not contain a fixed sketch plane".
+        if (targetView is ViewPlan) return;
+
         try
         {
             Document doc = targetView.Document;
-            doc.Regenerate();
 
-            double z = 0.0;
-            if (targetView.GenLevel != null && targetView.GenLevel.IsValidObject)
+            if (targetView.SketchPlane == null || !targetView.SketchPlane.IsValidObject)
             {
-                z = targetView.GenLevel.Elevation;
-            }
-
-            LoggerService.LogInfo($"EnsureViewWorkplane [START]: View '{targetView.Name}' (GenLevel: '{targetView.GenLevel?.Name}', Z={z:F3} ft). Initial SketchPlane Id: {(targetView.SketchPlane != null ? targetView.SketchPlane.Id.Value.ToString() : "NULL")}.");
-
-            try
-            {
-                Plane fixedPlane = Plane.CreateByNormalAndOrigin(XYZ.BasisZ, new XYZ(0, 0, z));
-                SketchPlane skPlane = SketchPlane.Create(doc, fixedPlane);
-                targetView.SketchPlane = skPlane;
                 doc.Regenerate();
-                LoggerService.LogInfo($"EnsureViewWorkplane [FIXED PLANE CREATED]: Assigned FIXED geometric SketchPlane (Id: {skPlane.Id.Value}, Z={z:F3} ft) to view '{targetView.Name}'.");
-            }
-            catch (Exception exFixed)
-            {
-                LoggerService.LogWarning($"EnsureViewWorkplane [FIXED PLANE FALLBACK]: Could not assign FIXED geometric SketchPlane: {exFixed.Message}. Attempting Level-based SketchPlane...");
                 if (targetView.GenLevel != null && targetView.GenLevel.IsValidObject)
                 {
-                    try
+                    SketchPlane sk = GetOrCreateLevelSketchPlane(doc, targetView.GenLevel);
+                    if (sk != null)
                     {
-                        SketchPlane lvlSkPlane = SketchPlane.Create(doc, targetView.GenLevel.Id);
-                        targetView.SketchPlane = lvlSkPlane;
-                        doc.Regenerate();
-                        LoggerService.LogInfo($"EnsureViewWorkplane [LEVEL SKETCHPLANE CREATED]: Assigned Level SketchPlane '{targetView.GenLevel.Name}' (Id: {lvlSkPlane.Id.Value}) to view '{targetView.Name}'.");
-                    }
-                    catch (Exception exLvl)
-                    {
-                        LoggerService.LogWarning($"EnsureViewWorkplane [LEVEL SKETCHPLANE WARNING]: {exLvl.Message}");
+                        try
+                        {
+                            targetView.SketchPlane = sk;
+                            doc.Regenerate();
+                            LoggerService.LogInfo($"EnsureViewWorkplane: Successfully assigned Level SketchPlane (Id: {sk.Id.Value}) to view '{targetView.Name}'.");
+                        }
+                        catch (Exception exAssign)
+                        {
+                            LoggerService.LogWarning($"EnsureViewWorkplane: Could not assign SketchPlane to view '{targetView.Name}': {exAssign.Message}");
+                        }
                     }
                 }
             }
-
-            LoggerService.LogInfo($"EnsureViewWorkplane [FINAL STATUS]: View '{targetView.Name}' active SketchPlane Id: {(targetView.SketchPlane != null ? targetView.SketchPlane.Id.Value.ToString() : "NULL")}.");
         }
         catch (Exception ex)
         {
