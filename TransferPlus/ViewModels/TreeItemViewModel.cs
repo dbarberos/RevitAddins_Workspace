@@ -146,6 +146,23 @@ public partial class TreeItemViewModel : ObservableObject
             }
         }
     }
+
+    public int UpdateRecursiveCounts()
+    {
+        if (!Children.Any())
+        {
+            if (Count == 0) Count = 1;
+            return Count;
+        }
+
+        int sum = 0;
+        foreach (var child in Children)
+        {
+            sum += child.UpdateRecursiveCounts();
+        }
+        Count = sum;
+        return Count;
+    }
 }
 
 public class CheckedItemsChangedMessage { }

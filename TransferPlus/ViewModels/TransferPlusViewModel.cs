@@ -364,6 +364,7 @@ public partial class TransferPlusViewModel : ObservableObject
             }
             allNode.Children.Add(categoryNode);
         }
+        allNode.UpdateRecursiveCounts();
         RootNodes.Add(allNode);
         TransferPlus.Services.LoggerService.LogInfo($"BuildTree: Tree built successfully. Total nodes grouped in root: {allNode.Count}");
     }
