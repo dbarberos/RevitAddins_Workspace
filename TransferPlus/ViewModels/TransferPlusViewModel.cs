@@ -1119,6 +1119,21 @@ public partial class TransferPlusViewModel : ObservableObject
     }
 
     [RelayCommand]
+    private void OpenFamilyManager()
+    {
+        try
+        {
+            var vm = new FamilyManagerViewModel(_targetDoc);
+            var view = new FamilyManagerView(vm);
+            view.ShowDialog();
+        }
+        catch (Exception ex)
+        {
+            TransferPlus.Services.LoggerService.LogError("OpenFamilyManager", ex);
+        }
+    }
+
+    [RelayCommand]
     private void InsertRegexHelper(string snippet)
     {
         RenameSearchText += snippet;
