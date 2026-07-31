@@ -1,137 +1,64 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.ComponentModel;
 using System.Linq;
-using System.Runtime.CompilerServices;
 using System.Windows;
-using System.Windows.Input;
+using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 using TransferPlus.Models;
 
 namespace TransferPlus.ViewModels
 {
     /// <summary>
-    /// ViewModel para la interfaz del Gestor de Familias (FamilyManagerView).
-    /// Diseñado bajo MVVM estricto sin referencias a Autodesk.Revit.DB o Autodesk.Revit.UI.
+    /// ViewModel para el Gestor de Familias (FamilyManagerView) basado en C# 12 y CommunityToolkit.Mvvm.
+    /// Totalmente desacoplado de la API de Revit y librerías propietarias de terceros (Scotec/ScaleHQ).
     /// </summary>
-    public class FamilyManagerViewModel : INotifyPropertyChanged
+    public partial class FamilyManagerViewModel : ObservableObject
     {
-        private ObservableCollection<FamilyItemModel> _allFamilies = new();
-        private ObservableCollection<FamilyItemModel> _filteredFamilies = new();
+        private ObservableCollection<FamilyItemModel> _allFamilies = [];
+
+        [ObservableProperty]
+        private ObservableCollection<FamilyItemModel> _families = [];
+
+        [ObservableProperty]
         private FamilyItemModel? _selectedFamily;
-        private ObservableCollection<FamilySymbolItemModel> _selectedFamilySymbols = new();
+
+        [ObservableProperty]
+        private ObservableCollection<FamilySymbolItemModel> _selectedFamilySymbols = [];
+
+        [ObservableProperty]
         private string _searchQuery = string.Empty;
+
+        [ObservableProperty]
         private string _selectedCategory = "Todas las Categorías";
-        private ObservableCollection<string> _categories = new();
+
+        [ObservableProperty]
+        private ObservableCollection<string> _categories = [];
+
+        [ObservableProperty]
         private string _statusSummary = "Listo";
-
-        public event PropertyChangedEventHandler? PropertyChanged;
-
-        public ObservableCollection<FamilyItemModel> Families
-        {
-            get => _filteredFamilies;
-            set
-            {
-                _filteredFamilies = value;
-                OnPropertyChanged();
-            }
-        }
-
-        public FamilyItemModel? SelectedFamily
-        {
-            get => _selectedFamily;
-            set
-            {
-                if (_selectedFamily != value)
-                {
-                    _selectedFamily = value;
-                    OnPropertyChanged();
-                    UpdateSelectedFamilySymbols();
-                }
-            }
-        }
-
-        public ObservableCollection<FamilySymbolItemModel> SelectedFamilySymbols
-        {
-            get => _selectedFamilySymbols;
-            set
-            {
-                _selectedFamilySymbols = value;
-                OnPropertyChanged();
-            }
-        }
-
-        public string SearchQuery
-        {
-            get => _searchQuery;
-            set
-            {
-                if (_searchQuery != value)
-                {
-                    _searchQuery = value;
-                    OnPropertyChanged();
-                    ApplyFilter();
-                }
-            }
-        }
-
-        public string SelectedCategory
-        {
-            get => _selectedCategory;
-            set
-            {
-                if (_selectedCategory != value)
-                {
-                    _selectedCategory = value;
-                    OnPropertyChanged();
-                    ApplyFilter();
-                }
-            }
-        }
-
-        public ObservableCollection<string> Categories
-        {
-            get => _categories;
-            set
-            {
-                _categories = value;
-                OnPropertyChanged();
-            }
-        }
-
-        public string StatusSummary
-        {
-            get => _statusSummary;
-            set
-            {
-                _statusSummary = value;
-                OnPropertyChanged();
-            }
-        }
 
         public int TotalFamiliesCount => _allFamilies.Count;
         public int SelectedFamiliesCount => _allFamilies.Count(f => f.IsSelected);
 
-        // Comandos ICommand
-        public ICommand LoadCommand { get; }
-        public ICommand TransferCommand { get; }
-        public ICommand CancelCommand { get; }
-        public ICommand SelectAllCommand { get; }
-        public ICommand UnselectAllCommand { get; }
-        public ICommand RefreshCommand { get; }
-
         public FamilyManagerViewModel()
         {
-            // Inicializar Comandos
-            LoadCommand = new RelayCommand(ExecuteLoad, CanExecuteAction);
-            TransferCommand = new RelayCommand(ExecuteTransfer, CanExecuteAction);
-            CancelCommand = new RelayCommand(ExecuteCancel);
-            SelectAllCommand = new RelayCommand(ExecuteSelectAll);
-            UnselectAllCommand = new RelayCommand(ExecuteUnselectAll);
-            RefreshCommand = new RelayCommand(ExecuteRefresh);
-
-            // Cargar datos falsos (Mock Data) para diseño e iteración independiente
             LoadMockData();
+        }
+
+        partial void OnSelectedFamilyChanged(FamilyItemModel? value)
+        {
+            UpdateSelectedFamilySymbols();
+        }
+
+        partial void OnSearchQueryChanged(string value)
+        {
+            ApplyFilter();
+        }
+
+        partial void OnSelectedCategoryChanged(string value)
+        {
+            ApplyFilter();
         }
 
         private void LoadMockData()
@@ -231,7 +158,6 @@ namespace TransferPlus.ViewModels
                 }
             };
 
-            // Poblar categorías únicas
             var catList = new List<string> { "Todas las Categorías" };
             catList.AddRange(_allFamilies.Select(f => f.CategoryName).Distinct().OrderBy(c => c));
             Categories = new ObservableCollection<string>(catList);
@@ -246,8 +172,8 @@ namespace TransferPlus.ViewModels
 
         private void ApplyFilter()
         {
-            var query = _searchQuery?.Trim().ToLower() ?? string.Empty;
-            var cat = _selectedCategory;
+            var query = SearchQuery?.Trim().ToLower() ?? string.Empty;
+            var cat = SelectedCategory;
 
             var filtered = _allFamilies.Where(f =>
                 (string.IsNullOrEmpty(query) || f.Name.ToLower().Contains(query) || f.CategoryName.ToLower().Contains(query)) &&
@@ -260,13 +186,13 @@ namespace TransferPlus.ViewModels
 
         private void UpdateSelectedFamilySymbols()
         {
-            if (SelectedFamily != null && SelectedFamily.Symbols != null)
+            if (SelectedFamily?.Symbols != null)
             {
                 SelectedFamilySymbols = new ObservableCollection<FamilySymbolItemModel>(SelectedFamily.Symbols);
             }
             else
             {
-                SelectedFamilySymbols = new ObservableCollection<FamilySymbolItemModel>();
+                SelectedFamilySymbols = [];
             }
         }
 
@@ -277,16 +203,8 @@ namespace TransferPlus.ViewModels
             StatusSummary = $"{SelectedFamiliesCount} familia(s) seleccionada(s) de {TotalFamiliesCount} en lista.";
         }
 
-        public void NotifyFamilySelectionChanged()
-        {
-            UpdateCounters();
-        }
-
-        // --- MÉTODOS DE EJECUCIÓN DE COMANDOS (MODO AISLADO / MOCK) ---
-
-        private bool CanExecuteAction(object? parameter) => true;
-
-        private void ExecuteLoad(object? parameter)
+        [RelayCommand]
+        private void Load(object? parameter)
         {
             // TODO: En Fase 4, invocar IFamilyManager.TryLoadFamily() desde el servicio de Revit
             if (SelectedFamily != null)
@@ -298,7 +216,8 @@ namespace TransferPlus.ViewModels
             }
         }
 
-        private void ExecuteTransfer(object? parameter)
+        [RelayCommand]
+        private void Transfer(object? parameter)
         {
             // TODO: En Fase 4, llamar a TransferOrchestrator para transferir familias seleccionadas
             var count = SelectedFamiliesCount;
@@ -313,7 +232,8 @@ namespace TransferPlus.ViewModels
             }
         }
 
-        private void ExecuteCancel(object? parameter)
+        [RelayCommand]
+        private void Cancel(object? parameter)
         {
             // TODO: Cancelar operación y cerrar diálogo
             if (parameter is Window window)
@@ -323,7 +243,8 @@ namespace TransferPlus.ViewModels
             }
         }
 
-        private void ExecuteSelectAll(object? parameter)
+        [RelayCommand]
+        private void SelectAll(object? parameter)
         {
             foreach (var f in Families)
             {
@@ -333,7 +254,8 @@ namespace TransferPlus.ViewModels
             ApplyFilter();
         }
 
-        private void ExecuteUnselectAll(object? parameter)
+        [RelayCommand]
+        private void UnselectAll(object? parameter)
         {
             foreach (var f in Families)
             {
@@ -343,37 +265,12 @@ namespace TransferPlus.ViewModels
             ApplyFilter();
         }
 
-        private void ExecuteRefresh(object? parameter)
+        [RelayCommand]
+        private void Refresh(object? parameter)
         {
             // TODO: Recargar fuentes de familias
             LoadMockData();
             StatusSummary = "Lista de familias actualizada.";
-        }
-
-        protected void OnPropertyChanged([CallerMemberName] string? propertyName = null)
-        {
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
-        }
-
-        // Implementación de ICommand genérico interno para no depender de librerías externas
-        private class RelayCommand : ICommand
-        {
-            private readonly Action<object?> _execute;
-            private readonly Func<object?, bool>? _canExecute;
-
-            public RelayCommand(Action<object?> execute, Func<object?, bool>? canExecute = null)
-            {
-                _execute = execute ?? throw new ArgumentNullException(nameof(execute));
-                _canExecute = canExecute;
-            }
-
-            public bool CanExecute(object? parameter) => _canExecute?.Invoke(parameter) ?? true;
-            public void Execute(object? parameter) => _execute(parameter);
-            public event EventHandler? CanExecuteChanged
-            {
-                add => CommandManager.RequerySuggested += value;
-                remove => CommandManager.RequerySuggested -= value;
-            }
         }
     }
 }
