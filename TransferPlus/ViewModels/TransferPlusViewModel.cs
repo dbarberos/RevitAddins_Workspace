@@ -1118,6 +1118,31 @@ public partial class TransferPlusViewModel : ObservableObject
         RenamePreviewItems.Clear();
     }
 
+    [ObservableProperty]
+    private bool _isFamiliesManagerActive;
+
+    private bool CanActivateFamiliesManager() => !IsFamiliesManagerActive;
+    private bool CanDeactivateFamiliesManager() => IsFamiliesManagerActive;
+
+    [RelayCommand(CanExecute = nameof(CanActivateFamiliesManager))]
+    private void ActivateFamiliesManager()
+    {
+        IsFamiliesManagerActive = true;
+        OpenFamilyManager();
+    }
+
+    [RelayCommand(CanExecute = nameof(CanDeactivateFamiliesManager))]
+    private void DeactivateFamiliesManager()
+    {
+        IsFamiliesManagerActive = false;
+    }
+
+    partial void OnIsFamiliesManagerActiveChanged(bool value)
+    {
+        ActivateFamiliesManagerCommand.NotifyCanExecuteChanged();
+        DeactivateFamiliesManagerCommand.NotifyCanExecuteChanged();
+    }
+
     [RelayCommand]
     private void OpenFamilyManager()
     {

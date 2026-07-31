@@ -12,13 +12,13 @@
 
     <Window.Style>
         <Style TargetType="Window">
-            <Setter Property="Width" Value="810"/>
+            <Setter Property="Width" Value="885"/>
             <Style.Triggers>
                 <DataTrigger Binding="{Binding IsRenamePanelOpen}" Value="True">
                     <DataTrigger.EnterActions>
                         <BeginStoryboard>
                             <Storyboard>
-                                <DoubleAnimation Storyboard.TargetProperty="Width" To="1310" Duration="0:0:0.3">
+                                <DoubleAnimation Storyboard.TargetProperty="Width" To="1385" Duration="0:0:0.3">
                                     <DoubleAnimation.EasingFunction>
                                         <CubicEase EasingMode="EaseOut"/>
                                     </DoubleAnimation.EasingFunction>
@@ -29,7 +29,7 @@
                     <DataTrigger.ExitActions>
                         <BeginStoryboard>
                             <Storyboard>
-                                <DoubleAnimation Storyboard.TargetProperty="Width" To="810" Duration="0:0:0.3">
+                                <DoubleAnimation Storyboard.TargetProperty="Width" To="885" Duration="0:0:0.3">
                                     <DoubleAnimation.EasingFunction>
                                         <CubicEase EasingMode="EaseOut"/>
                                     </DoubleAnimation.EasingFunction>
@@ -167,7 +167,7 @@
         <!-- MAIN ROW -->
         <Grid Grid.Row="1">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="376"/>
+                <ColumnDefinition Width="451"/>
                 <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="376"/>
             </Grid.ColumnDefinitions>
@@ -176,7 +176,7 @@
             <Grid Grid.Column="0" Margin="0,0,10,0">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/> <!-- Transfer To header -->
-                    <RowDefinition Height="0.75*"/> <!-- Transfer To ListBox (reduced to 0.75x) -->
+                    <RowDefinition Height="0.525*"/> <!-- Transfer To ListBox (reduced by 30%) -->
                     <RowDefinition Height="Auto"/> <!-- What header -->
                     <RowDefinition Height="Auto"/> <!-- Tree columns header -->
                     <RowDefinition Height="2*"/>   <!-- TreeView -->
@@ -437,36 +437,78 @@
                             </StackPanel>
                         </Border>
 
-                        <!-- Families Manager Card (Untitled Card below Rename) -->
+                        <!-- Families Manager Card -->
                         <Border Style="{StaticResource CardBorderStyle}">
-                            <Button Content="Families Manager" Command="{Binding OpenFamilyManagerCommand}" Height="28" Padding="12,4" HorizontalAlignment="Stretch">
-                                <Button.Style>
-                                    <Style TargetType="Button">
-                                        <Setter Property="Background" Value="#007ACC"/>
-                                        <Setter Property="Foreground" Value="White"/>
-                                        <Setter Property="FontWeight" Value="SemiBold"/>
-                                        <Setter Property="FontSize" Value="12"/>
-                                        <Setter Property="BorderThickness" Value="0"/>
-                                        <Setter Property="Cursor" Value="Hand"/>
-                                        <Style.Resources>
-                                            <Style TargetType="Border">
-                                                <Setter Property="CornerRadius" Value="4"/>
-                                            </Style>
-                                        </Style.Resources>
-                                        <Style.Triggers>
-                                            <Trigger Property="IsMouseOver" Value="True">
-                                                <Setter Property="Background" Value="#005999"/>
-                                            </Trigger>
-                                            <Trigger Property="IsEnabled" Value="False">
-                                                <Setter Property="Background" Value="#F3F3F3"/>
-                                                <Setter Property="Foreground" Value="#B0B0B0"/>
-                                                <Setter Property="BorderBrush" Value="Transparent"/>
+                            <StackPanel>
+                                <TextBlock Text="Families Manager:" FontWeight="Bold" FontSize="12" Foreground="#999" Margin="0,0,0,8"/>
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="8"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+
+                                    <!-- Activate Button -->
+                                    <Button Grid.Column="0" Content="Activate" Command="{Binding ActivateFamiliesManagerCommand}" Height="28" Padding="6,4">
+                                        <Button.Style>
+                                            <Style TargetType="Button">
+                                                <Setter Property="Background" Value="#007ACC"/>
+                                                <Setter Property="Foreground" Value="White"/>
+                                                <Setter Property="FontWeight" Value="SemiBold"/>
+                                                <Setter Property="FontSize" Value="12"/>
                                                 <Setter Property="BorderThickness" Value="0"/>
-                                            </Trigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </Button.Style>
-                            </Button>
+                                                <Setter Property="Cursor" Value="Hand"/>
+                                                <Style.Resources>
+                                                    <Style TargetType="Border">
+                                                        <Setter Property="CornerRadius" Value="4"/>
+                                                    </Style>
+                                                </Style.Resources>
+                                                <Style.Triggers>
+                                                    <Trigger Property="IsMouseOver" Value="True">
+                                                        <Setter Property="Background" Value="#005999"/>
+                                                    </Trigger>
+                                                    <Trigger Property="IsEnabled" Value="False">
+                                                        <Setter Property="Background" Value="#F3F3F3"/>
+                                                        <Setter Property="Foreground" Value="#B0B0B0"/>
+                                                        <Setter Property="BorderBrush" Value="Transparent"/>
+                                                        <Setter Property="BorderThickness" Value="0"/>
+                                                    </Trigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Button.Style>
+                                    </Button>
+
+                                    <!-- Desactivate Button -->
+                                    <Button Grid.Column="2" Content="Desactivate" Command="{Binding DeactivateFamiliesManagerCommand}" Height="28" Padding="6,4">
+                                        <Button.Style>
+                                            <Style TargetType="Button">
+                                                <Setter Property="Background" Value="#007ACC"/>
+                                                <Setter Property="Foreground" Value="White"/>
+                                                <Setter Property="FontWeight" Value="SemiBold"/>
+                                                <Setter Property="FontSize" Value="12"/>
+                                                <Setter Property="BorderThickness" Value="0"/>
+                                                <Setter Property="Cursor" Value="Hand"/>
+                                                <Style.Resources>
+                                                    <Style TargetType="Border">
+                                                        <Setter Property="CornerRadius" Value="4"/>
+                                                    </Style>
+                                                </Style.Resources>
+                                                <Style.Triggers>
+                                                    <Trigger Property="IsMouseOver" Value="True">
+                                                        <Setter Property="Background" Value="#005999"/>
+                                                    </Trigger>
+                                                    <Trigger Property="IsEnabled" Value="False">
+                                                        <Setter Property="Background" Value="#F3F3F3"/>
+                                                        <Setter Property="Foreground" Value="#B0B0B0"/>
+                                                        <Setter Property="BorderBrush" Value="Transparent"/>
+                                                        <Setter Property="BorderThickness" Value="0"/>
+                                                    </Trigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Button.Style>
+                                    </Button>
+                                </Grid>
+                            </StackPanel>
                         </Border>
 
                     </StackPanel>
