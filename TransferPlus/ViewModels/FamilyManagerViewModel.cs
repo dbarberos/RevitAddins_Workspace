@@ -2,19 +2,25 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
+using System.Threading.Tasks;
 using System.Windows;
+using Autodesk.Revit.DB;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using TransferPlus.Models;
+using TransferPlus.Services;
 
 namespace TransferPlus.ViewModels
 {
     /// <summary>
     /// ViewModel para el Gestor de Familias (FamilyManagerView) basado en C# 12 y CommunityToolkit.Mvvm.
-    /// Totalmente desacoplado de la API de Revit y librerías propietarias de terceros (Scotec/ScaleHQ).
+    /// Soporta ejecución asíncrona en el hilo principal de Revit mediante el patrón RevitTask/ExternalExecutor
+    /// y transacciones seguras con supresor de advertencias WarningSwallower.
     /// </summary>
     public partial class FamilyManagerViewModel : ObservableObject
     {
+        private readonly Document? _targetDocument;
+        private readonly FamilyRevitService _familyRevitService;
         private ObservableCollection<FamilyItemModel> _allFamilies = [];
 
         [ObservableProperty]
@@ -41,8 +47,10 @@ namespace TransferPlus.ViewModels
         public int TotalFamiliesCount => _allFamilies.Count;
         public int SelectedFamiliesCount => _allFamilies.Count(f => f.IsSelected);
 
-        public FamilyManagerViewModel()
+        public FamilyManagerViewModel(Document? targetDocument = null, FamilyRevitService? familyRevitService = null)
         {
+            _targetDocument = targetDocument;
+            _familyRevitService = familyRevitService ?? new FamilyRevitService();
             LoadMockData();
         }
 
@@ -204,11 +212,34 @@ namespace TransferPlus.ViewModels
         }
 
         [RelayCommand]
-        private void Load(object? parameter)
+        private async Task LoadAsync(object? parameter)
         {
-            // TODO: En Fase 4, invocar IFamilyManager.TryLoadFamily() desde el servicio de Revit
-            if (SelectedFamily != null)
+            if (SelectedFamily == null) return;
+
+            if (_targetDocument != null)
             {
+                StatusSummary = $"Cargando familia '{SelectedFamily.Name}' mediante RevitTask...";
+
+                bool success = await RevitTask.RunAsync(app =>
+                {
+                    return _familyRevitService.TryLoadFamily(_targetDocument, SelectedFamily.ImagePreviewUrl, out _);
+                });
+
+                if (success)
+                {
+                    SelectedFamily.IsLoaded = true;
+                    SelectedFamily.StatusMessage = "Cargada en Modelo";
+                    OnPropertyChanged(nameof(SelectedFamily));
+                    StatusSummary = $"Familia '{SelectedFamily.Name}' cargada con éxito en el modelo de Revit.";
+                }
+                else
+                {
+                    StatusSummary = $"No se pudo cargar la familia '{SelectedFamily.Name}'.";
+                }
+            }
+            else
+            {
+                // Modo Aislado / Mock Data
                 SelectedFamily.IsLoaded = true;
                 SelectedFamily.StatusMessage = "Cargada en Modelo";
                 OnPropertyChanged(nameof(SelectedFamily));
@@ -217,25 +248,50 @@ namespace TransferPlus.ViewModels
         }
 
         [RelayCommand]
-        private void Transfer(object? parameter)
+        private async Task TransferAsync(object? parameter)
         {
-            // TODO: En Fase 4, llamar a TransferOrchestrator para transferir familias seleccionadas
-            var count = SelectedFamiliesCount;
+            var selectedFamilies = Families.Where(f => f.IsSelected).ToList();
+            if (selectedFamilies.Count == 0)
+            {
+                StatusSummary = "No hay familias seleccionadas para transferir.";
+                return;
+            }
+
+            if (_targetDocument != null)
+            {
+                StatusSummary = $"Iniciando transferencia asíncrona de {selectedFamilies.Count} familias con WarningSwallower...";
+
+                int successCount = 0;
+                await RevitTask.RunAsync(app =>
+                {
+                    foreach (var fam in selectedFamilies)
+                    {
+                        if (_familyRevitService.TryLoadFamily(_targetDocument, fam.ImagePreviewUrl, out _))
+                        {
+                            fam.IsLoaded = true;
+                            fam.StatusMessage = "Transferida al Modelo";
+                            successCount++;
+                        }
+                    }
+                });
+
+                StatusSummary = $"Transferencia completada: {successCount} de {selectedFamilies.Count} familias transferidas sin advertencias modales.";
+            }
+            else
+            {
+                StatusSummary = $"Transferencia ejecutada para {selectedFamilies.Count} familias (Mock).";
+            }
+
             if (parameter is Window window)
             {
                 window.DialogResult = true;
                 window.Close();
-            }
-            else
-            {
-                StatusSummary = $"Transferencia iniciada para {count} familias (Mock).";
             }
         }
 
         [RelayCommand]
         private void Cancel(object? parameter)
         {
-            // TODO: Cancelar operación y cerrar diálogo
             if (parameter is Window window)
             {
                 window.DialogResult = false;
@@ -268,7 +324,6 @@ namespace TransferPlus.ViewModels
         [RelayCommand]
         private void Refresh(object? parameter)
         {
-            // TODO: Recargar fuentes de familias
             LoadMockData();
             StatusSummary = "Lista de familias actualizada.";
         }
