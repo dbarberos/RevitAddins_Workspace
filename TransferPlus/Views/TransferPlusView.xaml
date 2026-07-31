@@ -52,7 +52,7 @@
             <local:NegativeConverter x:Key="NegativeConverter"/>
             
             <HierarchicalDataTemplate x:Key="CheckboxTreeTemplate" DataType="{x:Type viewmodels:TreeItemViewModel}" ItemsSource="{Binding Children}">
-                <Grid Width="{Binding ViewportWidth, RelativeSource={RelativeSource AncestorType=ScrollViewer}}">
+                <Grid HorizontalAlignment="Stretch">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="60"/>
@@ -68,7 +68,7 @@
                         </StackPanel>
                     </Grid>
                     
-                    <TextBlock Grid.Column="1" Text="{Binding Count}" Foreground="LightGray" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                    <TextBlock Grid.Column="1" Text="{Binding Count}" Foreground="#888888" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,10,0"/>
                 </Grid>
             </HierarchicalDataTemplate>
 
@@ -389,12 +389,13 @@
                                 <StackPanel Margin="20,2,0,6">
                                     <CheckBox Content="Use Legend if Exists in Target" IsChecked="{Binding UseLegendIfExists}" Style="{StaticResource SwitchStyle}" Margin="0,3"/>
                                     <CheckBox Content="Use Schedule if Exists in Target" IsChecked="{Binding UseScheduleIfExists}" Style="{StaticResource SwitchStyle}" Margin="0,3"/>
-                                    <CheckBox Content="Use Assembly Views if Exists in Targ" IsChecked="{Binding UseAssemblyViewsIfExists}" Style="{StaticResource SwitchStyle}" Margin="0,3"/>
+                                    <CheckBox Content="Use Assembly Views if Exist in Target" IsChecked="{Binding UseAssemblyViewsIfExists}" Style="{StaticResource SwitchStyle}" Margin="0,3"/>
                                 </StackPanel>
                                 
                                 <CheckBox Content="Transfer Callouts of Views" IsChecked="{Binding IncludeCallouts}" Style="{StaticResource SwitchStyle}" Margin="0,4"/>
-                                <CheckBox Content="Transfer View Elements (Ask User)" IsChecked="{Binding IncludeViewElements}" Style="{StaticResource SwitchStyle}" Margin="0,4"/>
-                                <CheckBox Content="Force Level in Level Base Views (Ask User)" IsChecked="{Binding ForceLevelInLevelBaseViews}" Style="{StaticResource SwitchStyle}" Margin="0,4"/>
+                                <CheckBox Content="Transfer Sections &amp; Details of Views" IsChecked="{Binding IncludeSections}" Style="{StaticResource SwitchStyle}" Margin="0,4"/>
+                                <CheckBox Content="Transfer View Elements" IsChecked="{Binding IncludeViewElements}" Style="{StaticResource SwitchStyle}" Margin="0,4"/>
+                                <CheckBox Content="Force Level in Level Base Views" IsChecked="{Binding ForceLevelInLevelBaseViews}" Style="{StaticResource SwitchStyle}" Margin="0,4"/>
                                 
                                 <Border BorderBrush="#E0E0E0" BorderThickness="0,1,0,0" Margin="0,10,0,10"/>
                                 
@@ -481,31 +482,7 @@
 
             <!-- Bottom Right: Execution Buttons -->
             <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Bottom">
-                <Button Content="Select" Width="90" Height="30" Margin="0,0,5,0">
-                    <Button.Style>
-                        <Style TargetType="Button">
-                            <Setter Property="Background" Value="#E1E1E1"/>
-                            <Setter Property="BorderBrush" Value="#707070"/>
-                            <Setter Property="BorderThickness" Value="1"/>
-                            <Setter Property="Foreground" Value="Black"/>
-                            <Setter Property="Cursor" Value="Hand"/>
-                            <Style.Resources>
-                                <Style TargetType="Border">
-                                    <Setter Property="CornerRadius" Value="4"/>
-                                </Style>
-                            </Style.Resources>
-                            <Style.Triggers>
-                                <Trigger Property="IsEnabled" Value="False">
-                                    <Setter Property="Background" Value="#F3F3F3"/>
-                                    <Setter Property="Foreground" Value="#B0B0B0"/>
-                                    <Setter Property="BorderBrush" Value="Transparent"/>
-                                    <Setter Property="BorderThickness" Value="0"/>
-                                </Trigger>
-                            </Style.Triggers>
-                        </Style>
-                    </Button.Style>
-                </Button>
-                <Button Content="View Log" Width="90" Height="30" Margin="0,0,5,0">
+                <Button Content="Cancel" Click="Cancel_Click" IsCancel="True" Width="90" Height="30" Margin="0,0,5,0">
                     <Button.Style>
                         <Style TargetType="Button">
                             <Setter Property="Background" Value="#E1E1E1"/>
@@ -682,6 +659,18 @@
                                                 <TextBlock Text="Regex Help" FontWeight="Bold" Margin="0,0,0,15" FontSize="14"/>
                                                 <!-- Category: Basic Matching & Anchors -->
                                                 <TextBlock Text="Basic Matching &amp; Anchors" FontWeight="Bold" Foreground="#333" Margin="0,10,0,5" FontSize="11"/>
+                                                <Button Command="{Binding InsertRegexHelperCommand}" CommandParameter="^[\w\s\W]+$" Click="CloseRegexPopup" HorizontalAlignment="Stretch">
+                                                    <Grid Margin="0,0,0,5" Width="355">
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="110"/>
+                                                            <ColumnDefinition Width="*"/>
+                                                        </Grid.ColumnDefinitions>
+                                                        <Border Grid.Column="0" Background="#F9F9F9" BorderBrush="#E0E0E0" BorderThickness="1" CornerRadius="4" Height="28" Margin="0,0,10,0">
+                                                            <TextBlock Text="^[\w\s\W]+$" HorizontalAlignment="Center" VerticalAlignment="Center" FontWeight="SemiBold" FontSize="9.5" Foreground="#111"/>
+                                                        </Border>
+                                                        <TextBlock Grid.Column="1" Text="Selects the full title completely" VerticalAlignment="Center" TextWrapping="Wrap" Foreground="#555" FontSize="10.5"/>
+                                                    </Grid>
+                                                </Button>
                                                 <Button Command="{Binding InsertRegexHelperCommand}" CommandParameter="text" Click="CloseRegexPopup" HorizontalAlignment="Stretch">
                                                     <Grid Margin="0,0,0,5" Width="355">
                                                         <Grid.ColumnDefinitions>
@@ -1112,7 +1101,36 @@
                                                         <Setter Property="Cursor" Value="Hand"/>
                                                     </Style>
                                                 </StackPanel.Resources>
-                                                <TextBlock Text="Replace with file creation date and time" FontWeight="Bold" Margin="0,0,0,15" FontSize="14"/>
+                                                <!-- Category: Regex Prefix & Suffix -->
+                                                <TextBlock Text="Regex Prefix &amp; Suffix" FontWeight="Bold" Margin="0,0,0,10" FontSize="13"/>
+                                                
+                                                <Button Command="{Binding InsertDateHelperCommand}" CommandParameter="prefix_text$1" Click="CloseDatePopup">
+                                                    <Grid Margin="0,0,0,5" Width="470">
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="Auto" MinWidth="110"/>
+                                                            <ColumnDefinition Width="*"/>
+                                                        </Grid.ColumnDefinitions>
+                                                        <Border Grid.Column="0" Background="#F9F9F9" BorderBrush="#E0E0E0" BorderThickness="1" CornerRadius="4" Padding="8,0" MinHeight="32" Margin="0,0,10,0">
+                                                            <TextBlock Text="prefix_text$1" HorizontalAlignment="Center" VerticalAlignment="Center" FontWeight="SemiBold"/>
+                                                        </Border>
+                                                        <TextBlock Grid.Column="1" Text="Adds a prefix using regex capture group $1 (auto-sets Find to (.*) and enables regex)." VerticalAlignment="Center" Foreground="#555" TextWrapping="Wrap" FontSize="10.5"/>
+                                                    </Grid>
+                                                </Button>
+
+                                                <Button Command="{Binding InsertDateHelperCommand}" CommandParameter="$1suffix_text" Click="CloseDatePopup">
+                                                    <Grid Margin="0,0,0,5" Width="470">
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="Auto" MinWidth="110"/>
+                                                            <ColumnDefinition Width="*"/>
+                                                        </Grid.ColumnDefinitions>
+                                                        <Border Grid.Column="0" Background="#F9F9F9" BorderBrush="#E0E0E0" BorderThickness="1" CornerRadius="4" Padding="8,0" MinHeight="32" Margin="0,0,10,0">
+                                                            <TextBlock Text="$1suffix_text" HorizontalAlignment="Center" VerticalAlignment="Center" FontWeight="SemiBold"/>
+                                                        </Border>
+                                                        <TextBlock Grid.Column="1" Text="Adds a suffix using regex capture group $1 (auto-sets Find to (.*) and enables regex)." VerticalAlignment="Center" Foreground="#555" TextWrapping="Wrap" FontSize="10.5"/>
+                                                    </Grid>
+                                                </Button>
+
+                                                <TextBlock Text="Replace with file creation date and time" FontWeight="Bold" Margin="0,15,0,10" FontSize="13"/>
                                                 
                                                 <Button Command="{Binding InsertDateHelperCommand}" CommandParameter="$YYYY" Click="CloseDatePopup">
                                                     <Grid Margin="0,0,0,5" Width="470">
@@ -1658,7 +1676,7 @@
 
                 <!-- Actions Footer -->
                 <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,15,0,0">
-                    <Button Content="Cancel" Command="{Binding CloseRenamePanelCommand}" Width="100" Height="30">
+                    <Button Content="Close Rename" Command="{Binding CloseRenamePanelCommand}" Width="100" Height="30">
                         <Button.Style>
                             <Style TargetType="Button">
                                 <Setter Property="Background" Value="#E1E1E1"/>

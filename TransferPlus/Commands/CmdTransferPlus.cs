@@ -14,6 +14,12 @@ public class CmdTransferPlus : ExternalCommand
     {
         var viewModel = new TransferPlusViewModel(Application, Application.ActiveUIDocument.Document);
         var view = new TransferPlusView(viewModel);
+
+        if (Application.MainWindowHandle != System.IntPtr.Zero)
+        {
+            new System.Windows.Interop.WindowInteropHelper(view).Owner = Application.MainWindowHandle;
+        }
+
         view.ShowDialog();
     }
 }

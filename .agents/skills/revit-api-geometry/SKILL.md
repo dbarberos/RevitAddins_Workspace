@@ -32,12 +32,15 @@ When specific spatial analysis concepts are needed, locate the following files i
   * *Use cases:* Creating visual debug spheres, `BRepBuilder`, and handling `TessellatedShapeBuilder`.
 * **Reverse Engineering (Scan-to-BIM):** [30_PointClouds_and_ScanToBIM.md](file:///c:/Users/david.barbero/Documents/DOCUMENTOS/ALTEN/Workbench/RevitAddins_Workspace/RevitAddins_Workspace/.agents/skills/revit-api-geometry/references/30_PointClouds_and_ScanToBIM.md)
   * *Use cases:* Voxelization, spatial boundaries, and reading `.rcp` files safely.
+* **Cross-Document Callout Coordinate Projection:** [debugging_callout_cross_document_coordinate_projection_2026-07-30.md](file:///c:/Users/david.barbero/Documents/DOCUMENTOS/ALTEN/Workbench/RevitAddins_Workspace/RevitAddins_Workspace/.agents/skills/revit-api-geometry/references/debugging_callout_cross_document_coordinate_projection_2026-07-30.md)
+  * *Use cases:* Calculating callout bounding boxes across models with differing Project Base Points or Survey Points.
 
 ---
 
 ## 4. Asset Mapping (Code Blueprints)
 Do not reinvent vector mathematics. Inject, adapt, or copy the exact implementations located in the assets folder:
 
+* [CalloutCoordinateHelper.cs](file:///c:/Users/david.barbero/Documents/DOCUMENTOS/ALTEN/Workbench/RevitAddins_Workspace/RevitAddins_Workspace/.agents/skills/revit-api-geometry/assets/CalloutCoordinateHelper.cs): Reusable 8-corner relative view-space coordinate transformation helper for ViewSection.CreateCallout.
 * [VectorMathExtensions.cs](file:///c:/Users/david.barbero/Documents/DOCUMENTOS/ALTEN/Workbench/RevitAddins_Workspace/RevitAddins_Workspace/.agents/skills/revit-api-geometry/assets/VectorMathExtensions.cs): Core extension methods for XYZ manipulation, safe normalization, and coordinate translations.
 * [RaytraceAuditor.cs](file:///c:/Users/david.barbero/Documents/DOCUMENTOS/ALTEN/Workbench/RevitAddins_Workspace/RevitAddins_Workspace/.agents/skills/revit-api-geometry/assets/RaytraceAuditor.cs): Wrapper for `ReferenceIntersector` to shoot rays (e.g., find the nearest floor below an element) and perform hard clash detection.
 * [DirectShapeBuilder.cs](file:///c:/Users/david.barbero/Documents/DOCUMENTOS/ALTEN/Workbench/RevitAddins_Workspace/RevitAddins_Workspace/.agents/skills/revit-api-geometry/assets/DirectShapeBuilder.cs): Utilities to quickly inject colored spheres, lines, or imported solids into the model for visual debugging or placeholder generation.

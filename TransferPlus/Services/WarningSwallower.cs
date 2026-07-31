@@ -12,8 +12,6 @@ public class WarningSwallower : IFailuresPreprocessor
         if (failures.Count == 0)
             return FailureProcessingResult.Continue;
 
-        bool hasWarnings = false;
-
         foreach (FailureMessageAccessor failure in failures)
         {
             FailureSeverity severity = failure.GetSeverity();
@@ -21,15 +19,24 @@ public class WarningSwallower : IFailuresPreprocessor
             if (severity == FailureSeverity.Warning)
             {
                 failuresAccessor.DeleteWarning(failure);
-                hasWarnings = true;
             }
             else if (severity == FailureSeverity.Error)
             {
+                LoggerService.LogWarning($"Revit Hard Error encountered: '{failure.GetDescriptionText()}'. Default Resolution attempt: {(failure.HasResolutions() ? "Resolve and Commit" : "Rollback")}");
+                if (failure.HasResolutions())
+                {
+                    try
+                    {
+                        failuresAccessor.ResolveFailure(failure);
+                        return FailureProcessingResult.ProceedWithCommit;
+                    }
+                    catch { }
+                }
                 return FailureProcessingResult.ProceedWithRollBack;
             }
         }
 
-        return hasWarnings ? FailureProcessingResult.ProceedWithCommit : FailureProcessingResult.Continue;
+        return FailureProcessingResult.Continue;
     }
 
     public static void AttachToTransaction(Transaction transaction)

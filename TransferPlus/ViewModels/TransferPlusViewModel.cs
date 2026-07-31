@@ -75,6 +75,9 @@ public partial class TransferPlusViewModel : ObservableObject
     private bool _includeCallouts;
 
     [ObservableProperty]
+    private bool _includeSections;
+
+    [ObservableProperty]
     private bool _includeViewElements;
 
     [ObservableProperty]
@@ -82,13 +85,13 @@ public partial class TransferPlusViewModel : ObservableObject
 
     // Sub-options for Sheets
     [ObservableProperty]
-    private bool _useLegendIfExists = true;
+    private bool _useLegendIfExists = false;
 
     [ObservableProperty]
-    private bool _useScheduleIfExists = true;
+    private bool _useScheduleIfExists = false;
 
     [ObservableProperty]
-    private bool _useAssemblyViewsIfExists = true;
+    private bool _useAssemblyViewsIfExists = false;
 
     [ObservableProperty]
     private bool _copyLinks;
@@ -110,6 +113,37 @@ public partial class TransferPlusViewModel : ObservableObject
 
     private List<Elemento> _allSourceItems = new();
     private Configuraciones _config = new();
+
+    partial void OnIncludeSheetsWithViewsChanged(bool oldValue, bool newValue)
+    {
+        if (newValue)
+        {
+            AppendSuffix = true;
+            KeepOriginal = false;
+            AbortTransaction = false;
+        }
+        else
+        {
+            UseLegendIfExists = false;
+            UseScheduleIfExists = false;
+            UseAssemblyViewsIfExists = false;
+        }
+    }
+
+    partial void OnUseLegendIfExistsChanged(bool oldValue, bool newValue)
+    {
+        if (newValue) IncludeSheetsWithViews = true;
+    }
+
+    partial void OnUseScheduleIfExistsChanged(bool oldValue, bool newValue)
+    {
+        if (newValue) IncludeSheetsWithViews = true;
+    }
+
+    partial void OnUseAssemblyViewsIfExistsChanged(bool oldValue, bool newValue)
+    {
+        if (newValue) IncludeSheetsWithViews = true;
+    }
 
     public TransferPlusViewModel(UIApplication app, Document targetDoc)
     {
@@ -333,6 +367,7 @@ public partial class TransferPlusViewModel : ObservableObject
             }
             allNode.Children.Add(categoryNode);
         }
+        allNode.UpdateRecursiveCounts();
         RootNodes.Add(allNode);
         TransferPlus.Services.LoggerService.LogInfo($"BuildTree: Tree built successfully. Total nodes grouped in root: {allNode.Count}");
     }
@@ -580,8 +615,13 @@ public partial class TransferPlusViewModel : ObservableObject
         _config.cf_rbAppendSuffix = AppendSuffix;
         _config.cf_suffixText = DuplicatesSuffixText;
         _config.cf_chk_Callout = IncludeCallouts;
+        _config.cf_chk_Section = IncludeSections;
         _config.cf_chk_ViewElements = IncludeViewElements;
         _config.cf_chk_SheetWithViews = IncludeSheetsWithViews;
+        _config.cf_chk_UseLegendIfExists = UseLegendIfExists;
+        _config.cf_chk_UseScheduleIfExists = UseScheduleIfExists;
+        _config.cf_chk_UseAssemblyViewsIfExists = UseAssemblyViewsIfExists;
+        _config.cf_chk_ForceLevelInLevelBaseViews = ForceLevelInLevelBaseViews;
         _config.cf_chk_Links = CopyLinks;
         _config.cf_chk_GetTransformNone = TransformNone;
         _config.cf_chk_GetTransformLink = TransformLink;
@@ -610,6 +650,28 @@ public partial class TransferPlusViewModel : ObservableObject
         var elementsToCopy = checkedItems;
         TransferPlus.Services.LoggerService.LogInfo($"Transfer: Collected {elementsToCopy.Count} elements to transfer.");
 
+        // Pre-flight check: Worksets on Non-Workshared Destination Models
+        bool hasWorksetsSelected = elementsToCopy.Any(x => x.IsWorkset || x.Categoria == "Worksets" || (x.wID != null && x.wID != WorksetId.InvalidWorksetId));
+        if (hasWorksetsSelected)
+        {
+            var invalidDestinations = DestinationDocuments.Where(d => d.Checked && d.Adoc != null && !d.Adoc.IsWorkshared).ToList();
+            if (invalidDestinations.Any())
+            {
+                string targetTitles = string.Join(", ", invalidDestinations.Select(d => $"'{d.Nombre}'"));
+                TransferPlus.Services.LoggerService.LogWarning($"Transfer Aborted: Cannot transfer worksets to non-workshared destination model(s): {targetTitles}");
+
+                TaskDialog mainDialog = new TaskDialog("TransferPlus - Warning")
+                {
+                    MainInstruction = "Transfer Canceled - Worksets Selected",
+                    MainContent = $"Revit does not allow transferring worksets to projects that are not workshared.\n\nThe destination model(s) {targetTitles} are not in collaborative (workshared) mode. Because worksets were included in the selection, the transfer of ALL elements has been canceled.\n\nPlease enable worksharing on the destination project(s) first, or uncheck worksets from the transfer selection to proceed.",
+                    CommonButtons = TaskDialogCommonButtons.Ok,
+                    MainIcon = TaskDialogIcon.TaskDialogIconWarning
+                };
+                mainDialog.Show();
+                return;
+            }
+        }
+
         IsBusy = true;
         StatusMessage = "Transferring elements...";
         ProgressPercentage = 0;
@@ -636,6 +698,40 @@ public partial class TransferPlusViewModel : ObservableObject
             {
                 if (destDoc.Checked)
                 {
+                    Dictionary<string, string>? levelMappings = null;
+                    if (ForceLevelInLevelBaseViews)
+                    {
+                        var missingLevels = DetectMissingLevels(SelectedSourceDocument.Adoc, elementsToCopy, destDoc.Adoc);
+                        if (missingLevels.Any())
+                        {
+                            var levelView = new TransferPlus.Views.LevelMappingView(missingLevels);
+                            if (levelView.ShowDialog() == true)
+                            {
+                                var vm = levelView.DataContext as LevelMappingViewModel;
+                                if (vm != null)
+                                {
+                                    levelMappings = new Dictionary<string, string>();
+                                    foreach (var conflict in vm.Conflicts)
+                                    {
+                                        if (conflict.SelectedAction == LevelMappingAction.CreateNew)
+                                        {
+                                            levelMappings[conflict.SourceLevelName] = "CREATE_NEW:" + conflict.NewLevelName;
+                                        }
+                                        else if (conflict.SelectedAction == LevelMappingAction.MapToExisting && !string.IsNullOrEmpty(conflict.SelectedTargetLevelName))
+                                        {
+                                            levelMappings[conflict.SourceLevelName] = conflict.SelectedTargetLevelName;
+                                        }
+                                    }
+                                }
+                            }
+                            else
+                            {
+                                TransferPlus.Services.LoggerService.LogInfo($"Transfer: Operation canceled by user at level mapping phase for '{destDoc.Nombre}'.");
+                                continue;
+                            }
+                        }
+                    }
+
                     transferTargetCount++;
                     TransferPlus.Services.LoggerService.LogInfo($"Transfer: Copying elements to target model '{destDoc.Nombre}'...");
                     TransferOrchestrator.TransferElements(SelectedSourceDocument.Adoc, destDoc.Adoc, elementsToCopy, _config, (msg, current, total) =>
@@ -646,7 +742,7 @@ public partial class TransferPlusViewModel : ObservableObject
                         {
                             TransferPlus.Services.LoggerService.LogInfo($"Transfer: [{msg}] {current}/{total} elements processed ({ProgressPercentage}%)");
                         }
-                    }, customNames);
+                    }, customNames, levelMappings);
                 }
             }
 
@@ -655,17 +751,45 @@ public partial class TransferPlusViewModel : ObservableObject
         }
         catch (OperationCanceledException cancelEx)
         {
-            TransferPlus.Services.LoggerService.LogError("Transfer Canceled", cancelEx);
-            if (cancelEx.Data.Contains("Duplicates") && cancelEx.Data["Duplicates"] is List<string> dups && dups.Any())
+            TransferPlus.Services.LoggerService.LogExceptionSilently("Transfer Canceled", cancelEx);
+            if (cancelEx.Data.Contains("NotWorkshared"))
             {
-                try
+                string targetTitle = cancelEx.Data["NotWorkshared"]?.ToString() ?? "Destination Document";
+                TaskDialog mainDialog = new TaskDialog("TransferPlus - Warning")
                 {
-                    var view = new TransferPlus.Views.DuplicatesAbortView(dups);
-                    view.ShowDialog();
+                    MainInstruction = "Transfer Canceled - Worksets Selected",
+                    MainContent = $"Revit does not allow transferring worksets to projects that are not workshared.\n\nThe destination model '{targetTitle}' is not in collaborative (workshared) mode. Because worksets were included in the selection, the transfer of ALL elements has been canceled.\n\nPlease enable worksharing on the destination project first, or uncheck worksets from the transfer selection to proceed.",
+                    CommonButtons = TaskDialogCommonButtons.Ok,
+                    MainIcon = TaskDialogIcon.TaskDialogIconWarning
+                };
+                mainDialog.Show();
+            }
+            else if (cancelEx.Data.Contains("Duplicates"))
+            {
+                var dupsObj = cancelEx.Data["Duplicates"];
+                if (dupsObj is List<TransferPlus.Models.DuplicateElementInfo> dupInfos && dupInfos.Any())
+                {
+                    try
+                    {
+                        var view = new TransferPlus.Views.DuplicatesAbortView(dupInfos);
+                        view.ShowDialog();
+                    }
+                    catch
+                    {
+                        TaskDialog.Show("TransferPlus", "Transfer canceled due to duplicate element names in the destination document.");
+                    }
                 }
-                catch
+                else if (dupsObj is List<string> dups && dups.Any())
                 {
-                    TaskDialog.Show("TransferPlus", "Transfer canceled due to duplicate element names in the destination document.");
+                    try
+                    {
+                        var view = new TransferPlus.Views.DuplicatesAbortView(dups);
+                        view.ShowDialog();
+                    }
+                    catch
+                    {
+                        TaskDialog.Show("TransferPlus", "Transfer canceled due to duplicate element names in the destination document.");
+                    }
                 }
             }
             else
@@ -683,6 +807,18 @@ public partial class TransferPlusViewModel : ObservableObject
             IsBusy = false;
             StatusMessage = "Ready";
             ProgressPercentage = 0;
+            BringMainWindowToFront();
+        }
+    }
+
+    private void BringMainWindowToFront()
+    {
+        var activeWindow = System.Windows.Application.Current?.Windows.OfType<System.Windows.Window>()
+            .FirstOrDefault(w => w is TransferPlus.Views.TransferPlusView);
+        if (activeWindow != null)
+        {
+            activeWindow.Activate();
+            activeWindow.Focus();
         }
     }
 
@@ -986,12 +1122,22 @@ public partial class TransferPlusViewModel : ObservableObject
     private void InsertRegexHelper(string snippet)
     {
         RenameSearchText += snippet;
+        RenameUseRegex = true;
     }
 
     [RelayCommand]
     private void InsertDateHelper(string snippet)
     {
         RenameReplaceText += snippet;
+
+        if (snippet.Contains("$1"))
+        {
+            if (string.IsNullOrEmpty(RenameSearchText) || !RenameSearchText.Contains("(.*)"))
+            {
+                RenameSearchText = "(.*)";
+            }
+            RenameUseRegex = true;
+        }
     }
 
     private void UpdateRenamePreviews()
@@ -1517,5 +1663,118 @@ public partial class TransferPlusViewModel : ObservableObject
         {
             TransferPlus.Services.LoggerService.LogError("OpenNumberingSettings", ex);
         }
+    }
+
+    private List<LevelConflict> DetectMissingLevels(Document sourceDoc, List<Elemento> checkedItems, Document targetDoc)
+    {
+        var missingConflicts = new List<LevelConflict>();
+        var checkedViews = checkedItems.Where(i => i.IsView).ToList();
+        if (!checkedViews.Any()) return missingConflicts;
+
+        var targetLevels = new FilteredElementCollector(targetDoc)
+            .OfClass(typeof(Level))
+            .Cast<Level>()
+            .ToList();
+
+        var targetLevelNames = targetLevels.Select(l => l.Name).ToList();
+
+        // Find all levels required by the checked plan views or plan views placed on checked sheets
+        var neededSourceLevels = new Dictionary<string, Level>();
+        foreach (var item in checkedItems)
+        {
+            Element elem = sourceDoc.GetElement(item.eID);
+            if (elem is ViewPlan viewPlan && viewPlan.GenLevel != null)
+            {
+                var srcLevel = viewPlan.GenLevel;
+                if (!neededSourceLevels.ContainsKey(srcLevel.Name))
+                {
+                    neededSourceLevels[srcLevel.Name] = srcLevel;
+                }
+            }
+            else if (elem is ViewSheet viewSheet)
+            {
+                foreach (ElementId pvId in viewSheet.GetAllPlacedViews())
+                {
+                    if (sourceDoc.GetElement(pvId) is ViewPlan sheetViewPlan && sheetViewPlan.GenLevel != null)
+                    {
+                        var srcLevel = sheetViewPlan.GenLevel;
+                        if (!neededSourceLevels.ContainsKey(srcLevel.Name))
+                        {
+                            neededSourceLevels[srcLevel.Name] = srcLevel;
+                        }
+                    }
+                }
+            }
+        }
+
+        foreach (var kvp in neededSourceLevels)
+        {
+            var srcLevel = kvp.Value;
+            if (!targetLevelNames.Contains(srcLevel.Name, StringComparer.OrdinalIgnoreCase))
+            {
+                // Conflict found!
+                double elev = srcLevel.ProjectElevation; // in feet
+                // Convert elevation to formatted string
+                string elevText;
+                try
+                {
+                    double meters = elev * 0.3048;
+                    elevText = $"{meters:N3} m";
+                }
+                catch
+                {
+                    elevText = $"{elev:N3} ft";
+                }
+
+                // Find exact match, closest lower, closest upper
+                string? exactMatch = null;
+                string? closestLower = null;
+                string? closestUpper = null;
+                double lowerDiff = double.MaxValue;
+                double upperDiff = double.MaxValue;
+
+                foreach (var tl in targetLevels)
+                {
+                    double diff = tl.ProjectElevation - srcLevel.ProjectElevation;
+                    if (Math.Abs(diff) < 0.001)
+                    {
+                        exactMatch = tl.Name;
+                    }
+                    else if (diff < 0)
+                     {
+                         double absDiff = Math.Abs(diff);
+                         if (absDiff < lowerDiff)
+                         {
+                             lowerDiff = absDiff;
+                             closestLower = tl.Name;
+                         }
+                     }
+                     else if (diff > 0)
+                     {
+                         if (diff < upperDiff)
+                         {
+                             upperDiff = diff;
+                             closestUpper = tl.Name;
+                         }
+                     }
+                }
+
+                var conflict = new LevelConflict
+                {
+                    SourceLevelName = srcLevel.Name,
+                    SourceElevation = srcLevel.ProjectElevation,
+                    SourceElevationText = elevText,
+                    AvailableTargetLevels = targetLevelNames,
+                    ExactMatchLevelName = exactMatch,
+                    ClosestLowerLevelName = closestLower,
+                    ClosestUpperLevelName = closestUpper,
+                    SelectedTargetLevelName = exactMatch ?? closestLower ?? closestUpper ?? targetLevelNames.FirstOrDefault()
+                };
+
+                missingConflicts.Add(conflict);
+            }
+        }
+
+        return missingConflicts;
     }
 }
