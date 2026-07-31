@@ -27,38 +27,49 @@ namespace TransferPlus.Services
     }
 
     /// <summary>
-    /// Servicio encintado para operaciones con la API de familias de Revit.
-    /// Implementa carga segura, transacciones con supresión de advertencias (WarningSwallower) y manipulación de símbolos.
+    /// Servicio de Revit para operaciones con Familias (RFA).
+    /// Integra el gestor seguro de archivos locales (FamilyFileManager), prevención de Path Traversal (Path.GetFullPath),
+    /// supresión de advertencias modales (WarningSwallower) y registro desensibilizado de PII (TelemetryLogger).
     /// </summary>
     public class FamilyRevitService
     {
         /// <summary>
         /// Intenta cargar una familia (.rfa) en el documento destino dentro de una transacción con WarningSwallower.
+        /// Valida rutas para prevenir Path Traversal y desensibiliza logs PII.
         /// </summary>
         public bool TryLoadFamily(Document document, string rfaFilePath, out Family? family)
         {
             family = null;
-            if (document == null || string.IsNullOrWhiteSpace(rfaFilePath) || !File.Exists(rfaFilePath))
+            if (document == null || string.IsNullOrWhiteSpace(rfaFilePath))
             {
                 return false;
             }
 
-            var overwriteOptions = new SilentOverwriteFamilyOption();
-
-            using var transaction = new Transaction(document, "Cargar Familia TransferPlus");
-            WarningSwallower.AttachToTransaction(transaction);
-            transaction.Start();
-
             try
             {
-                if (document.LoadFamily(rfaFilePath, overwriteOptions, out family))
+                // Validación estricta de Path Traversal mediante resolución completa de la ruta
+                string resolvedPath = Path.GetFullPath(rfaFilePath);
+                if (!File.Exists(resolvedPath))
+                {
+                    TelemetryLogger.LogWarning($"El archivo de familia no existe en la ruta validada: '{resolvedPath}'");
+                    return false;
+                }
+
+                var overwriteOptions = new SilentOverwriteFamilyOption();
+
+                using var transaction = new Transaction(document, "Cargar Familia TransferPlus");
+                WarningSwallower.AttachToTransaction(transaction);
+                transaction.Start();
+
+                if (document.LoadFamily(resolvedPath, overwriteOptions, out family))
                 {
                     transaction.Commit();
+                    TelemetryLogger.LogInfo($"Familia cargada correctamente desde '{resolvedPath}'");
                     return family != null;
                 }
 
                 // Si la familia ya estaba cargada en el documento, buscar la referencia existente
-                var familyName = Path.GetFileNameWithoutExtension(rfaFilePath);
+                var familyName = Path.GetFileNameWithoutExtension(resolvedPath);
                 var existingFamily = new FilteredElementCollector(document)
                     .OfClass(typeof(Family))
                     .Cast<Family>()
@@ -68,6 +79,7 @@ namespace TransferPlus.Services
                 {
                     family = existingFamily;
                     transaction.Commit();
+                    TelemetryLogger.LogInfo($"Referencia de familia existente reutilizada: '{familyName}'");
                     return true;
                 }
 
@@ -76,11 +88,7 @@ namespace TransferPlus.Services
             }
             catch (Exception ex)
             {
-                LoggerService.LogError($"Error al cargar la familia de Revit desde '{rfaFilePath}'", ex);
-                if (transaction.GetStatus() == TransactionStatus.Started)
-                {
-                    transaction.RollBack();
-                }
+                TelemetryLogger.LogError($"Error al cargar la familia de Revit desde '{rfaFilePath}'", ex);
                 return false;
             }
         }
@@ -91,30 +99,39 @@ namespace TransferPlus.Services
         public bool TryLoadFamilySymbol(Document document, string rfaFilePath, string symbolName, out FamilySymbol? familySymbol)
         {
             familySymbol = null;
-            if (document == null || string.IsNullOrWhiteSpace(rfaFilePath) || !File.Exists(rfaFilePath) || string.IsNullOrWhiteSpace(symbolName))
+            if (document == null || string.IsNullOrWhiteSpace(rfaFilePath) || string.IsNullOrWhiteSpace(symbolName))
             {
                 return false;
             }
 
-            var overwriteOptions = new SilentOverwriteFamilyOption();
-
-            using var transaction = new Transaction(document, "Cargar Símbolo de Familia TransferPlus");
-            WarningSwallower.AttachToTransaction(transaction);
-            transaction.Start();
-
             try
             {
-                if (document.LoadFamilySymbol(rfaFilePath, symbolName, overwriteOptions, out familySymbol))
+                // Validación estricta de Path Traversal
+                string resolvedPath = Path.GetFullPath(rfaFilePath);
+                if (!File.Exists(resolvedPath))
+                {
+                    TelemetryLogger.LogWarning($"El archivo de familia fuente para el símbolo no existe: '{resolvedPath}'");
+                    return false;
+                }
+
+                var overwriteOptions = new SilentOverwriteFamilyOption();
+
+                using var transaction = new Transaction(document, "Cargar Símbolo de Familia TransferPlus");
+                WarningSwallower.AttachToTransaction(transaction);
+                transaction.Start();
+
+                if (document.LoadFamilySymbol(resolvedPath, symbolName, overwriteOptions, out familySymbol))
                 {
                     if (familySymbol != null && !familySymbol.IsActive)
                     {
                         familySymbol.Activate();
                     }
                     transaction.Commit();
+                    TelemetryLogger.LogInfo($"Símbolo '{symbolName}' cargado correctamente desde '{resolvedPath}'");
                     return familySymbol != null;
                 }
 
-                // Buscar si el símbolo ya existía
+                // Buscar si el símbolo ya existía en el documento
                 var existingSymbol = new FilteredElementCollector(document)
                     .OfClass(typeof(FamilySymbol))
                     .Cast<FamilySymbol>()
@@ -128,6 +145,7 @@ namespace TransferPlus.Services
                         familySymbol.Activate();
                     }
                     transaction.Commit();
+                    TelemetryLogger.LogInfo($"Símbolo existente reutilizado: '{symbolName}'");
                     return true;
                 }
 
@@ -136,12 +154,30 @@ namespace TransferPlus.Services
             }
             catch (Exception ex)
             {
-                LoggerService.LogError($"Error al cargar el símbolo '{symbolName}' de la familia '{rfaFilePath}'", ex);
-                if (transaction.GetStatus() == TransactionStatus.Started)
-                {
-                    transaction.RollBack();
-                }
+                TelemetryLogger.LogError($"Error al cargar el símbolo '{symbolName}' desde '{rfaFilePath}'", ex);
                 return false;
+            }
+        }
+
+        /// <summary>
+        /// Carga una familia a partir de un Stream de datos binarios, utilizando FamilyFileManager para escribir
+        /// el archivo local en una ubicación de temporales segura con mitigación de Path Traversal.
+        /// </summary>
+        public bool TryLoadFamilyFromStream(Document document, Stream familyStream, string familyName, out Family? family)
+        {
+            family = null;
+            string tempFilePath = string.Empty;
+            try
+            {
+                tempFilePath = FamilyFileManager.CreateFamilyLocalFile(familyStream, familyName);
+                return TryLoadFamily(document, tempFilePath, out family);
+            }
+            finally
+            {
+                if (!string.IsNullOrEmpty(tempFilePath))
+                {
+                    FamilyFileManager.RemoveFamilyLocalFile(tempFilePath);
+                }
             }
         }
     }
