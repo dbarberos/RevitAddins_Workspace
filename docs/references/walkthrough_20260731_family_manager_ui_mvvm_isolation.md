@@ -57,6 +57,14 @@ Se ha diseñado e implementado la interfaz de usuario aislada para el **Gestor d
   - Implementación del patrón `RevitTask` con `IExternalEventHandler` y `ExternalEvent.Create(...)`.
   - Despacha ejecuciones desde los comandos asíncronos del ViewModel (`LoadAsync` y `TransferAsync`) hacia el hilo principal de Revit sin bloquear la interfaz de usuario de WPF.
 
+### E. Integración en la Ventana Principal (`TransferPlusView.xaml` / `TransferPlusViewModel.cs`)
+- **Tarjeta Sin Título bajo "Rename" (`TransferPlusView.xaml`)**:
+  - Se ha añadido un contenedor `<Border Style="{StaticResource CardBorderStyle}">` situado inmediatamente debajo de la tarjeta "Rename".
+  - Contiene un botón con texto `"Families Manager"` con el estilo idéntico al botón "Apply" de la tarjeta "Filter" (`Background="#007ACC"`, `Foreground="White"`, `CornerRadius="4"`, `Cursor="Hand"`).
+- **Comando `OpenFamilyManagerCommand` (`TransferPlusViewModel.cs`)**:
+  - Implementado mediante `[RelayCommand] private void OpenFamilyManager()`.
+  - Instancia `FamilyManagerViewModel(_targetDoc)` y abre la ventana en modo modal `new FamilyManagerView(vm).ShowDialog()`, permitiendo probar y visualizar toda la interfaz completa del Gestor de Familias.
+
 ---
 
 ## 3. Verificación de Compilación
