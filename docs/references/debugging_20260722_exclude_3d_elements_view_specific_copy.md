@@ -35,3 +35,9 @@
 
 ## 4. Verification
 - Compiled and published cleanly with **0 Errors** (`Debug.R24`).
+
+## 5. Additional Edge Case: Non-2D View Types (3D Views, Schedules, Sheets)
+- **Issue**: Copying view-specific elements from/to a 3D View (`3D COORD STR TECNYCONTA 1000`) threw:
+  `ArgumentException: The specified view cannot be used as a source or destination for copying elements between two views. Parameter name: sourceView`.
+- **Cause**: Revit API `ElementTransformUtils.CopyElements(View sourceView, ...)` restricts `sourceView` and `targetView` exclusively to 2D graphical views (`FloorPlan`, `CeilingPlan`, `EngineeringPlan`, `AreaPlan`, `Section`, `Elevation`, `DraftingView`). 3D views (`View3D`), Schedules, and Sheets are prohibited by Revit API.
+- **Fix**: Added `Is2DViewForCopy(View view)` guard in `TransferOrchestrator.cs`. If `!Is2DViewForCopy(sourceView) || !Is2DViewForCopy(targetView)`, 2D element copy returns cleanly without attempting invalid API calls or popping warning TaskDialogs.

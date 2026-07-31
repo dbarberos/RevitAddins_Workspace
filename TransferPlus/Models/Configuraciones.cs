@@ -28,6 +28,9 @@ namespace TransferPlus.Models
 		// Token: 0x0400007B RID: 123
 		public bool cf_chk_Callout;
 
+		/// <summary>Enable transfer of Section and Detail child views (ponSections).</summary>
+		public bool cf_chk_Section;
+
 		// Token: 0x0400007C RID: 124
 		public bool cf_chk_ViewElements;
 

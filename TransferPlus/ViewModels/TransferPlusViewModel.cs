@@ -75,6 +75,9 @@ public partial class TransferPlusViewModel : ObservableObject
     private bool _includeCallouts;
 
     [ObservableProperty]
+    private bool _includeSections;
+
+    [ObservableProperty]
     private bool _includeViewElements;
 
     [ObservableProperty]
@@ -612,6 +615,7 @@ public partial class TransferPlusViewModel : ObservableObject
         _config.cf_rbAppendSuffix = AppendSuffix;
         _config.cf_suffixText = DuplicatesSuffixText;
         _config.cf_chk_Callout = IncludeCallouts;
+        _config.cf_chk_Section = IncludeSections;
         _config.cf_chk_ViewElements = IncludeViewElements;
         _config.cf_chk_SheetWithViews = IncludeSheetsWithViews;
         _config.cf_chk_UseLegendIfExists = UseLegendIfExists;

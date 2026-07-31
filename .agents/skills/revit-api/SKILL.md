@@ -70,6 +70,9 @@ You have structured expert knowledge in the following 30 domains. Use the concep
 * [debugging_linked_elements_tree_starvation_2026-07-08.md](file:///c:/Users/david.barbero/Documents/DOCUMENTOS/ALTEN/Workbench/RevitAddins_Workspace/RevitAddins_Workspace/.agents/skills/revit-api/references/debugging_linked_elements_tree_starvation_2026-07-08.md)
 * [debugging_view_sheet_transfer_duplication_2026-07-23.md](file:///c:/Users/david.barbero/Documents/DOCUMENTOS/ALTEN/Workbench/RevitAddins_Workspace/RevitAddins_Workspace/.agents/skills/revit-api/references/debugging_view_sheet_transfer_duplication_2026-07-23.md)
 * [debugging_viewplan_2d_elements_cross_level_consolidation_2026-07-28.md](file:///c:/Users/david.barbero/Documents/DOCUMENTOS/ALTEN/Workbench/RevitAddins_Workspace/RevitAddins_Workspace/.agents/skills/revit-api/references/debugging_viewplan_2d_elements_cross_level_consolidation_2026-07-28.md)
+* [debugging_sheet_transfer_linked_models_and_viewtemplate_consolidation_2026-07-28.md](file:///c:/Users/david.barbero/Documents/DOCUMENTOS/ALTEN/Workbench/RevitAddins_Workspace/RevitAddins_Workspace/.agents/skills/revit-api/references/debugging_sheet_transfer_linked_models_and_viewtemplate_consolidation_2026-07-28.md)
+* [debugging_section_and_detail_view_transfer_2026-07-30.md](file:///c:/Users/david.barbero/Documents/DOCUMENTOS/ALTEN/Workbench/RevitAddins_Workspace/RevitAddins_Workspace/.agents/skills/revit-api/references/debugging_section_and_detail_view_transfer_2026-07-30.md)
+
 
 ## 4. RESPONSE FORMAT
 * Provides clean, structured and documented code in modern C#.

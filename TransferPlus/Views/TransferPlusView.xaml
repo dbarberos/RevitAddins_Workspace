@@ -393,6 +393,7 @@
                                 </StackPanel>
                                 
                                 <CheckBox Content="Transfer Callouts of Views" IsChecked="{Binding IncludeCallouts}" Style="{StaticResource SwitchStyle}" Margin="0,4"/>
+                                <CheckBox Content="Transfer Sections &amp; Details of Views" IsChecked="{Binding IncludeSections}" Style="{StaticResource SwitchStyle}" Margin="0,4"/>
                                 <CheckBox Content="Transfer View Elements" IsChecked="{Binding IncludeViewElements}" Style="{StaticResource SwitchStyle}" Margin="0,4"/>
                                 <CheckBox Content="Force Level in Level Base Views" IsChecked="{Binding ForceLevelInLevelBaseViews}" Style="{StaticResource SwitchStyle}" Margin="0,4"/>
                                 
