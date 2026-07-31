@@ -43,13 +43,19 @@ Se ha diseñado e implementado la interfaz de usuario aislada para el **Gestor d
 - **Binding Exclusivo vía DataContext**:
   - El code-behind `FamilyManagerView.xaml.cs` establece `DataContext = new FamilyManagerViewModel()`, permitiendo instanciar la ventana mediante `new FamilyManagerView().ShowDialog()` desde proyectos de consola, pruebas unitarias o comandos de prueba sin arrancar Revit.
 
-### D. Servicio de Familias y Ejecución Asíncrona (`TransferPlus/Services/`)
+### D. Servicio de Familias, Seguridad y Ejecución Asíncrona (`TransferPlus/Services/`)
+- **`FamilyFileManager.cs` (Gestión Segura de Archivos Temporales)**:
+  - Extrae la lógica `CreateFamilyLocalFile` de BimFM adaptándola a los estándares de seguridad de TransferPlus.
+  - **Mitigación Estricta de Path Traversal**: Sanitiza los nombres de archivo (`Path.GetInvalidFileNameChars()`) y resuelve rutas con `Path.GetFullPath()`. Valida que cualquier archivo generado resida estrictamente dentro de la carpeta segura `BaseTempDirectory` (`%TEMP%/TransferPlus_Families`), rechazando elevaciones de ruta `../`.
+- **`TelemetryLogger.cs` (Desensibilización PII de Rutas)**:
+  - Componente de telemetría y logging con saneamiento automático de PII (Información de Identificación Personal). Reemplaza cualquier ruta de usuario de Windows (`C:\Users\<username>`) por el token anónimo `%USERPROFILE%` y directorios temporales por `%TEMP%`.
+  - Integrado en `LoggerService.cs` y `FamilyRevitService.cs` para filtrar cualquier excepción, mensaje de debug o log visual antes de su persistencia o salida por pantalla.
 - **`FamilyRevitService.cs`**:
-  - `TryLoadFamily` y `TryLoadFamilySymbol`: Extrae la lógica de `Bim.FamilyManager_Source`, envolviendo las llamadas `document.LoadFamily()` y `document.LoadFamilySymbol()` en transacciones seguras con `WarningSwallower.AttachToTransaction(transaction)`.
-  - **`SilentOverwriteFamilyOption`**: Implementa `IFamilyLoadOptions` para forzar la sobrescritura silenciosa sin mostrar ningún diálogo modal (`TaskDialog`) de Revit durante la ejecución.
+  - `TryLoadFamily` y `TryLoadFamilySymbol`: Envoltorio de llamadas `document.LoadFamily()` y `document.LoadFamilySymbol()` en transacciones seguras con `WarningSwallower.AttachToTransaction(transaction)`.
+  - **`SilentOverwriteFamilyOption`**: Implementación de `IFamilyLoadOptions` para forzar la sobrescritura silenciosa sin mostrar ningún diálogo modal (`TaskDialog`) de Revit durante la ejecución.
 - **`RevitTask.cs`**:
-  - Implementa el patrón `RevitTask` utilizando `IExternalEventHandler` y `ExternalEvent.Create(...)`.
-  - Permite despachar tareas desde los comandos asíncronos del ViewModel (`LoadAsync` y `TransferAsync`) hacia el hilo principal de Revit sin bloquear la interfaz de usuario de WPF.
+  - Implementación del patrón `RevitTask` con `IExternalEventHandler` y `ExternalEvent.Create(...)`.
+  - Despacha ejecuciones desde los comandos asíncronos del ViewModel (`LoadAsync` y `TransferAsync`) hacia el hilo principal de Revit sin bloquear la interfaz de usuario de WPF.
 
 ---
 
