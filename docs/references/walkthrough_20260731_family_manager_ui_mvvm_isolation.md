@@ -43,9 +43,17 @@ Se ha diseñado e implementado la interfaz de usuario aislada para el **Gestor d
 - **Binding Exclusivo vía DataContext**:
   - El code-behind `FamilyManagerView.xaml.cs` establece `DataContext = new FamilyManagerViewModel()`, permitiendo instanciar la ventana mediante `new FamilyManagerView().ShowDialog()` desde proyectos de consola, pruebas unitarias o comandos de prueba sin arrancar Revit.
 
+### D. Servicio de Familias y Ejecución Asíncrona (`TransferPlus/Services/`)
+- **`FamilyRevitService.cs`**:
+  - `TryLoadFamily` y `TryLoadFamilySymbol`: Extrae la lógica de `Bim.FamilyManager_Source`, envolviendo las llamadas `document.LoadFamily()` y `document.LoadFamilySymbol()` en transacciones seguras con `WarningSwallower.AttachToTransaction(transaction)`.
+  - **`SilentOverwriteFamilyOption`**: Implementa `IFamilyLoadOptions` para forzar la sobrescritura silenciosa sin mostrar ningún diálogo modal (`TaskDialog`) de Revit durante la ejecución.
+- **`RevitTask.cs`**:
+  - Implementa el patrón `RevitTask` utilizando `IExternalEventHandler` y `ExternalEvent.Create(...)`.
+  - Permite despachar tareas desde los comandos asíncronos del ViewModel (`LoadAsync` y `TransferAsync`) hacia el hilo principal de Revit sin bloquear la interfaz de usuario de WPF.
+
 ---
 
 ## 3. Verificación de Compilación
 
 - **Comando de Compilación**: `dotnet build TransferPlus\TransferPlus.csproj -c "Debug R24"`
-- **Resultado**: **BUILD SUCCESSFUL (0 Errores, 0 Advertencias MVVM)**.
+- **Resultado**: **BUILD SUCCESSFUL (0 Errores, 0 Advertencias)**.
