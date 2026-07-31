@@ -1,0 +1,33 @@
+using System.Collections.Generic;
+
+namespace TransferPlus.Models
+{
+    /// <summary>
+    /// Representa un tipo/símbolo individual dentro de una familia de Revit.
+    /// Contiene solo tipos primitivos para garantizar desacoplamiento total de la API de Revit.
+    /// </summary>
+    public class FamilySymbolItemModel
+    {
+        public string Name { get; set; } = string.Empty;
+        public string FamilyName { get; set; } = string.Empty;
+        public bool IsActive { get; set; }
+        public bool IsSelected { get; set; } = true;
+    }
+
+    /// <summary>
+    /// Modelo de datos puro para representar una Familia de Revit (RFA) en la interfaz de usuario.
+    /// Desacoplado de cualquier clase de Autodesk.Revit.DB.
+    /// </summary>
+    public class FamilyItemModel
+    {
+        public string Name { get; set; } = string.Empty;
+        public string CategoryName { get; set; } = string.Empty;
+        public string SourceName { get; set; } = "Modelo Origen";
+        public int SymbolCount => Symbols?.Count ?? 0;
+        public bool IsLoaded { get; set; }
+        public bool IsSelected { get; set; }
+        public string StatusMessage { get; set; } = "Disponible";
+        public string ImagePreviewUrl { get; set; } = string.Empty;
+        public List<FamilySymbolItemModel> Symbols { get; set; } = new();
+    }
+}
