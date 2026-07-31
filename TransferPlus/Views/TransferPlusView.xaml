@@ -6,7 +6,7 @@
         xmlns:local="clr-namespace:TransferPlus.Views"
         xmlns:viewmodels="clr-namespace:TransferPlus.ViewModels"
         mc:Ignorable="d"
-        Title="TransferPlus" Height="788"
+        Title="TransferPlus" Height="840"
         WindowStartupLocation="CenterScreen"
         Background="#FAFAFA">
 
@@ -75,8 +75,8 @@
             <Style x:Key="CardBorderStyle" TargetType="Border">
                 <Setter Property="Background" Value="White"/>
                 <Setter Property="CornerRadius" Value="8"/>
-                <Setter Property="Padding" Value="15,10"/>
-                <Setter Property="Margin" Value="0,0,0,10"/>
+                <Setter Property="Padding" Value="12,7"/>
+                <Setter Property="Margin" Value="0,0,0,6"/>
                 <Setter Property="BorderBrush" Value="#e8e8e8"/>
                 <Setter Property="BorderThickness" Value="1"/>
                 <Setter Property="Effect">
@@ -439,31 +439,34 @@
 
                         <!-- Families Manager Card (Untitled Card below Rename) -->
                         <Border Style="{StaticResource CardBorderStyle}">
-                            <StackPanel>
-                                <Button Content="Families Manager" Command="{Binding OpenFamilyManagerCommand}" Margin="2" Padding="12,6">
-                                    <Button.Style>
-                                        <Style TargetType="Button">
-                                            <Setter Property="Background" Value="#007ACC"/>
-                                            <Setter Property="Foreground" Value="White"/>
-                                            <Setter Property="BorderThickness" Value="0"/>
-                                            <Setter Property="Cursor" Value="Hand"/>
-                                            <Style.Resources>
-                                                <Style TargetType="Border">
-                                                    <Setter Property="CornerRadius" Value="4"/>
-                                                </Style>
-                                            </Style.Resources>
-                                            <Style.Triggers>
-                                                <Trigger Property="IsEnabled" Value="False">
-                                                    <Setter Property="Background" Value="#F3F3F3"/>
-                                                    <Setter Property="Foreground" Value="#B0B0B0"/>
-                                                    <Setter Property="BorderBrush" Value="Transparent"/>
-                                                    <Setter Property="BorderThickness" Value="0"/>
-                                                </Trigger>
-                                            </Style.Triggers>
-                                        </Style>
-                                    </Button.Style>
-                                </Button>
-                            </StackPanel>
+                            <Button Content="Families Manager" Command="{Binding OpenFamilyManagerCommand}" Height="28" Padding="12,4" HorizontalAlignment="Stretch">
+                                <Button.Style>
+                                    <Style TargetType="Button">
+                                        <Setter Property="Background" Value="#007ACC"/>
+                                        <Setter Property="Foreground" Value="White"/>
+                                        <Setter Property="FontWeight" Value="SemiBold"/>
+                                        <Setter Property="FontSize" Value="12"/>
+                                        <Setter Property="BorderThickness" Value="0"/>
+                                        <Setter Property="Cursor" Value="Hand"/>
+                                        <Style.Resources>
+                                            <Style TargetType="Border">
+                                                <Setter Property="CornerRadius" Value="4"/>
+                                            </Style>
+                                        </Style.Resources>
+                                        <Style.Triggers>
+                                            <Trigger Property="IsMouseOver" Value="True">
+                                                <Setter Property="Background" Value="#005999"/>
+                                            </Trigger>
+                                            <Trigger Property="IsEnabled" Value="False">
+                                                <Setter Property="Background" Value="#F3F3F3"/>
+                                                <Setter Property="Foreground" Value="#B0B0B0"/>
+                                                <Setter Property="BorderBrush" Value="Transparent"/>
+                                                <Setter Property="BorderThickness" Value="0"/>
+                                            </Trigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Button.Style>
+                            </Button>
                         </Border>
 
                     </StackPanel>
