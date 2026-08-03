@@ -72,6 +72,8 @@ You have structured expert knowledge in the following 30 domains. Use the concep
 * [debugging_viewplan_2d_elements_cross_level_consolidation_2026-07-28.md](file:///c:/Users/david.barbero/Documents/DOCUMENTOS/ALTEN/Workbench/RevitAddins_Workspace/RevitAddins_Workspace/.agents/skills/revit-api/references/debugging_viewplan_2d_elements_cross_level_consolidation_2026-07-28.md)
 * [debugging_sheet_transfer_linked_models_and_viewtemplate_consolidation_2026-07-28.md](file:///c:/Users/david.barbero/Documents/DOCUMENTOS/ALTEN/Workbench/RevitAddins_Workspace/RevitAddins_Workspace/.agents/skills/revit-api/references/debugging_sheet_transfer_linked_models_and_viewtemplate_consolidation_2026-07-28.md)
 * [debugging_section_and_detail_view_transfer_2026-07-30.md](file:///c:/Users/david.barbero/Documents/DOCUMENTOS/ALTEN/Workbench/RevitAddins_Workspace/RevitAddins_Workspace/.agents/skills/revit-api/references/debugging_section_and_detail_view_transfer_2026-07-30.md)
+* [debugging_wpf_winforms_namespace_collision_2026-08-03.md](file:///c:/Users/david.barbero/Documents/DOCUMENTOS/ALTEN/Workbench/RevitAddins_Workspace/RevitAddins_Workspace/.agents/skills/revit-api/references/debugging_wpf_winforms_namespace_collision_2026-08-03.md)
+* [guia_transferencia_familias_en_memoria.md](file:///c:/Users/david.barbero/Documents/DOCUMENTOS/ALTEN/Workbench/RevitAddins_Workspace/RevitAddins_Workspace/.agents/skills/revit-api/references/guia_transferencia_familias_en_memoria.md)
 
 
 ## 4. RESPONSE FORMAT
