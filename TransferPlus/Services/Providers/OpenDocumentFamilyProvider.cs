@@ -28,11 +28,13 @@ public class OpenDocumentFamilyProvider : IFamilyProvider
 
         if (_sourceDoc == null || !_sourceDoc.IsValidObject)
         {
+            TelemetryLogger.LogWarning("OpenDocumentFamilyProvider: Documento de origen inválido o nulo.");
             return Task.FromResult<IEnumerable<FamilyItemModel>>(result);
         }
 
         try
         {
+            TelemetryLogger.LogInfo($"OpenDocumentFamilyProvider: Recolectando familias editables en modelo abierto '{_sourceDoc.Title}'...");
             var families = new FilteredElementCollector(_sourceDoc)
                 .OfClass(typeof(Family))
                 .Cast<Family>()
@@ -70,6 +72,8 @@ public class OpenDocumentFamilyProvider : IFamilyProvider
                     SourceDocument = _sourceDoc
                 });
             }
+
+            TelemetryLogger.LogInfo($"OpenDocumentFamilyProvider: Se obtuvieron {result.Count} familias en modelo abierto '{_sourceDoc.Title}'.");
         }
         catch (Exception ex)
         {
@@ -85,8 +89,16 @@ public class OpenDocumentFamilyProvider : IFamilyProvider
 
         if (familyItem.NativeFamily is Family sourceFamily)
         {
-            // Transfer directly in-memory via Document.EditFamily -> LoadFamily
+            TelemetryLogger.LogInfo($"OpenDocumentFamilyProvider: Iniciando transferencia en memoria de familia '{sourceFamily.Name}' desde '{_sourceDoc.Title}' a destino...");
             bool success = _familyRevitService.TryTransferInMemoryFamily(_sourceDoc, sourceFamily, destinationDoc, out _);
+            if (success)
+            {
+                TelemetryLogger.LogInfo($"OpenDocumentFamilyProvider: Familia '{sourceFamily.Name}' transferida con éxito en memoria.");
+            }
+            else
+            {
+                TelemetryLogger.LogWarning($"OpenDocumentFamilyProvider: No se pudo transferir en memoria la familia '{sourceFamily.Name}'.");
+            }
             return Task.FromResult(success);
         }
 

@@ -36,18 +36,20 @@ public class LinkedDocumentFamilyProvider : IFamilyProvider
 
         if (_linkInstance == null || !_linkInstance.IsValidObject)
         {
+            TelemetryLogger.LogWarning("LinkedDocumentFamilyProvider: Instancia de vínculo nula o inválida.");
             return Task.FromResult<IEnumerable<FamilyItemModel>>(result);
         }
 
         var linkDoc = _linkInstance.GetLinkDocument();
         if (linkDoc == null || !linkDoc.IsValidObject)
         {
-            TelemetryLogger.LogWarning($"El documento vinculado para '{_linkInstance.Name}' no está cargado o disponible.");
+            TelemetryLogger.LogWarning($"El documento vinculado para '{_linkInstance.Name}' no está cargado o disponible en sesión.");
             return Task.FromResult<IEnumerable<FamilyItemModel>>(result);
         }
 
         try
         {
+            TelemetryLogger.LogInfo($"LinkedDocumentFamilyProvider: Recolectando familias en modelo vinculado '{linkDoc.Title}'...");
             var families = new FilteredElementCollector(linkDoc)
                 .OfClass(typeof(Family))
                 .Cast<Family>()
@@ -85,6 +87,8 @@ public class LinkedDocumentFamilyProvider : IFamilyProvider
                     SourceDocument = linkDoc
                 });
             }
+
+            TelemetryLogger.LogInfo($"LinkedDocumentFamilyProvider: Se obtuvieron {result.Count} familias en modelo vinculado '{linkDoc.Title}'.");
         }
         catch (Exception ex)
         {
@@ -107,8 +111,16 @@ public class LinkedDocumentFamilyProvider : IFamilyProvider
 
         if (familyItem.NativeFamily is Family sourceFamily)
         {
-            // Transfer directly in-memory via Document.EditFamily -> LoadFamily
+            TelemetryLogger.LogInfo($"LinkedDocumentFamilyProvider: Iniciando transferencia en memoria de familia vinculada '{sourceFamily.Name}' desde '{linkDoc.Title}'...");
             bool success = _familyRevitService.TryTransferInMemoryFamily(linkDoc, sourceFamily, destinationDoc, out _);
+            if (success)
+            {
+                TelemetryLogger.LogInfo($"LinkedDocumentFamilyProvider: Familia vinculada '{sourceFamily.Name}' transferida con éxito.");
+            }
+            else
+            {
+                TelemetryLogger.LogWarning($"LinkedDocumentFamilyProvider: No se pudo transferir la familia vinculada '{sourceFamily.Name}'.");
+            }
             return Task.FromResult(success);
         }
 

@@ -28,6 +28,7 @@ public class AzureStorageFamilyProvider : IFamilyProvider
 
         try
         {
+            TelemetryLogger.LogInfo($"AzureStorageFamilyProvider: Conectando a Azure Blob Storage (Contenedor '{_sourceItem.ContainerName}', Ruta '{_sourceItem.RootPath}')...");
             var blobs = await AzureStorageService.GetAvailableFamiliesAsync(
                 _sourceItem.ConnectionString,
                 _sourceItem.ContainerName,
@@ -49,10 +50,12 @@ public class AzureStorageFamilyProvider : IFamilyProvider
                     }
                 });
             }
+
+            TelemetryLogger.LogInfo($"AzureStorageFamilyProvider: Se obtuvieron {result.Count} familias de Azure en contenedor '{_sourceItem.ContainerName}'.");
         }
         catch (Exception ex)
         {
-            TelemetryLogger.LogError($"Error in AzureStorageFamilyProvider for container '{_sourceItem.ContainerName}'", ex);
+            TelemetryLogger.LogError($"Error en AzureStorageFamilyProvider para contenedor '{_sourceItem.ContainerName}'", ex);
         }
 
         return result;
@@ -67,23 +70,30 @@ public class AzureStorageFamilyProvider : IFamilyProvider
 
         try
         {
-            // Asynchronously stream blob to local temp file
+            TelemetryLogger.LogInfo($"AzureStorageFamilyProvider: Descargando blob de Azure '{blobName}' a almacenamiento temporal local...");
             string tempLocalPath = await AzureStorageService.DownloadFamilyBlobAsync(
                 _sourceItem.ConnectionString,
                 _sourceItem.ContainerName,
                 blobName,
                 cancellationToken);
 
-            // Load into Revit destination document via transaction
+            TelemetryLogger.LogInfo($"AzureStorageFamilyProvider: Blob descargado en '{tempLocalPath}'. Cargando en Revit...");
             bool loaded = _familyRevitService.TryLoadFamily(destinationDoc, tempLocalPath, out _);
 
-            // Clean up temporary local file
             FamilyFileManager.RemoveFamilyLocalFile(tempLocalPath);
+            if (loaded)
+            {
+                TelemetryLogger.LogInfo($"AzureStorageFamilyProvider: Familia de Azure '{familyItem.Name}' transferida y cargada con éxito.");
+            }
+            else
+            {
+                TelemetryLogger.LogWarning($"AzureStorageFamilyProvider: No se pudo cargar la familia de Azure '{familyItem.Name}'.");
+            }
             return loaded;
         }
         catch (Exception ex)
         {
-            TelemetryLogger.LogError($"Error downloading and transferring Azure family blob '{blobName}'", ex);
+            TelemetryLogger.LogError($"Error descargando y transfiriendo blob de Azure '{blobName}'", ex);
             return false;
         }
     }

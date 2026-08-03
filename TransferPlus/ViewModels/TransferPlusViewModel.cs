@@ -166,11 +166,11 @@ public partial class TransferPlusViewModel : ObservableObject
 
     private void LoadDocuments()
     {
-        TransferPlus.Services.LoggerService.LogInfo("LoadDocuments: Loading open documents and links from Revit Session...");
+        TransferPlus.Services.LoggerService.LogInfo("LoadDocuments: Loading open documents, links, and saved family sources...");
         SourceDocuments.Clear();
         DestinationDocuments.Clear();
 
-        // Load all documents in the session, including links
+        // 1. Load all open documents in the session, including links
         foreach (Document doc in _app.Application.Documents)
         {
             var arch = new Archivo(doc);
@@ -182,34 +182,64 @@ public partial class TransferPlusViewModel : ObservableObject
             SourceDocuments.Add(arch);
         }
 
+        // 2. Load active configured family sources (Local Folders and Azure Cloud)
+        try
+        {
+            var activeFamilySources = FamilySourceConfigService.LoadSources().Where(s => s.IsActive).ToList();
+            foreach (var familySource in activeFamilySources)
+            {
+                string displayName = string.IsNullOrWhiteSpace(familySource.Name) ? familySource.Path : familySource.Name;
+                var arch = new Archivo(displayName, isFamilySource: true);
+                SourceDocuments.Add(arch);
+                TransferPlus.Services.LoggerService.LogInfo($"LoadDocuments: Added active family source '{displayName}' ({familySource.SourceDescription}) to dropdown list.");
+            }
+        }
+        catch (Exception ex)
+        {
+            TransferPlus.Services.LoggerService.LogError("LoadDocuments: Error loading saved family sources", ex);
+        }
+
         // Default selection to the active target document
-        SelectedSourceDocument = SourceDocuments.FirstOrDefault(d => d.Adoc.PathName.Equals(_targetDoc.PathName, StringComparison.OrdinalIgnoreCase))
+        SelectedSourceDocument = SourceDocuments.FirstOrDefault(d => d.Adoc != null && d.Adoc.PathName.Equals(_targetDoc.PathName, StringComparison.OrdinalIgnoreCase))
                                  ?? SourceDocuments.FirstOrDefault();
 
         OnPropertyChanged(nameof(CheckedDestinationsText));
-        TransferPlus.Services.LoggerService.LogInfo($"LoadDocuments: Found {SourceDocuments.Count} source documents. Selected default source: '{SelectedSourceDocument?.Nombre}'");
+        TransferPlus.Services.LoggerService.LogInfo($"LoadDocuments: Found {SourceDocuments.Count} source items in dropdown. Selected default source: '{SelectedSourceDocument?.Nombre}'");
     }
 
     partial void OnSelectedSourceDocumentChanged(Archivo? value)
     {
-        TransferPlus.Services.LoggerService.LogInfo($"OnSelectedSourceDocumentChanged: Selected source document changed to '{value?.Nombre ?? "null"}'");
+        TransferPlus.Services.LoggerService.LogInfo($"OnSelectedSourceDocumentChanged: Selected source changed to '{value?.Nombre ?? "null"}' (EsFamilySource={value?.EsFamilySource ?? false})");
         if (value != null)
         {
-            LoadSourceItems(value.Adoc);
-
-            // Rebuild destination documents: all open non-linked documents except the selected source
-            DestinationDocuments.Clear();
-            foreach (Document doc in _app.Application.Documents)
+            if (value.Adoc != null)
             {
-                if (doc.IsLinked) continue;
-                if (doc.PathName.Equals(value.Adoc.PathName, StringComparison.OrdinalIgnoreCase)) continue;
+                // Standard Revit Document source
+                LoadSourceItems(value.Adoc);
 
-                var dest = new Archivo(doc) { Checked = true };
-                dest.Nombre = GetDocumentDisplayName(doc);
-                dest.OnCheckedPropertyChanged = () => OnPropertyChanged(nameof(CheckedDestinationsText));
-                DestinationDocuments.Add(dest);
+                // Rebuild destination documents: all open non-linked documents except the selected source
+                DestinationDocuments.Clear();
+                foreach (Document doc in _app.Application.Documents)
+                {
+                    if (doc.IsLinked) continue;
+                    if (doc.PathName.Equals(value.Adoc.PathName, StringComparison.OrdinalIgnoreCase)) continue;
+
+                    var dest = new Archivo(doc) { Checked = true };
+                    dest.Nombre = GetDocumentDisplayName(doc);
+                    dest.OnCheckedPropertyChanged = () => OnPropertyChanged(nameof(CheckedDestinationsText));
+                    DestinationDocuments.Add(dest);
+                }
+                TransferPlus.Services.LoggerService.LogInfo($"OnSelectedSourceDocumentChanged: Rebuilt destination documents. Target destinations count: {DestinationDocuments.Count}");
             }
-            TransferPlus.Services.LoggerService.LogInfo($"OnSelectedSourceDocumentChanged: Rebuilt destination documents. Target destinations count: {DestinationDocuments.Count}");
+            else
+            {
+                // Family Source (Local Directory or Azure Storage)
+                RootNodes.Clear();
+                _allSourceItems.Clear();
+                CheckedElementsCount = 0;
+                DestinationDocuments.Clear();
+                TransferPlus.Services.LoggerService.LogInfo($"OnSelectedSourceDocumentChanged: Selected family source '{value.Nombre}'. Use 'Activate' button in Families Manager panel to load and transfer families.");
+            }
         }
         else
         {
@@ -1170,7 +1200,11 @@ public partial class TransferPlusViewModel : ObservableObject
         {
             var vm = new FamilySourcesViewModel();
             var view = new Views.FamilySourcesWindow { DataContext = vm };
-            view.ShowDialog();
+            if (view.ShowDialog() == true)
+            {
+                LoadDocuments();
+                TransferPlus.Services.LoggerService.LogInfo("OpenSourcesWindow: Configuración de fuentes guardada. Desplegable 'Apply transfer from' actualizado.");
+            }
         }
         catch (Exception ex)
         {

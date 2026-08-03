@@ -31,13 +31,17 @@ public class LocalFolderFamilyProvider : IFamilyProvider
 
         try
         {
-            if (string.IsNullOrWhiteSpace(_folderPath) || !Directory.Exists(_folderPath))
+            if (string.IsNullOrWhiteSpace(_folderPath) ||
+                _folderPath.IndexOfAny(Path.GetInvalidPathChars()) >= 0 ||
+                !Directory.Exists(_folderPath))
             {
-                TelemetryLogger.LogWarning($"Local folder path does not exist: '{_folderPath}'");
+                TelemetryLogger.LogWarning($"LocalFolderFamilyProvider: La ruta de carpeta local no es válida o no existe: '{_folderPath}'");
                 return Task.FromResult<IEnumerable<FamilyItemModel>>(result);
             }
 
+            TelemetryLogger.LogInfo($"LocalFolderFamilyProvider: Escaneando archivos .rfa en carpeta local '{_folderPath}'...");
             var rfaFiles = Directory.GetFiles(_folderPath, "*.rfa", SearchOption.AllDirectories);
+
             foreach (var filePath in rfaFiles)
             {
                 cancellationToken.ThrowIfCancellationRequested();
@@ -60,6 +64,8 @@ public class LocalFolderFamilyProvider : IFamilyProvider
                     }
                 });
             }
+
+            TelemetryLogger.LogInfo($"LocalFolderFamilyProvider: Escaneo completado. Se encontraron {result.Count} familias .rfa válidas en '{_folderPath}'.");
         }
         catch (Exception ex)
         {
@@ -74,7 +80,16 @@ public class LocalFolderFamilyProvider : IFamilyProvider
         if (familyItem == null || destinationDoc == null) return Task.FromResult(false);
 
         string filePath = familyItem.ImagePreviewUrl;
+        TelemetryLogger.LogInfo($"LocalFolderFamilyProvider: Cargando archivo .rfa local '{familyItem.Name}' ({filePath}) en documento de Revit...");
         bool success = _familyRevitService.TryLoadFamily(destinationDoc, filePath, out _);
+        if (success)
+        {
+            TelemetryLogger.LogInfo($"LocalFolderFamilyProvider: Familia '{familyItem.Name}' cargada con éxito desde disco.");
+        }
+        else
+        {
+            TelemetryLogger.LogWarning($"LocalFolderFamilyProvider: No se pudo cargar la familia '{familyItem.Name}' desde disco.");
+        }
         return Task.FromResult(success);
     }
 }

@@ -36,14 +36,55 @@ public partial class DirectorySourceViewModel : ObservableObject
     {
         try
         {
-            // 1. Try Microsoft.Win32.OpenFolderDialog (.NET 8 / modern WPF)
+            TelemetryLogger.LogInfo("Iniciando explorador de carpetas locales para fuente de familias...");
+
+            // 1. Try System.Windows.Forms.FolderBrowserDialog via Reflection (Native folder picker on .NET 4.8 & .NET 8)
+            var folderBrowserType = Type.GetType("System.Windows.Forms.FolderBrowserDialog, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")
+                ?? Type.GetType("System.Windows.Forms.FolderBrowserDialog, System.Windows.Forms");
+
+            if (folderBrowserType != null)
+            {
+                var instance = Activator.CreateInstance(folderBrowserType);
+                if (instance != null)
+                {
+                    folderBrowserType.GetProperty("Description")?.SetValue(instance, "Seleccionar carpeta que contiene familias de Revit (.rfa)");
+                    if (!string.IsNullOrWhiteSpace(Directory) && System.IO.Directory.Exists(Directory))
+                    {
+                        folderBrowserType.GetProperty("SelectedPath")?.SetValue(instance, Directory);
+                    }
+
+                    var showDialogMethod = folderBrowserType.GetMethod("ShowDialog", Type.EmptyTypes);
+                    var result = showDialogMethod?.Invoke(instance, null);
+                    if (result?.ToString() == "OK" || result?.ToString() == "1")
+                    {
+                        var selectedPath = folderBrowserType.GetProperty("SelectedPath")?.GetValue(instance) as string;
+                        if (!string.IsNullOrWhiteSpace(selectedPath))
+                        {
+                            Directory = selectedPath;
+                            if (string.IsNullOrWhiteSpace(Name))
+                            {
+                                Name = System.IO.Path.GetFileName(selectedPath.TrimEnd('\\', '/'));
+                            }
+                            TelemetryLogger.LogInfo($"Carpeta local seleccionada correctamente: '{Directory}'");
+                            return;
+                        }
+                    }
+                    else
+                    {
+                        TelemetryLogger.LogInfo("Selección de carpeta cancelada por el usuario.");
+                        return;
+                    }
+                }
+            }
+
+            // 2. Try Microsoft.Win32.OpenFolderDialog (.NET 8 WPF)
             var openFolderDialogType = Type.GetType("Microsoft.Win32.OpenFolderDialog, PresentationFramework");
             if (openFolderDialogType != null)
             {
                 var instance = Activator.CreateInstance(openFolderDialogType);
                 if (instance != null)
                 {
-                    openFolderDialogType.GetProperty("Title")?.SetValue(instance, "Select Revit Family Directory");
+                    openFolderDialogType.GetProperty("Title")?.SetValue(instance, "Seleccionar carpeta que contiene familias de Revit (.rfa)");
                     var showDialogMethod = openFolderDialogType.GetMethod("ShowDialog", Type.EmptyTypes);
                     var result = showDialogMethod?.Invoke(instance, null);
                     if (result is true)
@@ -52,27 +93,20 @@ public partial class DirectorySourceViewModel : ObservableObject
                         if (!string.IsNullOrWhiteSpace(folderName))
                         {
                             Directory = folderName;
+                            if (string.IsNullOrWhiteSpace(Name))
+                            {
+                                Name = System.IO.Path.GetFileName(folderName.TrimEnd('\\', '/'));
+                            }
+                            TelemetryLogger.LogInfo($"Carpeta local seleccionada mediante OpenFolderDialog: '{Directory}'");
                             return;
                         }
                     }
                 }
             }
-
-            // 2. Fallback: Microsoft.Win32.OpenFileDialog
-            var ofd = new Microsoft.Win32.OpenFileDialog
-            {
-                Title = "Select a family file inside target directory",
-                Filter = "Revit Family Files (*.rfa)|*.rfa|All Files (*.*)|*.*",
-                CheckFileExists = false
-            };
-            if (ofd.ShowDialog() == true)
-            {
-                Directory = Path.GetDirectoryName(ofd.FileName) ?? string.Empty;
-            }
         }
         catch (Exception ex)
         {
-            TelemetryLogger.LogError("Error browsing directory for family source", ex);
+            TelemetryLogger.LogError("Error al abrir el explorador de carpetas locales", ex);
         }
     }
 
