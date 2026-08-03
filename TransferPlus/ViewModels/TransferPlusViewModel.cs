@@ -1159,6 +1159,21 @@ public partial class TransferPlusViewModel : ObservableObject
     }
 
     [RelayCommand]
+    private void OpenSourcesWindow()
+    {
+        try
+        {
+            var vm = new FamilySourcesViewModel();
+            var view = new Views.FamilySourcesWindow { DataContext = vm };
+            view.ShowDialog();
+        }
+        catch (Exception ex)
+        {
+            TransferPlus.Services.LoggerService.LogError("OpenSourcesWindow", ex);
+        }
+    }
+
+    [RelayCommand]
     private void InsertRegexHelper(string snippet)
     {
         RenameSearchText += snippet;
