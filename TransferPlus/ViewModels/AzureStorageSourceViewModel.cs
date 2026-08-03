@@ -1,7 +1,9 @@
 using System;
+using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using TransferPlus.Models;
+using TransferPlus.Services;
 
 namespace TransferPlus.ViewModels;
 
@@ -9,6 +11,9 @@ public partial class AzureStorageSourceViewModel : ObservableObject
 {
     [ObservableProperty]
     private string _name = string.Empty;
+
+    [ObservableProperty]
+    private string _connectionString = string.Empty;
 
     [ObservableProperty]
     private string _endpointUrl = string.Empty;
@@ -32,6 +37,9 @@ public partial class AzureStorageSourceViewModel : ObservableObject
     private string _signedInStatus = "Not signed in.";
 
     [ObservableProperty]
+    private bool _isTestingConnection;
+
+    [ObservableProperty]
     private bool? _dialogResult;
 
     public AzureStorageSourceViewModel(FamilySourceItemModel? model = null)
@@ -39,6 +47,7 @@ public partial class AzureStorageSourceViewModel : ObservableObject
         if (model != null)
         {
             Name = model.Name;
+            ConnectionString = model.ConnectionString;
             EndpointUrl = model.EndpointUrl;
             ClientId = model.ClientId;
             TenantId = model.TenantId;
@@ -49,11 +58,43 @@ public partial class AzureStorageSourceViewModel : ObservableObject
     }
 
     [RelayCommand]
+    private async Task TestConnectionAsync()
+    {
+        IsTestingConnection = true;
+        SignedInStatus = "Testing connection...";
+
+        try
+        {
+            var (success, message) = await AzureStorageService.TestConnectionAsync(ConnectionString, ContainerName);
+            SignedInStatus = success ? "Connected successfully! ✓" : $"Connection failed: {message}";
+            
+            System.Windows.MessageBox.Show(message, success ? "Connection Test" : "Connection Failed",
+                System.Windows.MessageBoxButton.OK,
+                success ? System.Windows.MessageBoxImage.Information : System.Windows.MessageBoxImage.Error);
+        }
+        catch (Exception ex)
+        {
+            SignedInStatus = $"Error: {ex.Message}";
+            TelemetryLogger.LogError("Error during connection test", ex);
+        }
+        finally
+        {
+            IsTestingConnection = false;
+        }
+    }
+
+    [RelayCommand]
     private void Ok(object? window)
     {
         if (string.IsNullOrWhiteSpace(Name))
         {
             System.Windows.MessageBox.Show("Please enter a family source name.", "Validation Error", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Warning);
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(ContainerName))
+        {
+            System.Windows.MessageBox.Show("Please enter a valid container name.", "Validation Error", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Warning);
             return;
         }
 
@@ -83,6 +124,7 @@ public partial class AzureStorageSourceViewModel : ObservableObject
             Id = existingId ?? Guid.NewGuid().ToString(),
             Name = Name.Trim(),
             SourceType = FamilySourceType.AzureStorage,
+            ConnectionString = ConnectionString.Trim(),
             EndpointUrl = EndpointUrl.Trim(),
             ClientId = ClientId.Trim(),
             TenantId = TenantId.Trim(),
