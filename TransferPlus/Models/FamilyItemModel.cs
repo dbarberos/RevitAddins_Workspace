@@ -4,7 +4,7 @@ namespace TransferPlus.Models
 {
     /// <summary>
     /// Representa un tipo/símbolo individual dentro de una familia de Revit.
-    /// Contiene solo tipos primitivos para garantizar desacoplamiento total de la API de Revit.
+    /// Contiene solo tipos primitivos para garantizar desacoplamiento total de la API de Revit en la vista.
     /// </summary>
     public class FamilySymbolItemModel
     {
@@ -12,11 +12,11 @@ namespace TransferPlus.Models
         public string FamilyName { get; set; } = string.Empty;
         public bool IsActive { get; set; }
         public bool IsSelected { get; set; } = true;
+        public object? NativeSymbol { get; set; }
     }
 
     /// <summary>
-    /// Modelo de datos puro para representar una Familia de Revit (RFA) en la interfaz de usuario.
-    /// Desacoplado de cualquier clase de Autodesk.Revit.DB.
+    /// Modelo de datos para representar una Familia de Revit en la interfaz de usuario.
     /// </summary>
     public class FamilyItemModel
     {
@@ -29,5 +29,15 @@ namespace TransferPlus.Models
         public string StatusMessage { get; set; } = "Disponible";
         public string ImagePreviewUrl { get; set; } = string.Empty;
         public List<FamilySymbolItemModel> Symbols { get; set; } = new();
+
+        /// <summary>
+        /// Referencia opcional al objeto nativo Revit (Autodesk.Revit.DB.Family) cuando proviene de un modelo abierto o vinculado.
+        /// </summary>
+        public object? NativeFamily { get; set; }
+
+        /// <summary>
+        /// Referencia opcional al documento nativo origen (Autodesk.Revit.DB.Document) cuando proviene de un modelo abierto o vinculado.
+        /// </summary>
+        public object? SourceDocument { get; set; }
     }
 }

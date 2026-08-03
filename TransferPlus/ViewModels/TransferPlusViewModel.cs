@@ -1144,11 +1144,16 @@ public partial class TransferPlusViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private void OpenFamilyManager()
+    private async Task OpenFamilyManager()
     {
         try
         {
             var vm = new FamilyManagerViewModel(_targetDoc);
+            string selectedSourceName = SelectedSourceDocument?.Nombre ?? string.Empty;
+            if (!string.IsNullOrWhiteSpace(selectedSourceName))
+            {
+                await vm.LoadFromSourceDisplayAsync(selectedSourceName);
+            }
             var view = new FamilyManagerView(vm);
             view.ShowDialog();
         }

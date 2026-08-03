@@ -180,5 +180,70 @@ namespace TransferPlus.Services
                 }
             }
         }
+
+        /// <summary>
+        /// Transfiere una familia desde un documento origen (abierto o vinculado) hacia un documento destino completamente en memoria,
+        /// utilizando el patrón recomendado por la API de Revit (Document.EditFamily -> familyDoc.LoadFamily).
+        /// </summary>
+        public bool TryTransferInMemoryFamily(Document sourceDocument, Family sourceFamily, Document targetDocument, out Family? loadedFamily)
+        {
+            loadedFamily = null;
+            if (sourceDocument == null || sourceFamily == null || targetDocument == null)
+            {
+                return false;
+            }
+
+            Document? familyDoc = null;
+            try
+            {
+                // Abrir la familia en memoria (no crea ventana gráfica)
+                familyDoc = sourceDocument.EditFamily(sourceFamily);
+                if (familyDoc == null)
+                {
+                    TelemetryLogger.LogWarning($"No se pudo editar en memoria la familia '{sourceFamily.Name}'.");
+                    return false;
+                }
+
+                var overwriteOptions = new SilentOverwriteFamilyOption();
+
+                using var transaction = new Transaction(targetDocument, $"Cargar Familia en memoria '{sourceFamily.Name}'");
+                WarningSwallower.AttachToTransaction(transaction);
+                transaction.Start();
+
+                loadedFamily = familyDoc.LoadFamily(targetDocument, overwriteOptions);
+                if (loadedFamily != null)
+                {
+                    transaction.Commit();
+                    TelemetryLogger.LogInfo($"Familia en memoria '{sourceFamily.Name}' transferida correctamente.");
+                    return true;
+                }
+
+                // Buscar referencia si ya existía
+                var existingFamily = new FilteredElementCollector(targetDocument)
+                    .OfClass(typeof(Family))
+                    .Cast<Family>()
+                    .FirstOrDefault(f => f.Name.Equals(sourceFamily.Name, StringComparison.OrdinalIgnoreCase));
+
+                if (existingFamily != null)
+                {
+                    loadedFamily = existingFamily;
+                    transaction.Commit();
+                    TelemetryLogger.LogInfo($"Familia en memoria reutilizada: '{sourceFamily.Name}'");
+                    return true;
+                }
+
+                transaction.RollBack();
+                return false;
+            }
+            catch (Exception ex)
+            {
+                TelemetryLogger.LogError($"Error al transferir en memoria la familia '{sourceFamily?.Name}'", ex);
+                return false;
+            }
+            finally
+            {
+                familyDoc?.Close(false);
+            }
+        }
     }
 }
