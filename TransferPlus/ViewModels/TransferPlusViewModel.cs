@@ -166,7 +166,7 @@ public partial class TransferPlusViewModel : ObservableObject
 
     private void LoadDocuments()
     {
-        TransferPlus.Services.LoggerService.LogInfo("LoadDocuments: Loading open documents, links, and saved family sources...");
+        TransferPlus.Services.LoggerService.LogInfo($"LoadDocuments: Loading open documents and links from Revit Session (IsFamiliesManagerActive={IsFamiliesManagerActive})...");
         SourceDocuments.Clear();
         DestinationDocuments.Clear();
 
@@ -182,21 +182,24 @@ public partial class TransferPlusViewModel : ObservableObject
             SourceDocuments.Add(arch);
         }
 
-        // 2. Load active configured family sources (Local Folders and Azure Cloud)
-        try
+        // 2. Load active configured family sources ONLY IF Families Manager is ACTIVATED
+        if (IsFamiliesManagerActive)
         {
-            var activeFamilySources = FamilySourceConfigService.LoadSources().Where(s => s.IsActive).ToList();
-            foreach (var familySource in activeFamilySources)
+            try
             {
-                string displayName = string.IsNullOrWhiteSpace(familySource.Name) ? familySource.Path : familySource.Name;
-                var arch = new Archivo(displayName, isFamilySource: true);
-                SourceDocuments.Add(arch);
-                TransferPlus.Services.LoggerService.LogInfo($"LoadDocuments: Added active family source '{displayName}' ({familySource.SourceDescription}) to dropdown list.");
+                var activeFamilySources = FamilySourceConfigService.LoadSources().Where(s => s.IsActive).ToList();
+                foreach (var familySource in activeFamilySources)
+                {
+                    string displayName = string.IsNullOrWhiteSpace(familySource.Name) ? familySource.Path : familySource.Name;
+                    var arch = new Archivo(displayName, isFamilySource: true);
+                    SourceDocuments.Add(arch);
+                    TransferPlus.Services.LoggerService.LogInfo($"LoadDocuments: Added active family source '{displayName}' ({familySource.SourceDescription}) to dropdown list.");
+                }
             }
-        }
-        catch (Exception ex)
-        {
-            TransferPlus.Services.LoggerService.LogError("LoadDocuments: Error loading saved family sources", ex);
+            catch (Exception ex)
+            {
+                TransferPlus.Services.LoggerService.LogError("LoadDocuments: Error loading saved family sources", ex);
+            }
         }
 
         // Default selection to the active target document
@@ -1171,6 +1174,7 @@ public partial class TransferPlusViewModel : ObservableObject
     {
         ActivateFamiliesManagerCommand.NotifyCanExecuteChanged();
         DeactivateFamiliesManagerCommand.NotifyCanExecuteChanged();
+        LoadDocuments();
     }
 
     [RelayCommand]
