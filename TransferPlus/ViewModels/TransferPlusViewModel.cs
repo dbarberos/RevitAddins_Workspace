@@ -272,9 +272,13 @@ public partial class TransferPlusViewModel : ObservableObject
         SourceDocuments.Clear();
         DestinationDocuments.Clear();
 
-        // 1. Load all open documents in the session, including links
+        var addedDocPaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        // 1. Load all top-level open documents in the Revit session
         foreach (Document doc in _app.Application.Documents)
         {
+            if (doc.IsFamilyDocument) continue;
+
             var arch = new Archivo(doc);
             if (doc.IsLinked)
             {
@@ -282,9 +286,52 @@ public partial class TransferPlusViewModel : ObservableObject
             }
             arch.Nombre = GetDocumentDisplayName(doc);
             SourceDocuments.Add(arch);
+
+            if (!string.IsNullOrEmpty(doc.PathName))
+            {
+                addedDocPaths.Add(doc.PathName);
+            }
         }
 
-        // 2. Load active configured family sources ONLY IF Families Manager is ACTIVATED
+        // 2. Load loaded Revit linked models from the active document (_targetDoc)
+        if (_targetDoc != null)
+        {
+            try
+            {
+                var linkInstances = new FilteredElementCollector(_targetDoc)
+                    .OfClass(typeof(RevitLinkInstance))
+                    .WhereElementIsNotElementType()
+                    .Cast<RevitLinkInstance>();
+
+                foreach (var linkInst in linkInstances)
+                {
+                    if (linkInst.IsValidObject)
+                    {
+                        Document linkDoc = linkInst.GetLinkDocument();
+                        if (linkDoc != null)
+                        {
+                            string pathName = linkDoc.PathName;
+                            if (string.IsNullOrEmpty(pathName) || addedDocPaths.Add(pathName))
+                            {
+                                var arch = new Archivo(linkDoc)
+                                {
+                                    EsVinculo = true,
+                                    Nombre = GetDocumentDisplayName(linkDoc)
+                                };
+                                SourceDocuments.Add(arch);
+                                TransferPlus.Services.LoggerService.LogInfo($"LoadDocuments: Added loaded link '{arch.Nombre}' to dropdown list.");
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                TransferPlus.Services.LoggerService.LogError("LoadDocuments: Error loading linked models", ex);
+            }
+        }
+
+        // 3. Load active configured family sources ONLY IF Families Manager is ACTIVATED
         if (IsFamiliesManagerActive)
         {
             try
@@ -525,7 +572,7 @@ public partial class TransferPlusViewModel : ObservableObject
                 var categoryNode = new TreeItemViewModel(categoryGroup.Key, "Category", null, containerNode, 2)
                 {
                     Count = categoryGroup.Count(),
-                    IsExpanded = true
+                    IsExpanded = false
                 };
 
                 // Group Level 3: Family
@@ -1531,7 +1578,6 @@ public partial class TransferPlusViewModel : ObservableObject
     private void ActivateFamiliesManager()
     {
         IsFamiliesManagerActive = true;
-        OpenFamilyManager();
     }
 
     [RelayCommand(CanExecute = nameof(CanDeactivateFamiliesManager))]
@@ -1545,26 +1591,6 @@ public partial class TransferPlusViewModel : ObservableObject
         ActivateFamiliesManagerCommand.NotifyCanExecuteChanged();
         DeactivateFamiliesManagerCommand.NotifyCanExecuteChanged();
         LoadDocuments();
-    }
-
-    [RelayCommand]
-    private async Task OpenFamilyManager()
-    {
-        try
-        {
-            var vm = new FamilyManagerViewModel(_targetDoc);
-            string selectedSourceName = SelectedSourceDocument?.Nombre ?? string.Empty;
-            if (!string.IsNullOrWhiteSpace(selectedSourceName))
-            {
-                await vm.LoadFromSourceDisplayAsync(selectedSourceName);
-            }
-            var view = new FamilyManagerView(vm);
-            view.ShowDialog();
-        }
-        catch (Exception ex)
-        {
-            TransferPlus.Services.LoggerService.LogError("OpenFamilyManager", ex);
-        }
     }
 
     [RelayCommand]

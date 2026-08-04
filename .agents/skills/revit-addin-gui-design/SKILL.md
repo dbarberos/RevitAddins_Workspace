@@ -29,6 +29,7 @@ Consult these documents inside `references/` for detailed guidelines:
 *   **Debugging Regex Helper Auto-Enable**: [debugging_regex_helper_auto_enable_2026-07-20.md](file:///c:/Users/david.barbero/Documents/DOCUMENTOS/ALTEN/Workbench/RevitAddins_Workspace/RevitAddins_Workspace/.agents/skills/revit-addin-gui-design/references/debugging_regex_helper_auto_enable_2026-07-20.md)
 *   **Debugging Regex Prefix & Suffix Helpers**: [debugging_regex_prefix_suffix_helpers_2026-07-20.md](file:///c:/Users/david.barbero/Documents/DOCUMENTOS/ALTEN/Workbench/RevitAddins_Workspace/RevitAddins_Workspace/.agents/skills/revit-addin-gui-design/references/debugging_regex_prefix_suffix_helpers_2026-07-20.md)
 *   **Debugging Cancel Button Window Close**: [debugging_cancel_button_close_window_2026-07-20.md](file:///c:/Users/david.barbero/Documents/DOCUMENTOS/ALTEN/Workbench/RevitAddins_Workspace/RevitAddins_Workspace/.agents/skills/revit-addin-gui-design/references/debugging_cancel_button_close_window_2026-07-20.md)
+*   **Debugging TreeView Uncheck & Clipping**: [debugging_treeview_uncheck_clipping_expansion_20260804.md](file:///c:/Users/david.barbero/Documents/DOCUMENTOS/ALTEN/Workbench/RevitAddins_Workspace/RevitAddins_Workspace/.agents/skills/revit-addin-gui-design/references/debugging_treeview_uncheck_clipping_expansion_20260804.md)
 
 ## 4. Asset Mapping (Code & Layout Templates)
 Copy, adapt, or inject the code templates located in the `assets/` directory:

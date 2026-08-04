@@ -15,7 +15,7 @@ public partial class TreeItemViewModel : ObservableObject
     private string _category = string.Empty;
 
     [ObservableProperty]
-    private bool _isExpanded = true;
+    private bool _isExpanded = false;
 
     [ObservableProperty]
     private int _count;
