@@ -425,7 +425,7 @@
                             </StackPanel>
                         </Border>
                         <!-- Family Details Card -->
-                        <Border Style="{StaticResource FamiliesManagerCardStyle}" Height="350">
+                        <Border Style="{StaticResource FamiliesManagerCardStyle}" Height="315">
                             <Grid>
                                 <Grid.RowDefinitions>
                                     <RowDefinition Height="Auto"/>
