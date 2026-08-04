@@ -541,10 +541,11 @@ public partial class TransferPlusViewModel : ObservableObject
                     {
                         foreach (var sym in fam.Symbols)
                         {
+                            sym.IsChecked = false;
                             var symbolNode = new TreeItemViewModel(sym.Name, "Symbol", sym, familyNode, 4)
                             {
                                 Count = 1,
-                                IsChecked = sym.IsChecked
+                                IsChecked = false
                             };
                             familyNode.Children.Add(symbolNode);
                         }
@@ -560,6 +561,7 @@ public partial class TransferPlusViewModel : ObservableObject
         }
 
         allNode.UpdateRecursiveCounts();
+        allNode.SetCheckedState(false);
         RootNodes.Add(allNode);
         TransferPlus.Services.LoggerService.LogInfo($"BuildFamilyTree: Tree built successfully. Total nodes grouped in root: {allNode.Count}");
     }
@@ -582,7 +584,8 @@ public partial class TransferPlusViewModel : ObservableObject
         {
             var categoryNode = new TreeItemViewModel(group.Key, "Category", null, allNode, 1)
             {
-                Count = group.Count()
+                Count = group.Count(),
+                IsExpanded = false
             };
             
             if (group.Key == "Views" || group.Key == "View Templates")
@@ -640,6 +643,7 @@ public partial class TransferPlusViewModel : ObservableObject
             allNode.Children.Add(categoryNode);
         }
         allNode.UpdateRecursiveCounts();
+        allNode.SetCheckedState(false);
         RootNodes.Add(allNode);
         TransferPlus.Services.LoggerService.LogInfo($"BuildTree: Tree built successfully. Total nodes grouped in root: {allNode.Count}");
     }
