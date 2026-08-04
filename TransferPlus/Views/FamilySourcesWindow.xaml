@@ -29,78 +29,72 @@
         <Border Grid.Row="1" Padding="16,10,16,6">
             <StackPanel Orientation="Horizontal">
                 <!-- Add Button -->
-                <Button Content="➕ Add" Command="{Binding AddSourceCommand}" CommandParameter="{Binding ElementName=SourcesMainWin}" Height="28" Padding="12,4" Margin="0,0,8,0">
-                    <Button.Style>
-                        <Style TargetType="Button">
-                            <Setter Property="Background" Value="#FFFFFF"/>
-                            <Setter Property="Foreground" Value="#007ACC"/>
-                            <Setter Property="BorderBrush" Value="#007ACC"/>
-                            <Setter Property="BorderThickness" Value="1"/>
-                            <Setter Property="FontWeight" Value="SemiBold"/>
-                            <Setter Property="FontSize" Value="12"/>
-                            <Setter Property="Cursor" Value="Hand"/>
-                            <Style.Resources>
-                                <Style TargetType="Border">
-                                    <Setter Property="CornerRadius" Value="4"/>
-                                </Style>
-                            </Style.Resources>
-                            <Style.Triggers>
+                <Button Command="{Binding AddSourceCommand}" CommandParameter="{Binding ElementName=SourcesMainWin}" 
+                        Width="28" Height="28" Margin="0,0,8,0" Cursor="Hand" ToolTip="Add Source">
+                    <Button.Template>
+                        <ControlTemplate TargetType="Button">
+                            <Border x:Name="border" Background="Transparent" CornerRadius="4" Padding="4">
+                                <Viewbox Width="18" Height="18">
+                                    <Path Data="M19,13H13V19H11V13H5V11H11V5H13V11H19V13Z" Fill="#777" x:Name="iconPath"/>
+                                </Viewbox>
+                            </Border>
+                            <ControlTemplate.Triggers>
                                 <Trigger Property="IsMouseOver" Value="True">
-                                    <Setter Property="Background" Value="#EBF5FC"/>
+                                    <Setter TargetName="border" Property="Background" Value="#eeeeee"/>
+                                    <Setter TargetName="iconPath" Property="Fill" Value="#333"/>
                                 </Trigger>
-                            </Style.Triggers>
-                        </Style>
-                    </Button.Style>
+                                <Trigger Property="IsPressed" Value="True">
+                                    <Setter TargetName="border" Property="Background" Value="#dddddd"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Button.Template>
                 </Button>
 
                 <!-- Edit Button -->
-                <Button Content="✏️ Edit" Command="{Binding EditSourceCommand}" CommandParameter="{Binding ElementName=SourcesMainWin}" Height="28" Padding="12,4" Margin="0,0,8,0">
-                    <Button.Style>
-                        <Style TargetType="Button">
-                            <Setter Property="Background" Value="#FFFFFF"/>
-                            <Setter Property="Foreground" Value="#2E7D32"/>
-                            <Setter Property="BorderBrush" Value="#2E7D32"/>
-                            <Setter Property="BorderThickness" Value="1"/>
-                            <Setter Property="FontWeight" Value="SemiBold"/>
-                            <Setter Property="FontSize" Value="12"/>
-                            <Setter Property="Cursor" Value="Hand"/>
-                            <Style.Resources>
-                                <Style TargetType="Border">
-                                    <Setter Property="CornerRadius" Value="4"/>
-                                </Style>
-                            </Style.Resources>
-                            <Style.Triggers>
+                <Button Command="{Binding EditSourceCommand}" CommandParameter="{Binding ElementName=SourcesMainWin}" 
+                        Width="28" Height="28" Margin="0,0,8,0" Cursor="Hand" ToolTip="Edit Source">
+                    <Button.Template>
+                        <ControlTemplate TargetType="Button">
+                            <Border x:Name="border" Background="Transparent" CornerRadius="4" Padding="4">
+                                <Viewbox Width="18" Height="18">
+                                    <Path Data="M14.06,9.02L14.98,9.94L5.92,19H5V18.08L14.06,9.02M17.66,3C17.41,3 17.15,3.1 16.96,3.29L15.13,5.12L18.88,8.87L20.71,7.04C21.1,6.65 21.1,6 20.71,5.63L18.37,3.29C18.17,3.09 17.92,3 17.66,3M14.06,6.19L3,17.25V21H6.75L17.81,9.94L14.06,6.19Z" Fill="#777" x:Name="iconPath"/>
+                                </Viewbox>
+                            </Border>
+                            <ControlTemplate.Triggers>
                                 <Trigger Property="IsMouseOver" Value="True">
-                                    <Setter Property="Background" Value="#E8F5E9"/>
+                                    <Setter TargetName="border" Property="Background" Value="#eeeeee"/>
+                                    <Setter TargetName="iconPath" Property="Fill" Value="#333"/>
                                 </Trigger>
-                            </Style.Triggers>
-                        </Style>
-                    </Button.Style>
+                                <Trigger Property="IsPressed" Value="True">
+                                    <Setter TargetName="border" Property="Background" Value="#dddddd"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Button.Template>
                 </Button>
 
                 <!-- Remove Button -->
-                <Button Content="🗑️ Remove" Command="{Binding RemoveSourceCommand}" Height="28" Padding="12,4">
-                    <Button.Style>
-                        <Style TargetType="Button">
-                            <Setter Property="Background" Value="#FFFFFF"/>
-                            <Setter Property="Foreground" Value="#C62828"/>
-                            <Setter Property="BorderBrush" Value="#C62828"/>
-                            <Setter Property="BorderThickness" Value="1"/>
-                            <Setter Property="FontWeight" Value="SemiBold"/>
-                            <Setter Property="FontSize" Value="12"/>
-                            <Setter Property="Cursor" Value="Hand"/>
-                            <Style.Resources>
-                                <Style TargetType="Border">
-                                    <Setter Property="CornerRadius" Value="4"/>
-                                </Style>
-                            </Style.Resources>
-                            <Style.Triggers>
+                <Button Command="{Binding RemoveSourceCommand}" 
+                        Width="28" Height="28" Cursor="Hand" ToolTip="Remove Source">
+                    <Button.Template>
+                        <ControlTemplate TargetType="Button">
+                            <Border x:Name="border" Background="Transparent" CornerRadius="4" Padding="4">
+                                <Viewbox Width="18" Height="18">
+                                    <Path Data="M16,9V19H8V9H16M14.5,3H9.5L8.5,4H5V6H19V4H15.5L14.5,3M18,7H6V19A2,2 0 0,0 8,21H16A2,2 0 0,0 18,19V7Z" Fill="#777" x:Name="iconPath"/>
+                                </Viewbox>
+                            </Border>
+                            <ControlTemplate.Triggers>
                                 <Trigger Property="IsMouseOver" Value="True">
-                                    <Setter Property="Background" Value="#FFEBEE"/>
+                                    <Setter TargetName="border" Property="Background" Value="#eeeeee"/>
+                                    <Setter TargetName="iconPath" Property="Fill" Value="#333"/>
                                 </Trigger>
-                            </Style.Triggers>
-                        </Style>
-                    </Button.Style>
+                                <Trigger Property="IsPressed" Value="True">
+                                    <Setter TargetName="border" Property="Background" Value="#dddddd"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Button.Template>
                 </Button>
             </StackPanel>
         </Border>

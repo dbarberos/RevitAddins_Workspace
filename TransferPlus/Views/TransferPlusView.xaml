@@ -646,7 +646,7 @@
                                                 <Setter Property="BorderBrush" Value="#707070"/>
                                                 <Setter Property="BorderThickness" Value="1"/>
                                                 <Setter Property="Foreground" Value="Black"/>
-                                                <Setter Property="FontWeight" Value="SemiBold"/>
+                                                <Setter Property="FontWeight" Value="Normal"/>
                                                 <Setter Property="FontSize" Value="11.5"/>
                                                 <Setter Property="Cursor" Value="Hand"/>
                                                 <Style.Resources>
