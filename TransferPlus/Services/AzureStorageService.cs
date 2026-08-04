@@ -62,47 +62,50 @@ public static class AzureStorageService
             return new List<AzureFamilyBlobModel>();
         }
 
-        var result = new List<AzureFamilyBlobModel>();
-
-        try
+        return await Task.Run(() =>
         {
-            var containerClient = new BlobContainerClient(connectionString, containerName);
-            string prefix = string.IsNullOrWhiteSpace(rootPath) ? string.Empty : (rootPath.EndsWith("/") ? rootPath : rootPath + "/");
-
-            await foreach (BlobItem blob in containerClient.GetBlobsAsync(prefix: string.IsNullOrEmpty(prefix) ? null : prefix, cancellationToken: cancellationToken))
+            var resultList = new List<AzureFamilyBlobModel>();
+            try
             {
-                cancellationToken.ThrowIfCancellationRequested();
+                var containerClient = new BlobContainerClient(connectionString, containerName);
+                string prefix = string.IsNullOrWhiteSpace(rootPath) ? string.Empty : (rootPath.EndsWith("/") ? rootPath : rootPath + "/");
 
-                if (string.IsNullOrWhiteSpace(blob.Name)) continue;
-
-                // Only include .rfa files
-                if (!blob.Name.EndsWith(".rfa", StringComparison.OrdinalIgnoreCase)) continue;
-
-                // Exclude Revit backup files (e.g. MyFamily.0001.rfa)
-                if (BackupRegex.IsMatch(blob.Name)) continue;
-
-                var blobClient = containerClient.GetBlobClient(blob.Name);
-                string rawName = Path.GetFileNameWithoutExtension(blob.Name);
-
-                result.Add(new AzureFamilyBlobModel
+                var pageableBlobs = containerClient.GetBlobs(prefix: string.IsNullOrEmpty(prefix) ? null : prefix, cancellationToken: cancellationToken);
+                foreach (BlobItem blob in pageableBlobs)
                 {
-                    BlobName = blob.Name,
-                    FamilyName = rawName,
-                    ContentLength = blob.Properties.ContentLength ?? 0,
-                    LastModified = blob.Properties.LastModified,
-                    ContainerName = containerName,
-                    FullUri = blobClient.Uri.AbsoluteUri
-                });
+                    cancellationToken.ThrowIfCancellationRequested();
+
+                    if (string.IsNullOrWhiteSpace(blob.Name)) continue;
+
+                    // Only include .rfa files
+                    if (!blob.Name.EndsWith(".rfa", StringComparison.OrdinalIgnoreCase)) continue;
+
+                    // Exclude Revit backup files (e.g. MyFamily.0001.rfa)
+                    if (BackupRegex.IsMatch(blob.Name)) continue;
+
+                    var blobClient = containerClient.GetBlobClient(blob.Name);
+                    string rawName = Path.GetFileNameWithoutExtension(blob.Name);
+
+                    resultList.Add(new AzureFamilyBlobModel
+                    {
+                        BlobName = blob.Name,
+                        FamilyName = rawName,
+                        ContentLength = blob.Properties.ContentLength ?? 0,
+                        LastModified = blob.Properties.LastModified,
+                        ContainerName = containerName,
+                        FullUri = blobClient.Uri.AbsoluteUri
+                    });
+                }
+
+                TelemetryLogger.LogInfo($"Recuperadas {resultList.Count} familias .rfa de Azure Storage container '{containerName}'");
+            }
+            catch (Exception ex)
+            {
+                TelemetryLogger.LogError($"Error al obtener familias .rfa del contenedor Azure '{containerName}'", ex);
             }
 
-            TelemetryLogger.LogInfo($"Recuperadas {result.Count} familias .rfa de Azure Storage container '{containerName}'");
-        }
-        catch (Exception ex)
-        {
-            TelemetryLogger.LogError($"Error al obtener familias .rfa del contenedor Azure '{containerName}'", ex);
-        }
-
-        return result;
+            return resultList;
+        }, cancellationToken);
     }
 
     /// <summary>

@@ -14,12 +14,20 @@ public partial class RenamePreviewItem : ObservableObject
     [ObservableProperty]
     private bool _isMatchingFilter;
 
-    public ElementId SourceId { get; init; }
+    public ElementId? SourceId { get; init; }
+    public string? FamilyIdentifier { get; init; }
     public string OriginalName { get; init; }
 
     public RenamePreviewItem(ElementId sourceId, string originalName)
     {
         SourceId = sourceId;
+        OriginalName = originalName;
+        NewName = originalName;
+    }
+
+    public RenamePreviewItem(string familyIdentifier, string originalName)
+    {
+        FamilyIdentifier = familyIdentifier;
         OriginalName = originalName;
         NewName = originalName;
     }

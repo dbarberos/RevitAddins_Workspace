@@ -65,13 +65,13 @@ public partial class TreeItemViewModel : ObservableObject
         }
     }
 
-    public Elemento? Item { get; set; }
+    public object? Item { get; set; }
 
     public ObservableCollection<TreeItemViewModel> Children { get; } = new();
 
     public TreeItemViewModel? Parent { get; set; }
 
-    public TreeItemViewModel(string name, string category, Elemento? item = null, TreeItemViewModel? parent = null, int level = 0)
+    public TreeItemViewModel(string name, string category, object? item = null, TreeItemViewModel? parent = null, int level = 0)
     {
         Name = name;
         Category = category;

@@ -42,6 +42,21 @@ public partial class TransferPlusView : Window
         BtnRegexHelper.IsChecked = false;
     }
 
+    private void TreeView_SelectedItemChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
+    {
+        if (DataContext is TransferPlusViewModel vm && e.NewValue is TreeItemViewModel selectedNode)
+        {
+            if (selectedNode.Level == 2 && selectedNode.Category == "Family" && selectedNode.Item is Models.FamilyItemModel famItem)
+            {
+                vm.SelectedFamily = famItem;
+            }
+            else
+            {
+                vm.SelectedFamily = null;
+            }
+        }
+    }
+
     private void CloseDatePopup(object sender, RoutedEventArgs e)
     {
         BtnDateHelper.IsChecked = false;

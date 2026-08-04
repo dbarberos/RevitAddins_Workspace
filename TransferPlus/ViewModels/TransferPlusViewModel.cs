@@ -96,6 +96,8 @@ public partial class TransferPlusViewModel : ObservableObject
     [ObservableProperty]
     private bool _copyLinks;
 
+
+
     [ObservableProperty]
     private bool _transformNone;
 
@@ -113,6 +115,106 @@ public partial class TransferPlusViewModel : ObservableObject
 
     private List<Elemento> _allSourceItems = new();
     private Configuraciones _config = new();
+
+    // Families Manager State Properties
+    private List<FamilyItemModel> _familyItems = new();
+    private FamilyRevitService _familyRevitService = new();
+
+    [ObservableProperty]
+    private bool _isSingleFamilySelected;
+
+    [ObservableProperty]
+    private FamilyItemModel? _selectedFamily;
+
+    [ObservableProperty]
+    private string _selectedFamilyName = string.Empty;
+
+    [ObservableProperty]
+    private string _selectedFamilyRevitVersion = string.Empty;
+
+    [ObservableProperty]
+    private object? _selectedFamilyThumbnail;
+
+    [ObservableProperty]
+    private ObservableCollection<FamilySymbolItemModel> _selectedFamilySymbols = new();
+
+    [ObservableProperty]
+    private int _selectedCategoryCount;
+
+    [ObservableProperty]
+    private int _selectedFamilyCount;
+
+    public bool HasCheckedFamilies => SelectedFamilyCount > 0;
+
+    partial void OnSelectedFamilyCountChanged(int value)
+    {
+        OnPropertyChanged(nameof(HasCheckedFamilies));
+    }
+
+    [ObservableProperty]
+    private int _totalFamiliesLoadedCount;
+
+    [ObservableProperty]
+    private string _counterLabelText = "Elements Checked";
+
+    [ObservableProperty]
+    private int _counterValue;
+
+    private System.Threading.CancellationTokenSource? _thumbnailCts;
+
+    partial void OnSelectedFamilyChanged(FamilyItemModel? value)
+    {
+        _thumbnailCts?.Cancel();
+
+        if (value != null)
+        {
+            SelectedFamilyName = value.Name;
+            SelectedFamilyRevitVersion = value.RevitVersion;
+            SelectedFamilySymbols = new ObservableCollection<FamilySymbolItemModel>(value.Symbols ?? new List<FamilySymbolItemModel>());
+            
+            if (value.Thumbnail != null)
+            {
+                SelectedFamilyThumbnail = value.Thumbnail;
+            }
+            else
+            {
+                SelectedFamilyThumbnail = null;
+                _thumbnailCts = new System.Threading.CancellationTokenSource();
+                _ = LoadSelectedFamilyThumbnailAsync(value, _thumbnailCts.Token);
+            }
+        }
+        else
+        {
+            SelectedFamilyName = string.Empty;
+            SelectedFamilyRevitVersion = string.Empty;
+            SelectedFamilyThumbnail = null;
+            SelectedFamilySymbols = new ObservableCollection<FamilySymbolItemModel>();
+        }
+    }
+
+    private async System.Threading.Tasks.Task LoadSelectedFamilyThumbnailAsync(FamilyItemModel family, System.Threading.CancellationToken token)
+    {
+        family.IsLoadingThumbnail = true;
+        try
+        {
+            var thumbnail = await FamilyThumbnailService.GetPreviewImageAsync(family, token);
+            if (!token.IsCancellationRequested && thumbnail != null)
+            {
+                family.Thumbnail = thumbnail;
+                if (SelectedFamily == family)
+                {
+                    SelectedFamilyThumbnail = thumbnail;
+                }
+            }
+        }
+        finally
+        {
+            if (!token.IsCancellationRequested)
+            {
+                family.IsLoadingThumbnail = false;
+            }
+        }
+    }
 
     partial void OnIncludeSheetsWithViewsChanged(bool oldValue, bool newValue)
     {
@@ -217,8 +319,16 @@ public partial class TransferPlusViewModel : ObservableObject
         {
             if (value.Adoc != null)
             {
-                // Standard Revit Document source
-                LoadSourceItems(value.Adoc);
+                if (IsFamiliesManagerActive)
+                {
+                    // Families Manager active: Load families from the standard document
+                    _ = LoadFamiliesFromSourceAsync(value.Nombre);
+                }
+                else
+                {
+                    // Standard Revit Document source
+                    LoadSourceItems(value.Adoc);
+                }
 
                 // Rebuild destination documents: all open non-linked documents except the selected source
                 DestinationDocuments.Clear();
@@ -237,17 +347,25 @@ public partial class TransferPlusViewModel : ObservableObject
             else
             {
                 // Family Source (Local Directory or Azure Storage)
-                RootNodes.Clear();
-                _allSourceItems.Clear();
-                CheckedElementsCount = 0;
                 DestinationDocuments.Clear();
-                TransferPlus.Services.LoggerService.LogInfo($"OnSelectedSourceDocumentChanged: Selected family source '{value.Nombre}'. Use 'Activate' button in Families Manager panel to load and transfer families.");
+                if (IsFamiliesManagerActive)
+                {
+                    _ = LoadFamiliesFromSourceAsync(value.Nombre);
+                }
+                else
+                {
+                    RootNodes.Clear();
+                    _allSourceItems.Clear();
+                    CheckedElementsCount = 0;
+                    TransferPlus.Services.LoggerService.LogInfo($"OnSelectedSourceDocumentChanged: Selected family source '{value.Nombre}'. Use 'Activate' button in Families Manager panel to load and transfer families.");
+                }
             }
         }
         else
         {
             RootNodes.Clear();
             _allSourceItems.Clear();
+            _familyItems.Clear();
             CheckedElementsCount = 0;
             DestinationDocuments.Clear();
         }
@@ -323,6 +441,89 @@ public partial class TransferPlusViewModel : ObservableObject
             ProgressPercentage = 0;
             UpdateCheckedCount();
         }
+    }
+
+    private async Task LoadFamiliesFromSourceAsync(string sourceName)
+    {
+        TransferPlus.Services.LoggerService.LogInfo($"LoadFamiliesFromSourceAsync: Starting family collection from '{sourceName}'...");
+        IsBusy = true;
+        StatusMessage = "Collecting families...";
+        ProgressPercentage = 0;
+
+        try
+        {
+            var provider = TransferPlus.Services.Providers.FamilyProviderFactory.CreateProvider(sourceName, _targetDoc, _familyRevitService);
+            var familyItems = await provider.GetFamiliesAsync();
+            _familyItems = familyItems.ToList();
+            
+            // Set Revit version without extracting thumbnails (Thumbnails load asynchronously on selection)
+            foreach (var fam in _familyItems)
+            {
+                if (fam.NativeFamily is Family nativeFam && _targetDoc != null)
+                {
+                    fam.RevitVersion = _app.Application.VersionNumber;
+                }
+            }
+            
+            TotalFamiliesLoadedCount = _familyItems.Count;
+            CounterValue = TotalFamiliesLoadedCount;
+            CounterLabelText = "family(ies) loaded";
+
+            TransferPlus.Services.LoggerService.LogInfo($"LoadFamiliesFromSourceAsync: Collection complete. Collected {_familyItems.Count} families. Initiating family tree build...");
+            
+            System.Windows.Threading.Dispatcher.CurrentDispatcher.Invoke(() =>
+            {
+                BuildFamilyTree();
+            });
+        }
+        catch (Exception ex)
+        {
+            TransferPlus.Services.LoggerService.LogError("LoadFamiliesFromSourceAsync", ex);
+        }
+        finally
+        {
+            IsBusy = false;
+            StatusMessage = "Ready";
+            ProgressPercentage = 0;
+            UpdateCheckedCount();
+        }
+    }
+
+    private void BuildFamilyTree()
+    {
+        TransferPlus.Services.LoggerService.LogInfo("BuildFamilyTree: Generating TreeView nodes from collected families...");
+        RootNodes.Clear();
+        if (!_familyItems.Any()) return;
+
+        var allNode = new TreeItemViewModel("All", "Root", null, null, 0)
+        {
+            Count = _familyItems.Count,
+            IsExpanded = true
+        };
+
+        var groups = _familyItems.GroupBy(x => x.CategoryName).OrderBy(g => g.Key);
+
+        foreach (var group in groups)
+        {
+            var categoryNode = new TreeItemViewModel(group.Key, "Category", null, allNode, 1)
+            {
+                Count = group.Count()
+            };
+            
+            foreach (var fam in group.OrderBy(x => x.Name))
+            {
+                var familyNode = new TreeItemViewModel(fam.Name, "Family", fam, categoryNode, 2)
+                {
+                    Count = 1
+                };
+                categoryNode.Children.Add(familyNode);
+            }
+            allNode.Children.Add(categoryNode);
+        }
+
+        allNode.UpdateRecursiveCounts();
+        RootNodes.Add(allNode);
+        TransferPlus.Services.LoggerService.LogInfo($"BuildFamilyTree: Tree built successfully. Total nodes grouped in root: {allNode.Count}");
     }
 
     private void BuildTree()
@@ -500,8 +701,24 @@ public partial class TransferPlusViewModel : ObservableObject
                         match = searchRegex.IsMatch(node.Category);
                         if (!match && node.Item != null)
                         {
-                            if (node.Item.Familia != null) match = searchRegex.IsMatch(node.Item.Familia);
-                            if (!match && node.Item.Tipo != null) match = searchRegex.IsMatch(node.Item.Tipo);
+                            if (node.Item is Elemento elm)
+                            {
+                                if (elm.Familia != null) match = searchRegex.IsMatch(elm.Familia);
+                                if (!match && elm.Tipo != null) match = searchRegex.IsMatch(elm.Tipo);
+                            }
+                            else if (node.Item is FamilyItemModel fam)
+                            {
+                                if (fam.Name != null) match = searchRegex.IsMatch(fam.Name);
+                                if (!match && fam.CategoryName != null) match = searchRegex.IsMatch(fam.CategoryName);
+                                if (!match && fam.RevitVersion != null) match = searchRegex.IsMatch(fam.RevitVersion);
+                                if (!match && fam.Symbols != null)
+                                {
+                                    foreach (var sym in fam.Symbols)
+                                    {
+                                        if (sym.Name != null && searchRegex.IsMatch(sym.Name)) { match = true; break; }
+                                    }
+                                }
+                            }
                         }
                     }
                 }
@@ -513,8 +730,24 @@ public partial class TransferPlusViewModel : ObservableObject
                         match = node.Category.ToLowerInvariant().Contains(searchText);
                         if (!match && node.Item != null)
                         {
-                            if (node.Item.Familia != null) match = node.Item.Familia.ToLowerInvariant().Contains(searchText);
-                            if (!match && node.Item.Tipo != null) match = node.Item.Tipo.ToLowerInvariant().Contains(searchText);
+                            if (node.Item is Elemento elm)
+                            {
+                                if (elm.Familia != null) match = elm.Familia.ToLowerInvariant().Contains(searchText);
+                                if (!match && elm.Tipo != null) match = elm.Tipo.ToLowerInvariant().Contains(searchText);
+                            }
+                            else if (node.Item is FamilyItemModel fam)
+                            {
+                                if (fam.Name != null) match = fam.Name.ToLowerInvariant().Contains(searchText);
+                                if (!match && fam.CategoryName != null) match = fam.CategoryName.ToLowerInvariant().Contains(searchText);
+                                if (!match && fam.RevitVersion != null) match = fam.RevitVersion.ToLowerInvariant().Contains(searchText);
+                                if (!match && fam.Symbols != null)
+                                {
+                                    foreach (var sym in fam.Symbols)
+                                    {
+                                        if (sym.Name != null && sym.Name.ToLowerInvariant().Contains(searchText)) { match = true; break; }
+                                    }
+                                }
+                            }
                         }
                     }
                 }
@@ -859,9 +1092,9 @@ public partial class TransferPlusViewModel : ObservableObject
     {
         foreach (var node in nodes)
         {
-            if (node.Item != null && node.IsChecked == true)
+            if (node.Item is Elemento elm && node.IsChecked == true)
             {
-                list.Add(node.Item);
+                list.Add(elm);
             }
             CollectCheckedItems(node.Children, list);
         }
@@ -869,14 +1102,52 @@ public partial class TransferPlusViewModel : ObservableObject
 
     private bool HasCheckedElements()
     {
+        if (IsFamiliesManagerActive) return SelectedFamilyCount > 0;
         return CheckedElementsCount > 0;
+    }
+
+    private void CollectCheckedFamilies(IEnumerable<TreeItemViewModel> nodes, List<FamilyItemModel> list)
+    {
+        foreach (var node in nodes)
+        {
+            if (node.Item is FamilyItemModel fam && node.IsChecked == true)
+            {
+                list.Add(fam);
+            }
+            CollectCheckedFamilies(node.Children, list);
+        }
     }
 
     private void UpdateCheckedCount()
     {
         var checkedItems = new List<Elemento>();
-        CollectCheckedItems(RootNodes, checkedItems);
-        CheckedElementsCount = checkedItems.Count;
+        
+        if (IsFamiliesManagerActive)
+        {
+            var checkedFamilies = new List<FamilyItemModel>();
+            CollectCheckedFamilies(RootNodes, checkedFamilies);
+            
+            SelectedFamilyCount = checkedFamilies.Count;
+            CounterValue = SelectedFamilyCount;
+            CounterLabelText = SelectedFamilyCount == 1 ? "family checked" : "families checked";
+            
+            IsSingleFamilySelected = SelectedFamilyCount <= 1;
+            
+            // Sync Category Count
+            var categories = new HashSet<string>();
+            foreach (var fam in checkedFamilies)
+            {
+                categories.Add(fam.CategoryName);
+            }
+            SelectedCategoryCount = categories.Count;
+        }
+        else
+        {
+            CollectCheckedItems(RootNodes, checkedItems);
+            CheckedElementsCount = checkedItems.Count;
+            CounterValue = CheckedElementsCount;
+            CounterLabelText = CheckedElementsCount == 1 ? "element checked" : "elements checked";
+        }
         
         TransferCommand.NotifyCanExecuteChanged();
         OpenRenamePanelCommand.NotifyCanExecuteChanged();
@@ -885,27 +1156,59 @@ public partial class TransferPlusViewModel : ObservableObject
         // Sincronización dinámica con la paleta si está abierta o hay datos
         if (IsRenamePanelOpen || RenamePreviewItems.Any())
         {
-            var currentPreviewIds = RenamePreviewItems.Select(x => x.SourceId).ToHashSet();
-            var newCheckedIds = checkedItems.Select(x => x.eID).ToHashSet();
-
-            // Eliminar los que ya no están seleccionados
-            for (int i = RenamePreviewItems.Count - 1; i >= 0; i--)
+            if (IsFamiliesManagerActive)
             {
-                if (!newCheckedIds.Contains(RenamePreviewItems[i].SourceId))
+                var checkedFamilies = new List<FamilyItemModel>();
+                CollectCheckedFamilies(RootNodes, checkedFamilies);
+                
+                var currentPreviewIds = RenamePreviewItems.Select(x => x.FamilyIdentifier).Where(x => x != null).ToHashSet();
+                var newCheckedIds = checkedFamilies.Select(x => x.Name).ToHashSet();
+
+                // Eliminar los que ya no están seleccionados
+                for (int i = RenamePreviewItems.Count - 1; i >= 0; i--)
                 {
-                    RenamePreviewItems[i].PropertyChanged -= PreviewItem_PropertyChanged;
-                    RenamePreviewItems.RemoveAt(i);
+                    if (RenamePreviewItems[i].FamilyIdentifier == null || !newCheckedIds.Contains(RenamePreviewItems[i].FamilyIdentifier!))
+                    {
+                        RenamePreviewItems[i].PropertyChanged -= PreviewItem_PropertyChanged;
+                        RenamePreviewItems.RemoveAt(i);
+                    }
+                }
+
+                // Añadir los nuevos seleccionados
+                foreach (var item in checkedFamilies)
+                {
+                    if (!currentPreviewIds.Contains(item.Name))
+                    {
+                        var pItem = new RenamePreviewItem(item.Name, item.Name);
+                        pItem.PropertyChanged += PreviewItem_PropertyChanged;
+                        RenamePreviewItems.Add(pItem);
+                    }
                 }
             }
-
-            // Añadir los nuevos seleccionados
-            foreach (var item in checkedItems)
+            else
             {
-                if (!currentPreviewIds.Contains(item.eID))
+                var currentPreviewIds = RenamePreviewItems.Select(x => x.SourceId).Where(x => x != null).ToHashSet();
+                var newCheckedIds = checkedItems.Select(x => x.eID).ToHashSet();
+
+                // Eliminar los que ya no están seleccionados
+                for (int i = RenamePreviewItems.Count - 1; i >= 0; i--)
                 {
-                    var pItem = new RenamePreviewItem(item.eID, item.Nombre);
-                    pItem.PropertyChanged += PreviewItem_PropertyChanged;
-                    RenamePreviewItems.Add(pItem);
+                    if (RenamePreviewItems[i].SourceId == null || !newCheckedIds.Contains(RenamePreviewItems[i].SourceId))
+                    {
+                        RenamePreviewItems[i].PropertyChanged -= PreviewItem_PropertyChanged;
+                        RenamePreviewItems.RemoveAt(i);
+                    }
+                }
+
+                // Añadir los nuevos seleccionados
+                foreach (var item in checkedItems)
+                {
+                    if (!currentPreviewIds.Contains(item.eID))
+                    {
+                        var pItem = new RenamePreviewItem(item.eID, item.Nombre);
+                        pItem.PropertyChanged += PreviewItem_PropertyChanged;
+                        RenamePreviewItems.Add(pItem);
+                    }
                 }
             }
 
@@ -1120,24 +1423,46 @@ public partial class TransferPlusViewModel : ObservableObject
     {
         if (SelectedSourceDocument == null) return;
 
-        var checkedItems = new List<Elemento>();
-        CollectCheckedItems(RootNodes, checkedItems);
-
-        if (!checkedItems.Any())
-        {
-            TaskDialog.Show("TransferPlus", "No elements checked for renaming.");
-            return;
-        }
-
         RenamePreviewItems.Clear();
-        foreach (var item in checkedItems)
-        {
-            var pItem = new RenamePreviewItem(item.eID, item.Nombre);
-            pItem.PropertyChanged += PreviewItem_PropertyChanged;
-            RenamePreviewItems.Add(pItem);
-        }
-        SelectAllRenameItems = true;
 
+        if (IsFamiliesManagerActive)
+        {
+            var checkedFamilies = new List<FamilyItemModel>();
+            CollectCheckedFamilies(RootNodes, checkedFamilies);
+
+            if (!checkedFamilies.Any())
+            {
+                TaskDialog.Show("TransferPlus", "No elements checked for renaming.");
+                return;
+            }
+
+            foreach (var item in checkedFamilies)
+            {
+                var pItem = new RenamePreviewItem(item.Name, item.Name);
+                pItem.PropertyChanged += PreviewItem_PropertyChanged;
+                RenamePreviewItems.Add(pItem);
+            }
+        }
+        else
+        {
+            var checkedItems = new List<Elemento>();
+            CollectCheckedItems(RootNodes, checkedItems);
+
+            if (!checkedItems.Any())
+            {
+                TaskDialog.Show("TransferPlus", "No elements checked for renaming.");
+                return;
+            }
+
+            foreach (var item in checkedItems)
+            {
+                var pItem = new RenamePreviewItem(item.eID, item.Nombre);
+                pItem.PropertyChanged += PreviewItem_PropertyChanged;
+                RenamePreviewItems.Add(pItem);
+            }
+        }
+        
+        SelectAllRenameItems = true;
         IsRenamePanelOpen = true;
         UpdateRenamePreviews();
     }

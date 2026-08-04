@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using CommunityToolkit.Mvvm.ComponentModel;
 
 namespace TransferPlus.Models
 {
@@ -6,19 +7,27 @@ namespace TransferPlus.Models
     /// Representa un tipo/símbolo individual dentro de una familia de Revit.
     /// Contiene solo tipos primitivos para garantizar desacoplamiento total de la API de Revit en la vista.
     /// </summary>
-    public class FamilySymbolItemModel
+    public partial class FamilySymbolItemModel : ObservableObject
     {
-        public string Name { get; set; } = string.Empty;
-        public string FamilyName { get; set; } = string.Empty;
-        public bool IsActive { get; set; }
-        public bool IsSelected { get; set; } = true;
+        [ObservableProperty]
+        private string _name = string.Empty;
+
+        [ObservableProperty]
+        private string _familyName = string.Empty;
+
+        [ObservableProperty]
+        private bool _isActive;
+
+        [ObservableProperty]
+        private bool _isSelected = true;
+
         public object? NativeSymbol { get; set; }
     }
 
     /// <summary>
     /// Modelo de datos para representar una Familia de Revit en la interfaz de usuario.
     /// </summary>
-    public class FamilyItemModel
+    public partial class FamilyItemModel : ObservableObject
     {
         public string Name { get; set; } = string.Empty;
         public string CategoryName { get; set; } = string.Empty;
@@ -28,6 +37,15 @@ namespace TransferPlus.Models
         public bool IsSelected { get; set; }
         public string StatusMessage { get; set; } = "Disponible";
         public string ImagePreviewUrl { get; set; } = string.Empty;
+        
+        public string RevitVersion { get; set; } = string.Empty;
+        
+        [ObservableProperty]
+        private object? _thumbnail;
+
+        [ObservableProperty]
+        private bool _isLoadingThumbnail;
+
         public List<FamilySymbolItemModel> Symbols { get; set; } = new();
 
         /// <summary>
