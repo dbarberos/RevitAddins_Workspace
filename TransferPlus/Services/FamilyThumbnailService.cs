@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Drawing;
 using System.IO;
 using System.Runtime.InteropServices;
@@ -19,63 +20,161 @@ namespace TransferPlus.Services
         [return: MarshalAs(UnmanagedType.Bool)]
         private static extern bool DeleteObject(IntPtr hObject);
 
+        private static readonly ConcurrentDictionary<string, BitmapSource> _thumbnailCache = new();
+
+        /// <summary>
+        /// Extracts a preview image for the given family model.
+        /// IMPORTANT: TransferPlus opens as a MODAL dialog (ShowDialog), which means Revit's
+        /// idle loop never fires and ExternalEvent/RevitTask will NEVER complete.
+        /// Therefore, for native families we extract the preview SYNCHRONOUSLY on the
+        /// WPF dispatcher thread (which IS the Revit API thread in a modal dialog context).
+        /// Shell extraction for disk files runs on a background thread.
+        /// </summary>
         public static async Task<BitmapSource?> GetPreviewImageAsync(FamilyItemModel family, CancellationToken cancellationToken)
         {
+            if (family == null) return null;
+
+            // 1. Return immediately if family model already has cached thumbnail
+            if (family.Thumbnail is BitmapSource existingBmp)
+            {
+                LoggerService.LogInfo($"[ThumbnailService] Instant cache hit from FamilyItemModel for '{family.Name}'.");
+                return existingBmp;
+            }
+
+            // 2. Check static session cache
+            string cacheKey = $"{family.SourceName}_{family.Name}";
+            if (_thumbnailCache.TryGetValue(cacheKey, out var cachedBmp))
+            {
+                family.Thumbnail = cachedBmp;
+                LoggerService.LogInfo($"[ThumbnailService] Instant cache hit from session dictionary for '{family.Name}'.");
+                return cachedBmp;
+            }
+
             try
             {
+                BitmapSource? result = null;
+
+                // --- Strategy A: Native Revit Family (synchronous on current thread) ---
                 if (family.NativeFamily is Family nativeFam && nativeFam.Document != null)
                 {
-                    // Open Document Element
-                    return await RevitTask.RunAsync(app =>
-                    {
-                        if (cancellationToken.IsCancellationRequested) return null;
+                    LoggerService.LogInfo($"[ThumbnailService] Extracting preview SYNCHRONOUSLY for native family '{family.Name}'...");
+                    result = ExtractNativeFamilyThumbnail(nativeFam, cancellationToken);
+                }
 
-                        var doc = nativeFam.Document;
-                        var symbolIds = nativeFam.GetFamilySymbolIds();
-                        if (symbolIds.Count == 0) return null;
-                        
-                        var elementType = doc.GetElement(symbolIds.First()) as ElementType;
-                        if (elementType != null)
-                        {
-                            using (Bitmap bmp = elementType.GetPreviewImage(new System.Drawing.Size(128, 128)))
-                            {
-                                if (bmp != null)
-                                {
-                                    IntPtr hBitmap = bmp.GetHbitmap();
-                                    try
-                                    {
-                                        var bmpSource = Imaging.CreateBitmapSourceFromHBitmap(
-                                            hBitmap,
-                                            IntPtr.Zero,
-                                            Int32Rect.Empty,
-                                            BitmapSizeOptions.FromEmptyOptions());
-                                        bmpSource.Freeze(); // Make it cross-thread safe
-                                        return bmpSource;
-                                    }
-                                    finally
-                                    {
-                                        DeleteObject(hBitmap); // Prevent memory leak
-                                    }
-                                }
-                            }
-                        }
-                        return null;
-                    });
-                }
-                else if (!string.IsNullOrEmpty(family.SourceName) && File.Exists(family.SourceName))
+                // --- Strategy B: Disk file fallback (Local .rfa, Linked .rvt, Azure cached .rfa) ---
+                if (result == null && !cancellationToken.IsCancellationRequested)
                 {
-                    // Local File (Extracted without locking)
-                    return await Task.Run(() => 
+                    string? diskPath = ResolveDiskPath(family);
+                    if (!string.IsNullOrEmpty(diskPath))
                     {
-                        if (cancellationToken.IsCancellationRequested) return null;
-                        return ExtractShellThumbnail(family.SourceName, 128);
-                    }, cancellationToken);
+                        LoggerService.LogInfo($"[ThumbnailService] Executing Windows Shell extraction (256px) for '{diskPath}'...");
+                        result = await Task.Run(() =>
+                        {
+                            if (cancellationToken.IsCancellationRequested) return null;
+                            return ExtractShellThumbnail(diskPath, 256);
+                        }, cancellationToken);
+                    }
                 }
+
+                if (result != null)
+                {
+                    _thumbnailCache[cacheKey] = result;
+                    family.Thumbnail = result;
+                    LoggerService.LogInfo($"[ThumbnailService] Successfully cached preview for '{family.Name}'.");
+                    return result;
+                }
+                else
+                {
+                    LoggerService.LogWarning($"[ThumbnailService] No preview image found for '{family.Name}'.");
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                LoggerService.LogInfo($"[ThumbnailService] Cancelled for '{family.Name}'.");
             }
             catch (Exception ex)
             {
-                LoggerService.LogError($"Failed to load preview image for {family.Name}", ex);
+                LoggerService.LogError($"[ThumbnailService] Exception while extracting thumbnail for '{family.Name}'", ex);
             }
+            return null;
+        }
+
+        /// <summary>
+        /// Extracts the preview image from a native Revit Family object SYNCHRONOUSLY.
+        /// This is safe because TransferPlus runs as a modal dialog, so the current
+        /// thread IS Revit's API thread.
+        /// </summary>
+        private static BitmapSource? ExtractNativeFamilyThumbnail(Family nativeFam, CancellationToken ct)
+        {
+            try
+            {
+                var doc = nativeFam.Document;
+                var symbolIds = nativeFam.GetFamilySymbolIds();
+                if (symbolIds.Count == 0)
+                {
+                    LoggerService.LogWarning($"[ThumbnailService] Native family '{nativeFam.Name}' has 0 symbol IDs.");
+                    return null;
+                }
+
+                foreach (var symId in symbolIds)
+                {
+                    if (ct.IsCancellationRequested) return null;
+
+                    if (doc.GetElement(symId) is ElementType elementType)
+                    {
+                        Bitmap? bmp = null;
+                        try
+                        {
+                            bmp = elementType.GetPreviewImage(new System.Drawing.Size(256, 256));
+                        }
+                        catch { }
+
+                        bmp ??= elementType.GetPreviewImage(new System.Drawing.Size(128, 128));
+
+                        if (bmp != null)
+                        {
+                            using (bmp)
+                            {
+                                IntPtr hBitmap = bmp.GetHbitmap();
+                                try
+                                {
+                                    var bmpSource = Imaging.CreateBitmapSourceFromHBitmap(
+                                        hBitmap,
+                                        IntPtr.Zero,
+                                        Int32Rect.Empty,
+                                        BitmapSizeOptions.FromEmptyOptions());
+                                    bmpSource.Freeze();
+                                    return bmpSource;
+                                }
+                                finally
+                                {
+                                    DeleteObject(hBitmap);
+                                }
+                            }
+                        }
+                    }
+                }
+                LoggerService.LogWarning($"[ThumbnailService] GetPreviewImage returned NULL for all symbols in '{nativeFam.Name}'.");
+            }
+            catch (Exception ex)
+            {
+                LoggerService.LogError($"[ThumbnailService] Error extracting native preview for '{nativeFam.Name}'", ex);
+            }
+            return null;
+        }
+
+        /// <summary>
+        /// Resolves the on-disk file path for Shell thumbnail extraction.
+        /// Supports: Local .rfa paths, linked model .rvt paths, and Azure cached files.
+        /// </summary>
+        private static string? ResolveDiskPath(FamilyItemModel family)
+        {
+            if (!string.IsNullOrEmpty(family.ImagePreviewUrl) && File.Exists(family.ImagePreviewUrl))
+                return family.ImagePreviewUrl;
+            if (!string.IsNullOrEmpty(family.SourceName) && File.Exists(family.SourceName))
+                return family.SourceName;
+            if (family.NativeFamily is Family fam && fam.Document?.PathName is string docPath && File.Exists(docPath))
+                return docPath;
             return null;
         }
 
@@ -110,6 +209,71 @@ namespace TransferPlus.Services
                 LoggerService.LogInfo($"Shell thumbnail extraction failed for {filePath}: {ex.Message}");
             }
             return null;
+        }
+
+        /// <summary>
+        /// Generates a clean 2D vector reference symbol preview icon for non-3D families (profiles, annotations, drafting components).
+        /// </summary>
+        private static BitmapSource CreateFallback2DReferenceIcon(string familyName, string categoryName)
+        {
+            int width = 96;
+            int height = 96;
+            using (var bitmap = new System.Drawing.Bitmap(width, height))
+            {
+                using (var g = System.Drawing.Graphics.FromImage(bitmap))
+                {
+                    g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+                    g.Clear(System.Drawing.Color.FromArgb(248, 249, 250));
+
+                    // Draw outer border
+                    using (var penBorder = new System.Drawing.Pen(System.Drawing.Color.FromArgb(220, 224, 230), 1))
+                    {
+                        g.DrawRectangle(penBorder, 0, 0, width - 1, height - 1);
+                    }
+
+                    // Draw 2D blueprint / reference geometry box
+                    using (var penBox = new System.Drawing.Pen(System.Drawing.Color.FromArgb(0, 122, 204), 1.5f))
+                    {
+                        g.DrawRectangle(penBox, 20, 20, 56, 44);
+                    }
+
+                    // Draw dashed reference axes
+                    using (var penDash = new System.Drawing.Pen(System.Drawing.Color.FromArgb(160, 180, 200), 1))
+                    {
+                        penDash.DashStyle = System.Drawing.Drawing2D.DashStyle.Dash;
+                        g.DrawLine(penDash, 48, 10, 48, 74);
+                        g.DrawLine(penDash, 10, 42, 86, 42);
+                    }
+
+                    // Draw "2D SYMBOL" label
+                    using (var font = new System.Drawing.Font("Segoe UI", 7.5f, System.Drawing.FontStyle.Bold))
+                    using (var brushText = new System.Drawing.SolidBrush(System.Drawing.Color.FromArgb(100, 110, 120)))
+                    {
+                        var sf = new System.Drawing.StringFormat
+                        {
+                            Alignment = System.Drawing.StringAlignment.Center,
+                            LineAlignment = System.Drawing.StringAlignment.Center
+                        };
+                        g.DrawString("2D SYMBOL", font, brushText, new System.Drawing.RectangleF(0, 72, width, 20), sf);
+                    }
+                }
+
+                IntPtr hBitmap = bitmap.GetHbitmap();
+                try
+                {
+                    var bmpSource = Imaging.CreateBitmapSourceFromHBitmap(
+                        hBitmap,
+                        IntPtr.Zero,
+                        Int32Rect.Empty,
+                        BitmapSizeOptions.FromEmptyOptions());
+                    bmpSource.Freeze();
+                    return bmpSource;
+                }
+                finally
+                {
+                    DeleteObject(hBitmap);
+                }
+            }
         }
 
         // P/Invoke for Shell

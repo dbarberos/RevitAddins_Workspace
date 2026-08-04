@@ -139,6 +139,9 @@ public partial class TransferPlusViewModel : ObservableObject
     private ObservableCollection<FamilySymbolItemModel> _selectedFamilySymbols = new();
 
     [ObservableProperty]
+    private FamilySymbolItemModel? _selectedSymbol;
+
+    [ObservableProperty]
     private int _selectedCategoryCount;
 
     [ObservableProperty]
@@ -146,9 +149,26 @@ public partial class TransferPlusViewModel : ObservableObject
 
     public bool HasCheckedFamilies => SelectedFamilyCount > 0;
 
+    public bool HasFamilyDetails => SelectedFamily != null || HasCheckedFamilies;
+
+    public bool IsSingleFamilyDetails => SelectedFamily != null || SelectedFamilyCount == 1;
+
+    public string FamilyDetailsCardTitle
+    {
+        get
+        {
+            if (SelectedFamily != null || SelectedFamilyCount == 1) return "Family Details:";
+            if (SelectedFamilyCount > 1) return "Families Details:";
+            return "Family(ies) Details:";
+        }
+    }
+
     partial void OnSelectedFamilyCountChanged(int value)
     {
         OnPropertyChanged(nameof(HasCheckedFamilies));
+        OnPropertyChanged(nameof(HasFamilyDetails));
+        OnPropertyChanged(nameof(IsSingleFamilyDetails));
+        OnPropertyChanged(nameof(FamilyDetailsCardTitle));
     }
 
     [ObservableProperty]
@@ -164,6 +184,10 @@ public partial class TransferPlusViewModel : ObservableObject
 
     partial void OnSelectedFamilyChanged(FamilyItemModel? value)
     {
+        OnPropertyChanged(nameof(HasFamilyDetails));
+        OnPropertyChanged(nameof(IsSingleFamilyDetails));
+        OnPropertyChanged(nameof(FamilyDetailsCardTitle));
+
         _thumbnailCts?.Cancel();
 
         if (value != null)
@@ -195,24 +219,40 @@ public partial class TransferPlusViewModel : ObservableObject
     private async System.Threading.Tasks.Task LoadSelectedFamilyThumbnailAsync(FamilyItemModel family, System.Threading.CancellationToken token)
     {
         family.IsLoadingThumbnail = true;
+        var sw = System.Diagnostics.Stopwatch.StartNew();
+        TransferPlus.Services.LoggerService.LogInfo($"[Thumbnail] Starting preview fetch for family '{family.Name}' (Source: '{family.SourceName}')...");
+
         try
         {
             var thumbnail = await FamilyThumbnailService.GetPreviewImageAsync(family, token);
-            if (!token.IsCancellationRequested && thumbnail != null)
+            sw.Stop();
+
+            if (token.IsCancellationRequested)
+            {
+                TransferPlus.Services.LoggerService.LogInfo($"[Thumbnail] Request for '{family.Name}' was cancelled after {sw.ElapsedMilliseconds} ms.");
+            }
+            else if (thumbnail != null)
             {
                 family.Thumbnail = thumbnail;
                 if (SelectedFamily == family)
                 {
                     SelectedFamilyThumbnail = thumbnail;
                 }
+                TransferPlus.Services.LoggerService.LogInfo($"[Thumbnail] SUCCESS: Preview for '{family.Name}' rendered in {sw.ElapsedMilliseconds} ms ({thumbnail.PixelWidth}x{thumbnail.PixelHeight} px).");
             }
+            else
+            {
+                TransferPlus.Services.LoggerService.LogWarning($"[Thumbnail] NO IMAGE: Preview extraction for '{family.Name}' returned null after {sw.ElapsedMilliseconds} ms.");
+            }
+        }
+        catch (System.Exception ex)
+        {
+            sw.Stop();
+            TransferPlus.Services.LoggerService.LogError($"[Thumbnail] ERROR for '{family.Name}' after {sw.ElapsedMilliseconds} ms", ex);
         }
         finally
         {
-            if (!token.IsCancellationRequested)
-            {
-                family.IsLoadingThumbnail = false;
-            }
+            family.IsLoadingThumbnail = false;
         }
     }
 
@@ -540,6 +580,7 @@ public partial class TransferPlusViewModel : ObservableObject
     {
         TransferPlus.Services.LoggerService.LogInfo("BuildFamilyTree: Generating TreeView nodes from collected families...");
         RootNodes.Clear();
+        SelectedFamily = null;
         if (!_familyItems.Any()) return;
 
         // Level 0: All (Root Node)
@@ -1223,7 +1264,7 @@ public partial class TransferPlusViewModel : ObservableObject
             CounterValue = SelectedFamilyCount;
             CounterLabelText = SelectedFamilyCount == 1 ? "family checked" : "families checked";
             
-            IsSingleFamilySelected = SelectedFamilyCount <= 1;
+            IsSingleFamilySelected = SelectedFamilyCount == 1;
             
             // Sync Category Count
             var categories = new HashSet<string>();

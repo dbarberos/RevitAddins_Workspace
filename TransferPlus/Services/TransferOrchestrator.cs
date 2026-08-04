@@ -2095,151 +2095,222 @@ public class TransferOrchestrator
 
         try
         {
-            // ── 1. Multiestratega Child Discovery & Verbose Diagnostics ──
-            var allViewersInDoc = new FilteredElementCollector(origen)
-                .WhereElementIsNotElementType()
-                .Where(e => e != null && e.IsValidObject && e.Category != null &&
-                    (e.Category.Id.Value == (long)BuiltInCategory.OST_Viewers ||
-                     e.Category.Id.Value == (long)BuiltInCategory.OST_CalloutBoundary ||
-                     e.Category.Id.Value == (long)BuiltInCategory.OST_ReferenceViewer))
-                .ToList();
+            // Initialize result list early so all strategies can contribute
+            var childSectionViews = new List<View>();
 
-            LoggerService.LogInfo($"ponSections [DIAGNOSTIC]: Total viewers in entire source document: {allViewersInDoc.Count}");
-            foreach (var vElem in allViewersInDoc)
+            // ══════════════════════════════════════════════════════════════════
+            // STRATEGY 0 (PRIMARY): View-scoped FilteredElementCollector + Dereferencing
+            // ──────────────────────────────────────────────────────────────────
+            // Scopes collector to vistaorigen.Id to retrieve OST_Viewers,
+            // OST_CalloutBoundary, and OST_ReferenceViewer annotation marks.
+            // ══════════════════════════════════════════════════════════════════
+            try
             {
-                var paramRefs = vElem.Parameters.Cast<Parameter>()
-                    .Where(p => p != null && p.StorageType == StorageType.ElementId && p.AsElementId() != ElementId.InvalidElementId)
-                    .Select(p => $"{p.Definition?.Name}={p.AsElementId().Value}")
+                var categories = new List<BuiltInCategory>
+                {
+                    BuiltInCategory.OST_Viewers,
+                    BuiltInCategory.OST_CalloutBoundary,
+                    BuiltInCategory.OST_ReferenceViewer,
+                    BuiltInCategory.OST_Elev
+                };
+
+                var multiCatFilter = new ElementMulticategoryFilter(categories);
+                var viewScopedViewers = new FilteredElementCollector(origen, vistaorigen.Id)
+                    .WherePasses(multiCatFilter)
+                    .WhereElementIsNotElementType()
                     .ToList();
-                LoggerService.LogInfo($"  -> Viewer Symbol Id: {vElem.Id.Value} | Category: '{vElem.Category?.Name}' | OwnerViewId: {vElem.OwnerViewId?.Value ?? -1} | Parameters: [{string.Join(", ", paramRefs)}]");
-            }
 
-            List<ElementId> depIds = vistaorigen.GetDependentElements(null)?.ToList() ?? new List<ElementId>();
-            List<Element> depElements = depIds.Select(id => origen.GetElement(id)).Where(e => e != null && e.IsValidObject).ToList();
+                LoggerService.LogInfo($"ponSections [STRATEGY 0]: Found {viewScopedViewers.Count} view-scoped viewer mark(s) on '{vistaorigen.Name}' (Id: {vistaorigen.Id.Value}).");
 
-            var childSectionViews = depElements.OfType<View>()
-                .Where(v => v != null && v.IsValidObject && !v.IsTemplate
-                         && v.Id.Value != vistaorigen.Id.Value
-                         && (v.ViewType == ViewType.Section || v.ViewType == ViewType.Detail))
-                .ToList();
-
-            // 1a. Inspect parameters of ALL non-View elements in GetDependentElements(null)
-            foreach (var depElem in depElements.Where(e => e is not View))
-            {
-                foreach (Parameter p in depElem.Parameters)
+                foreach (var viewer in viewScopedViewers)
                 {
-                    if (p != null && p.StorageType == StorageType.ElementId && p.AsElementId() != null && p.AsElementId() != ElementId.InvalidElementId)
+                    LoggerService.LogInfo($"  [Viewer Mark {viewer.Id.Value}]: Name='{viewer.Name}', Cat='{viewer.Category?.Name}', Type='{viewer.GetType().Name}', OwnerView='{viewer.OwnerViewId?.Value}'");
+
+                    // 0a. Check all ElementId parameters on the viewer symbol
+                    foreach (Parameter p in viewer.Parameters)
                     {
-                        Element targetElem = origen.GetElement(p.AsElementId());
-                        if (targetElem is View targetView && targetView.IsValidObject && !targetView.IsTemplate &&
-                            targetView.Id.Value != vistaorigen.Id.Value &&
-                            (targetView.ViewType == ViewType.Section || targetView.ViewType == ViewType.Detail))
+                        if (p != null && p.StorageType == StorageType.ElementId &&
+                            p.AsElementId() is ElementId refId &&
+                            refId != ElementId.InvalidElementId)
                         {
-                            if (!childSectionViews.Any(cv => cv.Id.Value == targetView.Id.Value))
+                            Element refElem = origen.GetElement(refId);
+                            if (refElem != null)
                             {
-                                childSectionViews.Add(targetView);
-                                LoggerService.LogInfo($"ponSections [DISCOVERY via Dependent Viewer Param]: Found '{targetView.Name}' (Id: {targetView.Id.Value}) via viewer element {depElem.Id.Value}");
-                            }
-                        }
-                    }
-                }
-            }
+                                string targetInfo = $"{refElem.GetType().Name} '{refElem.Name}' (Cat: {refElem.Category?.Name})";
+                                if (refElem is View testV) targetInfo += $" [ViewType: {testV.ViewType}, IsTemplate: {testV.IsTemplate}]";
+                                LoggerService.LogInfo($"    -> Param '{p.Definition?.Name}' ({p.Id.Value}) = {refId.Value} -> Element: {targetInfo}");
 
-            // Normalize name to strip any copy suffixes (e.g. "ECI - EST - NAVES_DBS Copia 1 1000" -> "ECI - EST - NAVES_DBS")
-            string normalizedName = System.Text.RegularExpressions.Regex.Replace(vistaorigen.Name, @"(?i)\s+(copia|copy).*$", "").Trim();
-
-            // Find base view in source doc if vistaorigen is a copied view
-            View? baseView = new FilteredElementCollector(origen)
-                .OfClass(typeof(View))
-                .Cast<View>()
-                .FirstOrDefault(v => v != null && v.IsValidObject && !v.IsTemplate && v.Name.Equals(normalizedName, StringComparison.OrdinalIgnoreCase));
-
-            ElementId baseViewId = baseView?.Id ?? ElementId.InvalidElementId;
-
-            // 1b. Inspect all document viewers matching OwnerViewId OR referencing vistaorigen / baseView via ANY parameter
-            foreach (var vElem in allViewersInDoc)
-            {
-                if (vElem == null || !vElem.IsValidObject) continue;
-
-                // Check if this viewer symbol is placed on vistaorigen or baseView (OwnerViewId OR parameter pointing to vistaorigen/baseView)
-                bool isPlacedOnVistaOrigen = (vElem.OwnerViewId != null && (vElem.OwnerViewId.Value == vistaorigen.Id.Value || (baseViewId != ElementId.InvalidElementId && vElem.OwnerViewId.Value == baseViewId.Value)));
-                if (!isPlacedOnVistaOrigen)
-                {
-                    foreach (Parameter p in vElem.Parameters)
-                    {
-                        if (p != null && p.StorageType == StorageType.ElementId && p.AsElementId() != null)
-                        {
-                            long val = p.AsElementId().Value;
-                            if (val == vistaorigen.Id.Value || (baseViewId != ElementId.InvalidElementId && val == baseViewId.Value))
-                            {
-                                isPlacedOnVistaOrigen = true;
-                                break;
-                            }
-                        }
-                    }
-                }
-
-                if (isPlacedOnVistaOrigen)
-                {
-                    foreach (Parameter p in vElem.Parameters)
-                    {
-                        if (p != null && p.StorageType == StorageType.ElementId && p.AsElementId() != null && p.AsElementId() != ElementId.InvalidElementId)
-                        {
-                            Element targetElem = origen.GetElement(p.AsElementId());
-                            if (targetElem is View targetView && targetView.IsValidObject && !targetView.IsTemplate &&
-                                targetView.Id.Value != vistaorigen.Id.Value &&
-                                (targetView.ViewType == ViewType.Section || targetView.ViewType == ViewType.Detail))
-                            {
-                                if (!childSectionViews.Any(cv => cv.Id.Value == targetView.Id.Value))
+                                // Case 1: Direct View reference
+                                if (refElem is View refView && refView.IsValidObject && !refView.IsTemplate &&
+                                    refView.Id.Value != vistaorigen.Id.Value &&
+                                    (refView.ViewType == ViewType.Section || refView.ViewType == ViewType.Detail || refView.ViewType == ViewType.Elevation))
                                 {
-                                    childSectionViews.Add(targetView);
-                                    LoggerService.LogInfo($"ponSections [DISCOVERY via Viewer Parameter Link]: Found '{targetView.Name}' (Id: {targetView.Id.Value}) via viewer element {vElem.Id.Value}");
+                                    if (!childSectionViews.Any(cv => cv.Id.Value == refView.Id.Value))
+                                    {
+                                        childSectionViews.Add(refView);
+                                        LoggerService.LogInfo($"ponSections [DISCOVERY via Strategy 0 Direct View]: Found '{refView.Name}' (Id: {refView.Id.Value}) via viewer mark {viewer.Id.Value}");
+                                    }
+                                }
+
+                                // Case 2: Viewport reference (Viewport -> View)
+                                else if (refElem is Viewport vp && vp.IsValidObject && vp.ViewId != ElementId.InvalidElementId)
+                                {
+                                    if (origen.GetElement(vp.ViewId) is View vpView && vpView.IsValidObject && !vpView.IsTemplate &&
+                                        vpView.Id.Value != vistaorigen.Id.Value &&
+                                        (vpView.ViewType == ViewType.Section || vpView.ViewType == ViewType.Detail || vpView.ViewType == ViewType.Elevation))
+                                    {
+                                        if (!childSectionViews.Any(cv => cv.Id.Value == vpView.Id.Value))
+                                        {
+                                            childSectionViews.Add(vpView);
+                                            LoggerService.LogInfo($"ponSections [DISCOVERY via Strategy 0 Viewport]: Found '{vpView.Name}' (Id: {vpView.Id.Value}) via viewport {vp.Id.Value}");
+                                        }
+                                    }
+                                }
+
+                                // Case 3: ElevationMarker reference
+                                else if (refElem is ElevationMarker em && em.IsValidObject)
+                                {
+                                    for (int idx = 0; idx < em.MaximumViewCount; idx++)
+                                    {
+                                        ElementId vId = em.GetViewId(idx);
+                                        if (vId != ElementId.InvalidElementId && origen.GetElement(vId) is View emView &&
+                                            emView.IsValidObject && !emView.IsTemplate && emView.Id.Value != vistaorigen.Id.Value)
+                                        {
+                                            if (!childSectionViews.Any(cv => cv.Id.Value == emView.Id.Value))
+                                            {
+                                                childSectionViews.Add(emView);
+                                                LoggerService.LogInfo($"ponSections [DISCOVERY via Strategy 0 ElevationMarker]: Found '{emView.Name}' (Id: {emView.Id.Value}) via marker {em.Id.Value}");
+                                            }
+                                        }
+                                    }
                                 }
                             }
                         }
                     }
+
+                    // 0b. Check dependent elements of the viewer symbol itself
+                    try
+                    {
+                        var vDepIds = viewer.GetDependentElements(null);
+                        if (vDepIds != null)
+                        {
+                            foreach (var depId in vDepIds)
+                            {
+                                if (depId != ElementId.InvalidElementId && origen.GetElement(depId) is View depView &&
+                                    depView.IsValidObject && !depView.IsTemplate && depView.Id.Value != vistaorigen.Id.Value &&
+                                    (depView.ViewType == ViewType.Section || depView.ViewType == ViewType.Detail || depView.ViewType == ViewType.Elevation))
+                                {
+                                    if (!childSectionViews.Any(cv => cv.Id.Value == depView.Id.Value))
+                                    {
+                                        childSectionViews.Add(depView);
+                                        LoggerService.LogInfo($"ponSections [DISCOVERY via Strategy 0 Viewer Dependent]: Found '{depView.Name}' (Id: {depView.Id.Value})");
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    catch { }
                 }
             }
-
-            // 1c. Supplement with SECTION_PARENT_VIEW_NAME and VIEW_PRIMARY_VIEW_ID matching vistaorigen or normalized base name
-            foreach (View v in new FilteredElementCollector(origen).OfClass(typeof(View)).Cast<View>())
+            catch (Exception exS0)
             {
-                if (v == null || !v.IsValidObject || v.IsTemplate || v.Id.Value == vistaorigen.Id.Value) continue;
-                if (v.ViewType != ViewType.Section && v.ViewType != ViewType.Detail) continue;
+                LoggerService.LogWarning($"ponSections [STRATEGY 0 EXCEPTION]: {exS0.Message}. Falling back to Strategy 1.");
+            }
+
+            // ══════════════════════════════════════════════════════════════════
+            // STRATEGY 1 (UNCONDITIONAL COMPREHENSIVE SCAN)
+            // ──────────────────────────────────────────────────────────────────
+            // Scans ALL ViewSection/ViewDetail/Elevation views in the document,
+            // matching against parent view parameters, names, or viewer links.
+            // ══════════════════════════════════════════════════════════════════
+            string normalizedName = System.Text.RegularExpressions.Regex.Replace(vistaorigen.Name, @"(?i)\s+(copia|copy).*$", "").Trim();
+            View? baseView = new FilteredElementCollector(origen)
+                .OfClass(typeof(View))
+                .Cast<View>()
+                .FirstOrDefault(v => v != null && v.IsValidObject && !v.IsTemplate && v.Name.Equals(normalizedName, StringComparison.OrdinalIgnoreCase));
+            ElementId baseViewId = baseView?.Id ?? ElementId.InvalidElementId;
+
+            var allDocSections = new FilteredElementCollector(origen)
+                .OfClass(typeof(View))
+                .Cast<View>()
+                .Where(v => v != null && v.IsValidObject && !v.IsTemplate && v.Id.Value != vistaorigen.Id.Value &&
+                            (v.ViewType == ViewType.Section || v.ViewType == ViewType.Detail || v.ViewType == ViewType.Elevation))
+                .ToList();
+
+            LoggerService.LogInfo($"ponSections [STRATEGY 1 SCAN]: Total candidate Section/Detail/Elevation views in source doc: {allDocSections.Count}. Base View: '{baseView?.Name}' (Id: {baseViewId.Value})");
+
+            foreach (View secView in allDocSections)
+            {
+                if (childSectionViews.Any(cv => cv.Id.Value == secView.Id.Value)) continue;
 
                 bool isMatch = false;
+                string matchReason = "";
 
-                // Check all ElementId parameters on v referencing vistaorigen.Id or baseViewId
-                foreach (Parameter p in v.Parameters)
+                // 1. Parameter referencing vistaorigen.Id or baseViewId
+                foreach (Parameter p in secView.Parameters)
                 {
                     if (p != null && p.StorageType == StorageType.ElementId && p.AsElementId() != null)
                     {
                         long val = p.AsElementId().Value;
-                        if (val == vistaorigen.Id.Value || (baseViewId != ElementId.InvalidElementId && val == baseViewId.Value))
+                        if (val == vistaorigen.Id.Value)
                         {
                             isMatch = true;
+                            matchReason = $"Parameter '{p.Definition?.Name}' matches vistaorigen.Id ({val})";
+                            break;
+                        }
+                        else if (baseViewId != ElementId.InvalidElementId && val == baseViewId.Value)
+                        {
+                            isMatch = true;
+                            matchReason = $"Parameter '{p.Definition?.Name}' matches baseViewId ({val})";
                             break;
                         }
                     }
                 }
 
-                // Check SECTION_PARENT_VIEW_NAME parameter
-                var parentParam = v.get_Parameter(BuiltInParameter.SECTION_PARENT_VIEW_NAME);
-                if (!isMatch && parentParam != null && !string.IsNullOrWhiteSpace(parentParam.AsString()))
+                // 2. SECTION_PARENT_VIEW_NAME parameter
+                if (!isMatch)
                 {
-                    string parentName = parentParam.AsString().Trim();
-                    if (parentName.Equals(vistaorigen.Name, StringComparison.OrdinalIgnoreCase) ||
-                        (!string.IsNullOrEmpty(vistaorigen.Title) && parentName.Equals(vistaorigen.Title, StringComparison.OrdinalIgnoreCase)) ||
-                        parentName.Equals(normalizedName, StringComparison.OrdinalIgnoreCase))
+                    var parentParam = secView.get_Parameter(BuiltInParameter.SECTION_PARENT_VIEW_NAME);
+                    if (parentParam != null && !string.IsNullOrWhiteSpace(parentParam.AsString()))
                     {
-                        isMatch = true;
+                        string parentName = parentParam.AsString().Trim();
+                        if (parentName.Equals(vistaorigen.Name, StringComparison.OrdinalIgnoreCase) ||
+                            (!string.IsNullOrEmpty(vistaorigen.Title) && parentName.Equals(vistaorigen.Title, StringComparison.OrdinalIgnoreCase)) ||
+                            parentName.Equals(normalizedName, StringComparison.OrdinalIgnoreCase))
+                        {
+                            isMatch = true;
+                            matchReason = $"SECTION_PARENT_VIEW_NAME '{parentName}' matches parent/base name";
+                        }
                     }
                 }
 
-                if (isMatch && !childSectionViews.Any(cv => cv.Id.Value == v.Id.Value))
+                // 3. Inspect parameters for parent/primary view ID
+                if (!isMatch)
                 {
-                    childSectionViews.Add(v);
-                    LoggerService.LogInfo($"ponSections [DISCOVERY via Parent Parameter]: Found '{v.Name}' (Id: {v.Id.Value}) matching parent '{vistaorigen.Name}' / base '{normalizedName}'");
+                    foreach (Parameter p in secView.Parameters)
+                    {
+                        if (p != null && p.StorageType == StorageType.ElementId && p.AsElementId() is ElementId pId && pId != ElementId.InvalidElementId)
+                        {
+                            string pName = p.Definition?.Name ?? "";
+                            if (pName.IndexOf("Primary", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                                pName.IndexOf("Parent", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                                pName.IndexOf("Principal", StringComparison.OrdinalIgnoreCase) >= 0)
+                            {
+                                if (pId.Value == vistaorigen.Id.Value || (baseViewId != ElementId.InvalidElementId && pId.Value == baseViewId.Value))
+                                {
+                                    isMatch = true;
+                                    matchReason = $"Parameter '{pName}' matches parent/base ID ({pId.Value})";
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
+
+                if (isMatch)
+                {
+                    childSectionViews.Add(secView);
+                    LoggerService.LogInfo($"ponSections [DISCOVERY via Strategy 1 Match]: Found '{secView.Name}' (Id: {secView.Id.Value}) -> {matchReason}");
                 }
             }
 

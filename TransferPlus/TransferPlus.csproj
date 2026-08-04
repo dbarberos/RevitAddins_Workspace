@@ -16,6 +16,10 @@
         <Product>TransferPlus</Product>
     </PropertyGroup>
 
+    <PropertyGroup Condition="$(Configuration.StartsWith('Debug'))">
+        <DefineConstants>$(DefineConstants);DEBUG</DefineConstants>
+    </PropertyGroup>
+
     <ItemGroup>
         <!-- Revit Dependencies -->
         <PackageReference Include="Nice3point.Revit.Toolkit" Version="$(RevitVersion).*"/>

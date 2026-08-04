@@ -60,9 +60,14 @@
                     </Grid.ColumnDefinitions>
                     
                     <CheckBox Grid.Column="0" IsChecked="{Binding IsChecked}" IsThreeState="True" VerticalAlignment="Center" Margin="0,0,6,0"/>
-                    <TextBlock Grid.Column="1" Text="{Binding Name}" FontWeight="Normal" VerticalAlignment="Center" TextWrapping="NoWrap"/>
+                    <TextBlock x:Name="NodeNameText" Grid.Column="1" Text="{Binding Name}" FontWeight="Normal" Foreground="#333333" VerticalAlignment="Center" TextWrapping="NoWrap"/>
                     <TextBlock Grid.Column="2" Text="{Binding Count}" Foreground="#888888" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="15,0,10,0"/>
                 </Grid>
+                <HierarchicalDataTemplate.Triggers>
+                    <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=TreeViewItem}, Path=IsMouseOver}" Value="True">
+                        <Setter TargetName="NodeNameText" Property="Foreground" Value="#007ACC"/>
+                    </DataTrigger>
+                </HierarchicalDataTemplate.Triggers>
             </HierarchicalDataTemplate>
 
             <Style x:Key="CardBorderStyle" TargetType="Border">
@@ -295,6 +300,10 @@
                                                 <Trigger Property="HasItems" Value="false">
                                                     <Setter TargetName="Expander" Property="Visibility" Value="Hidden"/>
                                                 </Trigger>
+                                                <Trigger Property="IsSelected" Value="true">
+                                                    <Setter TargetName="Bd" Property="BorderBrush" Value="#007ACC"/>
+                                                    <Setter TargetName="Bd" Property="BorderThickness" Value="1.5"/>
+                                                </Trigger>
                                             </ControlTemplate.Triggers>
                                         </ControlTemplate>
                                     </Setter.Value>
@@ -417,16 +426,23 @@
                                     <RowDefinition Height="*"/>
                                 </Grid.RowDefinitions>
                                 
-                                <TextBlock Grid.Row="0" Text="Family(ies) Details:" FontWeight="Bold" FontSize="12" Foreground="#999" Margin="0,0,0,8"/>
+                                <!-- Card Header Row: Title on Left, Category & Version Metadata on Right (when 1 family selected) -->
+                                <Grid Grid.Row="0" Margin="0,0,0,10">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                     <TextBlock Grid.Column="0" Text="{Binding FamilyDetailsCardTitle}" FontWeight="Bold" FontSize="12" Foreground="#999" VerticalAlignment="Center"/>
+                                 </Grid>
 
                                 <!-- Placeholder text when NO family is selected in tree -->
-                                <TextBlock Grid.Row="1" Text="Select family checkboxes in the tree to view details" 
+                                <TextBlock Grid.Row="1" Text="Select or click a family in the tree to view details" 
                                            Foreground="#999" FontStyle="Italic" VerticalAlignment="Center" HorizontalAlignment="Center">
                                     <TextBlock.Style>
                                         <Style TargetType="TextBlock">
                                             <Setter Property="Visibility" Value="Collapsed"/>
                                             <Style.Triggers>
-                                                <DataTrigger Binding="{Binding HasCheckedFamilies}" Value="False">
+                                                <DataTrigger Binding="{Binding HasFamilyDetails}" Value="False">
                                                     <Setter Property="Visibility" Value="Visible"/>
                                                 </DataTrigger>
                                             </Style.Triggers>
@@ -434,66 +450,111 @@
                                     </TextBlock.Style>
                                 </TextBlock>
 
-                                <!-- Details Content: Only visible when at least one family checkbox is selected -->
+                                <!-- Details Content: Visible when a family is selected or checked -->
                                 <Grid Grid.Row="1">
                                     <Grid.Style>
                                         <Style TargetType="Grid">
                                             <Setter Property="Visibility" Value="Collapsed"/>
                                             <Style.Triggers>
-                                                <DataTrigger Binding="{Binding HasCheckedFamilies}" Value="True">
+                                                <DataTrigger Binding="{Binding HasFamilyDetails}" Value="True">
                                                     <Setter Property="Visibility" Value="Visible"/>
                                                 </DataTrigger>
                                             </Style.Triggers>
                                         </Style>
                                     </Grid.Style>
                                     <Grid.RowDefinitions>
-                                        <RowDefinition Height="Auto"/>
                                         <RowDefinition Height="*"/>
+                                        <RowDefinition Height="Auto"/>
                                         <RowDefinition Height="Auto"/>
                                     </Grid.RowDefinitions>
                                     
-                                    <!-- Top Row: Thumbnail + Info (when single family selected) -->
-                                    <Grid Grid.Row="0" Margin="0,0,0,8">
-                                        <Grid>
-                                            <Grid.Style>
-                                                <Style TargetType="Grid">
-                                                    <Setter Property="Visibility" Value="Collapsed"/>
-                                                    <Style.Triggers>
-                                                        <DataTrigger Binding="{Binding IsSingleFamilySelected}" Value="True">
-                                                            <Setter Property="Visibility" Value="Visible"/>
-                                                        </DataTrigger>
-                                                        <MultiDataTrigger>
-                                                            <MultiDataTrigger.Conditions>
-                                                                <Condition Binding="{Binding IsSingleFamilySelected}" Value="True"/>
-                                                                <Condition Binding="{Binding SelectedFamily}" Value="{x:Null}" />
-                                                            </MultiDataTrigger.Conditions>
-                                                            <Setter Property="Visibility" Value="Collapsed"/>
-                                                        </MultiDataTrigger>
-                                                    </Style.Triggers>
-                                                </Style>
-                                            </Grid.Style>
-                                            <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="54"/>
-                                                <ColumnDefinition Width="*"/>
-                                            </Grid.ColumnDefinitions>
-                                            <Grid Grid.Column="0" Width="54" Height="54" Margin="0,0,10,0">
-                                                <Image Source="{Binding SelectedFamilyThumbnail}" Stretch="Uniform"/>
-                                                <ProgressBar IsIndeterminate="True" Width="20" Height="20" 
-                                                             Visibility="{Binding SelectedFamily.IsLoadingThumbnail, Converter={StaticResource BoolToVis}}"/>
-                                            </Grid>
-                                            <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                                                <TextBlock Text="{Binding SelectedFamily.Name}" FontWeight="Bold" FontSize="13" TextWrapping="Wrap" Margin="0"/>
-                                                <TextBlock Text="{Binding SelectedFamily.CategoryName}" FontSize="11" Foreground="#666" Margin="0,2,0,0"/>
-                                                <TextBlock Text="{Binding SelectedFamily.RevitVersion}" FontSize="10" Foreground="#999" Margin="0,2,0,0"/>
-                                            </StackPanel>
-                                        </Grid>
+                                     <Grid Grid.Row="0">
+                                         <!-- Single Family Selected -->
+                                         <Grid>
+                                             <Grid.Style>
+                                                 <Style TargetType="Grid">
+                                                     <Setter Property="Visibility" Value="Collapsed"/>
+                                                     <Style.Triggers>
+                                                         <DataTrigger Binding="{Binding IsSingleFamilyDetails}" Value="True">
+                                                             <Setter Property="Visibility" Value="Visible"/>
+                                                         </DataTrigger>
+                                                         <MultiDataTrigger>
+                                                             <MultiDataTrigger.Conditions>
+                                                                 <Condition Binding="{Binding IsSingleFamilyDetails}" Value="True"/>
+                                                                 <Condition Binding="{Binding SelectedFamily}" Value="{x:Null}" />
+                                                             </MultiDataTrigger.Conditions>
+                                                             <Setter Property="Visibility" Value="Collapsed"/>
+                                                         </MultiDataTrigger>
+                                                     </Style.Triggers>
+                                                 </Style>
+                                             </Grid.Style>
+                                             <Grid.ColumnDefinitions>
+                                                 <ColumnDefinition Width="Auto"/> <!-- Left: Thumbnail + Host -->
+                                                 <ColumnDefinition Width="*"/>    <!-- Right: Family Name + Type + Category -->
+                                             </Grid.ColumnDefinitions>
+                                             
+                                             <!-- Left Column: High-Res 128x128 Thumbnail Container -->
+                                             <StackPanel Grid.Column="0" VerticalAlignment="Top" Margin="0,2,14,4">
+                                                 <Border Width="128" Height="128" Background="#FAFAFA" BorderBrush="#E5E5E5" BorderThickness="1" CornerRadius="4" VerticalAlignment="Top">
+                                                     <Grid>
+                                                         <Image Source="{Binding SelectedFamilyThumbnail}" Stretch="Uniform" Margin="2"/>
+                                                         <ProgressBar IsIndeterminate="True" Width="24" Height="24" 
+                                                                      HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                                      Visibility="{Binding SelectedFamily.IsLoadingThumbnail, Converter={StaticResource BoolToVis}}"/>
+                                                     </Grid>
+                                                 </Border>
+                                             </StackPanel>
+                                             
+                                             <!-- Right Column: Family Name, Type, Category, Revit Version, Host -->
+                                             <StackPanel Grid.Column="1" VerticalAlignment="Top" Margin="0,2,0,0">
+                                                 <!-- Family Name -->
+                                                 <TextBlock Text="{Binding SelectedFamily.Name}" 
+                                                            FontWeight="Bold" FontSize="13.5" Foreground="#111111"
+                                                            TextWrapping="Wrap" Margin="0,0,0,6"/>
 
+                                                 <!-- Type Name (Visible when a type node is selected in tree) -->
+                                                 <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                                                     <StackPanel.Style>
+                                                         <Style TargetType="StackPanel">
+                                                             <Setter Property="Visibility" Value="Visible"/>
+                                                             <Style.Triggers>
+                                                                 <DataTrigger Binding="{Binding SelectedSymbol}" Value="{x:Null}">
+                                                                     <Setter Property="Visibility" Value="Collapsed"/>
+                                                                 </DataTrigger>
+                                                             </Style.Triggers>
+                                                         </Style>
+                                                     </StackPanel.Style>
+                                                     <TextBlock Text="Type: " FontWeight="Bold" FontSize="11.5" Foreground="#111111"/>
+                                                     <TextBlock Text="{Binding SelectedSymbol.Name}" FontSize="11.5" Foreground="#333333" TextWrapping="Wrap"/>
+                                                 </StackPanel>
+
+                                                 <!-- Category -->
+                                                 <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                                                     <TextBlock Text="Category: " FontWeight="Bold" FontSize="11.5" Foreground="#111111"/>
+                                                     <TextBlock Text="{Binding SelectedFamily.CategoryName}" FontSize="11.5" Foreground="#333333"/>
+                                                 </StackPanel>
+
+                                                 <!-- Revit Version -->
+                                                 <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                                                     <TextBlock Text="Revit: " FontWeight="Bold" FontSize="11.5" Foreground="#111111"/>
+                                                     <TextBlock Text="{Binding SelectedFamily.RevitVersion}" FontSize="11.5" Foreground="#333333"/>
+                                                 </StackPanel>
+
+                                                 <!-- Host Type (Aligned under Revit version) -->
+                                                 <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                                                     <TextBlock Text="Host: " FontWeight="Bold" FontSize="11.5" Foreground="#111111"/>
+                                                     <TextBlock Text="{Binding SelectedFamily.HostTypeDescription}" FontSize="11.5" Foreground="#333333"/>
+                                                 </StackPanel>
+                                             </StackPanel>
+                                         </Grid>
+
+                                        <!-- Multiple Families Selected -->
                                         <TextBlock Text="Multiple families selected" Foreground="#999" FontStyle="Italic" VerticalAlignment="Center" HorizontalAlignment="Center">
                                             <TextBlock.Style>
                                                 <Style TargetType="TextBlock">
                                                     <Setter Property="Visibility" Value="Collapsed"/>
                                                     <Style.Triggers>
-                                                        <DataTrigger Binding="{Binding IsSingleFamilySelected}" Value="False">
+                                                        <DataTrigger Binding="{Binding IsSingleFamilyDetails}" Value="False">
                                                             <Setter Property="Visibility" Value="Visible"/>
                                                         </DataTrigger>
                                                     </Style.Triggers>
@@ -502,32 +563,15 @@
                                         </TextBlock>
                                     </Grid>
                                     
-                                    <!-- Types / Symbols box with vertical & horizontal scrollbars -->
-                                    <Border Grid.Row="1" BorderBrush="#E0E0E0" BorderThickness="1" Background="#F9F9F9" Padding="6,4">
-                                        <Grid>
-                                            <Grid.RowDefinitions>
-                                                <RowDefinition Height="Auto"/>
-                                                <RowDefinition Height="*"/>
-                                            </Grid.RowDefinitions>
-                                            <TextBlock Grid.Row="0" Text="Types / Symbols" FontWeight="SemiBold" FontSize="11" Margin="0,0,0,4" Foreground="#555"/>
-                                            <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto">
-                                                <ItemsControl ItemsSource="{Binding SelectedFamily.Symbols}">
-                                                    <ItemsControl.ItemTemplate>
-                                                        <DataTemplate>
-                                                            <CheckBox Content="{Binding Name}" IsChecked="{Binding IsChecked, Mode=TwoWay}" Margin="0,2" FontSize="11"/>
-                                                        </DataTemplate>
-                                                    </ItemsControl.ItemTemplate>
-                                                </ItemsControl>
-                                            </ScrollViewer>
-                                        </Grid>
-                                    </Border>
+                                    <!-- Separator Line -->
+                                    <Border Grid.Row="1" BorderBrush="#E0E0E0" BorderThickness="0,1,0,0" Margin="0,10,0,10"/>
                                     
-                                    <!-- Download and Delete Buttons without icons, matching addin button styling -->
-                                    <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,8,0,0">
-                                        <Button Content="Download" Margin="0,0,6,0" Padding="12,4" FontSize="11" Cursor="Hand"
+                                    <!-- Action Buttons Row -->
+                                    <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right">
+                                        <Button Content="Download" Margin="0,0,8,0" Padding="14,5" FontSize="11" Cursor="Hand"
                                                 Background="#F5F5F5" Foreground="#333333" BorderBrush="#CCCCCC" BorderThickness="1"
                                                 ToolTip="Download Family"/>
-                                        <Button Content="Delete" Padding="12,4" FontSize="11" Cursor="Hand"
+                                        <Button Content="Delete" Padding="14,5" FontSize="11" Cursor="Hand"
                                                 Background="#F5F5F5" Foreground="#333333" BorderBrush="#CCCCCC" BorderThickness="1"
                                                 ToolTip="Delete Family"/>
                                     </StackPanel>

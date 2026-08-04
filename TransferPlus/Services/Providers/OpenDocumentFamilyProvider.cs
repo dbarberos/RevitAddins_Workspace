@@ -69,7 +69,8 @@ public class OpenDocumentFamilyProvider : IFamilyProvider
                     StatusMessage = $"{symbolModels.Count} tipo(s) en modelo abierto",
                     Symbols = symbolModels,
                     NativeFamily = family,
-                    SourceDocument = _sourceDoc
+                    SourceDocument = _sourceDoc,
+                    HostTypeDescription = FamilyHostTypeHelper.DetermineHostTypeDescription(family)
                 });
             }
 

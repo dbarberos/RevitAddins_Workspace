@@ -21,7 +21,6 @@ public partial class TransferPlusView : Window
     private void TransferPlusView_Loaded(object sender, RoutedEventArgs e)
     {
         this.Loaded -= TransferPlusView_Loaded;
-        // UNCOMMENT FOR DEVELOPMENT/DEBUGGING
 #if DEBUG
         try
         {
@@ -49,14 +48,17 @@ public partial class TransferPlusView : Window
             if (selectedNode.Item is Models.FamilyItemModel famItem)
             {
                 vm.SelectedFamily = famItem;
+                vm.SelectedSymbol = null;
             }
-            else if (selectedNode.Item is Models.FamilySymbolItemModel && selectedNode.Parent?.Item is Models.FamilyItemModel parentFam)
+            else if (selectedNode.Item is Models.FamilySymbolItemModel symItem && selectedNode.Parent?.Item is Models.FamilyItemModel parentFam)
             {
                 vm.SelectedFamily = parentFam;
+                vm.SelectedSymbol = symItem;
             }
             else
             {
                 vm.SelectedFamily = null;
+                vm.SelectedSymbol = null;
             }
         }
     }

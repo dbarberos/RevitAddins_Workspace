@@ -84,7 +84,8 @@ public class LinkedDocumentFamilyProvider : IFamilyProvider
                     StatusMessage = $"{symbolModels.Count} tipo(s) en modelo vinculado",
                     Symbols = symbolModels,
                     NativeFamily = family,
-                    SourceDocument = linkDoc
+                    SourceDocument = linkDoc,
+                    HostTypeDescription = FamilyHostTypeHelper.DetermineHostTypeDescription(family)
                 });
             }
 

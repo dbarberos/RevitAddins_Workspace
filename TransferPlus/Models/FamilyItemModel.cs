@@ -44,6 +44,9 @@ namespace TransferPlus.Models
         public string RevitVersion { get; set; } = string.Empty;
         
         [ObservableProperty]
+        private string _hostTypeDescription = "Stand-alone";
+
+        [ObservableProperty]
         private object? _thumbnail;
 
         [ObservableProperty]

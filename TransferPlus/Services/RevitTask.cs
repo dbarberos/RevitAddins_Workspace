@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Threading.Tasks;
 using Autodesk.Revit.UI;
 
@@ -10,21 +11,29 @@ namespace TransferPlus.Services
     /// </summary>
     public static class RevitTask
     {
+        private class RevitTaskWorkItem
+        {
+            public Action<UIApplication> Action { get; set; } = null!;
+            public TaskCompletionSource<object?> Tcs { get; set; } = null!;
+        }
+
         private class RevitTaskEventHandler : IExternalEventHandler
         {
-            private Action<UIApplication>? _currentAction;
-            private TaskCompletionSource<object?>? _tcs;
+            private readonly ConcurrentQueue<RevitTaskWorkItem> _queue = new();
 
             public void Execute(UIApplication app)
             {
-                try
+                while (_queue.TryDequeue(out var workItem))
                 {
-                    _currentAction?.Invoke(app);
-                    _tcs?.TrySetResult(null);
-                }
-                catch (Exception ex)
-                {
-                    _tcs?.TrySetException(ex);
+                    try
+                    {
+                        workItem.Action.Invoke(app);
+                        workItem.Tcs.TrySetResult(null);
+                    }
+                    catch (Exception ex)
+                    {
+                        workItem.Tcs.TrySetException(ex);
+                    }
                 }
             }
 
@@ -32,10 +41,10 @@ namespace TransferPlus.Services
 
             public Task RunAsync(Action<UIApplication> action, ExternalEvent externalEvent)
             {
-                _currentAction = action;
-                _tcs = new TaskCompletionSource<object?>();
+                var tcs = new TaskCompletionSource<object?>();
+                _queue.Enqueue(new RevitTaskWorkItem { Action = action, Tcs = tcs });
                 externalEvent.Raise();
-                return _tcs.Task;
+                return tcs.Task;
             }
         }
 
