@@ -46,9 +46,13 @@ public partial class TransferPlusView : Window
     {
         if (DataContext is TransferPlusViewModel vm && e.NewValue is TreeItemViewModel selectedNode)
         {
-            if (selectedNode.Level == 2 && selectedNode.Category == "Family" && selectedNode.Item is Models.FamilyItemModel famItem)
+            if (selectedNode.Item is Models.FamilyItemModel famItem)
             {
                 vm.SelectedFamily = famItem;
+            }
+            else if (selectedNode.Item is Models.FamilySymbolItemModel && selectedNode.Parent?.Item is Models.FamilyItemModel parentFam)
+            {
+                vm.SelectedFamily = parentFam;
             }
             else
             {

@@ -50,6 +50,11 @@ public partial class TreeItemViewModel : ObservableObject
                 _isChecked = value;
                 OnPropertyChanged(nameof(IsChecked));
 
+                if (Item is FamilySymbolItemModel sym)
+                {
+                    sym.IsChecked = value == true;
+                }
+
                 if (!_isUpdatingState && !IsBulkUpdating)
                 {
                     _isUpdatingState = true;

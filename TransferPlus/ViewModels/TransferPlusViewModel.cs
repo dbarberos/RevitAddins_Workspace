@@ -495,30 +495,68 @@ public partial class TransferPlusViewModel : ObservableObject
         RootNodes.Clear();
         if (!_familyItems.Any()) return;
 
+        // Level 0: All (Root Node)
         var allNode = new TreeItemViewModel("All", "Root", null, null, 0)
         {
             Count = _familyItems.Count,
             IsExpanded = true
         };
 
-        var groups = _familyItems.GroupBy(x => x.CategoryName).OrderBy(g => g.Key);
+        // Group Level 1: Container / SourceName
+        var containerGroups = _familyItems
+            .GroupBy(x => string.IsNullOrWhiteSpace(x.SourceName) ? "Modelo Origen" : x.SourceName)
+            .OrderBy(g => g.Key);
 
-        foreach (var group in groups)
+        foreach (var containerGroup in containerGroups)
         {
-            var categoryNode = new TreeItemViewModel(group.Key, "Category", null, allNode, 1)
+            var containerNode = new TreeItemViewModel(containerGroup.Key, "Container", null, allNode, 1)
             {
-                Count = group.Count()
+                Count = containerGroup.Count(),
+                IsExpanded = true
             };
-            
-            foreach (var fam in group.OrderBy(x => x.Name))
+
+            // Group Level 2: CategoryName
+            var categoryGroups = containerGroup
+                .GroupBy(x => string.IsNullOrWhiteSpace(x.CategoryName) ? "Sin Categoría" : x.CategoryName)
+                .OrderBy(g => g.Key);
+
+            foreach (var categoryGroup in categoryGroups)
             {
-                var familyNode = new TreeItemViewModel(fam.Name, "Family", fam, categoryNode, 2)
+                var categoryNode = new TreeItemViewModel(categoryGroup.Key, "Category", null, containerNode, 2)
                 {
-                    Count = 1
+                    Count = categoryGroup.Count(),
+                    IsExpanded = true
                 };
-                categoryNode.Children.Add(familyNode);
+
+                // Group Level 3: Family
+                foreach (var fam in categoryGroup.OrderBy(x => x.Name))
+                {
+                    var familyNode = new TreeItemViewModel(fam.Name, "Family", fam, categoryNode, 3)
+                    {
+                        Count = fam.Symbols?.Count > 0 ? fam.Symbols.Count : 1
+                    };
+
+                    // Group Level 4: Symbol / Type
+                    if (fam.Symbols != null && fam.Symbols.Any())
+                    {
+                        foreach (var sym in fam.Symbols)
+                        {
+                            var symbolNode = new TreeItemViewModel(sym.Name, "Symbol", sym, familyNode, 4)
+                            {
+                                Count = 1,
+                                IsChecked = sym.IsChecked
+                            };
+                            familyNode.Children.Add(symbolNode);
+                        }
+                    }
+
+                    categoryNode.Children.Add(familyNode);
+                }
+
+                containerNode.Children.Add(categoryNode);
             }
-            allNode.Children.Add(categoryNode);
+
+            allNode.Children.Add(containerNode);
         }
 
         allNode.UpdateRecursiveCounts();
@@ -1110,9 +1148,12 @@ public partial class TransferPlusViewModel : ObservableObject
     {
         foreach (var node in nodes)
         {
-            if (node.Item is FamilyItemModel fam && node.IsChecked == true)
+            if (node.Item is FamilyItemModel fam && node.IsChecked != false)
             {
-                list.Add(fam);
+                if (!list.Contains(fam))
+                {
+                    list.Add(fam);
+                }
             }
             CollectCheckedFamilies(node.Children, list);
         }

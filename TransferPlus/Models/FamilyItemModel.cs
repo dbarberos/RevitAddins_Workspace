@@ -21,6 +21,9 @@ namespace TransferPlus.Models
         [ObservableProperty]
         private bool _isSelected = true;
 
+        [ObservableProperty]
+        private bool _isChecked = true;
+
         public object? NativeSymbol { get; set; }
     }
 
