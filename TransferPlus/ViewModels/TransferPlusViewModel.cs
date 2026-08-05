@@ -1033,6 +1033,63 @@ public partial class TransferPlusViewModel : ObservableObject
         TransferPlus.Services.LoggerService.LogInfo($"Transfer: Initiating transfer from '{SelectedSourceDocument.Nombre}'...");
         SyncConfig();
 
+        if (IsFamiliesManagerActive)
+        {
+            var checkedFamilies = new List<FamilyItemModel>();
+            CollectCheckedFamilies(RootNodes, checkedFamilies);
+
+            if (!checkedFamilies.Any())
+            {
+                TransferPlus.Services.LoggerService.LogInfo("Transfer: Operation aborted. No families have their checkbox marked for transfer.");
+                TaskDialog.Show("TransferPlus", "No items selected to transfer. Please check the checkbox of the families you wish to transfer.");
+                return;
+            }
+
+            var targetDestinations = DestinationDocuments.Where(d => d.Checked && d.Adoc != null).ToList();
+            if (!targetDestinations.Any())
+            {
+                TaskDialog.Show("TransferPlus", "Please select at least one destination model.");
+                return;
+            }
+
+            IsBusy = true;
+            StatusMessage = "Transferring families...";
+
+            try
+            {
+                var familyService = new FamilyRevitService();
+                TransferPlus.Services.Providers.IFamilyProvider provider = TransferPlus.Services.Providers.FamilyProviderFactory.CreateProvider(
+                    SelectedSourceDocument.Nombre,
+                    SelectedSourceDocument.Adoc,
+                    familyService);
+
+                int transferredCount = 0;
+                foreach (var destDoc in targetDestinations)
+                {
+                    foreach (var fam in checkedFamilies)
+                    {
+                        StatusMessage = $"Transferring family '{fam.Name}' to '{destDoc.Nombre}'...";
+                        bool ok = provider.TransferFamilyAsync(fam, destDoc.Adoc).GetAwaiter().GetResult();
+                        if (ok) transferredCount++;
+                    }
+                }
+
+                TransferPlus.Services.LoggerService.LogInfo($"Transfer: Completed family transfer. Transferred {transferredCount} family item(s).");
+                TaskDialog.Show("TransferPlus", $"Family transfer completed successfully! Transferred {transferredCount} family/families.");
+            }
+            catch (Exception ex)
+            {
+                TelemetryLogger.LogError("Error during family transfer", ex);
+                TaskDialog.Show("TransferPlus Error", $"An error occurred during family transfer: {ex.Message}");
+            }
+            finally
+            {
+                IsBusy = false;
+            }
+
+            return;
+        }
+
         var checkedItems = new List<Elemento>();
         CollectCheckedItems(RootNodes, checkedItems);
 

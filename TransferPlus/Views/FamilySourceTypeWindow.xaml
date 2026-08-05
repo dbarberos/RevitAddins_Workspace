@@ -29,6 +29,8 @@
             
             <Border BorderBrush="#CCCCCC" BorderThickness="1" Background="White" CornerRadius="4" Padding="4">
                 <StackPanel Margin="8">
+                    <RadioButton Content="Autodesk Docs (APS)" IsChecked="{Binding IsAutodeskDocsSelected}"
+                                 FontSize="13" Foreground="#222222" Margin="4,6" Cursor="Hand"/>
                     <RadioButton Content="Azure Storage" IsChecked="{Binding IsAzureStorageSelected}"
                                  FontSize="13" Foreground="#222222" Margin="4,6" Cursor="Hand"/>
                     <RadioButton Content="Directory" IsChecked="{Binding IsDirectorySelected}"

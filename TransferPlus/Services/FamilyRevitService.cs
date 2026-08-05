@@ -206,14 +206,9 @@ namespace TransferPlus.Services
 
                 var overwriteOptions = new SilentOverwriteFamilyOption();
 
-                using var transaction = new Transaction(targetDocument, $"Cargar Familia en memoria '{sourceFamily.Name}'");
-                WarningSwallower.AttachToTransaction(transaction);
-                transaction.Start();
-
                 loadedFamily = familyDoc.LoadFamily(targetDocument, overwriteOptions);
                 if (loadedFamily != null)
                 {
-                    transaction.Commit();
                     TelemetryLogger.LogInfo($"Familia en memoria '{sourceFamily.Name}' transferida correctamente.");
                     return true;
                 }
@@ -227,12 +222,10 @@ namespace TransferPlus.Services
                 if (existingFamily != null)
                 {
                     loadedFamily = existingFamily;
-                    transaction.Commit();
                     TelemetryLogger.LogInfo($"Familia en memoria reutilizada: '{sourceFamily.Name}'");
                     return true;
                 }
 
-                transaction.RollBack();
                 return false;
             }
             catch (Exception ex)

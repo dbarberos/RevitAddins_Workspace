@@ -34,6 +34,8 @@ When specific enterprise architecture concepts are needed, locate the following 
   * *Use cases:* xUnit setup, mocking Revit API, Dependency Injection, and testing strategy.
 * **Cloud Models & ACC:** [29_CloudModelsAPI_and_ACC.md](file:///c:/Users/david.barbero/Documents/DOCUMENTOS/ALTEN/Workbench/RevitAddins_Workspace/RevitAddins_Workspace/.agents/skills/revit-api-enterprise/references/29_CloudModelsAPI_and_ACC.md)
   * *Use cases:* Accessing Autodesk Construction Cloud models, ModelPathUtils, and opening cloud workshared documents.
+* **Autodesk Docs Provider Pattern:** [autodesk_docs_aps_provider_pattern_2026-08-05.md](file:///c:/Users/david.barbero/Documents/DOCUMENTOS/ALTEN/Workbench/RevitAddins_Workspace/RevitAddins_Workspace/.agents/skills/revit-api-enterprise/references/autodesk_docs_aps_provider_pattern_2026-08-05.md)
+  * *Use cases:* ACC / APS Data Management REST integration, OAuth 2.0 PKCE, and decoupled IFamilyProvider pattern.
 
 ---
 

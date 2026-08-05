@@ -45,7 +45,18 @@ public partial class FamilySourcesViewModel : ObservableObject
             
             if (typeWin.ShowDialog() == true)
             {
-                if (typeVm.SelectedSourceType == FamilySourceType.Directory)
+                if (typeVm.SelectedSourceType == FamilySourceType.AutodeskDocs)
+                {
+                    var accVm = new AutodeskDocsSourceViewModel();
+                    var accWin = new Views.AutodeskDocsSourceWindow { DataContext = accVm, Owner = ownerWindow };
+                    if (accWin.ShowDialog() == true)
+                    {
+                        var newModel = accVm.ToModel();
+                        Sources.Add(newModel);
+                        SelectedSource = newModel;
+                    }
+                }
+                else if (typeVm.SelectedSourceType == FamilySourceType.Directory)
                 {
                     var dirVm = new DirectorySourceViewModel();
                     var dirWin = new Views.DirectorySourceWindow { DataContext = dirVm, Owner = ownerWindow };
@@ -82,7 +93,22 @@ public partial class FamilySourcesViewModel : ObservableObject
 
         try
         {
-            if (SelectedSource.SourceType == FamilySourceType.Directory)
+            if (SelectedSource.SourceType == FamilySourceType.AutodeskDocs)
+            {
+                var accVm = new AutodeskDocsSourceViewModel(SelectedSource);
+                var accWin = new Views.AutodeskDocsSourceWindow { DataContext = accVm, Owner = ownerWindow };
+                if (accWin.ShowDialog() == true)
+                {
+                    var updated = accVm.ToModel(SelectedSource.Id);
+                    int index = Sources.IndexOf(SelectedSource);
+                    if (index >= 0)
+                    {
+                        Sources[index] = updated;
+                        SelectedSource = updated;
+                    }
+                }
+            }
+            else if (SelectedSource.SourceType == FamilySourceType.Directory)
             {
                 var dirVm = new DirectorySourceViewModel(SelectedSource);
                 var dirWin = new Views.DirectorySourceWindow { DataContext = dirVm, Owner = ownerWindow };

@@ -8,26 +8,27 @@ namespace TransferPlus.ViewModels;
 public partial class FamilySourceTypeViewModel : ObservableObject
 {
     [ObservableProperty]
-    private bool _isDirectorySelected = true;
+    private bool _isAutodeskDocsSelected = true;
 
     [ObservableProperty]
     private bool _isAzureStorageSelected;
 
+    [ObservableProperty]
+    private bool _isDirectorySelected;
+
     public FamilySourceType SelectedSourceType
     {
-        get => IsDirectorySelected ? FamilySourceType.Directory : FamilySourceType.AzureStorage;
+        get
+        {
+            if (IsAutodeskDocsSelected) return FamilySourceType.AutodeskDocs;
+            if (IsAzureStorageSelected) return FamilySourceType.AzureStorage;
+            return FamilySourceType.Directory;
+        }
         set
         {
-            if (value == FamilySourceType.Directory)
-            {
-                IsDirectorySelected = true;
-                IsAzureStorageSelected = false;
-            }
-            else
-            {
-                IsDirectorySelected = false;
-                IsAzureStorageSelected = true;
-            }
+            IsAutodeskDocsSelected = (value == FamilySourceType.AutodeskDocs);
+            IsAzureStorageSelected = (value == FamilySourceType.AzureStorage);
+            IsDirectorySelected = (value == FamilySourceType.Directory);
         }
     }
 

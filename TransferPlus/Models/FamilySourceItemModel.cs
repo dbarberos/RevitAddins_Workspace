@@ -8,7 +8,8 @@ namespace TransferPlus.Models;
 public enum FamilySourceType
 {
     Directory,
-    AzureStorage
+    AzureStorage,
+    AutodeskDocs
 }
 
 public class FamilySourceItemModel
@@ -23,6 +24,31 @@ public class FamilySourceItemModel
     public string ContainerName { get; set; } = string.Empty;
     public string RootPath { get; set; } = string.Empty;
     public bool IsActive { get; set; } = true;
+
+    // Autodesk Docs (APS / ACC) Specific Fields
+    public string HubId { get; set; } = string.Empty;
+    public string HubName { get; set; } = string.Empty;
+    public string ProjectId { get; set; } = string.Empty;
+    public string ProjectName { get; set; } = string.Empty;
+    public string FolderId { get; set; } = string.Empty;
+    public string FolderName { get; set; } = string.Empty;
+
+    public string EncryptedRefreshToken { get; set; } = string.Empty;
+    public string EncryptedAccessToken { get; set; } = string.Empty;
+
+    [JsonIgnore]
+    public string RefreshToken
+    {
+        get => string.IsNullOrEmpty(EncryptedRefreshToken) ? string.Empty : SecurityUtils.DecryptString(EncryptedRefreshToken);
+        set => EncryptedRefreshToken = string.IsNullOrEmpty(value) ? string.Empty : SecurityUtils.EncryptString(value);
+    }
+
+    [JsonIgnore]
+    public string AccessToken
+    {
+        get => string.IsNullOrEmpty(EncryptedAccessToken) ? string.Empty : SecurityUtils.DecryptString(EncryptedAccessToken);
+        set => EncryptedAccessToken = string.IsNullOrEmpty(value) ? string.Empty : SecurityUtils.EncryptString(value);
+    }
 
     /// <summary>
     /// DPAPI encrypted connection string for JSON persistence.
@@ -48,11 +74,19 @@ public class FamilySourceItemModel
             {
                 return string.IsNullOrWhiteSpace(Path) ? "(No Directory)" : Path;
             }
+            if (SourceType == FamilySourceType.AutodeskDocs)
+            {
+                var parts = new List<string>();
+                if (!string.IsNullOrWhiteSpace(ProjectName)) parts.Add(ProjectName);
+                if (!string.IsNullOrWhiteSpace(FolderName)) parts.Add(FolderName);
+                var accPath = string.Join(" / ", parts);
+                return string.IsNullOrWhiteSpace(accPath) ? "Autodesk Docs (APS)" : $"ACC: {accPath}";
+            }
 
-            var parts = new List<string>();
-            if (!string.IsNullOrWhiteSpace(ContainerName)) parts.Add(ContainerName);
-            if (!string.IsNullOrWhiteSpace(RootPath)) parts.Add(RootPath);
-            var subPath = string.Join("/", parts);
+            var azureParts = new List<string>();
+            if (!string.IsNullOrWhiteSpace(ContainerName)) azureParts.Add(ContainerName);
+            if (!string.IsNullOrWhiteSpace(RootPath)) azureParts.Add(RootPath);
+            var subPath = string.Join("/", azureParts);
             return string.IsNullOrWhiteSpace(subPath) ? "Azure Storage" : $"Azure: {subPath}";
         }
     }

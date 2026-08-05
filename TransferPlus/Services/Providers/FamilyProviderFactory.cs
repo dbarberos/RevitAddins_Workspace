@@ -38,6 +38,11 @@ public static class FamilyProviderFactory
                     TelemetryLogger.LogInfo($"FamilyProviderFactory: Creado AzureStorageFamilyProvider para contenedor '{matchedSource.ContainerName}' ({matchedSource.Name})");
                     return new AzureStorageFamilyProvider(matchedSource, familyRevitService);
                 }
+                else if (matchedSource.SourceType == FamilySourceType.AutodeskDocs)
+                {
+                    TelemetryLogger.LogInfo($"FamilyProviderFactory: Creado AutodeskDocsFamilyProvider para carpeta ACC '{matchedSource.FolderName}' ({matchedSource.Name})");
+                    return new AutodeskDocsFamilyProvider(matchedSource, familyRevitService);
+                }
                 else
                 {
                     TelemetryLogger.LogInfo($"FamilyProviderFactory: Creado LocalFolderFamilyProvider para ruta guardada '{matchedSource.Path}' ({matchedSource.Name})");
