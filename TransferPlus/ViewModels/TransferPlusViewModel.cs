@@ -864,6 +864,11 @@ public partial class TransferPlusViewModel : ObservableObject
                                     }
                                 }
                             }
+                            else if (node.Item is FamilySymbolItemModel symItem)
+                            {
+                                if (symItem.Name != null) match = searchRegex.IsMatch(symItem.Name);
+                                if (!match && symItem.FamilyName != null) match = searchRegex.IsMatch(symItem.FamilyName);
+                            }
                         }
                     }
                 }
@@ -893,6 +898,11 @@ public partial class TransferPlusViewModel : ObservableObject
                                     }
                                 }
                             }
+                            else if (node.Item is FamilySymbolItemModel symItem)
+                            {
+                                if (symItem.Name != null) match = symItem.Name.ToLowerInvariant().Contains(searchText);
+                                if (!match && symItem.FamilyName != null) match = symItem.FamilyName.ToLowerInvariant().Contains(searchText);
+                            }
                         }
                     }
                 }
@@ -903,11 +913,23 @@ public partial class TransferPlusViewModel : ObservableObject
         if (match)
         {
             node.SetCheckedState(true);
+            node.IsExpanded = true;
+            ExpandParents(node);
         }
 
         foreach (var child in node.Children)
         {
             FilterNode(child, searchText, searchRegex);
+        }
+    }
+
+    private void ExpandParents(TreeItemViewModel node)
+    {
+        var parent = node.Parent;
+        while (parent != null)
+        {
+            parent.IsExpanded = true;
+            parent = parent.Parent;
         }
     }
 
