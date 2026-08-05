@@ -192,8 +192,15 @@ public partial class TransferPlusViewModel : ObservableObject
 
         if (value != null)
         {
+            if (!string.IsNullOrWhiteSpace(value.ImagePreviewUrl) && System.IO.File.Exists(value.ImagePreviewUrl))
+            {
+                var (ver, cat) = RfaMetadataExtractor.ExtractMetadata(value.ImagePreviewUrl);
+                if (!string.IsNullOrWhiteSpace(ver)) value.RevitVersion = ver;
+                if (!string.IsNullOrWhiteSpace(cat)) value.CategoryName = cat;
+            }
+
             SelectedFamilyName = value.Name;
-            SelectedFamilyRevitVersion = value.RevitVersion;
+            SelectedFamilyRevitVersion = string.IsNullOrWhiteSpace(value.RevitVersion) ? "RFA File" : value.RevitVersion;
             SelectedFamilySymbols = new ObservableCollection<FamilySymbolItemModel>(value.Symbols ?? new List<FamilySymbolItemModel>());
             
             if (value.Thumbnail != null)
@@ -226,6 +233,14 @@ public partial class TransferPlusViewModel : ObservableObject
         {
             var thumbnail = await FamilyThumbnailService.GetPreviewImageAsync(family, token);
             sw.Stop();
+
+            if (!string.IsNullOrWhiteSpace(family.ImagePreviewUrl) && System.IO.File.Exists(family.ImagePreviewUrl))
+            {
+                var (ver, cat) = RfaMetadataExtractor.ExtractMetadata(family.ImagePreviewUrl);
+                if (!string.IsNullOrWhiteSpace(ver)) family.RevitVersion = ver;
+                if (!string.IsNullOrWhiteSpace(cat)) family.CategoryName = cat;
+                SelectedFamilyRevitVersion = family.RevitVersion;
+            }
 
             if (token.IsCancellationRequested)
             {

@@ -49,7 +49,11 @@ public class LocalFolderFamilyProvider : IFamilyProvider
                 if (BackupRegex.IsMatch(filePath)) continue;
 
                 string familyName = Path.GetFileNameWithoutExtension(filePath);
-                string categoryName = Path.GetFileName(Path.GetDirectoryName(filePath) ?? _folderPath);
+                string folderCategory = Path.GetFileName(Path.GetDirectoryName(filePath) ?? _folderPath);
+
+                var (ver, cat) = RfaMetadataExtractor.ExtractMetadata(filePath);
+                string revitVersion = string.IsNullOrWhiteSpace(ver) ? "RFA File" : ver;
+                string categoryName = string.IsNullOrWhiteSpace(cat) ? folderCategory : cat;
 
                 result.Add(new FamilyItemModel
                 {
@@ -58,6 +62,7 @@ public class LocalFolderFamilyProvider : IFamilyProvider
                     SourceName = ProviderName,
                     StatusMessage = "Disponible en disco",
                     ImagePreviewUrl = filePath,
+                    RevitVersion = revitVersion,
                     Symbols = new List<FamilySymbolItemModel>
                     {
                         new FamilySymbolItemModel { Name = familyName, FamilyName = familyName, IsActive = true }
