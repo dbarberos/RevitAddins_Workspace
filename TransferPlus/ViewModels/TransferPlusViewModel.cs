@@ -1794,6 +1794,13 @@ public partial class TransferPlusViewModel : ObservableObject
     }
 
     [RelayCommand]
+    private void InsertFilterRegexHelper(string snippet)
+    {
+        SearchFilter = (SearchFilter ?? string.Empty) + snippet;
+        FilterUseRegex = true;
+    }
+
+    [RelayCommand]
     private void InsertDateHelper(string snippet)
     {
         RenameReplaceText += snippet;

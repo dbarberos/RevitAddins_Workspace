@@ -41,6 +41,11 @@ public partial class TransferPlusView : Window
         BtnRegexHelper.IsChecked = false;
     }
 
+    private void CloseFilterRegexPopup(object sender, RoutedEventArgs e)
+    {
+        BtnFilterRegexHelper.IsChecked = false;
+    }
+
     private void TreeView_SelectedItemChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
     {
         if (DataContext is TransferPlusViewModel vm && e.NewValue is TreeItemViewModel selectedNode)
