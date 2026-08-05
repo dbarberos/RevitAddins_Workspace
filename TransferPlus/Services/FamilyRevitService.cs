@@ -33,8 +33,66 @@ namespace TransferPlus.Services
     /// </summary>
     public class FamilyRevitService
     {
+        private static void ExecuteWithWarningSuppression(Document doc, Action action)
+        {
+            if (doc?.Application == null)
+            {
+                action();
+                return;
+            }
+
+            var app = doc.Application;
+            var uiApp = new Autodesk.Revit.UI.UIApplication(app);
+
+            EventHandler<Autodesk.Revit.DB.Events.FailuresProcessingEventArgs> failureHandler = (sender, e) =>
+            {
+                try
+                {
+                    var accessor = e.GetFailuresAccessor();
+                    var failures = accessor.GetFailureMessages();
+                    foreach (var f in failures)
+                    {
+                        if (f.GetSeverity() == FailureSeverity.Warning)
+                        {
+                            accessor.DeleteWarning(f);
+                        }
+                    }
+                }
+                catch { }
+            };
+
+            EventHandler<Autodesk.Revit.UI.Events.DialogBoxShowingEventArgs> dialogHandler = (sender, e) =>
+            {
+                try
+                {
+                    if (e is Autodesk.Revit.UI.Events.TaskDialogShowingEventArgs taskArgs)
+                    {
+                        taskArgs.OverrideResult((int)Autodesk.Revit.UI.TaskDialogResult.Ok);
+                    }
+                    else
+                    {
+                        // 1 corresponde a IDOK / "Aceptar" en diálogos nativos de Revit (ej. "El hueco no corta nada")
+                        e.OverrideResult(1);
+                    }
+                }
+                catch { }
+            };
+
+            try
+            {
+                app.FailuresProcessing += failureHandler;
+                uiApp.DialogBoxShowing += dialogHandler;
+                action();
+            }
+            finally
+            {
+                app.FailuresProcessing -= failureHandler;
+                uiApp.DialogBoxShowing -= dialogHandler;
+            }
+        }
+
         /// <summary>
-        /// Intenta cargar una familia (.rfa) en el documento destino dentro de una transacción con WarningSwallower.
+        /// Intenta cargar una familia (.rfa) en el documento destino.
         /// Valida rutas para prevenir Path Traversal y desensibiliza logs PII.
         /// </summary>
         public bool TryLoadFamily(Document document, string rfaFilePath, out Family? family)
@@ -47,7 +105,6 @@ namespace TransferPlus.Services
 
             try
             {
-                // Validación estricta de Path Traversal mediante resolución completa de la ruta
                 string resolvedPath = Path.GetFullPath(rfaFilePath);
                 if (!File.Exists(resolvedPath))
                 {
@@ -56,19 +113,20 @@ namespace TransferPlus.Services
                 }
 
                 var overwriteOptions = new SilentOverwriteFamilyOption();
+                Family? loadedFamily = null;
 
-                using var transaction = new Transaction(document, "Cargar Familia TransferPlus");
-                WarningSwallower.AttachToTransaction(transaction);
-                transaction.Start();
-
-                if (document.LoadFamily(resolvedPath, overwriteOptions, out family))
+                ExecuteWithWarningSuppression(document, () =>
                 {
-                    transaction.Commit();
+                    document.LoadFamily(resolvedPath, overwriteOptions, out loadedFamily);
+                });
+
+                if (loadedFamily != null)
+                {
+                    family = loadedFamily;
                     TelemetryLogger.LogInfo($"Familia cargada correctamente desde '{resolvedPath}'");
-                    return family != null;
+                    return true;
                 }
 
-                // Si la familia ya estaba cargada en el documento, buscar la referencia existente
                 var familyName = Path.GetFileNameWithoutExtension(resolvedPath);
                 var existingFamily = new FilteredElementCollector(document)
                     .OfClass(typeof(Family))
@@ -78,12 +136,10 @@ namespace TransferPlus.Services
                 if (existingFamily != null)
                 {
                     family = existingFamily;
-                    transaction.Commit();
                     TelemetryLogger.LogInfo($"Referencia de familia existente reutilizada: '{familyName}'");
                     return true;
                 }
 
-                transaction.RollBack();
                 return false;
             }
             catch (Exception ex)
@@ -94,7 +150,7 @@ namespace TransferPlus.Services
         }
 
         /// <summary>
-        /// Intenta cargar un símbolo/tipo específico de familia (.rfa) en el documento destino con WarningSwallower.
+        /// Intenta cargar un símbolo/tipo específico de familia (.rfa) en el documento destino.
         /// </summary>
         public bool TryLoadFamilySymbol(Document document, string rfaFilePath, string symbolName, out FamilySymbol? familySymbol)
         {
@@ -106,7 +162,6 @@ namespace TransferPlus.Services
 
             try
             {
-                // Validación estricta de Path Traversal
                 string resolvedPath = Path.GetFullPath(rfaFilePath);
                 if (!File.Exists(resolvedPath))
                 {
@@ -115,23 +170,29 @@ namespace TransferPlus.Services
                 }
 
                 var overwriteOptions = new SilentOverwriteFamilyOption();
+                FamilySymbol? loadedSymbol = null;
 
-                using var transaction = new Transaction(document, "Cargar Símbolo de Familia TransferPlus");
-                WarningSwallower.AttachToTransaction(transaction);
-                transaction.Start();
-
-                if (document.LoadFamilySymbol(resolvedPath, symbolName, overwriteOptions, out familySymbol))
+                ExecuteWithWarningSuppression(document, () =>
                 {
-                    if (familySymbol != null && !familySymbol.IsActive)
+                    document.LoadFamilySymbol(resolvedPath, symbolName, overwriteOptions, out loadedSymbol);
+                });
+
+                if (loadedSymbol != null)
+                {
+                    familySymbol = loadedSymbol;
+                    if (!familySymbol.IsActive)
                     {
-                        familySymbol.Activate();
+                        using (var tx = new Transaction(document, "Activar Símbolo"))
+                        {
+                            tx.Start();
+                            familySymbol.Activate();
+                            tx.Commit();
+                        }
                     }
-                    transaction.Commit();
                     TelemetryLogger.LogInfo($"Símbolo '{symbolName}' cargado correctamente desde '{resolvedPath}'");
-                    return familySymbol != null;
+                    return true;
                 }
 
-                // Buscar si el símbolo ya existía en el documento
                 var existingSymbol = new FilteredElementCollector(document)
                     .OfClass(typeof(FamilySymbol))
                     .Cast<FamilySymbol>()
@@ -142,14 +203,17 @@ namespace TransferPlus.Services
                     familySymbol = existingSymbol;
                     if (!familySymbol.IsActive)
                     {
-                        familySymbol.Activate();
+                        using (var tx = new Transaction(document, "Activar Símbolo"))
+                        {
+                            tx.Start();
+                            familySymbol.Activate();
+                            tx.Commit();
+                        }
                     }
-                    transaction.Commit();
                     TelemetryLogger.LogInfo($"Símbolo existente reutilizado: '{symbolName}'");
                     return true;
                 }
 
-                transaction.RollBack();
                 return false;
             }
             catch (Exception ex)
@@ -237,6 +301,7 @@ namespace TransferPlus.Services
             }
 
             Document? familyDoc = null;
+            string tempRfaPath = string.Empty;
             try
             {
                 familyDoc = uiApp.Application.OpenDocumentFile(rfaFilePath);
@@ -278,26 +343,33 @@ namespace TransferPlus.Services
                     }
                 }
 
-                if (!string.IsNullOrWhiteSpace(overrideFamilyName) && familyDoc.OwnerFamily != null && !familyDoc.OwnerFamily.Name.Equals(overrideFamilyName, StringComparison.OrdinalIgnoreCase))
+                string pathToLoad = rfaFilePath;
+                if (!string.IsNullOrWhiteSpace(overrideFamilyName))
                 {
-                    using (var txName = new Transaction(familyDoc, "Renombrar Familia"))
-                    {
-                        txName.Start();
-                        try
-                        {
-                            familyDoc.OwnerFamily.Name = overrideFamilyName;
-                        }
-                        catch (Exception ex)
-                        {
-                            TelemetryLogger.LogWarning($"No se pudo renombrar la familia de archivo a '{overrideFamilyName}': {ex.Message}");
-                        }
-                        txName.Commit();
-                    }
+                    string tempDir = Path.Combine(Path.GetTempPath(), "TransferPlus_TempFamilies");
+                    Directory.CreateDirectory(tempDir);
+                    tempRfaPath = Path.Combine(tempDir, overrideFamilyName + ".rfa");
+
+                    var saveOptions = new SaveAsOptions { OverwriteExistingFile = true };
+                    familyDoc.SaveAs(tempRfaPath, saveOptions);
+                    pathToLoad = tempRfaPath;
                 }
 
                 var overwriteOptions = new SilentOverwriteFamilyOption();
-                var loaded = familyDoc.LoadFamily(targetDocument, overwriteOptions);
-                return loaded != null;
+                bool loaded = false;
+
+                ExecuteWithWarningSuppression(targetDocument, () =>
+                {
+                    loaded = familyDoc.LoadFamily(targetDocument, overwriteOptions) != null;
+                });
+
+                if (loaded)
+                {
+                    TelemetryLogger.LogInfo($"Familia desde archivo '{overrideFamilyName ?? Path.GetFileNameWithoutExtension(rfaFilePath)}' cargada con éxito.");
+                    return true;
+                }
+
+                return false;
             }
             catch (Exception ex)
             {
@@ -307,6 +379,10 @@ namespace TransferPlus.Services
             finally
             {
                 familyDoc?.Close(false);
+                if (!string.IsNullOrEmpty(tempRfaPath) && File.Exists(tempRfaPath))
+                {
+                    try { File.Delete(tempRfaPath); } catch { }
+                }
             }
         }
 
@@ -329,6 +405,7 @@ namespace TransferPlus.Services
             }
 
             Document? familyDoc = null;
+            string tempRfaPath = string.Empty;
             try
             {
                 // Abrir la familia en memoria (no crea ventana gráfica)
@@ -337,24 +414,6 @@ namespace TransferPlus.Services
                 {
                     TelemetryLogger.LogWarning($"No se pudo editar en memoria la familia '{sourceFamily.Name}'.");
                     return false;
-                }
-
-                // Renombrar la familia si se especificó overrideFamilyName (ej. Append Suffix)
-                if (!string.IsNullOrWhiteSpace(overrideFamilyName) && familyDoc.OwnerFamily != null && !familyDoc.OwnerFamily.Name.Equals(overrideFamilyName, StringComparison.OrdinalIgnoreCase))
-                {
-                    using (var txName = new Transaction(familyDoc, "Renombrar Familia"))
-                    {
-                        txName.Start();
-                        try
-                        {
-                            familyDoc.OwnerFamily.Name = overrideFamilyName;
-                        }
-                        catch (Exception nameEx)
-                        {
-                            TelemetryLogger.LogWarning($"No se pudo renombrar la familia en memoria a '{overrideFamilyName}': {nameEx.Message}");
-                        }
-                        txName.Commit();
-                    }
                 }
 
                 // Filtrar los tipos no seleccionados en el familyDoc antes de cargarlo mediante FamilyManager
@@ -399,15 +458,30 @@ namespace TransferPlus.Services
                 }
 
                 var overwriteOptions = new SilentOverwriteFamilyOption();
+                Family? resultFamily = null;
 
-                loadedFamily = familyDoc.LoadFamily(targetDocument, overwriteOptions);
-                if (loadedFamily != null)
+                if (!string.IsNullOrWhiteSpace(overrideFamilyName))
                 {
-                    TelemetryLogger.LogInfo($"Familia en memoria '{sourceFamily.Name}' transferida correctamente.");
-                    return true;
+                    string tempDir = Path.Combine(Path.GetTempPath(), "TransferPlus_TempFamilies");
+                    Directory.CreateDirectory(tempDir);
+                    tempRfaPath = Path.Combine(tempDir, overrideFamilyName + ".rfa");
+
+                    var saveOptions = new SaveAsOptions { OverwriteExistingFile = true };
+                    familyDoc.SaveAs(tempRfaPath, saveOptions);
+
+                    ExecuteWithWarningSuppression(targetDocument, () =>
+                    {
+                        familyDoc.LoadFamily(targetDocument, overwriteOptions);
+                    });
+                }
+                else
+                {
+                    ExecuteWithWarningSuppression(targetDocument, () =>
+                    {
+                        resultFamily = familyDoc.LoadFamily(targetDocument, overwriteOptions);
+                    });
                 }
 
-                // Buscar referencia si ya existía
                 string targetCheckName = overrideFamilyName ?? sourceFamily.Name;
                 var existingFamily = new FilteredElementCollector(targetDocument)
                     .OfClass(typeof(Family))
@@ -417,11 +491,11 @@ namespace TransferPlus.Services
                 if (existingFamily != null)
                 {
                     loadedFamily = existingFamily;
-                    TelemetryLogger.LogInfo($"Familia en memoria reutilizada: '{targetCheckName}'");
+                    TelemetryLogger.LogInfo($"Familia en memoria cargada/reutilizada: '{targetCheckName}'");
                     return true;
                 }
 
-                return false;
+                return resultFamily != null;
             }
             catch (Exception ex)
             {
@@ -431,6 +505,10 @@ namespace TransferPlus.Services
             finally
             {
                 familyDoc?.Close(false);
+                if (!string.IsNullOrEmpty(tempRfaPath) && File.Exists(tempRfaPath))
+                {
+                    try { File.Delete(tempRfaPath); } catch { }
+                }
             }
         }
     }
