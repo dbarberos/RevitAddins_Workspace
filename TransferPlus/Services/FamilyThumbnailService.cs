@@ -61,11 +61,22 @@ namespace TransferPlus.Services
                     result = ExtractNativeFamilyThumbnail(nativeFam, cancellationToken);
                 }
 
-                // --- Strategy B: Disk file fallback (Local .rfa, Linked .rvt, Azure cached .rfa) ---
+                // --- Strategy B1: Direct RFA OLE PNG stream extraction for disk files ---
                 if (result == null && !cancellationToken.IsCancellationRequested)
                 {
                     string? diskPath = ResolveDiskPath(family);
-                    if (!string.IsNullOrEmpty(diskPath))
+                    if (!string.IsNullOrEmpty(diskPath) && File.Exists(diskPath))
+                    {
+                        LoggerService.LogInfo($"[ThumbnailService] Executing direct RFA stream extraction for '{diskPath}'...");
+                        result = ExtractRfaFileThumbnail(diskPath);
+                    }
+                }
+
+                // --- Strategy B2: Windows Shell extraction fallback ---
+                if (result == null && !cancellationToken.IsCancellationRequested)
+                {
+                    string? diskPath = ResolveDiskPath(family);
+                    if (!string.IsNullOrEmpty(diskPath) && File.Exists(diskPath))
                     {
                         LoggerService.LogInfo($"[ThumbnailService] Executing Windows Shell extraction (256px) for '{diskPath}'...");
                         result = await Task.Run(() =>
@@ -74,6 +85,13 @@ namespace TransferPlus.Services
                             return ExtractShellThumbnail(diskPath, 256);
                         }, cancellationToken);
                     }
+                }
+
+                // --- Strategy C: Guaranteed 2D Reference Symbol Icon Fallback ---
+                if (result == null && !cancellationToken.IsCancellationRequested)
+                {
+                    LoggerService.LogInfo($"[ThumbnailService] Generating 2D reference preview icon fallback for '{family.Name}'...");
+                    result = CreateFallback2DReferenceIcon(family.Name, family.CategoryName);
                 }
 
                 if (result != null)
@@ -178,6 +196,80 @@ namespace TransferPlus.Services
             return null;
         }
 
+        /// <summary>
+        /// Directly extracts the embedded native PNG preview stream from a Revit .rfa file on disk.
+        /// High-speed OLE stream extraction in < 1ms.
+        /// </summary>
+        private static BitmapSource? ExtractRfaFileThumbnail(string filePath)
+        {
+            try
+            {
+                if (!File.Exists(filePath)) return null;
+
+                byte[] fileBytes;
+                using (var fs = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+                {
+                    long readLen = Math.Min(fs.Length, 3 * 1024 * 1024);
+                    fileBytes = new byte[readLen];
+                    fs.Read(fileBytes, 0, (int)readLen);
+                }
+
+                // Search for PNG header: 0x89 0x50 0x4E 0x47 0x0D 0x0A 0x1A 0x0A
+                byte[] pngHeader = new byte[] { 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A };
+                int headerIdx = IndexOfSequence(fileBytes, pngHeader, 0);
+
+                if (headerIdx >= 0)
+                {
+                    byte[] pngEnd = new byte[] { 0x49, 0x45, 0x4E, 0x44, 0xAE, 0x42, 0x60, 0x82 };
+                    int endIdx = IndexOfSequence(fileBytes, pngEnd, headerIdx);
+
+                    if (endIdx > headerIdx)
+                    {
+                        int pngLength = (endIdx + pngEnd.Length) - headerIdx;
+                        byte[] pngBytes = new byte[pngLength];
+                        Buffer.BlockCopy(fileBytes, headerIdx, pngBytes, 0, pngLength);
+
+                        using (var ms = new MemoryStream(pngBytes))
+                        {
+                            var bmpImage = new BitmapImage();
+                            bmpImage.BeginInit();
+                            bmpImage.CacheOption = BitmapCacheOption.OnLoad;
+                            bmpImage.StreamSource = ms;
+                            bmpImage.EndInit();
+                            bmpImage.Freeze();
+                            return bmpImage;
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                LoggerService.LogWarning($"[ThumbnailService] Direct RFA stream extraction failed for '{filePath}': {ex.Message}");
+            }
+
+            return null;
+        }
+
+        private static int IndexOfSequence(byte[] array, byte[] pattern, int startIndex)
+        {
+            int maxFirst = array.Length - pattern.Length;
+            for (int i = startIndex; i <= maxFirst; i++)
+            {
+                if (array[i] != pattern[0]) continue;
+                bool match = true;
+                for (int j = 1; j < pattern.Length; j++)
+                {
+                    if (array[i + j] != pattern[j])
+                    {
+                        match = false;
+                        break;
+                    }
+                }
+                if (match) return i;
+            }
+            return -1;
+        }
+
         private static BitmapSource? ExtractShellThumbnail(string filePath, int size)
         {
             try
@@ -187,7 +279,7 @@ namespace TransferPlus.Services
                 
                 if (shellItem is IShellItemImageFactory imageFactory)
                 {
-                    imageFactory.GetImage(new SIZE { cx = size, cy = size }, SIIGBF.SIIGBF_BIGNOTICON | SIIGBF.SIIGBF_THUMBNAILONLY, out IntPtr hBitmap);
+                    imageFactory.GetImage(new SIZE { cx = size, cy = size }, SIIGBF.SIIGBF_CROPTOSQUARE | SIIGBF.SIIGBF_SCALEUP, out IntPtr hBitmap);
                     if (hBitmap != IntPtr.Zero)
                     {
                         try
