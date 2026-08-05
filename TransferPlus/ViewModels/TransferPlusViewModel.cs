@@ -416,25 +416,10 @@ public partial class TransferPlusViewModel : ObservableObject
                     // Standard Revit Document source
                     LoadSourceItems(value.Adoc);
                 }
-
-                // Rebuild destination documents: all open non-linked documents except the selected source
-                DestinationDocuments.Clear();
-                foreach (Document doc in _app.Application.Documents)
-                {
-                    if (doc.IsLinked) continue;
-                    if (doc.PathName.Equals(value.Adoc.PathName, StringComparison.OrdinalIgnoreCase)) continue;
-
-                    var dest = new Archivo(doc) { Checked = true };
-                    dest.Nombre = GetDocumentDisplayName(doc);
-                    dest.OnCheckedPropertyChanged = () => OnPropertyChanged(nameof(CheckedDestinationsText));
-                    DestinationDocuments.Add(dest);
-                }
-                TransferPlus.Services.LoggerService.LogInfo($"OnSelectedSourceDocumentChanged: Rebuilt destination documents. Target destinations count: {DestinationDocuments.Count}");
             }
             else
             {
-                // Family Source (Local Directory or Azure Storage)
-                DestinationDocuments.Clear();
+                // Family Source (Local Directory, Azure Storage, or Autodesk Docs)
                 if (IsFamiliesManagerActive)
                 {
                     _ = LoadFamiliesFromSourceAsync(value.Nombre);
@@ -447,6 +432,21 @@ public partial class TransferPlusViewModel : ObservableObject
                     TransferPlus.Services.LoggerService.LogInfo($"OnSelectedSourceDocumentChanged: Selected family source '{value.Nombre}'. Use 'Activate' button in Families Manager panel to load and transfer families.");
                 }
             }
+
+            // Rebuild destination documents for ALL sources (open models and custom family sources):
+            // Includes all open non-linked, non-family project documents in session
+            DestinationDocuments.Clear();
+            foreach (Document doc in _app.Application.Documents)
+            {
+                if (doc.IsLinked || doc.IsFamilyDocument) continue;
+                if (value.Adoc != null && doc.PathName.Equals(value.Adoc.PathName, StringComparison.OrdinalIgnoreCase)) continue;
+
+                var dest = new Archivo(doc) { Checked = true };
+                dest.Nombre = GetDocumentDisplayName(doc);
+                dest.OnCheckedPropertyChanged = () => OnPropertyChanged(nameof(CheckedDestinationsText));
+                DestinationDocuments.Add(dest);
+            }
+            TransferPlus.Services.LoggerService.LogInfo($"OnSelectedSourceDocumentChanged: Rebuilt destination documents. Target destinations count: {DestinationDocuments.Count}");
         }
         else
         {
@@ -1299,9 +1299,48 @@ public partial class TransferPlusViewModel : ObservableObject
         {
             if (node.Item is FamilyItemModel fam && node.IsChecked != false)
             {
-                if (!list.Contains(fam))
+                var checkedSymbolNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                bool hasChildSymbolNodes = false;
+
+                foreach (var childNode in node.Children)
                 {
-                    list.Add(fam);
+                    if (childNode.Item is FamilySymbolItemModel symItem)
+                    {
+                        hasChildSymbolNodes = true;
+                        if (childNode.IsChecked == true)
+                        {
+                            checkedSymbolNames.Add(symItem.Name);
+                        }
+                    }
+                }
+
+                List<FamilySymbolItemModel> filteredSymbols;
+                if (hasChildSymbolNodes && checkedSymbolNames.Any())
+                {
+                    filteredSymbols = fam.Symbols?.Where(s => checkedSymbolNames.Contains(s.Name)).ToList() 
+                                      ?? new List<FamilySymbolItemModel>();
+                }
+                else
+                {
+                    filteredSymbols = fam.Symbols ?? new List<FamilySymbolItemModel>();
+                }
+
+                var filteredFam = new FamilyItemModel
+                {
+                    Name = fam.Name,
+                    CategoryName = fam.CategoryName,
+                    SourceName = fam.SourceName,
+                    StatusMessage = fam.StatusMessage,
+                    Symbols = filteredSymbols,
+                    NativeFamily = fam.NativeFamily,
+                    SourceDocument = fam.SourceDocument,
+                    HostTypeDescription = fam.HostTypeDescription,
+                    ImagePreviewUrl = fam.ImagePreviewUrl
+                };
+
+                if (!list.Any(f => f.Name == filteredFam.Name && f.SourceName == filteredFam.SourceName))
+                {
+                    list.Add(filteredFam);
                 }
             }
             CollectCheckedFamilies(node.Children, list);

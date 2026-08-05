@@ -91,7 +91,8 @@ public class OpenDocumentFamilyProvider : IFamilyProvider
         if (familyItem.NativeFamily is Family sourceFamily)
         {
             TelemetryLogger.LogInfo($"OpenDocumentFamilyProvider: Iniciando transferencia en memoria de familia '{sourceFamily.Name}' desde '{_sourceDoc.Title}' a destino...");
-            bool success = _familyRevitService.TryTransferInMemoryFamily(_sourceDoc, sourceFamily, destinationDoc, out _);
+            var targetSymbolNames = familyItem.Symbols?.Select(s => s.Name);
+            bool success = _familyRevitService.TryTransferInMemoryFamily(_sourceDoc, sourceFamily, destinationDoc, out _, targetSymbolNames);
             if (success)
             {
                 TelemetryLogger.LogInfo($"OpenDocumentFamilyProvider: Familia '{sourceFamily.Name}' transferida con éxito en memoria.");

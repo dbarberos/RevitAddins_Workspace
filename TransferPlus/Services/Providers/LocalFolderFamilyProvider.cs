@@ -80,11 +80,29 @@ public class LocalFolderFamilyProvider : IFamilyProvider
         if (familyItem == null || destinationDoc == null) return Task.FromResult(false);
 
         string filePath = familyItem.ImagePreviewUrl;
-        TelemetryLogger.LogInfo($"LocalFolderFamilyProvider: Cargando archivo .rfa local '{familyItem.Name}' ({filePath}) en documento de Revit...");
-        bool success = _familyRevitService.TryLoadFamily(destinationDoc, filePath, out _);
+
+        bool success = false;
+        if (familyItem.Symbols != null && familyItem.Symbols.Any())
+        {
+            TelemetryLogger.LogInfo($"LocalFolderFamilyProvider: Intentando cargar {familyItem.Symbols.Count} símbolo(s) seleccionado(s) para '{familyItem.Name}' ({filePath})...");
+            foreach (var sym in familyItem.Symbols)
+            {
+                if (_familyRevitService.TryLoadFamilySymbol(destinationDoc, filePath, sym.Name, out _))
+                {
+                    success = true;
+                }
+            }
+        }
+
+        if (!success)
+        {
+            TelemetryLogger.LogInfo($"LocalFolderFamilyProvider: Cargando archivo .rfa local completo '{familyItem.Name}' ({filePath}) en documento de Revit...");
+            success = _familyRevitService.TryLoadFamily(destinationDoc, filePath, out _);
+        }
+
         if (success)
         {
-            TelemetryLogger.LogInfo($"LocalFolderFamilyProvider: Familia '{familyItem.Name}' cargada con éxito desde disco.");
+            TelemetryLogger.LogInfo($"LocalFolderFamilyProvider: Familia '{familyItem.Name}' cargada con éxito en el modelo destino.");
         }
         else
         {

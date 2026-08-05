@@ -185,7 +185,12 @@ namespace TransferPlus.Services
         /// Transfiere una familia desde un documento origen (abierto o vinculado) hacia un documento destino completamente en memoria,
         /// utilizando el patrón recomendado por la API de Revit (Document.EditFamily -> familyDoc.LoadFamily).
         /// </summary>
-        public bool TryTransferInMemoryFamily(Document sourceDocument, Family sourceFamily, Document targetDocument, out Family? loadedFamily)
+        public bool TryTransferInMemoryFamily(
+            Document sourceDocument,
+            Family sourceFamily,
+            Document targetDocument,
+            out Family? loadedFamily,
+            IEnumerable<string>? targetSymbolNames = null)
         {
             loadedFamily = null;
             if (sourceDocument == null || sourceFamily == null || targetDocument == null)
@@ -202,6 +207,47 @@ namespace TransferPlus.Services
                 {
                     TelemetryLogger.LogWarning($"No se pudo editar en memoria la familia '{sourceFamily.Name}'.");
                     return false;
+                }
+
+                // Filtrar los tipos no seleccionados en el familyDoc antes de cargarlo mediante FamilyManager
+                if (familyDoc.IsFamilyDocument && familyDoc.FamilyManager != null && targetSymbolNames != null)
+                {
+                    var selectedNamesSet = new HashSet<string>(targetSymbolNames, StringComparer.OrdinalIgnoreCase);
+                    if (selectedNamesSet.Any())
+                    {
+                        var familyManager = familyDoc.FamilyManager;
+                        var typesToDelete = new List<FamilyType>();
+
+                        foreach (FamilyType familyType in familyManager.Types)
+                        {
+                            if (!selectedNamesSet.Contains(familyType.Name))
+                            {
+                                typesToDelete.Add(familyType);
+                            }
+                        }
+
+                        if (typesToDelete.Any() && typesToDelete.Count < familyManager.Types.Size)
+                        {
+                            TelemetryLogger.LogInfo($"Filtrando {typesToDelete.Count} tipo(s) no seleccionados en la familia en memoria '{sourceFamily.Name}' mediante FamilyManager...");
+                            using (var tx = new Transaction(familyDoc, "Filtrar Tipos Seleccionados"))
+                            {
+                                tx.Start();
+                                foreach (var typeToDelete in typesToDelete)
+                                {
+                                    try
+                                    {
+                                        familyManager.CurrentType = typeToDelete;
+                                        familyManager.DeleteCurrentType();
+                                    }
+                                    catch (Exception delEx)
+                                    {
+                                        TelemetryLogger.LogWarning($"No se pudo eliminar el tipo '{typeToDelete.Name}' en la familia en memoria: {delEx.Message}");
+                                    }
+                                }
+                                tx.Commit();
+                            }
+                        }
+                    }
                 }
 
                 var overwriteOptions = new SilentOverwriteFamilyOption();

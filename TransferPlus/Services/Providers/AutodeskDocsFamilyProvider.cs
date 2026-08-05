@@ -155,7 +155,24 @@ public class AutodeskDocsFamilyProvider : IFamilyProvider
             }
 
             TelemetryLogger.LogInfo($"[AutodeskDocsFamilyProvider] Cargando archivo descargado '{familyItem.Name}' ({localTempFilePath}) en modelo Revit...");
-            bool success = _familyRevitService.TryLoadFamily(destinationDoc, localTempFilePath, out _);
+            bool success = false;
+            if (familyItem.Symbols != null && familyItem.Symbols.Any())
+            {
+                foreach (var sym in familyItem.Symbols)
+                {
+                    if (_familyRevitService.TryLoadFamilySymbol(destinationDoc, localTempFilePath, sym.Name, out _))
+                    {
+                        success = true;
+                    }
+                }
+            }
+
+            if (!success)
+            {
+                TelemetryLogger.LogInfo($"[AutodeskDocsFamilyProvider] Cargando archivo .rfa completo de ACC '{familyItem.Name}'...");
+                success = _familyRevitService.TryLoadFamily(destinationDoc, localTempFilePath, out _);
+            }
+
             if (success)
             {
                 TelemetryLogger.LogInfo($"[AutodeskDocsFamilyProvider] Familia de ACC '{familyItem.Name}' cargada con éxito en el documento.");

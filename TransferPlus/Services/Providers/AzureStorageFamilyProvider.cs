@@ -78,7 +78,23 @@ public class AzureStorageFamilyProvider : IFamilyProvider
                 cancellationToken);
 
             TelemetryLogger.LogInfo($"AzureStorageFamilyProvider: Blob descargado en '{tempLocalPath}'. Cargando en Revit...");
-            bool loaded = _familyRevitService.TryLoadFamily(destinationDoc, tempLocalPath, out _);
+            bool loaded = false;
+            if (familyItem.Symbols != null && familyItem.Symbols.Any())
+            {
+                foreach (var sym in familyItem.Symbols)
+                {
+                    if (_familyRevitService.TryLoadFamilySymbol(destinationDoc, tempLocalPath, sym.Name, out _))
+                    {
+                        loaded = true;
+                    }
+                }
+            }
+
+            if (!loaded)
+            {
+                TelemetryLogger.LogInfo($"AzureStorageFamilyProvider: Cargando archivo .rfa completo de Azure '{familyItem.Name}'...");
+                loaded = _familyRevitService.TryLoadFamily(destinationDoc, tempLocalPath, out _);
+            }
 
             FamilyFileManager.RemoveFamilyLocalFile(tempLocalPath);
             if (loaded)
