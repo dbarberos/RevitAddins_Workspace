@@ -1094,19 +1094,126 @@ public partial class TransferPlusViewModel : ObservableObject
 
             try
             {
-                var familyService = new FamilyRevitService();
-                TransferPlus.Services.Providers.IFamilyProvider provider = TransferPlus.Services.Providers.FamilyProviderFactory.CreateProvider(
-                    SelectedSourceDocument.Nombre,
-                    SelectedSourceDocument.Adoc,
-                    familyService);
+            var familyService = new FamilyRevitService();
+
+            // -------------------------------------------------------------
+            // ON DUPLICATES CHECK: ABORT TRANSACTION
+            // -------------------------------------------------------------
+            if (AbortTransaction)
+            {
+                bool duplicateFound = false;
+                string duplicateInfo = string.Empty;
+
+                foreach (var destDoc in targetDestinations)
+                {
+                    foreach (var fam in checkedFamilies)
+                    {
+                        var existingFam = familyService.GetExistingFamily(destDoc.Adoc, fam.Name);
+                        if (existingFam != null)
+                        {
+                            duplicateFound = true;
+                            duplicateInfo = $"Family '{fam.Name}' already exists in target model '{destDoc.Nombre}'.";
+                            break;
+                        }
+
+                        if (fam.Symbols != null && fam.Symbols.Any(s => s.IsActive))
+                        {
+                            var selectedActiveSymbols = fam.Symbols.Where(s => s.IsActive).Select(s => s.Name).ToHashSet(StringComparer.OrdinalIgnoreCase);
+                            var existingFamilySymbols = new FilteredElementCollector(destDoc.Adoc)
+                                .OfClass(typeof(FamilySymbol))
+                                .Cast<FamilySymbol>()
+                                .Where(s => selectedActiveSymbols.Contains(s.Name))
+                                .ToList();
+
+                            if (existingFamilySymbols.Any())
+                            {
+                                duplicateFound = true;
+                                duplicateInfo = $"Type '{existingFamilySymbols.First().Name}' already exists in target model '{destDoc.Nombre}'.";
+                                break;
+                            }
+                        }
+                    }
+                    if (duplicateFound) break;
+                }
+
+                if (duplicateFound)
+                {
+                    TransferPlus.Services.LoggerService.LogInfo($"Transfer: Aborted due to duplicates. {duplicateInfo}");
+                    TaskDialog.Show("TransferPlus - Operation Aborted",
+                        $"The transfer operation was aborted because one or more selected families or types already exist in the target model:\n\n{duplicateInfo}");
+                    return;
+                }
+            }
+
+            TransferPlus.Services.Providers.IFamilyProvider provider = TransferPlus.Services.Providers.FamilyProviderFactory.CreateProvider(
+                SelectedSourceDocument.Nombre,
+                SelectedSourceDocument.Adoc,
+                familyService);
 
                 int transferredCount = 0;
                 foreach (var destDoc in targetDestinations)
                 {
                     foreach (var fam in checkedFamilies)
                     {
-                        StatusMessage = $"Transferring family '{fam.Name}' to '{destDoc.Nombre}'...";
-                        bool ok = provider.TransferFamilyAsync(fam, destDoc.Adoc).GetAwaiter().GetResult();
+                        string? overrideFamilyName = null;
+                        var existingFam = familyService.GetExistingFamily(destDoc.Adoc, fam.Name);
+
+                        // -------------------------------------------------------------
+                        // ON DUPLICATES CHECK: KEEP ORIGINAL
+                        // -------------------------------------------------------------
+                        if (KeepOriginal && existingFam != null)
+                        {
+                            var existingSymbolNames = familyService.GetExistingSymbolNames(destDoc.Adoc, existingFam);
+                            var selectedSymbols = fam.Symbols?.Where(s => s.IsActive).ToList() ?? new List<FamilySymbolItemModel>();
+
+                            if (selectedSymbols.Any())
+                            {
+                                var missingSymbols = selectedSymbols.Where(s => !existingSymbolNames.Contains(s.Name)).ToList();
+
+                                if (!missingSymbols.Any())
+                                {
+                                    // ALL selected types already exist in the destination family. Skip this family!
+                                    TransferPlus.Services.LoggerService.LogInfo($"Transfer: Skipped family '{fam.Name}' in '{destDoc.Nombre}' because all selected types already exist (Keep Original).");
+                                    continue;
+                                }
+
+                                // Create a cloned family item containing ONLY missing symbols to transfer
+                                var clonedFam = new FamilyItemModel
+                                {
+                                    Name = fam.Name,
+                                    CategoryName = fam.CategoryName,
+                                    SourceName = fam.SourceName,
+                                    ImagePreviewUrl = fam.ImagePreviewUrl,
+                                    NativeFamily = fam.NativeFamily,
+                                    RevitVersion = fam.RevitVersion,
+                                    Symbols = missingSymbols
+                                };
+
+                                StatusMessage = $"Transferring {missingSymbols.Count} missing type(s) for family '{fam.Name}' to '{destDoc.Nombre}'...";
+                                bool okMissing = provider.TransferFamilyAsync(clonedFam, destDoc.Adoc, null).GetAwaiter().GetResult();
+                                if (okMissing) transferredCount++;
+                                continue;
+                            }
+                            else
+                            {
+                                // No specific active symbols defined and family exists -> Skip (Keep Original)
+                                TransferPlus.Services.LoggerService.LogInfo($"Transfer: Skipped family '{fam.Name}' in '{destDoc.Nombre}' (Keep Original).");
+                                continue;
+                            }
+                        }
+
+                        // -------------------------------------------------------------
+                        // ON DUPLICATES CHECK: APPEND SUFFIX
+                        // -------------------------------------------------------------
+                        if (AppendSuffix && existingFam != null)
+                        {
+                            string suffix = string.IsNullOrWhiteSpace(DuplicatesSuffixText) ? "_Copy" : DuplicatesSuffixText;
+                            overrideFamilyName = fam.Name + suffix;
+                            TransferPlus.Services.LoggerService.LogInfo($"Transfer: Appending suffix to family '{fam.Name}' -> '{overrideFamilyName}' for target '{destDoc.Nombre}'.");
+                        }
+
+                        StatusMessage = $"Transferring family '{overrideFamilyName ?? fam.Name}' to '{destDoc.Nombre}'...";
+                        bool ok = provider.TransferFamilyAsync(fam, destDoc.Adoc, overrideFamilyName).GetAwaiter().GetResult();
                         if (ok) transferredCount++;
                     }
                 }

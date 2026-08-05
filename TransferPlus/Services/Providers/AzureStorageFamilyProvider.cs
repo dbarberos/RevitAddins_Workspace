@@ -61,7 +61,7 @@ public class AzureStorageFamilyProvider : IFamilyProvider
         return result;
     }
 
-    public async Task<bool> TransferFamilyAsync(FamilyItemModel familyItem, Document destinationDoc, CancellationToken cancellationToken = default)
+    public async Task<bool> TransferFamilyAsync(FamilyItemModel familyItem, Document destinationDoc, string? overrideFamilyName = null, CancellationToken cancellationToken = default)
     {
         if (familyItem == null || destinationDoc == null) return false;
 
@@ -79,21 +79,31 @@ public class AzureStorageFamilyProvider : IFamilyProvider
 
             TelemetryLogger.LogInfo($"AzureStorageFamilyProvider: Blob descargado en '{tempLocalPath}'. Cargando en Revit...");
             bool loaded = false;
-            if (familyItem.Symbols != null && familyItem.Symbols.Any())
+
+            if (!string.IsNullOrWhiteSpace(overrideFamilyName) && destinationDoc.Application != null)
             {
-                foreach (var sym in familyItem.Symbols)
+                var uiApp = new Autodesk.Revit.UI.UIApplication(destinationDoc.Application);
+                var targetSymbolNames = familyItem.Symbols?.Select(s => s.Name);
+                loaded = _familyRevitService.TryLoadFileFamilyWithOverride(uiApp, destinationDoc, tempLocalPath, overrideFamilyName, targetSymbolNames);
+            }
+            else
+            {
+                if (familyItem.Symbols != null && familyItem.Symbols.Any())
                 {
-                    if (_familyRevitService.TryLoadFamilySymbol(destinationDoc, tempLocalPath, sym.Name, out _))
+                    foreach (var sym in familyItem.Symbols)
                     {
-                        loaded = true;
+                        if (_familyRevitService.TryLoadFamilySymbol(destinationDoc, tempLocalPath, sym.Name, out _))
+                        {
+                            loaded = true;
+                        }
                     }
                 }
-            }
 
-            if (!loaded)
-            {
-                TelemetryLogger.LogInfo($"AzureStorageFamilyProvider: Cargando archivo .rfa completo de Azure '{familyItem.Name}'...");
-                loaded = _familyRevitService.TryLoadFamily(destinationDoc, tempLocalPath, out _);
+                if (!loaded)
+                {
+                    TelemetryLogger.LogInfo($"AzureStorageFamilyProvider: Cargando archivo .rfa completo de Azure '{familyItem.Name}'...");
+                    loaded = _familyRevitService.TryLoadFamily(destinationDoc, tempLocalPath, out _);
+                }
             }
 
             FamilyFileManager.RemoveFamilyLocalFile(tempLocalPath);

@@ -99,7 +99,7 @@ public class LinkedDocumentFamilyProvider : IFamilyProvider
         return Task.FromResult<IEnumerable<FamilyItemModel>>(result);
     }
 
-    public Task<bool> TransferFamilyAsync(FamilyItemModel familyItem, Document destinationDoc, CancellationToken cancellationToken = default)
+    public Task<bool> TransferFamilyAsync(FamilyItemModel familyItem, Document destinationDoc, string? overrideFamilyName = null, CancellationToken cancellationToken = default)
     {
         if (familyItem == null || destinationDoc == null) return Task.FromResult(false);
 
@@ -113,7 +113,8 @@ public class LinkedDocumentFamilyProvider : IFamilyProvider
         if (familyItem.NativeFamily is Family sourceFamily)
         {
             TelemetryLogger.LogInfo($"LinkedDocumentFamilyProvider: Iniciando transferencia en memoria de familia vinculada '{sourceFamily.Name}' desde '{linkDoc.Title}'...");
-            bool success = _familyRevitService.TryTransferInMemoryFamily(linkDoc, sourceFamily, destinationDoc, out _);
+            var targetSymbolNames = familyItem.Symbols?.Select(s => s.Name);
+            bool success = _familyRevitService.TryTransferInMemoryFamily(linkDoc, sourceFamily, destinationDoc, out _, targetSymbolNames, overrideFamilyName);
             if (success)
             {
                 TelemetryLogger.LogInfo($"LinkedDocumentFamilyProvider: Familia vinculada '{sourceFamily.Name}' transferida con éxito.");

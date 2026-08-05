@@ -80,29 +80,38 @@ public class LocalFolderFamilyProvider : IFamilyProvider
         return Task.FromResult<IEnumerable<FamilyItemModel>>(result);
     }
 
-    public Task<bool> TransferFamilyAsync(FamilyItemModel familyItem, Document destinationDoc, CancellationToken cancellationToken = default)
+    public Task<bool> TransferFamilyAsync(FamilyItemModel familyItem, Document destinationDoc, string? overrideFamilyName = null, CancellationToken cancellationToken = default)
     {
         if (familyItem == null || destinationDoc == null) return Task.FromResult(false);
 
         string filePath = familyItem.ImagePreviewUrl;
-
         bool success = false;
-        if (familyItem.Symbols != null && familyItem.Symbols.Any())
+
+        if (!string.IsNullOrWhiteSpace(overrideFamilyName) && destinationDoc.Application != null)
         {
-            TelemetryLogger.LogInfo($"LocalFolderFamilyProvider: Intentando cargar {familyItem.Symbols.Count} símbolo(s) seleccionado(s) para '{familyItem.Name}' ({filePath})...");
-            foreach (var sym in familyItem.Symbols)
+            var uiApp = new Autodesk.Revit.UI.UIApplication(destinationDoc.Application);
+            var targetSymbolNames = familyItem.Symbols?.Select(s => s.Name);
+            success = _familyRevitService.TryLoadFileFamilyWithOverride(uiApp, destinationDoc, filePath, overrideFamilyName, targetSymbolNames);
+        }
+        else
+        {
+            if (familyItem.Symbols != null && familyItem.Symbols.Any())
             {
-                if (_familyRevitService.TryLoadFamilySymbol(destinationDoc, filePath, sym.Name, out _))
+                TelemetryLogger.LogInfo($"LocalFolderFamilyProvider: Intentando cargar {familyItem.Symbols.Count} símbolo(s) seleccionado(s) para '{familyItem.Name}' ({filePath})...");
+                foreach (var sym in familyItem.Symbols)
                 {
-                    success = true;
+                    if (_familyRevitService.TryLoadFamilySymbol(destinationDoc, filePath, sym.Name, out _))
+                    {
+                        success = true;
+                    }
                 }
             }
-        }
 
-        if (!success)
-        {
-            TelemetryLogger.LogInfo($"LocalFolderFamilyProvider: Cargando archivo .rfa local completo '{familyItem.Name}' ({filePath}) en documento de Revit...");
-            success = _familyRevitService.TryLoadFamily(destinationDoc, filePath, out _);
+            if (!success)
+            {
+                TelemetryLogger.LogInfo($"LocalFolderFamilyProvider: Cargando archivo .rfa local completo '{familyItem.Name}' ({filePath}) en documento de Revit...");
+                success = _familyRevitService.TryLoadFamily(destinationDoc, filePath, out _);
+            }
         }
 
         if (success)

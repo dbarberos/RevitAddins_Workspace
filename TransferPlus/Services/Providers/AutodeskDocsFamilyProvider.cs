@@ -103,7 +103,7 @@ public class AutodeskDocsFamilyProvider : IFamilyProvider
         return result;
     }
 
-    public async Task<bool> TransferFamilyAsync(FamilyItemModel familyItem, Document destinationDoc, CancellationToken cancellationToken = default)
+    public async Task<bool> TransferFamilyAsync(FamilyItemModel familyItem, Document destinationDoc, string? overrideFamilyName = null, CancellationToken cancellationToken = default)
     {
         if (familyItem == null) throw new ArgumentNullException(nameof(familyItem));
         if (destinationDoc == null) throw new ArgumentNullException(nameof(destinationDoc));
@@ -156,21 +156,31 @@ public class AutodeskDocsFamilyProvider : IFamilyProvider
 
             TelemetryLogger.LogInfo($"[AutodeskDocsFamilyProvider] Cargando archivo descargado '{familyItem.Name}' ({localTempFilePath}) en modelo Revit...");
             bool success = false;
-            if (familyItem.Symbols != null && familyItem.Symbols.Any())
+
+            if (!string.IsNullOrWhiteSpace(overrideFamilyName) && destinationDoc.Application != null)
             {
-                foreach (var sym in familyItem.Symbols)
+                var uiApp = new Autodesk.Revit.UI.UIApplication(destinationDoc.Application);
+                var targetSymbolNames = familyItem.Symbols?.Select(s => s.Name);
+                success = _familyRevitService.TryLoadFileFamilyWithOverride(uiApp, destinationDoc, localTempFilePath, overrideFamilyName, targetSymbolNames);
+            }
+            else
+            {
+                if (familyItem.Symbols != null && familyItem.Symbols.Any())
                 {
-                    if (_familyRevitService.TryLoadFamilySymbol(destinationDoc, localTempFilePath, sym.Name, out _))
+                    foreach (var sym in familyItem.Symbols)
                     {
-                        success = true;
+                        if (_familyRevitService.TryLoadFamilySymbol(destinationDoc, localTempFilePath, sym.Name, out _))
+                        {
+                            success = true;
+                        }
                     }
                 }
-            }
 
-            if (!success)
-            {
-                TelemetryLogger.LogInfo($"[AutodeskDocsFamilyProvider] Cargando archivo .rfa completo de ACC '{familyItem.Name}'...");
-                success = _familyRevitService.TryLoadFamily(destinationDoc, localTempFilePath, out _);
+                if (!success)
+                {
+                    TelemetryLogger.LogInfo($"[AutodeskDocsFamilyProvider] Cargando archivo .rfa completo de ACC '{familyItem.Name}'...");
+                    success = _familyRevitService.TryLoadFamily(destinationDoc, localTempFilePath, out _);
+                }
             }
 
             if (success)

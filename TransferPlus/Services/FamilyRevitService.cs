@@ -182,6 +182,135 @@ namespace TransferPlus.Services
         }
 
         /// <summary>
+        /// Obtiene la familia existente por nombre en el documento destino o null si no existe.
+        /// </summary>
+        public Family? GetExistingFamily(Document document, string familyName)
+        {
+            if (document == null || string.IsNullOrWhiteSpace(familyName)) return null;
+
+            return new FilteredElementCollector(document)
+                .OfClass(typeof(Family))
+                .Cast<Family>()
+                .FirstOrDefault(f => f.Name.Equals(familyName, StringComparison.OrdinalIgnoreCase));
+        }
+
+        /// <summary>
+        /// Obtiene los nombres de los símbolos/tipos pertenecientes a una familia existente en el documento destino.
+        /// </summary>
+        public HashSet<string> GetExistingSymbolNames(Document document, Family existingFamily)
+        {
+            var symbolNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            if (document == null || existingFamily == null) return symbolNames;
+
+            try
+            {
+                var symbolIds = existingFamily.GetFamilySymbolIds();
+                foreach (ElementId id in symbolIds)
+                {
+                    if (document.GetElement(id) is FamilySymbol symbol && !string.IsNullOrEmpty(symbol.Name))
+                    {
+                        symbolNames.Add(symbol.Name);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                TelemetryLogger.LogWarning($"Error obteniendo símbolos de la familia '{existingFamily.Name}': {ex.Message}");
+            }
+
+            return symbolNames;
+        }
+
+        /// <summary>
+        /// Carga una familia desde archivo .rfa modificando opcionalmente el nombre de la familia en memoria si se especifica overrideFamilyName.
+        /// </summary>
+        public bool TryLoadFileFamilyWithOverride(
+            Autodesk.Revit.UI.UIApplication uiApp,
+            Document targetDocument,
+            string rfaFilePath,
+            string? overrideFamilyName = null,
+            IEnumerable<string>? targetSymbolNames = null)
+        {
+            if (targetDocument == null || string.IsNullOrWhiteSpace(rfaFilePath) || !File.Exists(rfaFilePath))
+            {
+                return false;
+            }
+
+            Document? familyDoc = null;
+            try
+            {
+                familyDoc = uiApp.Application.OpenDocumentFile(rfaFilePath);
+                if (familyDoc == null) return false;
+
+                if (familyDoc.IsFamilyDocument && familyDoc.FamilyManager != null && targetSymbolNames != null)
+                {
+                    var selectedNamesSet = new HashSet<string>(targetSymbolNames, StringComparer.OrdinalIgnoreCase);
+                    if (selectedNamesSet.Any())
+                    {
+                        var familyManager = familyDoc.FamilyManager;
+                        var typesToDelete = new List<FamilyType>();
+
+                        foreach (FamilyType familyType in familyManager.Types)
+                        {
+                            if (!selectedNamesSet.Contains(familyType.Name))
+                            {
+                                typesToDelete.Add(familyType);
+                            }
+                        }
+
+                        if (typesToDelete.Any() && typesToDelete.Count < familyManager.Types.Size)
+                        {
+                            using (var tx = new Transaction(familyDoc, "Filtrar Tipos"))
+                            {
+                                tx.Start();
+                                foreach (var typeToDelete in typesToDelete)
+                                {
+                                    try
+                                    {
+                                        familyManager.CurrentType = typeToDelete;
+                                        familyManager.DeleteCurrentType();
+                                    }
+                                    catch { }
+                                }
+                                tx.Commit();
+                            }
+                        }
+                    }
+                }
+
+                if (!string.IsNullOrWhiteSpace(overrideFamilyName) && familyDoc.OwnerFamily != null && !familyDoc.OwnerFamily.Name.Equals(overrideFamilyName, StringComparison.OrdinalIgnoreCase))
+                {
+                    using (var txName = new Transaction(familyDoc, "Renombrar Familia"))
+                    {
+                        txName.Start();
+                        try
+                        {
+                            familyDoc.OwnerFamily.Name = overrideFamilyName;
+                        }
+                        catch (Exception ex)
+                        {
+                            TelemetryLogger.LogWarning($"No se pudo renombrar la familia de archivo a '{overrideFamilyName}': {ex.Message}");
+                        }
+                        txName.Commit();
+                    }
+                }
+
+                var overwriteOptions = new SilentOverwriteFamilyOption();
+                var loaded = familyDoc.LoadFamily(targetDocument, overwriteOptions);
+                return loaded != null;
+            }
+            catch (Exception ex)
+            {
+                TelemetryLogger.LogError($"Error al cargar la familia desde archivo '{rfaFilePath}'", ex);
+                return false;
+            }
+            finally
+            {
+                familyDoc?.Close(false);
+            }
+        }
+
+        /// <summary>
         /// Transfiere una familia desde un documento origen (abierto o vinculado) hacia un documento destino completamente en memoria,
         /// utilizando el patrón recomendado por la API de Revit (Document.EditFamily -> familyDoc.LoadFamily).
         /// </summary>
@@ -190,7 +319,8 @@ namespace TransferPlus.Services
             Family sourceFamily,
             Document targetDocument,
             out Family? loadedFamily,
-            IEnumerable<string>? targetSymbolNames = null)
+            IEnumerable<string>? targetSymbolNames = null,
+            string? overrideFamilyName = null)
         {
             loadedFamily = null;
             if (sourceDocument == null || sourceFamily == null || targetDocument == null)
@@ -207,6 +337,24 @@ namespace TransferPlus.Services
                 {
                     TelemetryLogger.LogWarning($"No se pudo editar en memoria la familia '{sourceFamily.Name}'.");
                     return false;
+                }
+
+                // Renombrar la familia si se especificó overrideFamilyName (ej. Append Suffix)
+                if (!string.IsNullOrWhiteSpace(overrideFamilyName) && familyDoc.OwnerFamily != null && !familyDoc.OwnerFamily.Name.Equals(overrideFamilyName, StringComparison.OrdinalIgnoreCase))
+                {
+                    using (var txName = new Transaction(familyDoc, "Renombrar Familia"))
+                    {
+                        txName.Start();
+                        try
+                        {
+                            familyDoc.OwnerFamily.Name = overrideFamilyName;
+                        }
+                        catch (Exception nameEx)
+                        {
+                            TelemetryLogger.LogWarning($"No se pudo renombrar la familia en memoria a '{overrideFamilyName}': {nameEx.Message}");
+                        }
+                        txName.Commit();
+                    }
                 }
 
                 // Filtrar los tipos no seleccionados en el familyDoc antes de cargarlo mediante FamilyManager
@@ -260,15 +408,16 @@ namespace TransferPlus.Services
                 }
 
                 // Buscar referencia si ya existía
+                string targetCheckName = overrideFamilyName ?? sourceFamily.Name;
                 var existingFamily = new FilteredElementCollector(targetDocument)
                     .OfClass(typeof(Family))
                     .Cast<Family>()
-                    .FirstOrDefault(f => f.Name.Equals(sourceFamily.Name, StringComparison.OrdinalIgnoreCase));
+                    .FirstOrDefault(f => f.Name.Equals(targetCheckName, StringComparison.OrdinalIgnoreCase));
 
                 if (existingFamily != null)
                 {
                     loadedFamily = existingFamily;
-                    TelemetryLogger.LogInfo($"Familia en memoria reutilizada: '{sourceFamily.Name}'");
+                    TelemetryLogger.LogInfo($"Familia en memoria reutilizada: '{targetCheckName}'");
                     return true;
                 }
 

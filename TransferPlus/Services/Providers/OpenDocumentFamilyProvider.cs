@@ -84,7 +84,7 @@ public class OpenDocumentFamilyProvider : IFamilyProvider
         return Task.FromResult<IEnumerable<FamilyItemModel>>(result);
     }
 
-    public Task<bool> TransferFamilyAsync(FamilyItemModel familyItem, Document destinationDoc, CancellationToken cancellationToken = default)
+    public Task<bool> TransferFamilyAsync(FamilyItemModel familyItem, Document destinationDoc, string? overrideFamilyName = null, CancellationToken cancellationToken = default)
     {
         if (familyItem == null || destinationDoc == null || _sourceDoc == null) return Task.FromResult(false);
 
@@ -92,7 +92,7 @@ public class OpenDocumentFamilyProvider : IFamilyProvider
         {
             TelemetryLogger.LogInfo($"OpenDocumentFamilyProvider: Iniciando transferencia en memoria de familia '{sourceFamily.Name}' desde '{_sourceDoc.Title}' a destino...");
             var targetSymbolNames = familyItem.Symbols?.Select(s => s.Name);
-            bool success = _familyRevitService.TryTransferInMemoryFamily(_sourceDoc, sourceFamily, destinationDoc, out _, targetSymbolNames);
+            bool success = _familyRevitService.TryTransferInMemoryFamily(_sourceDoc, sourceFamily, destinationDoc, out _, targetSymbolNames, overrideFamilyName);
             if (success)
             {
                 TelemetryLogger.LogInfo($"OpenDocumentFamilyProvider: Familia '{sourceFamily.Name}' transferida con éxito en memoria.");
