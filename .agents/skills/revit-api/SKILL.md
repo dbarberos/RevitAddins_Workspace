@@ -86,6 +86,7 @@ You have structured expert knowledge in the following 30 domains. Use the concep
 * [debugging_family_mode_on_duplicates_logic_2026-08-05.md](file:///c:/Users/david.barbero/Documents/DOCUMENTOS/ALTEN/Workbench/RevitAddins_Workspace/RevitAddins_Workspace/.agents/skills/revit-api/references/debugging_family_mode_on_duplicates_logic_2026-08-05.md)
 * [debugging_family_mode_append_suffix_temp_save_2026-08-05.md](file:///c:/Users/david.barbero/Documents/DOCUMENTOS/ALTEN/Workbench/RevitAddins_Workspace/RevitAddins_Workspace/.agents/skills/revit-api/references/debugging_family_mode_append_suffix_temp_save_2026-08-05.md)
 * [debugging_loadfamily_transaction_state_failures_processing_2026-08-05.md](file:///c:/Users/david.barbero/Documents/DOCUMENTOS/ALTEN/Workbench/RevitAddins_Workspace/RevitAddins_Workspace/.agents/skills/revit-api/references/debugging_loadfamily_transaction_state_failures_processing_2026-08-05.md)
+* [debugging_azure_storage_transfer_deadlock_2026-08-06.md](file:///c:/Users/david.barbero/Documents/DOCUMENTOS/ALTEN/Workbench/RevitAddins_Workspace/RevitAddins_Workspace/.agents/skills/revit-api/references/debugging_azure_storage_transfer_deadlock_2026-08-06.md)
 * [guia_transferencia_familias_en_memoria.md](file:///c:/Users/david.barbero/Documents/DOCUMENTOS/ALTEN/Workbench/RevitAddins_Workspace/RevitAddins_Workspace/.agents/skills/revit-api/references/guia_transferencia_familias_en_memoria.md)
 
 

@@ -109,6 +109,34 @@ public static class AzureStorageService
     }
 
     /// <summary>
+    /// Synchronously downloads an Azure .rfa blob to a local temporary path.
+    /// Eliminates async SynchronizationContext deadlocks when invoked from Revit UI thread.
+    /// Uses FamilyFileManager to enforce Path.GetFullPath validation.
+    /// </summary>
+    public static string DownloadFamilyBlob(
+        string connectionString,
+        string containerName,
+        string blobName)
+    {
+        if (string.IsNullOrWhiteSpace(connectionString)) throw new ArgumentException("Connection string is required.", nameof(connectionString));
+        if (string.IsNullOrWhiteSpace(containerName)) throw new ArgumentException("Container name is required.", nameof(containerName));
+        if (string.IsNullOrWhiteSpace(blobName)) throw new ArgumentException("Blob name is required.", nameof(blobName));
+
+        var containerClient = new BlobContainerClient(connectionString, containerName);
+        var blobClient = containerClient.GetBlobClient(blobName);
+
+        using var memoryStream = new MemoryStream();
+        blobClient.DownloadTo(memoryStream);
+        memoryStream.Position = 0;
+
+        string familyFileName = Path.GetFileName(blobName);
+        string localTempFilePath = FamilyFileManager.CreateFamilyLocalFile(memoryStream, familyFileName);
+
+        TelemetryLogger.LogInfo($"Familia de Azure '{blobName}' descargada en: {localTempFilePath}");
+        return localTempFilePath;
+    }
+
+    /// <summary>
     /// Asynchronously downloads an Azure .rfa blob to a local temporary path.
     /// Uses FamilyFileManager to enforce Path.GetFullPath validation.
     /// </summary>
@@ -126,7 +154,7 @@ public static class AzureStorageService
         var blobClient = containerClient.GetBlobClient(blobName);
 
         using var memoryStream = new MemoryStream();
-        await blobClient.DownloadToAsync(memoryStream, cancellationToken);
+        await blobClient.DownloadToAsync(memoryStream, cancellationToken).ConfigureAwait(false);
         memoryStream.Position = 0;
 
         string familyFileName = Path.GetFileName(blobName);

@@ -61,52 +61,45 @@ public class AzureStorageFamilyProvider : IFamilyProvider
         return result;
     }
 
-    public async Task<bool> TransferFamilyAsync(FamilyItemModel familyItem, Document destinationDoc, string? overrideFamilyName = null, CancellationToken cancellationToken = default)
+    public Task<bool> TransferFamilyAsync(FamilyItemModel familyItem, Document destinationDoc, string? overrideFamilyName = null, CancellationToken cancellationToken = default)
     {
-        if (familyItem == null || destinationDoc == null) return false;
+        if (familyItem == null || destinationDoc == null) return Task.FromResult(false);
 
         string blobName = familyItem.ImagePreviewUrl;
-        if (string.IsNullOrWhiteSpace(blobName)) return false;
+        if (string.IsNullOrWhiteSpace(blobName)) return Task.FromResult(false);
 
+        string tempLocalPath = string.Empty;
         try
         {
             TelemetryLogger.LogInfo($"AzureStorageFamilyProvider: Descargando blob de Azure '{blobName}' a almacenamiento temporal local...");
-            string tempLocalPath = await AzureStorageService.DownloadFamilyBlobAsync(
+            tempLocalPath = AzureStorageService.DownloadFamilyBlob(
                 _sourceItem.ConnectionString,
                 _sourceItem.ContainerName,
-                blobName,
-                cancellationToken);
+                blobName);
 
             TelemetryLogger.LogInfo($"AzureStorageFamilyProvider: Blob descargado en '{tempLocalPath}'. Cargando en Revit...");
             bool loaded = false;
 
+            var targetSymbolNames = familyItem.Symbols?.Select(s => s.Name);
+
             if (!string.IsNullOrWhiteSpace(overrideFamilyName) && destinationDoc.Application != null)
             {
                 var uiApp = new Autodesk.Revit.UI.UIApplication(destinationDoc.Application);
-                var targetSymbolNames = familyItem.Symbols?.Select(s => s.Name);
                 loaded = _familyRevitService.TryLoadFileFamilyWithOverride(uiApp, destinationDoc, tempLocalPath, overrideFamilyName, targetSymbolNames);
+            }
+            else if (targetSymbolNames != null && targetSymbolNames.Any() &&
+                     !targetSymbolNames.Contains(familyItem.Name, StringComparer.OrdinalIgnoreCase) && destinationDoc.Application != null)
+            {
+                // Símbolos específicos filtrados (diferentes al nombre genérico de familia)
+                var uiApp = new Autodesk.Revit.UI.UIApplication(destinationDoc.Application);
+                loaded = _familyRevitService.TryLoadFileFamilyWithOverride(uiApp, destinationDoc, tempLocalPath, null, targetSymbolNames);
             }
             else
             {
-                if (familyItem.Symbols != null && familyItem.Symbols.Any())
-                {
-                    foreach (var sym in familyItem.Symbols)
-                    {
-                        if (_familyRevitService.TryLoadFamilySymbol(destinationDoc, tempLocalPath, sym.Name, out _))
-                        {
-                            loaded = true;
-                        }
-                    }
-                }
-
-                if (!loaded)
-                {
-                    TelemetryLogger.LogInfo($"AzureStorageFamilyProvider: Cargando archivo .rfa completo de Azure '{familyItem.Name}'...");
-                    loaded = _familyRevitService.TryLoadFamily(destinationDoc, tempLocalPath, out _);
-                }
+                // Carga directa de la familia completa .rfa
+                loaded = _familyRevitService.TryLoadFamily(destinationDoc, tempLocalPath, out _);
             }
 
-            FamilyFileManager.RemoveFamilyLocalFile(tempLocalPath);
             if (loaded)
             {
                 TelemetryLogger.LogInfo($"AzureStorageFamilyProvider: Familia de Azure '{familyItem.Name}' transferida y cargada con éxito.");
@@ -115,12 +108,19 @@ public class AzureStorageFamilyProvider : IFamilyProvider
             {
                 TelemetryLogger.LogWarning($"AzureStorageFamilyProvider: No se pudo cargar la familia de Azure '{familyItem.Name}'.");
             }
-            return loaded;
+            return Task.FromResult(loaded);
         }
         catch (Exception ex)
         {
             TelemetryLogger.LogError($"Error descargando y transfiriendo blob de Azure '{blobName}'", ex);
-            return false;
+            return Task.FromResult(false);
+        }
+        finally
+        {
+            if (!string.IsNullOrEmpty(tempLocalPath))
+            {
+                FamilyFileManager.RemoveFamilyLocalFile(tempLocalPath);
+            }
         }
     }
 }
