@@ -80,7 +80,7 @@ public class LocalFolderFamilyProvider : IFamilyProvider
         return Task.FromResult<IEnumerable<FamilyItemModel>>(result);
     }
 
-    public Task<bool> TransferFamilyAsync(FamilyItemModel familyItem, Document destinationDoc, string? overrideFamilyName = null, CancellationToken cancellationToken = default)
+    public Task<bool> TransferFamilyAsync(FamilyItemModel familyItem, Document destinationDoc, string? overrideFamilyName = null, IDictionary<string, string>? symbolRenameMap = null, CancellationToken cancellationToken = default)
     {
         if (familyItem == null || destinationDoc == null) return Task.FromResult(false);
 
@@ -89,16 +89,16 @@ public class LocalFolderFamilyProvider : IFamilyProvider
 
         var targetSymbolNames = familyItem.Symbols?.Select(s => s.Name);
 
-        if (!string.IsNullOrWhiteSpace(overrideFamilyName) && destinationDoc.Application != null)
+        if ((!string.IsNullOrWhiteSpace(overrideFamilyName) || (symbolRenameMap != null && symbolRenameMap.Any())) && destinationDoc.Application != null)
         {
             var uiApp = new Autodesk.Revit.UI.UIApplication(destinationDoc.Application);
-            success = _familyRevitService.TryLoadFileFamilyWithOverride(uiApp, destinationDoc, filePath, overrideFamilyName, targetSymbolNames);
+            success = _familyRevitService.TryLoadFileFamilyWithOverride(uiApp, destinationDoc, filePath, overrideFamilyName, targetSymbolNames, symbolRenameMap);
         }
         else if (targetSymbolNames != null && targetSymbolNames.Any() &&
                  !targetSymbolNames.Contains(familyItem.Name, StringComparer.OrdinalIgnoreCase) && destinationDoc.Application != null)
         {
             var uiApp = new Autodesk.Revit.UI.UIApplication(destinationDoc.Application);
-            success = _familyRevitService.TryLoadFileFamilyWithOverride(uiApp, destinationDoc, filePath, null, targetSymbolNames);
+            success = _familyRevitService.TryLoadFileFamilyWithOverride(uiApp, destinationDoc, filePath, null, targetSymbolNames, symbolRenameMap);
         }
         else
         {

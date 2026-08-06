@@ -103,7 +103,7 @@ public class AutodeskDocsFamilyProvider : IFamilyProvider
         return result;
     }
 
-    public async Task<bool> TransferFamilyAsync(FamilyItemModel familyItem, Document destinationDoc, string? overrideFamilyName = null, CancellationToken cancellationToken = default)
+    public async Task<bool> TransferFamilyAsync(FamilyItemModel familyItem, Document destinationDoc, string? overrideFamilyName = null, IDictionary<string, string>? symbolRenameMap = null, CancellationToken cancellationToken = default)
     {
         if (familyItem == null) throw new ArgumentNullException(nameof(familyItem));
         if (destinationDoc == null) throw new ArgumentNullException(nameof(destinationDoc));
@@ -159,16 +159,16 @@ public class AutodeskDocsFamilyProvider : IFamilyProvider
 
             var targetSymbolNames = familyItem.Symbols?.Select(s => s.Name);
 
-            if (!string.IsNullOrWhiteSpace(overrideFamilyName) && destinationDoc.Application != null)
+            if ((!string.IsNullOrWhiteSpace(overrideFamilyName) || (symbolRenameMap != null && symbolRenameMap.Any())) && destinationDoc.Application != null)
             {
                 var uiApp = new Autodesk.Revit.UI.UIApplication(destinationDoc.Application);
-                success = _familyRevitService.TryLoadFileFamilyWithOverride(uiApp, destinationDoc, localTempFilePath, overrideFamilyName, targetSymbolNames);
+                success = _familyRevitService.TryLoadFileFamilyWithOverride(uiApp, destinationDoc, localTempFilePath, overrideFamilyName, targetSymbolNames, symbolRenameMap);
             }
             else if (targetSymbolNames != null && targetSymbolNames.Any() &&
                      !targetSymbolNames.Contains(familyItem.Name, StringComparer.OrdinalIgnoreCase) && destinationDoc.Application != null)
             {
                 var uiApp = new Autodesk.Revit.UI.UIApplication(destinationDoc.Application);
-                success = _familyRevitService.TryLoadFileFamilyWithOverride(uiApp, destinationDoc, localTempFilePath, null, targetSymbolNames);
+                success = _familyRevitService.TryLoadFileFamilyWithOverride(uiApp, destinationDoc, localTempFilePath, null, targetSymbolNames, symbolRenameMap);
             }
             else
             {

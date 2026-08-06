@@ -129,6 +129,8 @@ public static class AzureStorageService
         blobClient.DownloadTo(memoryStream);
         memoryStream.Position = 0;
 
+        TelemetryLogger.LogInfo($"AzureStorageService: Blob '{blobName}' descargado en memoria ({memoryStream.Length} bytes).");
+
         string familyFileName = Path.GetFileName(blobName);
         string localTempFilePath = FamilyFileManager.CreateFamilyLocalFile(memoryStream, familyFileName);
 

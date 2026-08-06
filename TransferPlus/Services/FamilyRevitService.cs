@@ -65,13 +65,15 @@ namespace TransferPlus.Services
             {
                 try
                 {
+                    TelemetryLogger.LogInfo($"[DialogBoxShowing] Interceptado: DialogId={e.DialogId}");
                     if (e is Autodesk.Revit.UI.Events.TaskDialogShowingEventArgs taskArgs)
                     {
+                        TelemetryLogger.LogInfo($"[TaskDialogShowing] DialogId='{taskArgs.DialogId}', Message='{taskArgs.Message}'");
                         taskArgs.OverrideResult((int)Autodesk.Revit.UI.TaskDialogResult.Ok);
                     }
                     else
                     {
-                        // 1 corresponde a IDOK / "Aceptar" en diálogos nativos de Revit (ej. "El hueco no corta nada")
+                        // En diálogos nativos de Revit (ej. DialogBox 1001), 1 = Aceptar / OK.
                         e.OverrideResult(1);
                     }
                 }
@@ -112,18 +114,92 @@ namespace TransferPlus.Services
                     return false;
                 }
 
+                var fileInfo = new FileInfo(resolvedPath);
+                if (fileInfo.Length == 0)
+                {
+                    TelemetryLogger.LogWarning($"El archivo de familia descargado está vacío (0 bytes): '{resolvedPath}'");
+                    return false;
+                }
+
                 var overwriteOptions = new SilentOverwriteFamilyOption();
                 Family? loadedFamily = null;
+                bool loadSuccess = false;
+
+                TelemetryLogger.LogInfo($"Iniciando document.LoadFamily('{resolvedPath}'). TargetDoc='{document.Title}', IsFamilyDoc={document.IsFamilyDocument}, IsModifiable={document.IsModifiable}...");
 
                 ExecuteWithWarningSuppression(document, () =>
                 {
-                    document.LoadFamily(resolvedPath, overwriteOptions, out loadedFamily);
+                    try
+                    {
+                        // 1. Probar primero la sobrecarga estándar de 2 parámetros
+                        loadSuccess = document.LoadFamily(resolvedPath, out loadedFamily);
+                        if (!loadSuccess)
+                        {
+                            TelemetryLogger.LogInfo($"document.LoadFamily(path, out family) devolvió false. Intentando sobrecarga con IFamilyLoadOptions...");
+                            loadSuccess = document.LoadFamily(resolvedPath, overwriteOptions, out loadedFamily);
+                        }
+
+                        // 2. Si el documento destino es un documento de familia y requiere transacción para familias anidadas
+                        if (!loadSuccess && document.IsFamilyDocument && !document.IsModifiable)
+                        {
+                            TelemetryLogger.LogInfo($"Documento destino es de Familia. Intentando LoadFamily con Transacción explícita para anidadas...");
+                            using (var tx = new Transaction(document, "Cargar Familia Anidada"))
+                            {
+                                tx.Start();
+                                loadSuccess = document.LoadFamily(resolvedPath, overwriteOptions, out loadedFamily);
+                                if (loadSuccess) tx.Commit();
+                                else tx.RollBack();
+                            }
+                        }
+
+                        // 3. FALLBACK DE INYECCIÓN EN MEMORIA VÍA OpenDocumentFile
+                        if (!loadSuccess && document.Application != null)
+                        {
+                            TelemetryLogger.LogInfo($"document.LoadFamily devolvió false para ruta de disco. Probando inyección en memoria vía OpenDocumentFile...");
+                            Document? tempFamilyDoc = null;
+                            try
+                            {
+                                tempFamilyDoc = document.Application.OpenDocumentFile(resolvedPath);
+                                if (tempFamilyDoc != null)
+                                {
+                                    loadSuccess = tempFamilyDoc.LoadFamily(document, overwriteOptions) != null;
+                                    if (loadSuccess)
+                                    {
+                                        var famName = Path.GetFileNameWithoutExtension(resolvedPath);
+                                        loadedFamily = new FilteredElementCollector(document)
+                                            .OfClass(typeof(Family))
+                                            .Cast<Family>()
+                                            .FirstOrDefault(f => f.Name.Equals(famName, StringComparison.OrdinalIgnoreCase));
+                                        TelemetryLogger.LogInfo($"Inyección en memoria exitosa vía OpenDocumentFile para la familia '{famName}'!");
+                                    }
+                                }
+                            }
+                            catch (Exception exOpen)
+                            {
+                                TelemetryLogger.LogWarning($"OpenDocumentFile / LoadFamily en memoria arrojó excepción: {exOpen.Message}");
+                            }
+                            finally
+                            {
+                                try
+                                {
+                                    tempFamilyDoc?.Close(false);
+                                }
+                                catch { }
+                            }
+                        }
+                    }
+                    catch (Exception exLoad)
+                    {
+                        TelemetryLogger.LogError($"Excepción interna al ejecutar document.LoadFamily para '{resolvedPath}'", exLoad);
+                    }
                 });
 
-                if (loadedFamily != null)
+                TelemetryLogger.LogInfo($"Resultado de document.LoadFamily('{resolvedPath}'): loadSuccess={loadSuccess}, loadedFamily={(loadedFamily != null ? loadedFamily.Name : "null")}");
+
+                if (loadSuccess)
                 {
                     family = loadedFamily;
-                    TelemetryLogger.LogInfo($"Familia cargada correctamente desde '{resolvedPath}'");
+                    TelemetryLogger.LogInfo($"Familia cargada correctamente desde '{resolvedPath}' (Tamaño: {fileInfo.Length} bytes).");
                     return true;
                 }
 
@@ -140,6 +216,7 @@ namespace TransferPlus.Services
                     return true;
                 }
 
+                TelemetryLogger.LogWarning($"document.LoadFamily devolvió false para '{resolvedPath}' (Tamaño: {fileInfo.Length} bytes).");
                 return false;
             }
             catch (Exception ex)
@@ -286,6 +363,91 @@ namespace TransferPlus.Services
         }
 
         /// <summary>
+        /// Filtra tipos no seleccionados y renombra tipos en un documento de familia en memoria mediante FamilyManager.
+        /// </summary>
+        private static void ProcessFamilyDocTypes(
+            Document familyDoc,
+            IEnumerable<string>? targetSymbolNames,
+            IDictionary<string, string>? symbolRenameMap)
+        {
+            if (familyDoc == null || !familyDoc.IsFamilyDocument || familyDoc.FamilyManager == null)
+                return;
+
+            var familyManager = familyDoc.FamilyManager;
+            var selectedNamesSet = targetSymbolNames != null ? new HashSet<string>(targetSymbolNames, StringComparer.OrdinalIgnoreCase) : null;
+            var renameMap = symbolRenameMap != null ? new Dictionary<string, string>(symbolRenameMap, StringComparer.OrdinalIgnoreCase) : null;
+
+            if ((selectedNamesSet == null || !selectedNamesSet.Any()) && (renameMap == null || !renameMap.Any()))
+                return;
+
+            try
+            {
+                using (var tx = new Transaction(familyDoc, "Filtrar y Renombrar Tipos de Familia"))
+                {
+                    tx.Start();
+
+                    // 1. Filtrar/Eliminar tipos no seleccionados
+                    if (selectedNamesSet != null && selectedNamesSet.Any())
+                    {
+                        var typesToDelete = new List<FamilyType>();
+                        foreach (FamilyType familyType in familyManager.Types)
+                        {
+                            if (!selectedNamesSet.Contains(familyType.Name) && (renameMap == null || !renameMap.ContainsKey(familyType.Name)))
+                            {
+                                typesToDelete.Add(familyType);
+                            }
+                        }
+
+                        if (typesToDelete.Any() && typesToDelete.Count < familyManager.Types.Size)
+                        {
+                            TelemetryLogger.LogInfo($"Filtrando {typesToDelete.Count} tipo(s) no seleccionados en la familia en memoria...");
+                            foreach (var typeToDelete in typesToDelete)
+                            {
+                                try
+                                {
+                                    familyManager.CurrentType = typeToDelete;
+                                    familyManager.DeleteCurrentType();
+                                }
+                                catch (Exception delEx)
+                                {
+                                    TelemetryLogger.LogWarning($"No se pudo eliminar el tipo '{typeToDelete.Name}': {delEx.Message}");
+                                }
+                            }
+                        }
+                    }
+
+                    // 2. Duplicar tipos según symbolRenameMap (ej. sufijos para tipos duplicados)
+                    if (renameMap != null && renameMap.Any())
+                    {
+                        var existingTypesList = familyManager.Types.Cast<FamilyType>().ToList();
+                        foreach (FamilyType familyType in existingTypesList)
+                        {
+                            if (renameMap.TryGetValue(familyType.Name, out string? newTypeName) && !string.IsNullOrWhiteSpace(newTypeName))
+                            {
+                                try
+                                {
+                                    familyManager.CurrentType = familyType;
+                                    familyManager.NewType(newTypeName);
+                                    TelemetryLogger.LogInfo($"Duplicado tipo con sufijo en familyDoc: '{familyType.Name}' -> '{newTypeName}'");
+                                }
+                                catch (Exception exRen)
+                                {
+                                    TelemetryLogger.LogWarning($"No se pudo duplicar tipo '{familyType.Name}' a '{newTypeName}': {exRen.Message}");
+                                }
+                            }
+                        }
+                    }
+
+                    tx.Commit();
+                }
+            }
+            catch (Exception ex)
+            {
+                TelemetryLogger.LogWarning($"Error procesando tipos en familyDoc: {ex.Message}");
+            }
+        }
+
+        /// <summary>
         /// Carga una familia desde archivo .rfa modificando opcionalmente el nombre de la familia en memoria si se especifica overrideFamilyName.
         /// </summary>
         public bool TryLoadFileFamilyWithOverride(
@@ -293,7 +455,8 @@ namespace TransferPlus.Services
             Document targetDocument,
             string rfaFilePath,
             string? overrideFamilyName = null,
-            IEnumerable<string>? targetSymbolNames = null)
+            IEnumerable<string>? targetSymbolNames = null,
+            IDictionary<string, string>? symbolRenameMap = null)
         {
             if (targetDocument == null || string.IsNullOrWhiteSpace(rfaFilePath) || !File.Exists(rfaFilePath))
             {
@@ -307,41 +470,7 @@ namespace TransferPlus.Services
                 familyDoc = uiApp.Application.OpenDocumentFile(rfaFilePath);
                 if (familyDoc == null) return false;
 
-                if (familyDoc.IsFamilyDocument && familyDoc.FamilyManager != null && targetSymbolNames != null)
-                {
-                    var selectedNamesSet = new HashSet<string>(targetSymbolNames, StringComparer.OrdinalIgnoreCase);
-                    if (selectedNamesSet.Any())
-                    {
-                        var familyManager = familyDoc.FamilyManager;
-                        var typesToDelete = new List<FamilyType>();
-
-                        foreach (FamilyType familyType in familyManager.Types)
-                        {
-                            if (!selectedNamesSet.Contains(familyType.Name))
-                            {
-                                typesToDelete.Add(familyType);
-                            }
-                        }
-
-                        if (typesToDelete.Any() && typesToDelete.Count < familyManager.Types.Size)
-                        {
-                            using (var tx = new Transaction(familyDoc, "Filtrar Tipos"))
-                            {
-                                tx.Start();
-                                foreach (var typeToDelete in typesToDelete)
-                                {
-                                    try
-                                    {
-                                        familyManager.CurrentType = typeToDelete;
-                                        familyManager.DeleteCurrentType();
-                                    }
-                                    catch { }
-                                }
-                                tx.Commit();
-                            }
-                        }
-                    }
-                }
+                ProcessFamilyDocTypes(familyDoc, targetSymbolNames, symbolRenameMap);
 
                 string pathToLoad = rfaFilePath;
                 if (!string.IsNullOrWhiteSpace(overrideFamilyName))
@@ -396,7 +525,8 @@ namespace TransferPlus.Services
             Document targetDocument,
             out Family? loadedFamily,
             IEnumerable<string>? targetSymbolNames = null,
-            string? overrideFamilyName = null)
+            string? overrideFamilyName = null,
+            IDictionary<string, string>? symbolRenameMap = null)
         {
             loadedFamily = null;
             if (sourceDocument == null || sourceFamily == null || targetDocument == null)
@@ -416,71 +546,24 @@ namespace TransferPlus.Services
                     return false;
                 }
 
-                // Filtrar los tipos no seleccionados en el familyDoc antes de cargarlo mediante FamilyManager
-                if (familyDoc.IsFamilyDocument && familyDoc.FamilyManager != null && targetSymbolNames != null)
-                {
-                    var selectedNamesSet = new HashSet<string>(targetSymbolNames, StringComparer.OrdinalIgnoreCase);
-                    if (selectedNamesSet.Any())
-                    {
-                        var familyManager = familyDoc.FamilyManager;
-                        var typesToDelete = new List<FamilyType>();
-
-                        foreach (FamilyType familyType in familyManager.Types)
-                        {
-                            if (!selectedNamesSet.Contains(familyType.Name))
-                            {
-                                typesToDelete.Add(familyType);
-                            }
-                        }
-
-                        if (typesToDelete.Any() && typesToDelete.Count < familyManager.Types.Size)
-                        {
-                            TelemetryLogger.LogInfo($"Filtrando {typesToDelete.Count} tipo(s) no seleccionados en la familia en memoria '{sourceFamily.Name}' mediante FamilyManager...");
-                            using (var tx = new Transaction(familyDoc, "Filtrar Tipos Seleccionados"))
-                            {
-                                tx.Start();
-                                foreach (var typeToDelete in typesToDelete)
-                                {
-                                    try
-                                    {
-                                        familyManager.CurrentType = typeToDelete;
-                                        familyManager.DeleteCurrentType();
-                                    }
-                                    catch (Exception delEx)
-                                    {
-                                        TelemetryLogger.LogWarning($"No se pudo eliminar el tipo '{typeToDelete.Name}' en la familia en memoria: {delEx.Message}");
-                                    }
-                                }
-                                tx.Commit();
-                            }
-                        }
-                    }
-                }
+                ProcessFamilyDocTypes(familyDoc, targetSymbolNames, symbolRenameMap);
 
                 var overwriteOptions = new SilentOverwriteFamilyOption();
                 Family? resultFamily = null;
 
-                if (!string.IsNullOrWhiteSpace(overrideFamilyName))
-                {
-                    string tempDir = Path.Combine(Path.GetTempPath(), "TransferPlus_TempFamilies");
-                    Directory.CreateDirectory(tempDir);
-                    tempRfaPath = Path.Combine(tempDir, overrideFamilyName + ".rfa");
+                // Siempre guardar en archivo temporal local antes de LoadFamily para asegurar que Revit aplique las modificaciones del EditFamily entre modelos abiertos
+                string tempDir = Path.Combine(Path.GetTempPath(), "TransferPlus_TempFamilies");
+                Directory.CreateDirectory(tempDir);
+                string targetFileName = overrideFamilyName ?? sourceFamily.Name;
+                tempRfaPath = Path.Combine(tempDir, targetFileName + "_" + Guid.NewGuid().ToString("N") + ".rfa");
 
-                    var saveOptions = new SaveAsOptions { OverwriteExistingFile = true };
-                    familyDoc.SaveAs(tempRfaPath, saveOptions);
+                var saveOptions = new SaveAsOptions { OverwriteExistingFile = true };
+                familyDoc.SaveAs(tempRfaPath, saveOptions);
 
-                    ExecuteWithWarningSuppression(targetDocument, () =>
-                    {
-                        familyDoc.LoadFamily(targetDocument, overwriteOptions);
-                    });
-                }
-                else
+                ExecuteWithWarningSuppression(targetDocument, () =>
                 {
-                    ExecuteWithWarningSuppression(targetDocument, () =>
-                    {
-                        resultFamily = familyDoc.LoadFamily(targetDocument, overwriteOptions);
-                    });
-                }
+                    resultFamily = familyDoc.LoadFamily(targetDocument, overwriteOptions);
+                });
 
                 string targetCheckName = overrideFamilyName ?? sourceFamily.Name;
                 var existingFamily = new FilteredElementCollector(targetDocument)

@@ -1205,15 +1205,36 @@ public partial class TransferPlusViewModel : ObservableObject
                         // -------------------------------------------------------------
                         // ON DUPLICATES CHECK: APPEND SUFFIX
                         // -------------------------------------------------------------
+                        Dictionary<string, string>? symbolRenameMap = null;
                         if (AppendSuffix && existingFam != null)
                         {
                             string suffix = string.IsNullOrWhiteSpace(DuplicatesSuffixText) ? "_Copy" : DuplicatesSuffixText;
-                            overrideFamilyName = fam.Name + suffix;
-                            TransferPlus.Services.LoggerService.LogInfo($"Transfer: Appending suffix to family '{fam.Name}' -> '{overrideFamilyName}' for target '{destDoc.Nombre}'.");
+                            var existingSymbolNames = familyService.GetExistingSymbolNames(destDoc.Adoc, existingFam);
+                            var selectedSymbols = fam.Symbols?.Where(s => s.IsActive).ToList() ?? new List<FamilySymbolItemModel>();
+
+                            symbolRenameMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+                            foreach (var sym in selectedSymbols)
+                            {
+                                if (existingSymbolNames.Contains(sym.Name))
+                                {
+                                    string newSymName = sym.Name + suffix;
+                                    int counter = 1;
+                                    while (existingSymbolNames.Contains(newSymName))
+                                    {
+                                        newSymName = $"{sym.Name}{suffix}{counter++}";
+                                    }
+                                    symbolRenameMap[sym.Name] = newSymName;
+                                    TransferPlus.Services.LoggerService.LogInfo($"Transfer: Appending suffix to duplicated type '{sym.Name}' -> '{newSymName}' in existing family '{fam.Name}'.");
+                                }
+                            }
+
+                            // La familia NO se renombra. Se insertan los tipos dentro de la familia existente.
+                            overrideFamilyName = null;
                         }
 
-                        StatusMessage = $"Transferring family '{overrideFamilyName ?? fam.Name}' to '{destDoc.Nombre}'...";
-                        bool ok = provider.TransferFamilyAsync(fam, destDoc.Adoc, overrideFamilyName).GetAwaiter().GetResult();
+                        StatusMessage = $"Transferring family '{fam.Name}' to '{destDoc.Nombre}'...";
+                        bool ok = provider.TransferFamilyAsync(fam, destDoc.Adoc, overrideFamilyName, symbolRenameMap).GetAwaiter().GetResult();
                         if (ok) transferredCount++;
                     }
                 }

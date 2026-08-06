@@ -61,13 +61,12 @@ public class AzureStorageFamilyProvider : IFamilyProvider
         return result;
     }
 
-    public Task<bool> TransferFamilyAsync(FamilyItemModel familyItem, Document destinationDoc, string? overrideFamilyName = null, CancellationToken cancellationToken = default)
+    public Task<bool> TransferFamilyAsync(FamilyItemModel familyItem, Document destinationDoc, string? overrideFamilyName = null, IDictionary<string, string>? symbolRenameMap = null, CancellationToken cancellationToken = default)
     {
-        if (familyItem == null || destinationDoc == null) return Task.FromResult(false);
+        if (familyItem == null || destinationDoc == null || _sourceItem == null) return Task.FromResult(false);
 
         string blobName = familyItem.ImagePreviewUrl;
         if (string.IsNullOrWhiteSpace(blobName)) return Task.FromResult(false);
-
         string tempLocalPath = string.Empty;
         try
         {
@@ -82,17 +81,17 @@ public class AzureStorageFamilyProvider : IFamilyProvider
 
             var targetSymbolNames = familyItem.Symbols?.Select(s => s.Name);
 
-            if (!string.IsNullOrWhiteSpace(overrideFamilyName) && destinationDoc.Application != null)
+            if ((!string.IsNullOrWhiteSpace(overrideFamilyName) || (symbolRenameMap != null && symbolRenameMap.Any())) && destinationDoc.Application != null)
             {
                 var uiApp = new Autodesk.Revit.UI.UIApplication(destinationDoc.Application);
-                loaded = _familyRevitService.TryLoadFileFamilyWithOverride(uiApp, destinationDoc, tempLocalPath, overrideFamilyName, targetSymbolNames);
+                loaded = _familyRevitService.TryLoadFileFamilyWithOverride(uiApp, destinationDoc, tempLocalPath, overrideFamilyName, targetSymbolNames, symbolRenameMap);
             }
             else if (targetSymbolNames != null && targetSymbolNames.Any() &&
                      !targetSymbolNames.Contains(familyItem.Name, StringComparer.OrdinalIgnoreCase) && destinationDoc.Application != null)
             {
                 // Símbolos específicos filtrados (diferentes al nombre genérico de familia)
                 var uiApp = new Autodesk.Revit.UI.UIApplication(destinationDoc.Application);
-                loaded = _familyRevitService.TryLoadFileFamilyWithOverride(uiApp, destinationDoc, tempLocalPath, null, targetSymbolNames);
+                loaded = _familyRevitService.TryLoadFileFamilyWithOverride(uiApp, destinationDoc, tempLocalPath, null, targetSymbolNames, symbolRenameMap);
             }
             else
             {
