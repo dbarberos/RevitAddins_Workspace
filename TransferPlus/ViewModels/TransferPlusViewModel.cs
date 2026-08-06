@@ -306,6 +306,7 @@ public partial class TransferPlusViewModel : ObservableObject
     {
         _app = app;
         _targetDoc = targetDoc;
+        _familyRevitService = new FamilyRevitService { RevitApp = app?.Application };
         LoadDocuments();
 
         // Register to receive messages when elements check state changes

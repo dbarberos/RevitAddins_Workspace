@@ -418,6 +418,25 @@ namespace TransferPlus.Services
                         }
                     }
 
+                    // 1.5 Eliminar tipo redundante predeterminado que coincida exactamente con el nombre de la familia si existen otros tipos
+                    string familyName = familyDoc.OwnerFamily?.Name ?? string.Empty;
+                    if (!string.IsNullOrWhiteSpace(familyName) && familyManager.Types.Size > 1)
+                    {
+                        var defaultRedundantType = familyManager.Types.Cast<FamilyType>()
+                            .FirstOrDefault(t => t.Name.Equals(familyName, StringComparison.OrdinalIgnoreCase));
+
+                        if (defaultRedundantType != null && familyManager.Types.Size > 1)
+                        {
+                            try
+                            {
+                                familyManager.CurrentType = defaultRedundantType;
+                                familyManager.DeleteCurrentType();
+                                TelemetryLogger.LogInfo($"Eliminado tipo redundante predeterminado con nombre de familia: '{defaultRedundantType.Name}'");
+                            }
+                            catch { }
+                        }
+                    }
+
                     // 2. Duplicar tipos según symbolRenameMap (ej. sufijos para tipos duplicados)
                     if (renameMap != null && renameMap.Any())
                     {
@@ -474,7 +493,7 @@ namespace TransferPlus.Services
 
                 ProcessFamilyDocTypes(familyDoc, targetSymbolNames, symbolRenameMap);
 
-                string pathToLoad = rfaFilePath;
+                string targetFileName = overrideFamilyName ?? Path.GetFileNameWithoutExtension(rfaFilePath);
                 if (!string.IsNullOrWhiteSpace(overrideFamilyName))
                 {
                     string tempDir = Path.Combine(Path.GetTempPath(), "TransferPlus_TempFamilies");
@@ -483,7 +502,6 @@ namespace TransferPlus.Services
 
                     var saveOptions = new SaveAsOptions { OverwriteExistingFile = true };
                     familyDoc.SaveAs(tempRfaPath, saveOptions);
-                    pathToLoad = tempRfaPath;
                 }
 
                 var overwriteOptions = new SilentOverwriteFamilyOption();
@@ -496,7 +514,7 @@ namespace TransferPlus.Services
 
                 if (loaded)
                 {
-                    TelemetryLogger.LogInfo($"Familia desde archivo '{overrideFamilyName ?? Path.GetFileNameWithoutExtension(rfaFilePath)}' cargada con éxito.");
+                    TelemetryLogger.LogInfo($"Familia desde archivo '{targetFileName}' cargada con éxito.");
                     return true;
                 }
 
@@ -553,14 +571,15 @@ namespace TransferPlus.Services
                 var overwriteOptions = new SilentOverwriteFamilyOption();
                 Family? resultFamily = null;
 
-                // Siempre guardar en archivo temporal local antes de LoadFamily para asegurar que Revit aplique las modificaciones del EditFamily entre modelos abiertos
-                string tempDir = Path.Combine(Path.GetTempPath(), "TransferPlus_TempFamilies");
-                Directory.CreateDirectory(tempDir);
-                string targetFileName = overrideFamilyName ?? sourceFamily.Name;
-                tempRfaPath = Path.Combine(tempDir, targetFileName + "_" + Guid.NewGuid().ToString("N") + ".rfa");
+                if (!string.IsNullOrWhiteSpace(overrideFamilyName))
+                {
+                    string tempDir = Path.Combine(Path.GetTempPath(), "TransferPlus_TempFamilies");
+                    Directory.CreateDirectory(tempDir);
+                    tempRfaPath = Path.Combine(tempDir, overrideFamilyName + ".rfa");
 
-                var saveOptions = new SaveAsOptions { OverwriteExistingFile = true };
-                familyDoc.SaveAs(tempRfaPath, saveOptions);
+                    var saveOptions = new SaveAsOptions { OverwriteExistingFile = true };
+                    familyDoc.SaveAs(tempRfaPath, saveOptions);
+                }
 
                 ExecuteWithWarningSuppression(targetDocument, () =>
                 {

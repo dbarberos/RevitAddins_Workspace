@@ -106,19 +106,12 @@ public class AzureStorageFamilyProvider : IFamilyProvider
             TelemetryLogger.LogInfo($"AzureStorageFamilyProvider: Blob descargado en '{tempLocalPath}'. Cargando en Revit...");
             bool loaded = false;
 
-            var targetSymbolNames = familyItem.Symbols?.Select(s => s.Name);
+            var targetSymbolNames = familyItem.Symbols?.Where(s => s.IsActive).Select(s => s.Name);
 
-            if ((!string.IsNullOrWhiteSpace(overrideFamilyName) || (symbolRenameMap != null && symbolRenameMap.Any())) && destinationDoc.Application != null)
+            if (destinationDoc.Application != null)
             {
                 var uiApp = new Autodesk.Revit.UI.UIApplication(destinationDoc.Application);
                 loaded = _familyRevitService.TryLoadFileFamilyWithOverride(uiApp, destinationDoc, tempLocalPath, overrideFamilyName, targetSymbolNames, symbolRenameMap);
-            }
-            else if (targetSymbolNames != null && targetSymbolNames.Any() &&
-                     !targetSymbolNames.Contains(familyItem.Name, StringComparer.OrdinalIgnoreCase) && destinationDoc.Application != null)
-            {
-                // Símbolos específicos filtrados (diferentes al nombre genérico de familia)
-                var uiApp = new Autodesk.Revit.UI.UIApplication(destinationDoc.Application);
-                loaded = _familyRevitService.TryLoadFileFamilyWithOverride(uiApp, destinationDoc, tempLocalPath, null, targetSymbolNames, symbolRenameMap);
             }
             else
             {

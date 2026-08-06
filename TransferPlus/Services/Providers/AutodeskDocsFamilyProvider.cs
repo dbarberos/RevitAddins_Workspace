@@ -157,18 +157,12 @@ public class AutodeskDocsFamilyProvider : IFamilyProvider
             TelemetryLogger.LogInfo($"[AutodeskDocsFamilyProvider] Cargando archivo descargado '{familyItem.Name}' ({localTempFilePath}) en modelo Revit...");
             bool success = false;
 
-            var targetSymbolNames = familyItem.Symbols?.Select(s => s.Name);
+            var targetSymbolNames = familyItem.Symbols?.Where(s => s.IsActive).Select(s => s.Name);
 
-            if ((!string.IsNullOrWhiteSpace(overrideFamilyName) || (symbolRenameMap != null && symbolRenameMap.Any())) && destinationDoc.Application != null)
+            if (destinationDoc.Application != null)
             {
                 var uiApp = new Autodesk.Revit.UI.UIApplication(destinationDoc.Application);
                 success = _familyRevitService.TryLoadFileFamilyWithOverride(uiApp, destinationDoc, localTempFilePath, overrideFamilyName, targetSymbolNames, symbolRenameMap);
-            }
-            else if (targetSymbolNames != null && targetSymbolNames.Any() &&
-                     !targetSymbolNames.Contains(familyItem.Name, StringComparer.OrdinalIgnoreCase) && destinationDoc.Application != null)
-            {
-                var uiApp = new Autodesk.Revit.UI.UIApplication(destinationDoc.Application);
-                success = _familyRevitService.TryLoadFileFamilyWithOverride(uiApp, destinationDoc, localTempFilePath, null, targetSymbolNames, symbolRenameMap);
             }
             else
             {

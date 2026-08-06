@@ -110,7 +110,19 @@ public static class RfaMetadataExtractor
 
                     if (familyDoc.FamilyManager != null && familyDoc.FamilyManager.Types != null)
                     {
-                        foreach (FamilyType familyType in familyDoc.FamilyManager.Types)
+                        var rawTypes = familyDoc.FamilyManager.Types.Cast<FamilyType>()
+                            .Where(t => !string.IsNullOrWhiteSpace(t.Name))
+                            .ToList();
+
+                        if (rawTypes.Count > 1)
+                        {
+                            // Si hay múltiples tipos, ignorar el tipo redundante/comodín que tiene el mismo nombre que la familia
+                            rawTypes = rawTypes
+                                .Where(t => !t.Name.Equals(familyName, StringComparison.OrdinalIgnoreCase))
+                                .ToList();
+                        }
+
+                        foreach (FamilyType familyType in rawTypes)
                         {
                             symbols.Add(new TransferPlus.Models.FamilySymbolItemModel
                             {
