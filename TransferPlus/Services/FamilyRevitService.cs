@@ -33,6 +33,8 @@ namespace TransferPlus.Services
     /// </summary>
     public class FamilyRevitService
     {
+        public Autodesk.Revit.ApplicationServices.Application? RevitApp { get; set; }
+
         private static void ExecuteWithWarningSuppression(Document doc, Action action)
         {
             if (doc?.Application == null)

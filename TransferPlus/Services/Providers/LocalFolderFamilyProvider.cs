@@ -49,24 +49,20 @@ public class LocalFolderFamilyProvider : IFamilyProvider
                 if (BackupRegex.IsMatch(filePath)) continue;
 
                 string familyName = Path.GetFileNameWithoutExtension(filePath);
-                string folderCategory = Path.GetFileName(Path.GetDirectoryName(filePath) ?? _folderPath);
 
-                var (ver, cat) = RfaMetadataExtractor.ExtractMetadata(filePath);
+                var (ver, cat, symbols) = RfaMetadataExtractor.ExtractCategoryAndSymbols(_familyRevitService?.RevitApp, filePath);
                 string revitVersion = string.IsNullOrWhiteSpace(ver) ? "RFA File" : ver;
-                string categoryName = string.IsNullOrWhiteSpace(cat) ? folderCategory : cat;
+                string categoryName = string.IsNullOrWhiteSpace(cat) ? "General" : cat;
 
                 result.Add(new FamilyItemModel
                 {
                     Name = familyName,
                     CategoryName = categoryName,
                     SourceName = ProviderName,
-                    StatusMessage = "Disponible en disco",
+                    StatusMessage = $"{symbols.Count} tipo(s) disponible(s)",
                     ImagePreviewUrl = filePath,
                     RevitVersion = revitVersion,
-                    Symbols = new List<FamilySymbolItemModel>
-                    {
-                        new FamilySymbolItemModel { Name = familyName, FamilyName = familyName, IsActive = true }
-                    }
+                    Symbols = symbols
                 });
             }
 

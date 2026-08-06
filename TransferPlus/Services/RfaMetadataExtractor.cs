@@ -74,4 +74,74 @@ public static class RfaMetadataExtractor
 
         return (version, category);
     }
+
+    public static (string version, string category, System.Collections.Generic.List<TransferPlus.Models.FamilySymbolItemModel> symbols) ExtractCategoryAndSymbols(
+        Autodesk.Revit.ApplicationServices.Application? app,
+        string rfaFilePath)
+    {
+        var symbols = new System.Collections.Generic.List<TransferPlus.Models.FamilySymbolItemModel>();
+        string version = string.Empty;
+        string category = string.Empty;
+
+        if (string.IsNullOrWhiteSpace(rfaFilePath) || !File.Exists(rfaFilePath))
+        {
+            return (version, category, symbols);
+        }
+
+        var (ver, catBasic) = ExtractMetadata(rfaFilePath);
+        version = ver;
+        category = catBasic;
+
+        string familyName = Path.GetFileNameWithoutExtension(rfaFilePath);
+
+        if (app != null)
+        {
+            Document? familyDoc = null;
+            try
+            {
+                familyDoc = app.OpenDocumentFile(rfaFilePath);
+                if (familyDoc != null && familyDoc.IsFamilyDocument)
+                {
+                    var revitCat = familyDoc.OwnerFamily?.FamilyCategory;
+                    if (revitCat != null && !string.IsNullOrWhiteSpace(revitCat.Name))
+                    {
+                        category = revitCat.Name;
+                    }
+
+                    if (familyDoc.FamilyManager != null && familyDoc.FamilyManager.Types != null)
+                    {
+                        foreach (FamilyType familyType in familyDoc.FamilyManager.Types)
+                        {
+                            symbols.Add(new TransferPlus.Models.FamilySymbolItemModel
+                            {
+                                Name = familyType.Name,
+                                FamilyName = familyName,
+                                IsActive = true
+                            });
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                TelemetryLogger.LogWarning($"[RfaMetadataExtractor] No se pudo inspeccionar tipos en '{rfaFilePath}' vía OpenDocumentFile: {ex.Message}");
+            }
+            finally
+            {
+                familyDoc?.Close(false);
+            }
+        }
+
+        if (!symbols.Any())
+        {
+            symbols.Add(new TransferPlus.Models.FamilySymbolItemModel
+            {
+                Name = familyName,
+                FamilyName = familyName,
+                IsActive = true
+            });
+        }
+
+        return (version, category, symbols);
+    }
 }

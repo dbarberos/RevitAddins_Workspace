@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -35,19 +36,45 @@ public class AzureStorageFamilyProvider : IFamilyProvider
                 _sourceItem.RootPath,
                 cancellationToken);
 
+            string cacheDir = Path.Combine(Path.GetTempPath(), "TransferPlus_AzureCache");
+            Directory.CreateDirectory(cacheDir);
+
             foreach (var blob in blobs)
             {
+                cancellationToken.ThrowIfCancellationRequested();
+
+                string cachedFilePath = Path.Combine(cacheDir, Path.GetFileName(blob.BlobName));
+                try
+                {
+                    if (!File.Exists(cachedFilePath))
+                    {
+                        string downloaded = AzureStorageService.DownloadFamilyBlob(
+                            _sourceItem.ConnectionString,
+                            _sourceItem.ContainerName,
+                            blob.BlobName);
+                        if (File.Exists(downloaded))
+                        {
+                            cachedFilePath = downloaded;
+                        }
+                    }
+                }
+                catch (Exception dlEx)
+                {
+                    TelemetryLogger.LogWarning($"[AzureStorageFamilyProvider] No se pudo pre-descargar blob '{blob.BlobName}' para metadata: {dlEx.Message}");
+                }
+
+                var (ver, cat, symbols) = RfaMetadataExtractor.ExtractCategoryAndSymbols(_familyRevitService?.RevitApp, cachedFilePath);
+                string categoryName = string.IsNullOrWhiteSpace(cat) ? "Azure Family" : cat;
+
                 result.Add(new FamilyItemModel
                 {
                     Name = blob.FamilyName,
-                    CategoryName = "Azure Family",
+                    CategoryName = categoryName,
                     SourceName = ProviderName,
                     StatusMessage = $"Azure Blob ({blob.FormattedSize})",
                     ImagePreviewUrl = blob.BlobName, // BlobName stored here
-                    Symbols = new List<FamilySymbolItemModel>
-                    {
-                        new FamilySymbolItemModel { Name = blob.FamilyName, FamilyName = blob.FamilyName, IsActive = true }
-                    }
+                    RevitVersion = string.IsNullOrWhiteSpace(ver) ? "Azure Cloud" : ver,
+                    Symbols = symbols
                 });
             }
 

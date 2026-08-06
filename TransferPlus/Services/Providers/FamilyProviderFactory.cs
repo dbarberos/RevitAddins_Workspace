@@ -14,6 +14,11 @@ public static class FamilyProviderFactory
         Document targetDocument,
         FamilyRevitService familyRevitService)
     {
+        if (targetDocument != null && familyRevitService != null && familyRevitService.RevitApp == null)
+        {
+            familyRevitService.RevitApp = targetDocument.Application;
+        }
+
         if (string.IsNullOrWhiteSpace(selectedSourceDisplay))
         {
             TelemetryLogger.LogWarning("FamilyProviderFactory: selectedSourceDisplay es nulo o vacío. Retornando LocalFolderFamilyProvider por defecto.");
