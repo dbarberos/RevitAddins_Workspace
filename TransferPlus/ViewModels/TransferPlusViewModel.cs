@@ -2413,8 +2413,21 @@ public partial class TransferPlusViewModel : ObservableObject
     [RelayCommand]
     private void OpenConfiguration()
     {
-        var configView = new ConfigurationView();
-        configView.ShowDialog();
+        var existingConfig = System.Windows.Application.Current?.Windows?.OfType<Views.ConfigurationView>()?.FirstOrDefault();
+        if (existingConfig != null)
+        {
+            existingConfig.Activate();
+            return;
+        }
+
+        var mainView = System.Windows.Application.Current?.Windows?.OfType<Views.TransferPlusView>()?.FirstOrDefault();
+        var configView = new Views.ConfigurationView();
+        if (mainView != null)
+        {
+            configView.Owner = mainView;
+        }
+        configView.Topmost = true;
+        configView.Show();
     }
 
     [RelayCommand]

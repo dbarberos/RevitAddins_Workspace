@@ -5,7 +5,8 @@ namespace TransferPlus.Views;
 
 public partial class TransferPlusView : Window
 {
-    private LogView _logView;
+    private LogView? _logView;
+    private bool _isClosing = false;
 
     public TransferPlusView(TransferPlusViewModel viewModel)
     {
@@ -15,25 +16,95 @@ public partial class TransferPlusView : Window
         // Set dispatcher for secure logger updates
         TransferPlus.Services.LoggerService.SetDispatcher(this.Dispatcher);
 
+        // Register action delegate for ConfigurationViewModel toggle debug window button
+        ConfigurationViewModel.ToggleDebugWindowAction = () =>
+        {
+            this.Dispatcher.Invoke(() =>
+            {
+                ToggleDebugLogWindow();
+            });
+        };
+
         this.Loaded += TransferPlusView_Loaded;
+        this.Closed += TransferPlusView_Closed;
     }
 
     private void TransferPlusView_Loaded(object sender, RoutedEventArgs e)
     {
         this.Loaded -= TransferPlusView_Loaded;
-#if DEBUG
         try
         {
-            _logView = new LogView();
-            _logView.Owner = this; // Safe now because the parent window is shown
-            _logView.Show();
-            this.Closed += (s, e) => _logView.Close();
+            CreateAndPrepareLogView();
+
+#if DEBUG
+            _logView?.Show();
+#endif
         }
         catch (System.Exception ex)
         {
             TransferPlus.Services.LoggerService.LogError("LogView Open", ex);
         }
-#endif
+    }
+
+    private void CreateAndPrepareLogView()
+    {
+        if (_logView != null) return;
+
+        _logView = new LogView();
+        _logView.Owner = this;
+        _logView.Closing += (s, e) =>
+        {
+            if (!_isClosing)
+            {
+                e.Cancel = true;
+                _logView.Hide();
+            }
+        };
+    }
+
+    private void TransferPlusView_Closed(object? sender, System.EventArgs e)
+    {
+        _isClosing = true;
+        if (_logView != null)
+        {
+            try
+            {
+                _logView.Close();
+            }
+            catch { }
+        }
+    }
+
+    public void ToggleDebugLogWindow()
+    {
+        try
+        {
+            if (_logView == null)
+            {
+                CreateAndPrepareLogView();
+            }
+
+            if (_logView != null)
+            {
+                if (_logView.IsVisible)
+                {
+                    _logView.Hide();
+                }
+                else
+                {
+                    _logView.Show();
+                    _logView.Activate();
+                }
+            }
+        }
+        catch
+        {
+            // Recreate if window object state was destroyed
+            _logView = null;
+            CreateAndPrepareLogView();
+            _logView?.Show();
+            _logView?.Activate();
+        }
     }
 
     private void CloseRegexPopup(object sender, RoutedEventArgs e)
