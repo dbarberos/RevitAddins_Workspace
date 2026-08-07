@@ -310,7 +310,11 @@ public partial class TransferPlusViewModel : ObservableObject
         LoadDocuments();
 
         // Register to receive messages when elements check state changes
-        WeakReferenceMessenger.Default.Register<CheckedItemsChangedMessage>(this, (r, m) => UpdateCheckedCount());
+        WeakReferenceMessenger.Default.Register<CheckedItemsChangedMessage>(this, (r, m) =>
+        {
+            UpdateCheckedCount();
+            DeleteSelectedFamiliesCommand.NotifyCanExecuteChanged();
+        });
     }
 
     public string CheckedDestinationsText
@@ -2725,6 +2729,186 @@ public partial class TransferPlusViewModel : ObservableObject
             IsBusy = false;
             StatusMessage = "Ready";
             ProgressPercentage = 0;
+        }
+    }
+
+    private bool CanDeleteSelectedFamilies()
+    {
+        if (!IsFamiliesManagerActive) return false;
+        if (SelectedSourceDocument == null) return false;
+        if (SelectedSourceDocument.Adoc == null) return false; // Local folders, Azure, Autodesk Docs have Adoc == null
+        if (SelectedSourceDocument.EsVinculo) return false; // Linked models cannot be mutated
+        if (SelectedSourceDocument.Adoc.IsReadOnly) return false;
+
+        // Must have at least 1 checked family or type node in tree, OR a selected family/symbol
+        var checkedFamilyNodes = GetAllDescendantNodes(RootNodes)
+            .Where(n => (n.IsChecked == true || n.IsChecked == null) && (n.Category == "Family" || n.Item is FamilyItemModel));
+
+        if (checkedFamilyNodes.Any()) return true;
+
+        if (SelectedFamily != null) return true;
+
+        return false;
+    }
+
+    [RelayCommand(CanExecute = nameof(CanDeleteSelectedFamilies))]
+    private async Task DeleteSelectedFamiliesAsync()
+    {
+        if (SelectedSourceDocument == null || SelectedSourceDocument.Adoc == null || SelectedSourceDocument.EsVinculo)
+        {
+            return;
+        }
+
+        var doc = SelectedSourceDocument.Adoc;
+
+        // Collect families and types to delete
+        var familiesToDelete = new List<(FamilyItemModel familyModel, Family familyElem, bool deleteAllTypes, List<FamilySymbolItemModel> selectedSymbols)>();
+
+        var familyNodes = GetAllDescendantNodes(RootNodes)
+            .Where(n => n.Category == "Family" || n.Item is FamilyItemModel);
+
+        foreach (var familyNode in familyNodes)
+        {
+            if (familyNode.IsChecked == true || familyNode.IsChecked == null)
+            {
+                var familyModel = familyNode.Item as FamilyItemModel
+                    ?? _familyItems.FirstOrDefault(f => f.Name.Equals(familyNode.Name, StringComparison.OrdinalIgnoreCase));
+
+                if (familyModel != null)
+                {
+                    // Find actual Revit Family element in active model
+                    var revitFamily = new FilteredElementCollector(doc)
+                        .OfClass(typeof(Family))
+                        .Cast<Family>()
+                        .FirstOrDefault(f => f.Name.Equals(familyModel.Name, StringComparison.OrdinalIgnoreCase));
+
+                    if (revitFamily != null)
+                    {
+                        var checkedChildNodes = familyNode.Children.Where(c => c.IsChecked == true).Select(c => c.Name).ToHashSet();
+                        bool allChildTypesChecked = familyNode.IsChecked == true || (familyNode.Children.Any() && familyNode.Children.All(c => c.IsChecked == true));
+
+                        var selectedSymbolModels = (familyModel.Symbols ?? new List<FamilySymbolItemModel>())
+                            .Where(s => checkedChildNodes.Contains(s.Name))
+                            .ToList();
+
+                        familiesToDelete.Add((familyModel, revitFamily, allChildTypesChecked, selectedSymbolModels));
+                    }
+                }
+            }
+        }
+
+        // Fallback: If no tree checkboxes marked but a family/symbol is selected in details panel
+        if (!familiesToDelete.Any() && SelectedFamily != null)
+        {
+            var revitFamily = new FilteredElementCollector(doc)
+                .OfClass(typeof(Family))
+                .Cast<Family>()
+                .FirstOrDefault(f => f.Name.Equals(SelectedFamily.Name, StringComparison.OrdinalIgnoreCase));
+
+            if (revitFamily != null)
+            {
+                var selectedSymbols = SelectedFamilySymbols.Where(s => s.IsActive).ToList();
+                bool allTypesSelected = !selectedSymbols.Any() || selectedSymbols.Count == SelectedFamilySymbols.Count;
+                familiesToDelete.Add((SelectedFamily, revitFamily, allTypesSelected, selectedSymbols));
+            }
+        }
+
+        if (!familiesToDelete.Any())
+        {
+            TaskDialog.Show("TransferPlus", "No matching families or types found in the active model to delete.");
+            return;
+        }
+
+        // Count total full families and individual types to delete
+        int fullFamiliesCount = familiesToDelete.Count(f => f.deleteAllTypes);
+        int partialTypesCount = familiesToDelete.Where(f => !f.deleteAllTypes).Sum(f => f.selectedSymbols.Count);
+
+        string warningMessage = $"You are about to delete {fullFamiliesCount} family(ies) and {partialTypesCount} type(s) from the active model.\n\n" +
+                                "Warning: Deleting families or types will also permanently remove any placed instances of these elements from the active document.\n\n" +
+                                "Do you want to proceed with the deletion?";
+
+        var confirmResult = System.Windows.MessageBox.Show(
+            warningMessage,
+            "Confirm Element Deletion",
+            System.Windows.MessageBoxButton.YesNo,
+            System.Windows.MessageBoxImage.Warning);
+
+        if (confirmResult != System.Windows.MessageBoxResult.Yes)
+        {
+            return;
+        }
+
+        IsBusy = true;
+        StatusMessage = "Deleting elements from active model...";
+
+        int deletedFamiliesCount = 0;
+        int deletedTypesCount = 0;
+
+        try
+        {
+            using (var t = new Transaction(doc, "Delete Families and Types"))
+            {
+                t.Start();
+
+                foreach (var (familyModel, revitFamily, deleteAllTypes, selectedSymbols) in familiesToDelete)
+                {
+                    if (deleteAllTypes)
+                    {
+                        // Delete entire Family
+                        try
+                        {
+                            doc.Delete(revitFamily.Id);
+                            deletedFamiliesCount++;
+                        }
+                        catch (Exception ex)
+                        {
+                            LoggerService.LogError($"Error deleting family '{revitFamily.Name}'", ex);
+                        }
+                    }
+                    else
+                    {
+                        // Delete only specific FamilySymbol (types)
+                        foreach (var symModel in selectedSymbols)
+                        {
+                            var symbolElem = new FilteredElementCollector(doc)
+                                .OfClass(typeof(FamilySymbol))
+                                .Cast<FamilySymbol>()
+                                .FirstOrDefault(s => s.Family.Id == revitFamily.Id && s.Name.Equals(symModel.Name, StringComparison.OrdinalIgnoreCase));
+
+                            if (symbolElem != null)
+                            {
+                                try
+                                {
+                                    doc.Delete(symbolElem.Id);
+                                    deletedTypesCount++;
+                                }
+                                catch (Exception ex)
+                                {
+                                    LoggerService.LogError($"Error deleting type '{symModel.Name}' of family '{revitFamily.Name}'", ex);
+                                }
+                            }
+                        }
+                    }
+                }
+
+                t.Commit();
+            }
+
+            LoggerService.LogInfo($"[Delete] Deleted {deletedFamiliesCount} full family(ies) and {deletedTypesCount} type(s) from model '{SelectedSourceDocument.Nombre}'.");
+            StatusMessage = $"Deleted {deletedFamiliesCount} family(ies) and {deletedTypesCount} type(s).";
+
+            // Refresh tree to reflect deleted items in active model
+            await LoadFamiliesFromSourceAsync(SelectedSourceDocument.Nombre);
+        }
+        catch (Exception ex)
+        {
+            TelemetryLogger.LogError("DeleteSelectedFamiliesAsync", ex);
+            TaskDialog.Show("TransferPlus", $"Error deleting elements: {ex.Message}");
+        }
+        finally
+        {
+            IsBusy = false;
+            StatusMessage = "Ready";
         }
     }
 
