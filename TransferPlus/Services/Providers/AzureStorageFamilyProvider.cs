@@ -72,7 +72,7 @@ public class AzureStorageFamilyProvider : IFamilyProvider
                     CategoryName = categoryName,
                     SourceName = ProviderName,
                     StatusMessage = $"Azure Blob ({blob.FormattedSize})",
-                    ImagePreviewUrl = blob.BlobName, // BlobName stored here
+                    ImagePreviewUrl = File.Exists(cachedFilePath) ? cachedFilePath : blob.BlobName,
                     RevitVersion = string.IsNullOrWhiteSpace(ver) ? "Azure Cloud" : ver,
                     Symbols = symbols
                 });

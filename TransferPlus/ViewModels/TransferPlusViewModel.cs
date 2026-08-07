@@ -2581,4 +2581,152 @@ public partial class TransferPlusViewModel : ObservableObject
 
         return missingConflicts;
     }
+
+    [RelayCommand]
+    private async Task DownloadSelectedFamiliesAsync()
+    {
+        if (SelectedSourceDocument == null)
+        {
+            TaskDialog.Show("TransferPlus", "No source document selected.");
+            return;
+        }
+
+        // 1. Obtener carpetas/familias marcadas en el TreeView de familias
+        var familiesToDownload = new List<(FamilyItemModel family, List<string> activeSymbols)>();
+
+        var familyNodes = GetAllDescendantNodes(RootNodes)
+            .Where(n => n.Category == "Family" || n.Item is FamilyItemModel);
+
+        foreach (var familyNode in familyNodes)
+        {
+            if (familyNode.IsChecked == true || familyNode.IsChecked == null)
+            {
+                var activeSymbols = familyNode.Children
+                    .Where(c => c.IsChecked == true || c.IsChecked == null)
+                    .Select(c => c.Name)
+                    .ToList();
+
+                var familyModel = familyNode.Item as FamilyItemModel
+                    ?? _familyItems.FirstOrDefault(f => f.Name.Equals(familyNode.Name, StringComparison.OrdinalIgnoreCase));
+
+                if (familyModel != null)
+                {
+                    if (!activeSymbols.Any() && familyModel.Symbols != null)
+                    {
+                        activeSymbols = familyModel.Symbols.Select(s => s.Name).ToList();
+                    }
+
+                    if (activeSymbols.Any())
+                    {
+                        familiesToDownload.Add((familyModel, activeSymbols));
+                    }
+                }
+            }
+        }
+
+        // Si no se han marcado tipos en el árbol pero hay una familia seleccionada en el panel de detalles, se procesa la seleccionada
+        if (!familiesToDownload.Any() && SelectedFamily != null)
+        {
+            var activeSymbols = SelectedFamilySymbols
+                .Where(s => s.IsActive)
+                .Select(s => s.Name)
+                .ToList();
+
+            if (!activeSymbols.Any())
+            {
+                activeSymbols = SelectedFamilySymbols.Select(s => s.Name).ToList();
+            }
+
+            familiesToDownload.Add((SelectedFamily, activeSymbols));
+        }
+
+        if (!familiesToDownload.Any())
+        {
+            TaskDialog.Show("TransferPlus", "Please select at least one family and type to download.");
+            return;
+        }
+
+        // 2. Diálogo de selección de carpeta de Windows (vía Reflexión / Native Windows Folder Dialog)
+        string? selectedFolder = null;
+        var folderBrowserType = Type.GetType("System.Windows.Forms.FolderBrowserDialog, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")
+            ?? Type.GetType("System.Windows.Forms.FolderBrowserDialog, System.Windows.Forms");
+
+        if (folderBrowserType != null)
+        {
+            var instance = Activator.CreateInstance(folderBrowserType);
+            if (instance != null)
+            {
+                folderBrowserType.GetProperty("Description")?.SetValue(instance, "Select destination folder to download family (.rfa) files");
+                var showDialogMethod = folderBrowserType.GetMethod("ShowDialog", Type.EmptyTypes);
+                var result = showDialogMethod?.Invoke(instance, null);
+                if (result?.ToString() == "OK" || result?.ToString() == "1")
+                {
+                    selectedFolder = folderBrowserType.GetProperty("SelectedPath")?.GetValue(instance) as string;
+                }
+            }
+        }
+
+        if (string.IsNullOrWhiteSpace(selectedFolder))
+        {
+            return;
+        }
+
+        IsBusy = true;
+        StatusMessage = "Downloading families...";
+        ProgressPercentage = 0;
+        int total = familiesToDownload.Count;
+        int countSuccess = 0;
+
+        try
+        {
+            for (int i = 0; i < total; i++)
+            {
+                var (family, activeSymbols) = familiesToDownload[i];
+                StatusMessage = $"Downloading family '{family.Name}' ({i + 1}/{total})...";
+                ProgressPercentage = (int)((double)(i + 1) / total * 100);
+
+                System.Windows.Threading.Dispatcher.CurrentDispatcher.Invoke(
+                    System.Windows.Threading.DispatcherPriority.Background,
+                    new Action(() => { }));
+
+                bool ok = _familyRevitService.ExportSelectiveFamilyToFolder(
+                    _app,
+                    SelectedSourceDocument.Adoc,
+                    family,
+                    selectedFolder,
+                    activeSymbols);
+
+                if (ok) countSuccess++;
+            }
+
+            StatusMessage = $"Downloaded {countSuccess} family(ies) to '{selectedFolder}'.";
+            TaskDialog.Show("TransferPlus", $"Successfully downloaded {countSuccess} family file(s) to:\n{selectedFolder}");
+        }
+        catch (Exception ex)
+        {
+            TelemetryLogger.LogError("DownloadSelectedFamiliesAsync", ex);
+            TaskDialog.Show("TransferPlus", $"Error downloading families: {ex.Message}");
+        }
+        finally
+        {
+            IsBusy = false;
+            StatusMessage = "Ready";
+            ProgressPercentage = 0;
+        }
+    }
+
+    private static IEnumerable<TreeItemViewModel> GetAllDescendantNodes(IEnumerable<TreeItemViewModel> nodes)
+    {
+        foreach (var node in nodes)
+        {
+            yield return node;
+            if (node.Children != null && node.Children.Any())
+            {
+                foreach (var child in GetAllDescendantNodes(node.Children))
+                {
+                    yield return child;
+                }
+            }
+        }
+    }
 }

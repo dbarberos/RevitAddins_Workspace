@@ -1,7 +1,10 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Autodesk.Revit.DB;
+using Autodesk.Revit.UI;
+using TransferPlus.Models;
 using TransferPlus.Services;
 
 namespace TransferPlus.Services
@@ -42,9 +45,18 @@ namespace TransferPlus.Services
                 action();
                 return;
             }
+            ExecuteWithWarningSuppression(new Autodesk.Revit.UI.UIApplication(doc.Application), action);
+        }
 
-            var app = doc.Application;
-            var uiApp = new Autodesk.Revit.UI.UIApplication(app);
+        private static void ExecuteWithWarningSuppression(Autodesk.Revit.UI.UIApplication uiApp, Action action)
+        {
+            if (uiApp?.Application == null)
+            {
+                action();
+                return;
+            }
+
+            var app = uiApp.Application;
 
             EventHandler<Autodesk.Revit.DB.Events.FailuresProcessingEventArgs> failureHandler = (sender, e) =>
             {
@@ -387,6 +399,7 @@ namespace TransferPlus.Services
                 using (var tx = new Transaction(familyDoc, "Filtrar y Renombrar Tipos de Familia"))
                 {
                     tx.Start();
+                    WarningSwallower.AttachToTransaction(tx);
 
                     // 1. Filtrar/Eliminar tipos no seleccionados
                     if (selectedNamesSet != null && selectedNamesSet.Any())
@@ -536,6 +549,99 @@ namespace TransferPlus.Services
         }
 
         /// <summary>
+        /// Edita una familia en memoria. Si el documento origen es de solo lectura (Read-Only) o un vínculo
+        /// donde EditFamily falla, realiza una copia temporal de una instancia/símbolo a un documento de proyecto intermedio en memoria
+        /// para poder invocar EditFamily sin errores de estado de solo lectura.
+        /// </summary>
+        private Document? SafeEditFamily(UIApplication? uiApp, Document sourceDoc, Family sourceFamily, out Document? tempContainerDoc)
+        {
+            tempContainerDoc = null;
+            if (sourceDoc == null || sourceFamily == null) return null;
+
+            // Estrategia 1: Edición directa si el documento no es solo lectura
+            if (!sourceDoc.IsReadOnly)
+            {
+                try
+                {
+                    var famDoc = sourceDoc.EditFamily(sourceFamily);
+                    if (famDoc != null) return famDoc;
+                }
+                catch (Autodesk.Revit.Exceptions.InvalidOperationException ex) when (ex.Message.IndexOf("read-only", StringComparison.OrdinalIgnoreCase) >= 0)
+                {
+                    TelemetryLogger.LogInfo($"SafeEditFamily: Documento '{sourceDoc.Title}' es Read-Only. Activando fallback de copia temporal...");
+                }
+                catch (Exception ex)
+                {
+                    TelemetryLogger.LogExceptionSilently($"SafeEditFamily direct EditFamily on '{sourceFamily.Name}'", ex);
+                }
+            }
+
+            // Estrategia 2: Copia a documento intermedio en memoria (para modelos Read-Only o Vínculos)
+            try
+            {
+                var app = uiApp?.Application ?? sourceDoc.Application;
+                tempContainerDoc = app.NewProjectDocument(UnitSystem.Metric);
+
+                var idsToCopy = new List<ElementId>();
+
+                // a) Buscar primero una instancia de la familia en el modelo origen
+                var instanceId = new FilteredElementCollector(sourceDoc)
+                    .OfClass(typeof(FamilyInstance))
+                    .WhereElementIsNotElementType()
+                    .Cast<FamilyInstance>()
+                    .FirstOrDefault(fi => fi.Symbol != null && fi.Symbol.Family != null && fi.Symbol.Family.Id == sourceFamily.Id)?.Id;
+
+                if (instanceId != null && instanceId != ElementId.InvalidElementId)
+                {
+                    idsToCopy.Add(instanceId);
+                }
+                else
+                {
+                    // b) Si no hay instancias, tomar el ID del primer tipo (FamilySymbol)
+                    var symbolId = sourceFamily.GetFamilySymbolIds()?.FirstOrDefault();
+                    if (symbolId != null && symbolId != ElementId.InvalidElementId)
+                    {
+                        idsToCopy.Add(symbolId);
+                    }
+                }
+
+                if (idsToCopy.Any())
+                {
+                    using (Transaction t = new Transaction(tempContainerDoc, "Copy Element For Edit"))
+                    {
+                        t.Start();
+                        WarningSwallower.AttachToTransaction(t);
+                        var copyOptions = new CopyPasteOptions();
+                        ElementTransformUtils.CopyElements(
+                            sourceDoc,
+                            idsToCopy,
+                            tempContainerDoc,
+                            Transform.Identity,
+                            copyOptions);
+                        t.Commit();
+                    }
+
+                    // Buscar la familia copiada en el documento temporal
+                    var copiedFamily = new FilteredElementCollector(tempContainerDoc)
+                        .OfClass(typeof(Family))
+                        .Cast<Family>()
+                        .FirstOrDefault(f => f.Name.Equals(sourceFamily.Name, StringComparison.OrdinalIgnoreCase));
+
+                    if (copiedFamily != null)
+                    {
+                        return tempContainerDoc.EditFamily(copiedFamily);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                TelemetryLogger.LogExceptionSilently($"SafeEditFamily fallback copy for '{sourceFamily.Name}'", ex);
+            }
+
+            return null;
+        }
+
+        /// <summary>
         /// Transfiere una familia desde un documento origen (abierto o vinculado) hacia un documento destino completamente en memoria,
         /// utilizando el patrón recomendado por la API de Revit (Document.EditFamily -> familyDoc.LoadFamily).
         /// </summary>
@@ -546,7 +652,8 @@ namespace TransferPlus.Services
             out Family? loadedFamily,
             IEnumerable<string>? targetSymbolNames = null,
             string? overrideFamilyName = null,
-            IDictionary<string, string>? symbolRenameMap = null)
+            IDictionary<string, string>? symbolRenameMap = null,
+            UIApplication? uiApp = null)
         {
             loadedFamily = null;
             if (sourceDocument == null || sourceFamily == null || targetDocument == null)
@@ -555,11 +662,12 @@ namespace TransferPlus.Services
             }
 
             Document? familyDoc = null;
+            Document? tempContainerDoc = null;
             string tempRfaPath = string.Empty;
             try
             {
-                // Abrir la familia en memoria (no crea ventana gráfica)
-                familyDoc = sourceDocument.EditFamily(sourceFamily);
+                // Abrir la familia en memoria usando SafeEditFamily (soporta documentos solo lectura)
+                familyDoc = SafeEditFamily(uiApp, sourceDocument, sourceFamily, out tempContainerDoc);
                 if (familyDoc == null)
                 {
                     TelemetryLogger.LogWarning($"No se pudo editar en memoria la familia '{sourceFamily.Name}'.");
@@ -603,17 +711,108 @@ namespace TransferPlus.Services
             }
             catch (Exception ex)
             {
-                TelemetryLogger.LogError($"Error al transferir en memoria la familia '{sourceFamily?.Name}'", ex);
+                TelemetryLogger.LogExceptionSilently($"Error al transferir en memoria la familia '{sourceFamily?.Name}'", ex);
                 return false;
             }
             finally
             {
-                familyDoc?.Close(false);
+                if (familyDoc != null)
+                {
+                    try { familyDoc.Close(false); } catch { }
+                }
+                if (tempContainerDoc != null)
+                {
+                    try { tempContainerDoc.Close(false); } catch { }
+                }
                 if (!string.IsNullOrEmpty(tempRfaPath) && File.Exists(tempRfaPath))
                 {
                     try { File.Delete(tempRfaPath); } catch { }
                 }
             }
+        }
+
+        /// <summary>
+        /// Exporta una familia eliminando de su interior los tipos no seleccionados en el explorador
+        /// y guardando el archivo .rfa limpio en la carpeta especificada por el usuario.
+        /// </summary>
+        public bool ExportSelectiveFamilyToFolder(
+            Autodesk.Revit.UI.UIApplication uiApp,
+            Document? sourceDoc,
+            FamilyItemModel familyItem,
+            string outputFolderPath,
+            IEnumerable<string> targetSymbolNames)
+        {
+            if (uiApp == null || familyItem == null || string.IsNullOrWhiteSpace(outputFolderPath) || !Directory.Exists(outputFolderPath))
+            {
+                return false;
+            }
+
+            bool success = false;
+            ExecuteWithWarningSuppression(uiApp, () =>
+            {
+                Document? familyDoc = null;
+                Document? tempContainerDoc = null;
+                try
+                {
+                    string targetRfaPath = Path.Combine(outputFolderPath, familyItem.Name + ".rfa");
+
+                    // Caso 1: Origen desde modelo abierto o vinculado (NativeFamily != null)
+                    if (familyItem.NativeFamily is Family nativeFam && sourceDoc != null)
+                    {
+                        familyDoc = SafeEditFamily(uiApp, sourceDoc, nativeFam, out tempContainerDoc);
+                    }
+                    // Caso 2: Origen desde archivo .rfa local o descargado (Azure / Local / ACC)
+                    else if (!string.IsNullOrWhiteSpace(familyItem.ImagePreviewUrl))
+                    {
+                        string rfaPath = familyItem.ImagePreviewUrl;
+                        if (!File.Exists(rfaPath))
+                        {
+                            string fileName = Path.GetFileName(rfaPath);
+                            string tempFamiliesPath = Path.Combine(Path.GetTempPath(), "TransferPlus_Families", fileName);
+                            string tempAzurePath = Path.Combine(Path.GetTempPath(), "TransferPlus_AzureCache", fileName);
+                            string tempAccPath = Path.Combine(Path.GetTempPath(), "TransferPlus_AccCache", fileName);
+
+                            if (File.Exists(tempFamiliesPath)) rfaPath = tempFamiliesPath;
+                            else if (File.Exists(tempAzurePath)) rfaPath = tempAzurePath;
+                            else if (File.Exists(tempAccPath)) rfaPath = tempAccPath;
+                        }
+
+                        if (File.Exists(rfaPath))
+                        {
+                            familyDoc = uiApp.Application.OpenDocumentFile(rfaPath);
+                        }
+                    }
+
+                    if (familyDoc == null) return;
+
+                    // Filtrar los tipos eliminando aquellos que no estén en targetSymbolNames
+                    ProcessFamilyDocTypes(familyDoc, targetSymbolNames, null);
+
+                    var saveOptions = new SaveAsOptions { OverwriteExistingFile = true };
+                    familyDoc.SaveAs(targetRfaPath, saveOptions);
+
+                    TelemetryLogger.LogInfo($"[Export] Familia '{familyItem.Name}' exportada con éxito con {targetSymbolNames.Count()} tipo(s) en '{targetRfaPath}'.");
+                    success = true;
+                }
+                catch (Exception ex)
+                {
+                    TelemetryLogger.LogExceptionSilently($"[Export] Error exportando familia '{familyItem.Name}' a '{outputFolderPath}'", ex);
+                    success = false;
+                }
+                finally
+                {
+                    if (familyDoc != null)
+                    {
+                        try { familyDoc.Close(false); } catch { }
+                    }
+                    if (tempContainerDoc != null)
+                    {
+                        try { tempContainerDoc.Close(false); } catch { }
+                    }
+                }
+            });
+
+            return success;
         }
     }
 }

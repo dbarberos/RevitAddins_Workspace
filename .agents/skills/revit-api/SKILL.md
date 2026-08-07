@@ -92,6 +92,8 @@ You have structured expert knowledge in the following 30 domains. Use the concep
 * [debugging_family_type_suffix_merge_opendocumentfile_2026-08-06.md](file:///c:/Users/david.barbero/Documents/DOCUMENTOS/ALTEN/Workbench/RevitAddins_Workspace/RevitAddins_Workspace/.agents/skills/revit-api/references/debugging_family_type_suffix_merge_opendocumentfile_2026-08-06.md)
 * [debugging_external_family_symbol_extraction_2026-08-06.md](file:///c:/Users/david.barbero/Documents/DOCUMENTOS/ALTEN/Workbench/RevitAddins_Workspace/RevitAddins_Workspace/.agents/skills/revit-api/references/debugging_external_family_symbol_extraction_2026-08-06.md)
 * [debugging_family_identity_preservation_2026-08-06.md](file:///c:/Users/david.barbero/Documents/DOCUMENTOS/ALTEN/Workbench/RevitAddins_Workspace/RevitAddins_Workspace/.agents/skills/revit-api/references/debugging_family_identity_preservation_2026-08-06.md)
+* [debugging_selective_family_tree_traversal_2026-08-07.md](file:///c:/Users/david.barbero/Documents/DOCUMENTOS/ALTEN/Workbench/RevitAddins_Workspace/RevitAddins_Workspace/.agents/skills/revit-api/references/debugging_selective_family_tree_traversal_2026-08-07.md)
+* [debugging_family_export_thread_isolation_and_warning_suppression_2026-08-07.md](file:///c:/Users/david.barbero/Documents/DOCUMENTOS/ALTEN/Workbench/RevitAddins_Workspace/RevitAddins_Workspace/.agents/skills/revit-api/references/debugging_family_export_thread_isolation_and_warning_suppression_2026-08-07.md)
 * [guia_transferencia_familias_en_memoria.md](file:///c:/Users/david.barbero/Documents/DOCUMENTOS/ALTEN/Workbench/RevitAddins_Workspace/RevitAddins_Workspace/.agents/skills/revit-api/references/guia_transferencia_familias_en_memoria.md)
 
 
