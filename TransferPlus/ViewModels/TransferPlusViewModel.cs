@@ -96,6 +96,34 @@ public partial class TransferPlusViewModel : ObservableObject
     [ObservableProperty]
     private bool _copyLinks;
 
+    [ObservableProperty]
+    private bool _exportLogOnDownload;
+
+    [ObservableProperty]
+    private string? _exportLogFolderPath;
+
+    partial void OnExportLogOnDownloadChanged(bool value)
+    {
+        if (value)
+        {
+            string? folder = PromptFolderBrowserDialog("Select destination folder for download log report (.txt)");
+            if (!string.IsNullOrWhiteSpace(folder))
+            {
+                ExportLogFolderPath = folder;
+            }
+            else
+            {
+                ExportLogFolderPath = null;
+                _exportLogOnDownload = false;
+                OnPropertyChanged(nameof(ExportLogOnDownload));
+            }
+        }
+        else
+        {
+            ExportLogFolderPath = null;
+        }
+    }
+
 
 
     [ObservableProperty]
@@ -2599,6 +2627,46 @@ public partial class TransferPlusViewModel : ObservableObject
         return missingConflicts;
     }
 
+    private static string? PromptFolderBrowserDialog(string description)
+    {
+        string? selectedFolder = null;
+        var folderBrowserType = Type.GetType("System.Windows.Forms.FolderBrowserDialog, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")
+            ?? Type.GetType("System.Windows.Forms.FolderBrowserDialog, System.Windows.Forms");
+
+        if (folderBrowserType != null)
+        {
+            var instance = Activator.CreateInstance(folderBrowserType);
+            if (instance != null)
+            {
+                folderBrowserType.GetProperty("Description")?.SetValue(instance, description);
+                var showDialogMethod = folderBrowserType.GetMethod("ShowDialog", Type.EmptyTypes);
+                var result = showDialogMethod?.Invoke(instance, null);
+                if (result?.ToString() == "OK" || result?.ToString() == "1")
+                {
+                    selectedFolder = folderBrowserType.GetProperty("SelectedPath")?.GetValue(instance) as string;
+                }
+            }
+        }
+        return selectedFolder;
+    }
+
+    private void SetRevitStatusBarText(string text)
+    {
+        try
+        {
+            var componentManagerType = Type.GetType("Autodesk.Windows.ComponentManager, AdWindows");
+            if (componentManagerType != null)
+            {
+                var prop = componentManagerType.GetProperty("StatusBarText", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
+                prop?.SetValue(null, text);
+            }
+        }
+        catch
+        {
+            // Ignore if StatusBarText is unsupported in current API context
+        }
+    }
+
     [RelayCommand]
     private async Task DownloadSelectedFamiliesAsync()
     {
@@ -2663,25 +2731,8 @@ public partial class TransferPlusViewModel : ObservableObject
             return;
         }
 
-        // 2. Diálogo de selección de carpeta de Windows (vía Reflexión / Native Windows Folder Dialog)
-        string? selectedFolder = null;
-        var folderBrowserType = Type.GetType("System.Windows.Forms.FolderBrowserDialog, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")
-            ?? Type.GetType("System.Windows.Forms.FolderBrowserDialog, System.Windows.Forms");
-
-        if (folderBrowserType != null)
-        {
-            var instance = Activator.CreateInstance(folderBrowserType);
-            if (instance != null)
-            {
-                folderBrowserType.GetProperty("Description")?.SetValue(instance, "Select destination folder to download family (.rfa) files");
-                var showDialogMethod = folderBrowserType.GetMethod("ShowDialog", Type.EmptyTypes);
-                var result = showDialogMethod?.Invoke(instance, null);
-                if (result?.ToString() == "OK" || result?.ToString() == "1")
-                {
-                    selectedFolder = folderBrowserType.GetProperty("SelectedPath")?.GetValue(instance) as string;
-                }
-            }
-        }
+        // 2. Diálogo de selección de carpeta de Windows para los archivos .rfa
+        string? selectedFolder = PromptFolderBrowserDialog("Select destination folder to download family (.rfa) files");
 
         if (string.IsNullOrWhiteSpace(selectedFolder))
         {
@@ -2694,30 +2745,74 @@ public partial class TransferPlusViewModel : ObservableObject
         int total = familiesToDownload.Count;
         int countSuccess = 0;
 
+        var logEntries = new List<ExportLogFamilyEntry>();
+        bool shouldExportLog = ExportLogOnDownload && !string.IsNullOrWhiteSpace(ExportLogFolderPath);
+
         try
         {
             for (int i = 0; i < total; i++)
             {
                 var (family, activeSymbols) = familiesToDownload[i];
-                StatusMessage = $"Downloading family '{family.Name}' ({i + 1}/{total})...";
+                string currentStatusText = $"Downloading family '{family.Name}' ({i + 1}/{total})...";
+                StatusMessage = currentStatusText;
                 ProgressPercentage = (int)((double)(i + 1) / total * 100);
+
+                SetRevitStatusBarText($"TransferPlus: {currentStatusText}");
 
                 System.Windows.Threading.Dispatcher.CurrentDispatcher.Invoke(
                     System.Windows.Threading.DispatcherPriority.Background,
                     new Action(() => { }));
 
-                bool ok = _familyRevitService.ExportSelectiveFamilyToFolder(
-                    _app,
-                    SelectedSourceDocument.Adoc,
-                    family,
-                    selectedFolder,
-                    activeSymbols);
+                string errorMsg = string.Empty;
+                bool ok = false;
+                try
+                {
+                    ok = _familyRevitService.ExportSelectiveFamilyToFolder(
+                        _app,
+                        SelectedSourceDocument.Adoc,
+                        family,
+                        selectedFolder,
+                        activeSymbols);
+                }
+                catch (Exception ex)
+                {
+                    errorMsg = ex.Message;
+                    ok = false;
+                }
 
                 if (ok) countSuccess++;
+
+                if (shouldExportLog)
+                {
+                    logEntries.Add(new ExportLogFamilyEntry
+                    {
+                        FamilyName = family.Name,
+                        CategoryName = family.CategoryName,
+                        RevitVersion = family.RevitVersion,
+                        ExportedSymbols = activeSymbols,
+                        IsSuccess = ok,
+                        ErrorMessage = ok ? string.Empty : (string.IsNullOrWhiteSpace(errorMsg) ? "Export failed or family file unreadable." : errorMsg)
+                    });
+                }
+            }
+
+            string? createdLogPath = null;
+            if (shouldExportLog && !string.IsNullOrWhiteSpace(ExportLogFolderPath))
+            {
+                createdLogPath = ExportLoggerService.SaveDownloadLog(
+                    ExportLogFolderPath,
+                    SelectedSourceDocument.Nombre,
+                    logEntries);
             }
 
             StatusMessage = $"Downloaded {countSuccess} family(ies) to '{selectedFolder}'.";
-            TaskDialog.Show("TransferPlus", $"Successfully downloaded {countSuccess} family file(s) to:\n{selectedFolder}");
+
+            string resultMsg = $"Successfully downloaded {countSuccess} family file(s) to:\n{selectedFolder}";
+            if (!string.IsNullOrWhiteSpace(createdLogPath))
+            {
+                resultMsg += $"\n\nDownload export log saved to:\n{createdLogPath}";
+            }
+            TaskDialog.Show("TransferPlus", resultMsg);
         }
         catch (Exception ex)
         {
@@ -2729,6 +2824,7 @@ public partial class TransferPlusViewModel : ObservableObject
             IsBusy = false;
             StatusMessage = "Ready";
             ProgressPercentage = 0;
+            SetRevitStatusBarText("Ready");
         }
     }
 

@@ -862,56 +862,65 @@
                                     <!-- Separator Line -->
                                     <Border Grid.Row="1" BorderBrush="#E0E0E0" BorderThickness="0,1,0,0" Margin="0,10,0,10"/>
                                     
-                                    <!-- Action Buttons Row (Icon Buttons matching Sources Window Style) -->
-                                    <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right">
-                                        <!-- Download Button -->
-                                        <Button Command="{Binding DownloadSelectedFamiliesCommand}" Width="28" Height="28" Margin="0,0,8,0" Cursor="Hand" ToolTip="Download Family">
-                                            <Button.Template>
-                                                <ControlTemplate TargetType="Button">
-                                                    <Border x:Name="border" Background="Transparent" CornerRadius="4" Padding="4">
-                                                        <Viewbox Width="18" Height="18">
-                                                            <Path Data="M12,16L7,11H10V4H14V11H17L12,16M5,18H19V20H5V18Z" Fill="#777" x:Name="iconPath"/>
-                                                        </Viewbox>
-                                                    </Border>
-                                                    <ControlTemplate.Triggers>
-                                                        <Trigger Property="IsMouseOver" Value="True">
-                                                            <Setter TargetName="border" Property="Background" Value="#eeeeee"/>
-                                                            <Setter TargetName="iconPath" Property="Fill" Value="#333"/>
-                                                        </Trigger>
-                                                        <Trigger Property="IsPressed" Value="True">
-                                                            <Setter TargetName="border" Property="Background" Value="#dddddd"/>
-                                                        </Trigger>
-                                                    </ControlTemplate.Triggers>
-                                                </ControlTemplate>
-                                            </Button.Template>
-                                        </Button>
+                                     <!-- Action Buttons Row (Left-aligned: Delete, Download, Download Export Log RadioButton) -->
+                                     <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Left" VerticalAlignment="Center">
+                                         <!-- Delete Button (Leftmost) -->
+                                         <Button Command="{Binding DeleteSelectedFamiliesCommand}" Width="28" Height="28" Margin="0,0,8,0" Cursor="Hand" ToolTip="Delete Family / Types from Active Model">
+                                             <Button.Template>
+                                                 <ControlTemplate TargetType="Button">
+                                                     <Border x:Name="border" Background="Transparent" CornerRadius="4" Padding="4">
+                                                         <Viewbox Width="18" Height="18">
+                                                             <Path Data="M16,9V19H8V9H16M14.5,3H9.5L8.5,4H5V6H19V4H15.5L14.5,3M18,7H6V19A2,2 0 0,0 8,21H16A2,2 0 0,0 18,19V7Z" Fill="#777" x:Name="iconPath"/>
+                                                         </Viewbox>
+                                                     </Border>
+                                                     <ControlTemplate.Triggers>
+                                                         <Trigger Property="IsMouseOver" Value="True">
+                                                             <Setter TargetName="border" Property="Background" Value="#eeeeee"/>
+                                                             <Setter TargetName="iconPath" Property="Fill" Value="#333"/>
+                                                         </Trigger>
+                                                         <Trigger Property="IsPressed" Value="True">
+                                                             <Setter TargetName="border" Property="Background" Value="#dddddd"/>
+                                                         </Trigger>
+                                                         <Trigger Property="IsEnabled" Value="False">
+                                                             <Setter TargetName="iconPath" Property="Fill" Value="#cccccc"/>
+                                                             <Setter TargetName="border" Property="Opacity" Value="0.4"/>
+                                                         </Trigger>
+                                                     </ControlTemplate.Triggers>
+                                                 </ControlTemplate>
+                                             </Button.Template>
+                                         </Button>
 
-                                        <!-- Delete Button -->
-                                        <Button Command="{Binding DeleteSelectedFamiliesCommand}" Width="28" Height="28" Cursor="Hand" ToolTip="Delete Family / Types from Active Model">
-                                            <Button.Template>
-                                                <ControlTemplate TargetType="Button">
-                                                    <Border x:Name="border" Background="Transparent" CornerRadius="4" Padding="4">
-                                                        <Viewbox Width="18" Height="18">
-                                                            <Path Data="M16,9V19H8V9H16M14.5,3H9.5L8.5,4H5V6H19V4H15.5L14.5,3M18,7H6V19A2,2 0 0,0 8,21H16A2,2 0 0,0 18,19V7Z" Fill="#777" x:Name="iconPath"/>
-                                                        </Viewbox>
-                                                    </Border>
-                                                    <ControlTemplate.Triggers>
-                                                        <Trigger Property="IsMouseOver" Value="True">
-                                                            <Setter TargetName="border" Property="Background" Value="#eeeeee"/>
-                                                            <Setter TargetName="iconPath" Property="Fill" Value="#333"/>
-                                                        </Trigger>
-                                                        <Trigger Property="IsPressed" Value="True">
-                                                            <Setter TargetName="border" Property="Background" Value="#dddddd"/>
-                                                        </Trigger>
-                                                        <Trigger Property="IsEnabled" Value="False">
-                                                            <Setter TargetName="iconPath" Property="Fill" Value="#cccccc"/>
-                                                            <Setter TargetName="border" Property="Opacity" Value="0.4"/>
-                                                        </Trigger>
-                                                    </ControlTemplate.Triggers>
-                                                </ControlTemplate>
-                                            </Button.Template>
-                                        </Button>
-                                    </StackPanel>
+                                         <!-- Download Button (Right of Delete) -->
+                                         <Button Command="{Binding DownloadSelectedFamiliesCommand}" Width="28" Height="28" Margin="0,0,12,0" Cursor="Hand" ToolTip="Download Family">
+                                             <Button.Template>
+                                                 <ControlTemplate TargetType="Button">
+                                                     <Border x:Name="border" Background="Transparent" CornerRadius="4" Padding="4">
+                                                         <Viewbox Width="18" Height="18">
+                                                             <Path Data="M12,16L7,11H10V4H14V11H17L12,16M5,18H19V20H5V18Z" Fill="#777" x:Name="iconPath"/>
+                                                         </Viewbox>
+                                                     </Border>
+                                                     <ControlTemplate.Triggers>
+                                                         <Trigger Property="IsMouseOver" Value="True">
+                                                             <Setter TargetName="border" Property="Background" Value="#eeeeee"/>
+                                                             <Setter TargetName="iconPath" Property="Fill" Value="#333"/>
+                                                         </Trigger>
+                                                         <Trigger Property="IsPressed" Value="True">
+                                                             <Setter TargetName="border" Property="Background" Value="#dddddd"/>
+                                                         </Trigger>
+                                                     </ControlTemplate.Triggers>
+                                                 </ControlTemplate>
+                                             </Button.Template>
+                                         </Button>
+
+                                         <!-- Download Export Log RadioButton (Right of Download) -->
+                                         <RadioButton Content="Download Export Log" 
+                                                      IsChecked="{Binding ExportLogOnDownload}" 
+                                                      VerticalAlignment="Center" 
+                                                      FontSize="11.5" 
+                                                      Foreground="#333333" 
+                                                      Cursor="Hand"
+                                                      ToolTip="When enabled, prompts for a log directory and saves a detailed .txt export report file when downloading families."/>
+                                     </StackPanel>
                                 </Grid>
                             </Grid>
                         </Border>
