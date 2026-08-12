@@ -1183,13 +1183,39 @@ public partial class TransferPlusViewModel : ObservableObject
                 SelectedSourceDocument.Adoc,
                 familyService);
 
+                var renameFamilyMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+                var renameSymbolMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+                if (IsRenamePanelOpen || RenamePreviewItems.Any())
+                {
+                    foreach (var pItem in RenamePreviewItems)
+                    {
+                        if (pItem.IsSelected && !string.IsNullOrWhiteSpace(pItem.NewName) && !pItem.NewName.Equals(pItem.OriginalName, StringComparison.OrdinalIgnoreCase))
+                        {
+                            if (pItem.IsType)
+                            {
+                                renameSymbolMap[pItem.OriginalName] = pItem.NewName;
+                            }
+                            else
+                            {
+                                renameFamilyMap[pItem.OriginalName] = pItem.NewName;
+                            }
+                        }
+                    }
+                }
+
                 int transferredCount = 0;
                 foreach (var destDoc in targetDestinations)
                 {
                     foreach (var fam in checkedFamilies)
                     {
                         string? overrideFamilyName = null;
-                        var existingFam = familyService.GetExistingFamily(destDoc.Adoc, fam.Name);
+                        if (renameFamilyMap.TryGetValue(fam.Name, out var renamedFamName))
+                        {
+                            overrideFamilyName = renamedFamName;
+                        }
+
+                        var existingFam = familyService.GetExistingFamily(destDoc.Adoc, overrideFamilyName ?? fam.Name);
 
                         // -------------------------------------------------------------
                         // ON DUPLICATES CHECK: KEEP ORIGINAL
@@ -1223,7 +1249,7 @@ public partial class TransferPlusViewModel : ObservableObject
                                 };
 
                                 StatusMessage = $"Transferring {missingSymbols.Count} missing type(s) for family '{fam.Name}' to '{destDoc.Nombre}'...";
-                                bool okMissing = provider.TransferFamilyAsync(clonedFam, destDoc.Adoc, null).GetAwaiter().GetResult();
+                                bool okMissing = provider.TransferFamilyAsync(clonedFam, destDoc.Adoc, overrideFamilyName).GetAwaiter().GetResult();
                                 if (okMissing) transferredCount++;
                                 continue;
                             }
@@ -1266,7 +1292,19 @@ public partial class TransferPlusViewModel : ObservableObject
                             overrideFamilyName = null;
                         }
 
-                        StatusMessage = $"Transferring family '{fam.Name}' to '{destDoc.Nombre}'...";
+                        if (symbolRenameMap == null && renameSymbolMap.Any())
+                        {
+                            symbolRenameMap = new Dictionary<string, string>(renameSymbolMap, StringComparer.OrdinalIgnoreCase);
+                        }
+                        else if (symbolRenameMap != null && renameSymbolMap.Any())
+                        {
+                            foreach (var kvp in renameSymbolMap)
+                            {
+                                symbolRenameMap[kvp.Key] = kvp.Value;
+                            }
+                        }
+
+                        StatusMessage = $"Transferring family '{overrideFamilyName ?? fam.Name}' to '{destDoc.Nombre}'...";
                         bool ok = provider.TransferFamilyAsync(fam, destDoc.Adoc, overrideFamilyName, symbolRenameMap).GetAwaiter().GetResult();
                         if (ok) transferredCount++;
                     }
@@ -1589,7 +1627,19 @@ public partial class TransferPlusViewModel : ObservableObject
                 CollectCheckedFamilies(RootNodes, checkedFamilies);
                 
                 var currentPreviewIds = RenamePreviewItems.Select(x => x.FamilyIdentifier).Where(x => x != null).ToHashSet();
-                var newCheckedIds = checkedFamilies.Select(x => x.Name).ToHashSet();
+                var newCheckedIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+                foreach (var fam in checkedFamilies)
+                {
+                    newCheckedIds.Add("FAM:" + fam.Name);
+                    if (fam.Symbols != null)
+                    {
+                        foreach (var sym in fam.Symbols)
+                        {
+                            newCheckedIds.Add("SYM:" + fam.Name + "::" + sym.Name);
+                        }
+                    }
+                }
 
                 // Eliminar los que ya no están seleccionados
                 for (int i = RenamePreviewItems.Count - 1; i >= 0; i--)
@@ -1601,14 +1651,29 @@ public partial class TransferPlusViewModel : ObservableObject
                     }
                 }
 
-                // Añadir los nuevos seleccionados
-                foreach (var item in checkedFamilies)
+                // Añadir los nuevos seleccionados (Familias y Tipos)
+                foreach (var fam in checkedFamilies)
                 {
-                    if (!currentPreviewIds.Contains(item.Name))
+                    string famId = "FAM:" + fam.Name;
+                    if (!currentPreviewIds.Contains(famId))
                     {
-                        var pItem = new RenamePreviewItem(item.Name, item.Name);
+                        var pItem = new RenamePreviewItem(famId, fam.Name, isType: false, parentFamilyName: fam.Name);
                         pItem.PropertyChanged += PreviewItem_PropertyChanged;
                         RenamePreviewItems.Add(pItem);
+                    }
+
+                    if (fam.Symbols != null)
+                    {
+                        foreach (var sym in fam.Symbols)
+                        {
+                            string symId = "SYM:" + fam.Name + "::" + sym.Name;
+                            if (!currentPreviewIds.Contains(symId))
+                            {
+                                var pItem = new RenamePreviewItem(symId, sym.Name, isType: true, parentFamilyName: fam.Name);
+                                pItem.PropertyChanged += PreviewItem_PropertyChanged;
+                                RenamePreviewItems.Add(pItem);
+                            }
+                        }
                     }
                 }
             }
@@ -1865,9 +1930,19 @@ public partial class TransferPlusViewModel : ObservableObject
 
             foreach (var item in checkedFamilies)
             {
-                var pItem = new RenamePreviewItem(item.Name, item.Name);
-                pItem.PropertyChanged += PreviewItem_PropertyChanged;
-                RenamePreviewItems.Add(pItem);
+                var famItem = new RenamePreviewItem("FAM:" + item.Name, item.Name, isType: false, parentFamilyName: item.Name);
+                famItem.PropertyChanged += PreviewItem_PropertyChanged;
+                RenamePreviewItems.Add(famItem);
+
+                if (item.Symbols != null)
+                {
+                    foreach (var sym in item.Symbols)
+                    {
+                        var symItem = new RenamePreviewItem("SYM:" + item.Name + "::" + sym.Name, sym.Name, isType: true, parentFamilyName: item.Name);
+                        symItem.PropertyChanged += PreviewItem_PropertyChanged;
+                        RenamePreviewItems.Add(symItem);
+                    }
+                }
             }
         }
         else
@@ -2748,12 +2823,34 @@ public partial class TransferPlusViewModel : ObservableObject
         var logEntries = new List<ExportLogFamilyEntry>();
         bool shouldExportLog = ExportLogOnDownload && !string.IsNullOrWhiteSpace(ExportLogFolderPath);
 
+        var familyRenameMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        var symbolRenameMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+        if (IsRenamePanelOpen || RenamePreviewItems.Any())
+        {
+            foreach (var pItem in RenamePreviewItems)
+            {
+                if (pItem.IsSelected && !string.IsNullOrWhiteSpace(pItem.NewName) && !pItem.NewName.Equals(pItem.OriginalName, StringComparison.OrdinalIgnoreCase))
+                {
+                    if (pItem.IsType)
+                    {
+                        symbolRenameMap[pItem.OriginalName] = pItem.NewName;
+                    }
+                    else
+                    {
+                        familyRenameMap[pItem.OriginalName] = pItem.NewName;
+                    }
+                }
+            }
+        }
+
         try
         {
             for (int i = 0; i < total; i++)
             {
                 var (family, activeSymbols) = familiesToDownload[i];
-                string currentStatusText = $"Downloading family '{family.Name}' ({i + 1}/{total})...";
+                string overrideFamName = familyRenameMap.TryGetValue(family.Name, out var renamedFam) ? renamedFam : null;
+                string currentStatusText = $"Downloading family '{overrideFamName ?? family.Name}' ({i + 1}/{total})...";
                 StatusMessage = currentStatusText;
                 ProgressPercentage = (int)((double)(i + 1) / total * 100);
 
@@ -2772,7 +2869,9 @@ public partial class TransferPlusViewModel : ObservableObject
                         SelectedSourceDocument.Adoc,
                         family,
                         selectedFolder,
-                        activeSymbols);
+                        activeSymbols,
+                        overrideFamName,
+                        symbolRenameMap.Any() ? symbolRenameMap : null);
                 }
                 catch (Exception ex)
                 {
@@ -2784,12 +2883,16 @@ public partial class TransferPlusViewModel : ObservableObject
 
                 if (shouldExportLog)
                 {
+                    var exportedSymbolDisplayList = activeSymbols
+                        .Select(s => symbolRenameMap.TryGetValue(s, out var newSymName) ? newSymName : s)
+                        .ToList();
+
                     logEntries.Add(new ExportLogFamilyEntry
                     {
-                        FamilyName = family.Name,
+                        FamilyName = overrideFamName ?? family.Name,
                         CategoryName = family.CategoryName,
                         RevitVersion = family.RevitVersion,
-                        ExportedSymbols = activeSymbols,
+                        ExportedSymbols = exportedSymbolDisplayList,
                         IsSuccess = ok,
                         ErrorMessage = ok ? string.Empty : (string.IsNullOrWhiteSpace(errorMsg) ? "Export failed or family file unreadable." : errorMsg)
                     });

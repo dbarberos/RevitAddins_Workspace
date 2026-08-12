@@ -17,6 +17,8 @@ public partial class RenamePreviewItem : ObservableObject
     public ElementId? SourceId { get; init; }
     public string? FamilyIdentifier { get; init; }
     public string OriginalName { get; init; }
+    public bool IsType { get; init; }
+    public string? ParentFamilyName { get; init; }
 
     public RenamePreviewItem(ElementId sourceId, string originalName)
     {
@@ -25,10 +27,12 @@ public partial class RenamePreviewItem : ObservableObject
         NewName = originalName;
     }
 
-    public RenamePreviewItem(string familyIdentifier, string originalName)
+    public RenamePreviewItem(string familyIdentifier, string originalName, bool isType = false, string? parentFamilyName = null)
     {
         FamilyIdentifier = familyIdentifier;
         OriginalName = originalName;
         NewName = originalName;
+        IsType = isType;
+        ParentFamilyName = parentFamilyName;
     }
 }

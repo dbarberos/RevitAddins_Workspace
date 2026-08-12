@@ -912,8 +912,8 @@
                                              </Button.Template>
                                          </Button>
 
-                                         <!-- Download Export Log RadioButton (Right of Download) -->
-                                         <RadioButton Content="Download Export Log" 
+                                         <!-- Include Export Log RadioButton (Right of Download) -->
+                                         <RadioButton Content="Include Export Log when download" 
                                                       IsChecked="{Binding ExportLogOnDownload}" 
                                                       VerticalAlignment="Center" 
                                                       FontSize="11.5" 

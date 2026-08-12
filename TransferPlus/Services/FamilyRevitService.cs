@@ -450,23 +450,23 @@ namespace TransferPlus.Services
                         }
                     }
 
-                    // 2. Duplicar tipos según symbolRenameMap (ej. sufijos para tipos duplicados)
+                    // 2. Renombrar tipos según symbolRenameMap
                     if (renameMap != null && renameMap.Any())
                     {
                         var existingTypesList = familyManager.Types.Cast<FamilyType>().ToList();
                         foreach (FamilyType familyType in existingTypesList)
                         {
-                            if (renameMap.TryGetValue(familyType.Name, out string? newTypeName) && !string.IsNullOrWhiteSpace(newTypeName))
+                            if (renameMap.TryGetValue(familyType.Name, out string? newTypeName) && !string.IsNullOrWhiteSpace(newTypeName) && !newTypeName.Equals(familyType.Name, StringComparison.OrdinalIgnoreCase))
                             {
                                 try
                                 {
                                     familyManager.CurrentType = familyType;
-                                    familyManager.NewType(newTypeName);
-                                    TelemetryLogger.LogInfo($"Duplicado tipo con sufijo en familyDoc: '{familyType.Name}' -> '{newTypeName}'");
+                                    familyManager.RenameCurrentType(newTypeName);
+                                    TelemetryLogger.LogInfo($"Renombrado tipo en familyDoc: '{familyType.Name}' -> '{newTypeName}'");
                                 }
                                 catch (Exception exRen)
                                 {
-                                    TelemetryLogger.LogWarning($"No se pudo duplicar tipo '{familyType.Name}' a '{newTypeName}': {exRen.Message}");
+                                    TelemetryLogger.LogWarning($"No se pudo renombrar tipo '{familyType.Name}' a '{newTypeName}': {exRen.Message}");
                                 }
                             }
                         }
@@ -740,7 +740,9 @@ namespace TransferPlus.Services
             Document? sourceDoc,
             FamilyItemModel familyItem,
             string outputFolderPath,
-            IEnumerable<string> targetSymbolNames)
+            IEnumerable<string> targetSymbolNames,
+            string? overrideFamilyName = null,
+            Dictionary<string, string>? symbolRenameMap = null)
         {
             if (uiApp == null || familyItem == null || string.IsNullOrWhiteSpace(outputFolderPath) || !Directory.Exists(outputFolderPath))
             {
@@ -754,7 +756,8 @@ namespace TransferPlus.Services
                 Document? tempContainerDoc = null;
                 try
                 {
-                    string targetRfaPath = Path.Combine(outputFolderPath, familyItem.Name + ".rfa");
+                    string exportFileName = !string.IsNullOrWhiteSpace(overrideFamilyName) ? overrideFamilyName : familyItem.Name;
+                    string targetRfaPath = Path.Combine(outputFolderPath, exportFileName + ".rfa");
 
                     // Caso 1: Origen desde modelo abierto o vinculado (NativeFamily != null)
                     if (familyItem.NativeFamily is Family nativeFam && sourceDoc != null)
@@ -785,13 +788,13 @@ namespace TransferPlus.Services
 
                     if (familyDoc == null) return;
 
-                    // Filtrar los tipos eliminando aquellos que no estén en targetSymbolNames
-                    ProcessFamilyDocTypes(familyDoc, targetSymbolNames, null);
+                    // Filtrar los tipos eliminando aquellos que no estén en targetSymbolNames y renombrando según symbolRenameMap
+                    ProcessFamilyDocTypes(familyDoc, targetSymbolNames, symbolRenameMap);
 
                     var saveOptions = new SaveAsOptions { OverwriteExistingFile = true };
                     familyDoc.SaveAs(targetRfaPath, saveOptions);
 
-                    TelemetryLogger.LogInfo($"[Export] Familia '{familyItem.Name}' exportada con éxito con {targetSymbolNames.Count()} tipo(s) en '{targetRfaPath}'.");
+                    TelemetryLogger.LogInfo($"[Export] Familia '{exportFileName}' exportada con éxito con {targetSymbolNames.Count()} tipo(s) en '{targetRfaPath}'.");
                     success = true;
                 }
                 catch (Exception ex)
