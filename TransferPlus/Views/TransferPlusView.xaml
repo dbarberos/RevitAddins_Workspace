@@ -1802,8 +1802,24 @@
                                                         <Setter Property="Cursor" Value="Hand"/>
                                                     </Style>
                                                 </StackPanel.Resources>
+                                                <!-- Category: Clear & Regex Options -->
+                                                <TextBlock Text="Clear &amp; Regex Options" FontWeight="Bold" Margin="0,0,0,10" FontSize="13"/>
+                                                
+                                                <Button Command="{Binding InsertEmptyReplaceHelperCommand}" Click="CloseDatePopup">
+                                                    <Grid Margin="0,0,0,5" Width="470">
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="Auto" MinWidth="110"/>
+                                                            <ColumnDefinition Width="*"/>
+                                                        </Grid.ColumnDefinitions>
+                                                        <Border Grid.Column="0" Background="#F9F9F9" BorderBrush="#E0E0E0" BorderThickness="1" CornerRadius="4" Padding="8,0" MinHeight="32" Margin="0,0,10,0">
+                                                            <TextBlock Text="(no text / vacio)" HorizontalAlignment="Center" VerticalAlignment="Center" FontWeight="SemiBold" Foreground="#777" FontStyle="Italic"/>
+                                                        </Border>
+                                                        <TextBlock Grid.Column="1" Text="Replaces matched text with nothing (removes search term) and enables Apply." VerticalAlignment="Center" Foreground="#555" TextWrapping="Wrap" FontSize="10.5"/>
+                                                    </Grid>
+                                                </Button>
+
                                                 <!-- Category: Regex Prefix & Suffix -->
-                                                <TextBlock Text="Regex Prefix &amp; Suffix" FontWeight="Bold" Margin="0,0,0,10" FontSize="13"/>
+                                                <TextBlock Text="Regex Prefix &amp; Suffix" FontWeight="Bold" Margin="0,15,0,10" FontSize="13"/>
                                                 
                                                 <Button Command="{Binding InsertDateHelperCommand}" CommandParameter="prefix_text$1" Click="CloseDatePopup">
                                                     <Grid Margin="0,0,0,5" Width="470">

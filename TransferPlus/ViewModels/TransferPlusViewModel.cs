@@ -1886,14 +1886,20 @@ public partial class TransferPlusViewModel : ObservableObject
 
     public ObservableCollection<RenamePreviewItem> RenamePreviewItems { get; } = new();
 
+    private bool _isReplaceEmptyAllowed;
+
     partial void OnRenameSearchTextChanged(string value) => UpdateRenamePreviews();
     partial void OnRenameReplaceTextChanged(string value)
     {
+        if (!string.IsNullOrEmpty(value))
+        {
+            _isReplaceEmptyAllowed = false;
+        }
         ApplyRenameReplaceCommand.NotifyCanExecuteChanged();
         UpdateRenamePreviews();
     }
 
-    private bool CanApplyRenameReplace() => !string.IsNullOrWhiteSpace(RenameReplaceText);
+    private bool CanApplyRenameReplace() => !string.IsNullOrWhiteSpace(RenameReplaceText) || _isReplaceEmptyAllowed;
 
     [RelayCommand(CanExecute = nameof(CanApplyRenameReplace))]
     private void ApplyRenameReplace()
@@ -1906,8 +1912,10 @@ public partial class TransferPlusViewModel : ObservableObject
             }
         }
 
+        _isReplaceEmptyAllowed = false;
         RenameSearchText = string.Empty;
         RenameReplaceText = string.Empty;
+        ApplyRenameReplaceCommand.NotifyCanExecuteChanged();
         UpdateRenamePreviews();
     }
 
@@ -2002,6 +2010,7 @@ public partial class TransferPlusViewModel : ObservableObject
     [RelayCommand]
     private void CloseRenamePanel()
     {
+        _isReplaceEmptyAllowed = false;
         IsRenamePanelOpen = false;
         RenameSearchText = string.Empty;
         RenameReplaceText = string.Empty;
@@ -2064,6 +2073,15 @@ public partial class TransferPlusViewModel : ObservableObject
     {
         SearchFilter = (SearchFilter ?? string.Empty) + snippet;
         FilterUseRegex = true;
+    }
+
+    [RelayCommand]
+    private void InsertEmptyReplaceHelper()
+    {
+        _isReplaceEmptyAllowed = true;
+        RenameReplaceText = string.Empty;
+        ApplyRenameReplaceCommand.NotifyCanExecuteChanged();
+        UpdateRenamePreviews();
     }
 
     [RelayCommand]
