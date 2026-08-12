@@ -1898,7 +1898,17 @@ public partial class TransferPlusViewModel : ObservableObject
     [RelayCommand(CanExecute = nameof(CanApplyRenameReplace))]
     private void ApplyRenameReplace()
     {
-        // Pending execution logic to be defined in next step
+        foreach (var item in RenamePreviewItems)
+        {
+            if (item.IsSelected)
+            {
+                item.WorkingName = item.NewName;
+            }
+        }
+
+        RenameSearchText = string.Empty;
+        RenameReplaceText = string.Empty;
+        UpdateRenamePreviews();
     }
 
     partial void OnRenameUseRegexChanged(bool value) => UpdateRenamePreviews();
@@ -2078,20 +2088,14 @@ public partial class TransferPlusViewModel : ObservableObject
             foreach (var item in RenamePreviewItems)
             {
                 item.IsMatchingFilter = false;
-                // Keep original name; formatting may be applied later based on flags.
-                item.NewName = item.OriginalName;
+                item.NewName = item.WorkingName;
             }
-            // Do not return; continue to apply formatting based on ApplyAll flag.
-        }
-        else
-        {
-            // Search text is provided; further processing will handle matching.
         }
 
         RegexOptions options = RenameMatchCase ? RegexOptions.None : RegexOptions.IgnoreCase;
         Regex? regex = null;
 
-        if (RenameUseRegex)
+        if (RenameUseRegex && !string.IsNullOrEmpty(RenameSearchText))
         {
             try
             {
@@ -2107,7 +2111,7 @@ public partial class TransferPlusViewModel : ObservableObject
         int selectedItemIndex = 0;
         foreach (var item in RenamePreviewItems)
         {
-            // First, calculate if it matches the Find text (regardless of IsSelected)
+            // First, calculate if it matches the Find text (strictly against OriginalName)
             bool isMatch = false;
             if (!string.IsNullOrEmpty(RenameSearchText))
             {
@@ -2128,10 +2132,10 @@ public partial class TransferPlusViewModel : ObservableObject
             }
             item.IsMatchingFilter = isMatch;
 
-            // If the item is unchecked, revert to original name and do not apply any rename logic
+            // If the item is unchecked, revert to its last applied WorkingName
             if (!item.IsSelected)
             {
-                item.NewName = item.OriginalName;
+                item.NewName = item.WorkingName;
                 continue;
             }
 
@@ -2141,14 +2145,14 @@ public partial class TransferPlusViewModel : ObservableObject
             // Evaluate the replacement template per selected item index
             string evaluatedReplaceText = EvaluateReplacementTemplate(RenameReplaceText, selectedItemIndex);
 
-            string newName = item.OriginalName;
+            string newName = item.WorkingName;
             if (isMatch)
             {
                 if (RenameUseRegex && regex != null)
                 {
                     try
                     {
-                        newName = RenameMatchAllOccurrences ? regex.Replace(item.OriginalName, evaluatedReplaceText) : regex.Replace(item.OriginalName, evaluatedReplaceText, 1);
+                        newName = RenameMatchAllOccurrences ? regex.Replace(item.WorkingName, evaluatedReplaceText) : regex.Replace(item.WorkingName, evaluatedReplaceText, 1);
                     }
                     catch { }
                 }
@@ -2156,7 +2160,7 @@ public partial class TransferPlusViewModel : ObservableObject
                 {
                     string literalPattern = Regex.Escape(RenameSearchText);
                     var re = new Regex(literalPattern, options, TimeSpan.FromMilliseconds(500));
-                    newName = RenameMatchAllOccurrences ? re.Replace(item.OriginalName, evaluatedReplaceText) : re.Replace(item.OriginalName, evaluatedReplaceText, 1);
+                    newName = RenameMatchAllOccurrences ? re.Replace(item.WorkingName, evaluatedReplaceText) : re.Replace(item.WorkingName, evaluatedReplaceText, 1);
                 }
             }
 

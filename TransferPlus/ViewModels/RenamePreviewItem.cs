@@ -9,6 +9,9 @@ public partial class RenamePreviewItem : ObservableObject
     private string _newName = string.Empty;
 
     [ObservableProperty]
+    private string _workingName = string.Empty;
+
+    [ObservableProperty]
     private bool _isSelected = true;
 
     [ObservableProperty]
@@ -24,6 +27,7 @@ public partial class RenamePreviewItem : ObservableObject
     {
         SourceId = sourceId;
         OriginalName = originalName;
+        WorkingName = originalName;
         NewName = originalName;
     }
 
@@ -31,6 +35,7 @@ public partial class RenamePreviewItem : ObservableObject
     {
         FamilyIdentifier = familyIdentifier;
         OriginalName = originalName;
+        WorkingName = originalName;
         NewName = originalName;
         IsType = isType;
         ParentFamilyName = parentFamilyName;
