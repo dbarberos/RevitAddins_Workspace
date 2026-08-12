@@ -35,6 +35,11 @@ public partial class TransferPlusViewModel : ObservableObject
     [ObservableProperty]
     private string _searchFilter = string.Empty;
 
+    partial void OnSearchFilterChanged(string value)
+    {
+        FilterTreeCommand.NotifyCanExecuteChanged();
+    }
+
     // Filters
     [ObservableProperty]
     private bool _filterUseOr;
@@ -784,7 +789,9 @@ public partial class TransferPlusViewModel : ObservableObject
         TransferPlus.Services.LoggerService.LogInfo($"BuildTree: Tree built successfully. Total nodes grouped in root: {allNode.Count}");
     }
 
-    [RelayCommand]
+    private bool CanFilterTree() => !string.IsNullOrWhiteSpace(SearchFilter);
+
+    [RelayCommand(CanExecute = nameof(CanFilterTree))]
     private void FilterTree()
     {
         string searchText = SearchFilter;
@@ -1880,7 +1887,20 @@ public partial class TransferPlusViewModel : ObservableObject
     public ObservableCollection<RenamePreviewItem> RenamePreviewItems { get; } = new();
 
     partial void OnRenameSearchTextChanged(string value) => UpdateRenamePreviews();
-    partial void OnRenameReplaceTextChanged(string value) => UpdateRenamePreviews();
+    partial void OnRenameReplaceTextChanged(string value)
+    {
+        ApplyRenameReplaceCommand.NotifyCanExecuteChanged();
+        UpdateRenamePreviews();
+    }
+
+    private bool CanApplyRenameReplace() => !string.IsNullOrWhiteSpace(RenameReplaceText);
+
+    [RelayCommand(CanExecute = nameof(CanApplyRenameReplace))]
+    private void ApplyRenameReplace()
+    {
+        // Pending execution logic to be defined in next step
+    }
+
     partial void OnRenameUseRegexChanged(bool value) => UpdateRenamePreviews();
     partial void OnRenameMatchCaseChanged(bool value) => UpdateRenamePreviews();
     partial void OnRenameMatchAllOccurrencesChanged(bool value) => UpdateRenamePreviews();

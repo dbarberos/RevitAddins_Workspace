@@ -345,10 +345,34 @@
                                     </Grid.ColumnDefinitions>
                                     <TextBlock Grid.Column="0" Text="Filter:" FontWeight="Bold" FontSize="12" Foreground="#999" VerticalAlignment="Center" Margin="0,0,10,0"/>
                                     <TextBox Grid.Column="1" Text="{Binding SearchFilter, UpdateSourceTrigger=PropertyChanged}" VerticalAlignment="Center" Padding="2" BorderBrush="#e0e0e0" BorderThickness="1"/>
-                                    
                                     <StackPanel Grid.Column="2" Orientation="Horizontal" Margin="10,0,0,0" VerticalAlignment="Center">
-                                        <Button Content="Apply" Command="{Binding FilterTreeCommand}" Padding="12,3" Background="#007ACC" Foreground="White" BorderThickness="0" Cursor="Hand"/>
-                                    </StackPanel>
+                                         <Button Content="Apply" Command="{Binding FilterTreeCommand}" Padding="12,3" VerticalAlignment="Center">
+                                             <Button.Style>
+                                                 <Style TargetType="Button">
+                                                     <Setter Property="Background" Value="#007ACC"/>
+                                                     <Setter Property="Foreground" Value="White"/>
+                                                     <Setter Property="BorderThickness" Value="0"/>
+                                                     <Setter Property="Cursor" Value="Hand"/>
+                                                     <Setter Property="Template">
+                                                         <Setter.Value>
+                                                             <ControlTemplate TargetType="Button">
+                                                                 <Border Background="{TemplateBinding Background}" CornerRadius="4" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" Padding="{TemplateBinding Padding}">
+                                                                     <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                                 </Border>
+                                                             </ControlTemplate>
+                                                         </Setter.Value>
+                                                     </Setter>
+                                                     <Style.Triggers>
+                                                         <Trigger Property="IsEnabled" Value="False">
+                                                             <Setter Property="Background" Value="#F3F3F3"/>
+                                                             <Setter Property="Foreground" Value="#B0B0B0"/>
+                                                             <Setter Property="BorderBrush" Value="Transparent"/>
+                                                         </Trigger>
+                                                     </Style.Triggers>
+                                                 </Style>
+                                             </Button.Style>
+                                         </Button>
+                                     </StackPanel>
                                 </Grid>
              
                                 <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Left">
@@ -1259,9 +1283,9 @@
                                 <ColumnDefinition Width="*"/>
                                 <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
-                            <Grid>
-                                <TextBox x:Name="FindTextBox" Text="{Binding RenameSearchText, UpdateSourceTrigger=PropertyChanged}" Padding="8,6" Height="32" VerticalContentAlignment="Center"/>
-                                <TextBlock Text="Find" Foreground="#aaa" Margin="10,0,0,0" VerticalAlignment="Center" IsHitTestVisible="False">
+                            <Grid VerticalAlignment="Center">
+                                <TextBox x:Name="FindTextBox" Text="{Binding RenameSearchText, UpdateSourceTrigger=PropertyChanged}" Padding="2" VerticalAlignment="Center" BorderBrush="#e0e0e0" BorderThickness="1"/>
+                                <TextBlock Text="Find" Foreground="#aaa" Margin="5,0,0,0" VerticalAlignment="Center" IsHitTestVisible="False">
                                     <TextBlock.Style>
                                         <Style TargetType="TextBlock">
                                             <Setter Property="Visibility" Value="Collapsed"/>
@@ -1276,7 +1300,7 @@
                             </Grid>
                             
                             <!-- RegEx Helper Button -->
-                            <ToggleButton x:Name="BtnRegexHelper" Grid.Column="1" Width="20" Height="20" Margin="5,0,0,0" Cursor="Hand" ToolTip="Regex help" ToolTipService.InitialShowDelay="600">
+                            <ToggleButton x:Name="BtnRegexHelper" Grid.Column="1" Width="20" Height="20" Margin="5,0,0,0" VerticalAlignment="Center" Cursor="Hand" ToolTip="Regex help" ToolTipService.InitialShowDelay="600">
                                 <ToggleButton.Template>
                                     <ControlTemplate TargetType="ToggleButton">
                                         <Border CornerRadius="10" Background="#F3F3F3" BorderThickness="1" BorderBrush="#E0E0E0">
@@ -1703,10 +1727,12 @@
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*"/>
                                 <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
-                            <Grid>
-                                <TextBox x:Name="ReplaceTextBox" Text="{Binding RenameReplaceText, UpdateSourceTrigger=PropertyChanged}" Padding="8,6" Height="32" VerticalContentAlignment="Center"/>
-                                <TextBlock Text="Changed by:" Foreground="#aaa" Margin="10,0,0,0" VerticalAlignment="Center" IsHitTestVisible="False">
+
+                            <Grid Grid.Column="0" VerticalAlignment="Center">
+                                <TextBox x:Name="ReplaceTextBox" Text="{Binding RenameReplaceText, UpdateSourceTrigger=PropertyChanged}" Padding="2" VerticalAlignment="Center" BorderBrush="#e0e0e0" BorderThickness="1"/>
+                                <TextBlock Text="Changed by" Foreground="#aaa" Margin="5,0,0,0" VerticalAlignment="Center" IsHitTestVisible="False">
                                     <TextBlock.Style>
                                         <Style TargetType="TextBlock">
                                             <Setter Property="Visibility" Value="Collapsed"/>
@@ -1721,7 +1747,7 @@
                             </Grid>
                             
                             <!-- Date Helper Button -->
-                            <ToggleButton x:Name="BtnDateHelper" Grid.Column="1" Width="20" Height="20" Margin="5,0,0,0" Cursor="Hand" ToolTip="Help replacing terms" ToolTipService.InitialShowDelay="600">
+                            <ToggleButton x:Name="BtnDateHelper" Grid.Column="1" Width="20" Height="20" Margin="5,0,8,0" VerticalAlignment="Center" Cursor="Hand" ToolTip="Help replacing terms" ToolTipService.InitialShowDelay="600">
                                 <ToggleButton.Template>
                                     <ControlTemplate TargetType="ToggleButton">
                                         <Border CornerRadius="10" Background="#F3F3F3" BorderThickness="1" BorderBrush="#E0E0E0">
@@ -1730,6 +1756,35 @@
                                     </ControlTemplate>
                                 </ToggleButton.Template>
                             </ToggleButton>
+
+                            <!-- Apply Button for Changed by on Far Right -->
+                            <Button Grid.Column="2" Content="Apply" Command="{Binding ApplyRenameReplaceCommand}" 
+                                    Padding="12,3" VerticalAlignment="Center">
+                                <Button.Style>
+                                    <Style TargetType="Button">
+                                        <Setter Property="Background" Value="#007ACC"/>
+                                        <Setter Property="Foreground" Value="White"/>
+                                        <Setter Property="BorderThickness" Value="0"/>
+                                        <Setter Property="Cursor" Value="Hand"/>
+                                        <Setter Property="Template">
+                                            <Setter.Value>
+                                                <ControlTemplate TargetType="Button">
+                                                    <Border Background="{TemplateBinding Background}" CornerRadius="4" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" Padding="{TemplateBinding Padding}">
+                                                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                    </Border>
+                                                </ControlTemplate>
+                                            </Setter.Value>
+                                        </Setter>
+                                        <Style.Triggers>
+                                            <Trigger Property="IsEnabled" Value="False">
+                                                <Setter Property="Background" Value="#F3F3F3"/>
+                                                <Setter Property="Foreground" Value="#B0B0B0"/>
+                                                <Setter Property="BorderBrush" Value="Transparent"/>
+                                            </Trigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Button.Style>
+                            </Button>
                             
                             <Popup IsOpen="{Binding IsChecked, ElementName=BtnDateHelper, Mode=TwoWay}" StaysOpen="False" PlacementTarget="{Binding ElementName=BtnDateHelper}" Placement="Bottom" AllowsTransparency="True" Margin="0,5,0,0">
                                 <Border Background="White" BorderBrush="#ccc" BorderThickness="1" CornerRadius="4" Padding="10" Width="540" MaxHeight="550">
@@ -2282,12 +2337,31 @@
                                   BorderThickness="0"
                                   GridLinesVisibility="Horizontal"
                                   HorizontalGridLinesBrush="#f0f0f0">
+                            <DataGrid.Resources>
+                                <SolidColorBrush x:Key="{x:Static SystemColors.InactiveSelectionHighlightBrushKey}" Color="Transparent" />
+                                <SolidColorBrush x:Key="{x:Static SystemColors.InactiveSelectionHighlightTextBrushKey}" Color="#333333" />
+                            </DataGrid.Resources>
                             <DataGrid.RowStyle>
                                 <Style TargetType="DataGridRow">
                                     <Style.Triggers>
                                         <DataTrigger Binding="{Binding IsMatchingFilter}" Value="True">
                                             <Setter Property="Background" Value="#CCE8FF"/>
                                         </DataTrigger>
+                                        <MultiDataTrigger>
+                                            <MultiDataTrigger.Conditions>
+                                                <Condition Binding="{Binding RelativeSource={RelativeSource Self}, Path=IsSelected}" Value="True" />
+                                                <Condition Binding="{Binding RelativeSource={RelativeSource AncestorType=DataGrid}, Path=IsKeyboardFocusWithin}" Value="False" />
+                                            </MultiDataTrigger.Conditions>
+                                            <Setter Property="Background" Value="White" />
+                                        </MultiDataTrigger>
+                                        <MultiDataTrigger>
+                                            <MultiDataTrigger.Conditions>
+                                                <Condition Binding="{Binding RelativeSource={RelativeSource Self}, Path=IsSelected}" Value="True" />
+                                                <Condition Binding="{Binding RelativeSource={RelativeSource AncestorType=DataGrid}, Path=IsKeyboardFocusWithin}" Value="False" />
+                                                <Condition Binding="{Binding IsMatchingFilter}" Value="True" />
+                                            </MultiDataTrigger.Conditions>
+                                            <Setter Property="Background" Value="#CCE8FF" />
+                                        </MultiDataTrigger>
                                     </Style.Triggers>
                                 </Style>
                             </DataGrid.RowStyle>
@@ -2311,6 +2385,13 @@
                                                     <Setter Property="Foreground" Value="#007ACC"/>
                                                     <Setter Property="FontWeight" Value="SemiBold"/>
                                                 </DataTrigger>
+                                                <MultiDataTrigger>
+                                                    <MultiDataTrigger.Conditions>
+                                                        <Condition Binding="{Binding RelativeSource={RelativeSource AncestorType=DataGridRow}, Path=IsSelected}" Value="True"/>
+                                                        <Condition Binding="{Binding RelativeSource={RelativeSource AncestorType=DataGrid}, Path=IsKeyboardFocusWithin}" Value="True"/>
+                                                    </MultiDataTrigger.Conditions>
+                                                    <Setter Property="Foreground" Value="White"/>
+                                                </MultiDataTrigger>
                                             </Style.Triggers>
                                         </Style>
                                     </DataGridTextColumn.ElementStyle>
