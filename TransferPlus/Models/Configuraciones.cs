@@ -25,6 +25,10 @@ namespace TransferPlus.Models
 
 		public string cf_suffixText = "_Copy";
 
+		public bool cf_saveInSubfoldersOnDownload;
+
+		public bool cf_setDefaultView3DOnDownload;
+
 		// Token: 0x0400007B RID: 123
 		public bool cf_chk_Callout;
 

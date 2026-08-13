@@ -102,6 +102,12 @@ public partial class TransferPlusViewModel : ObservableObject
     private bool _copyLinks;
 
     [ObservableProperty]
+    private bool _saveInSubfoldersOnDownload;
+
+    [ObservableProperty]
+    private bool _setDefaultView3DOnDownload;
+
+    [ObservableProperty]
     private bool _exportLogOnDownload;
 
     [ObservableProperty]

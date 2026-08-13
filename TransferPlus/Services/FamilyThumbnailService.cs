@@ -183,16 +183,16 @@ namespace TransferPlus.Services
 
         /// <summary>
         /// Resolves the on-disk file path for Shell thumbnail extraction.
-        /// Supports: Local .rfa paths, linked model .rvt paths, and Azure cached files.
+        /// Supports: Standalone .rfa files (Local, Azure, AWS S3 cached files).
+        /// STRICT: Only returns paths ending with .rfa to prevent host project (.rvt) files
+        /// from displaying the host building model as a family thumbnail preview.
         /// </summary>
         private static string? ResolveDiskPath(FamilyItemModel family)
         {
-            if (!string.IsNullOrEmpty(family.ImagePreviewUrl) && File.Exists(family.ImagePreviewUrl))
+            if (!string.IsNullOrEmpty(family.ImagePreviewUrl) && File.Exists(family.ImagePreviewUrl) && family.ImagePreviewUrl.EndsWith(".rfa", StringComparison.OrdinalIgnoreCase))
                 return family.ImagePreviewUrl;
-            if (!string.IsNullOrEmpty(family.SourceName) && File.Exists(family.SourceName))
+            if (!string.IsNullOrEmpty(family.SourceName) && File.Exists(family.SourceName) && family.SourceName.EndsWith(".rfa", StringComparison.OrdinalIgnoreCase))
                 return family.SourceName;
-            if (family.NativeFamily is Family fam && fam.Document?.PathName is string docPath && File.Exists(docPath))
-                return docPath;
             return null;
         }
 

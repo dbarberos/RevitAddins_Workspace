@@ -747,7 +747,7 @@
                                 </Grid.RowDefinitions>
                                 
                                 <!-- Card Header Row: Title on Left, Category & Version Metadata on Right (when 1 family selected) -->
-                                <Grid Grid.Row="0" Margin="0,0,0,8">
+                                <Grid Grid.Row="0" Margin="0,0,0,6">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="Auto"/>
                                         <ColumnDefinition Width="*"/>
@@ -788,7 +788,7 @@
                                         <RowDefinition Height="Auto"/>
                                     </Grid.RowDefinitions>
                                     
-                                     <Grid Grid.Row="0">
+                                     <Grid Grid.Row="0" VerticalAlignment="Top">
                                          <!-- Single Family Selected -->
                                          <Grid>
                                              <Grid.Style>
@@ -814,7 +814,7 @@
                                              </Grid.ColumnDefinitions>
                                              
                                              <!-- Left Column: High-Res 128x128 Thumbnail Container -->
-                                             <StackPanel Grid.Column="0" VerticalAlignment="Top" Margin="0,2,14,4">
+                                             <StackPanel Grid.Column="0" VerticalAlignment="Top" Margin="0,0,14,0">
                                                  <Border Width="128" Height="128" Background="#FAFAFA" BorderBrush="#E5E5E5" BorderThickness="1" CornerRadius="4" VerticalAlignment="Top">
                                                      <Grid>
                                                          <Image Source="{Binding SelectedFamilyThumbnail}" Stretch="Uniform" Margin="2"/>
@@ -825,15 +825,15 @@
                                                  </Border>
                                              </StackPanel>
                                              
-                                             <!-- Right Column: Family Name, Type, Category, Revit Version, Host -->
-                                             <StackPanel Grid.Column="1" VerticalAlignment="Top" Margin="0,2,0,0">
+                                             <!-- Right Column: Family Name, Type, Category, Revit Version, Host (Title stacked above property value) -->
+                                             <StackPanel Grid.Column="1" VerticalAlignment="Top" Margin="0,0,0,0">
                                                  <!-- Family Name -->
                                                  <TextBlock Text="{Binding SelectedFamily.Name}" 
-                                                            FontWeight="Bold" FontSize="13.5" Foreground="#111111"
-                                                            TextWrapping="Wrap" Margin="0,0,0,6"/>
+                                                            FontWeight="Bold" FontSize="13" Foreground="#111111"
+                                                            TextWrapping="Wrap" Margin="0,0,0,5"/>
 
                                                  <!-- Type Name (Visible when a type node is selected in tree) -->
-                                                 <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                                                 <StackPanel Margin="0,0,0,3">
                                                      <StackPanel.Style>
                                                          <Style TargetType="StackPanel">
                                                              <Setter Property="Visibility" Value="Visible"/>
@@ -844,26 +844,26 @@
                                                              </Style.Triggers>
                                                          </Style>
                                                      </StackPanel.Style>
-                                                     <TextBlock Text="Type: " FontWeight="Bold" FontSize="11.5" Foreground="#111111"/>
-                                                     <TextBlock Text="{Binding SelectedSymbol.Name}" FontSize="11.5" Foreground="#333333" TextWrapping="Wrap"/>
+                                                     <TextBlock Text="Type" FontWeight="Bold" FontSize="11" Foreground="#111111"/>
+                                                     <TextBlock Text="{Binding SelectedSymbol.Name}" FontSize="11" Foreground="#333333" TextWrapping="Wrap"/>
                                                  </StackPanel>
 
                                                  <!-- Category -->
-                                                 <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
-                                                     <TextBlock Text="Category: " FontWeight="Bold" FontSize="11.5" Foreground="#111111"/>
-                                                     <TextBlock Text="{Binding SelectedFamily.CategoryName}" FontSize="11.5" Foreground="#333333"/>
+                                                 <StackPanel Margin="0,0,0,3">
+                                                     <TextBlock Text="Category" FontWeight="Bold" FontSize="11" Foreground="#111111"/>
+                                                     <TextBlock Text="{Binding SelectedFamily.CategoryName}" FontSize="11" Foreground="#333333" TextWrapping="Wrap"/>
                                                  </StackPanel>
 
                                                  <!-- Revit Version -->
-                                                 <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
-                                                     <TextBlock Text="Revit: " FontWeight="Bold" FontSize="11.5" Foreground="#111111"/>
-                                                     <TextBlock Text="{Binding SelectedFamily.RevitVersion}" FontSize="11.5" Foreground="#333333"/>
+                                                 <StackPanel Margin="0,0,0,3">
+                                                     <TextBlock Text="Revit" FontWeight="Bold" FontSize="11" Foreground="#111111"/>
+                                                     <TextBlock Text="{Binding SelectedFamily.RevitVersion}" FontSize="11" Foreground="#333333"/>
                                                  </StackPanel>
 
-                                                 <!-- Host Type (Aligned under Revit version) -->
-                                                 <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
-                                                     <TextBlock Text="Host: " FontWeight="Bold" FontSize="11.5" Foreground="#111111"/>
-                                                     <TextBlock Text="{Binding SelectedFamily.HostTypeDescription}" FontSize="11.5" Foreground="#333333"/>
+                                                 <!-- Host Type -->
+                                                 <StackPanel Margin="0,0,0,3">
+                                                     <TextBlock Text="Host" FontWeight="Bold" FontSize="11" Foreground="#111111"/>
+                                                     <TextBlock Text="{Binding SelectedFamily.HostTypeDescription}" FontSize="11" Foreground="#333333"/>
                                                  </StackPanel>
                                              </StackPanel>
                                          </Grid>
@@ -884,12 +884,12 @@
                                     </Grid>
                                     
                                     <!-- Separator Line -->
-                                    <Border Grid.Row="1" BorderBrush="#E0E0E0" BorderThickness="0,1,0,0" Margin="0,10,0,10"/>
+                                    <Border Grid.Row="1" BorderBrush="#E0E0E0" BorderThickness="0,1,0,0" Margin="0,6,0,6"/>
                                     
-                                     <!-- Action Buttons Row (Left-aligned: Delete, Download, Download Export Log RadioButton) -->
+                                     <!-- Action Buttons Row (Left-aligned: Delete, Download, and 3 Stacked Download Option RadioButtons) -->
                                      <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Left" VerticalAlignment="Center">
                                          <!-- Delete Button (Leftmost) -->
-                                         <Button Command="{Binding DeleteSelectedFamiliesCommand}" Width="28" Height="28" Margin="0,0,8,0" Cursor="Hand" ToolTip="Delete Family / Types from Active Model">
+                                         <Button Command="{Binding DeleteSelectedFamiliesCommand}" Width="28" Height="28" Margin="0,0,8,0" VerticalAlignment="Center" Cursor="Hand" ToolTip="Delete Family / Types from Active Model">
                                              <Button.Template>
                                                  <ControlTemplate TargetType="Button">
                                                      <Border x:Name="border" Background="Transparent" CornerRadius="4" Padding="4">
@@ -915,7 +915,7 @@
                                          </Button>
 
                                          <!-- Download Button (Right of Delete) -->
-                                         <Button Command="{Binding DownloadSelectedFamiliesCommand}" Width="28" Height="28" Margin="0,0,12,0" Cursor="Hand" ToolTip="Download Family">
+                                         <Button Command="{Binding DownloadSelectedFamiliesCommand}" Width="28" Height="28" Margin="0,0,12,0" VerticalAlignment="Center" Cursor="Hand" ToolTip="Download Family">
                                              <Button.Template>
                                                  <ControlTemplate TargetType="Button">
                                                      <Border x:Name="border" Background="Transparent" CornerRadius="4" Padding="4">
@@ -931,19 +931,46 @@
                                                          <Trigger Property="IsPressed" Value="True">
                                                              <Setter TargetName="border" Property="Background" Value="#dddddd"/>
                                                          </Trigger>
+                                                         <Trigger Property="IsEnabled" Value="False">
+                                                             <Setter TargetName="iconPath" Property="Fill" Value="#cccccc"/>
+                                                             <Setter TargetName="border" Property="Opacity" Value="0.4"/>
+                                                         </Trigger>
                                                      </ControlTemplate.Triggers>
                                                  </ControlTemplate>
                                              </Button.Template>
                                          </Button>
 
-                                         <!-- Include Export Log RadioButton (Right of Download) -->
-                                         <RadioButton Content="Include Export Log when download" 
-                                                      IsChecked="{Binding ExportLogOnDownload}" 
-                                                      VerticalAlignment="Center" 
-                                                      FontSize="11.5" 
-                                                      Foreground="#333333" 
-                                                      Cursor="Hand"
-                                                      ToolTip="When enabled, prompts for a log directory and saves a detailed .txt export report file when downloading families."/>
+                                         <!-- Stacked Download Option RadioButtons (Right of Download) -->
+                                         <StackPanel VerticalAlignment="Center" Margin="0,0,0,0">
+                                             <!-- 1. Save elements in subfolders (categories) -->
+                                             <RadioButton Content="Save elements in subfolders (categories)" 
+                                                          IsChecked="{Binding SaveInSubfoldersOnDownload}" 
+                                                          VerticalAlignment="Center" 
+                                                          FontSize="11.5" 
+                                                          Foreground="#333333" 
+                                                          Cursor="Hand"
+                                                          Margin="0,0,0,6"
+                                                          ToolTip="When enabled, downloaded families are saved into subfolders organized by their Revit category."/>
+
+                                             <!-- 2. Set Default View as 3D -->
+                                             <RadioButton Content="Set Default View as 3D" 
+                                                          IsChecked="{Binding SetDefaultView3DOnDownload}" 
+                                                          VerticalAlignment="Center" 
+                                                          FontSize="11.5" 
+                                                          Foreground="#333333" 
+                                                          Cursor="Hand"
+                                                          Margin="0,0,0,6"
+                                                          ToolTip="When enabled, sets the default preview view of downloaded families to 3D before saving."/>
+
+                                             <!-- 3. Include Export Log when download -->
+                                             <RadioButton Content="Include Export Log when download" 
+                                                          IsChecked="{Binding ExportLogOnDownload}" 
+                                                          VerticalAlignment="Center" 
+                                                          FontSize="11.5" 
+                                                          Foreground="#333333" 
+                                                          Cursor="Hand"
+                                                          ToolTip="When enabled, prompts for a log directory and saves a detailed .txt export report file when downloading families."/>
+                                         </StackPanel>
                                      </StackPanel>
                                 </Grid>
                             </Grid>
