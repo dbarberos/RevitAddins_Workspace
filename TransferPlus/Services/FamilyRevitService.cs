@@ -742,7 +742,8 @@ namespace TransferPlus.Services
             string outputFolderPath,
             IEnumerable<string> targetSymbolNames,
             string? overrideFamilyName = null,
-            Dictionary<string, string>? symbolRenameMap = null)
+            Dictionary<string, string>? symbolRenameMap = null,
+            bool setDefaultView3D = false)
         {
             if (uiApp == null || familyItem == null || string.IsNullOrWhiteSpace(outputFolderPath) || !Directory.Exists(outputFolderPath))
             {
@@ -792,6 +793,52 @@ namespace TransferPlus.Services
                     ProcessFamilyDocTypes(familyDoc, targetSymbolNames, symbolRenameMap);
 
                     var saveOptions = new SaveAsOptions { OverwriteExistingFile = true };
+
+                    // Configurar vista por defecto como vista 3D si la opción está activada
+                    if (setDefaultView3D)
+                    {
+                        try
+                        {
+                            var view3D = new FilteredElementCollector(familyDoc)
+                                .OfClass(typeof(View3D))
+                                .Cast<View3D>()
+                                .FirstOrDefault(v => !v.IsTemplate);
+
+                            if (view3D != null)
+                            {
+                                saveOptions.PreviewViewId = view3D.Id;
+                                TelemetryLogger.LogInfo($"[SaveAsOptions] Asignada vista 3D '{view3D.Name}' (ID: {view3D.Id}) como vista previa para '{exportFileName}'.");
+                            }
+                            else
+                            {
+                                var viewFamilyType = new FilteredElementCollector(familyDoc)
+                                    .OfClass(typeof(ViewFamilyType))
+                                    .Cast<ViewFamilyType>()
+                                    .FirstOrDefault(v => v.ViewFamily == ViewFamily.ThreeDimensional);
+
+                                if (viewFamilyType != null)
+                                {
+                                    using (var t = new Transaction(familyDoc, "Create 3D View for Preview"))
+                                    {
+                                        t.Start();
+                                        var createdView3D = View3D.CreateIsometric(familyDoc, viewFamilyType.Id);
+                                        if (createdView3D != null)
+                                        {
+                                            createdView3D.Name = "{3D - Preview}";
+                                            saveOptions.PreviewViewId = createdView3D.Id;
+                                            TelemetryLogger.LogInfo($"[SaveAsOptions] Creada vista 3D '{createdView3D.Name}' como vista previa para '{exportFileName}'.");
+                                        }
+                                        t.Commit();
+                                    }
+                                }
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            TelemetryLogger.LogWarning($"[SaveAsOptions] No se pudo establecer la vista 3D previa para '{exportFileName}': {ex.Message}");
+                        }
+                    }
+
                     familyDoc.SaveAs(targetRfaPath, saveOptions);
 
                     TelemetryLogger.LogInfo($"[Export] Familia '{exportFileName}' exportada con éxito con {targetSymbolNames.Count()} tipo(s) en '{targetRfaPath}'.");

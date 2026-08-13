@@ -940,36 +940,39 @@
                                              </Button.Template>
                                          </Button>
 
-                                         <!-- Stacked Download Option RadioButtons (Right of Download) -->
+                                         <!-- Stacked Download Option Switches (Right of Download) -->
                                          <StackPanel VerticalAlignment="Center" Margin="0,0,0,0">
                                              <!-- 1. Save elements in subfolders (categories) -->
-                                             <RadioButton Content="Save elements in subfolders (categories)" 
-                                                          IsChecked="{Binding SaveInSubfoldersOnDownload}" 
-                                                          VerticalAlignment="Center" 
-                                                          FontSize="11.5" 
-                                                          Foreground="#333333" 
-                                                          Cursor="Hand"
-                                                          Margin="0,0,0,6"
-                                                          ToolTip="When enabled, downloaded families are saved into subfolders organized by their Revit category."/>
+                                             <CheckBox Content="Save elements in subfolders (categories)" 
+                                                       Style="{StaticResource SwitchStyle}"
+                                                       IsChecked="{Binding SaveInSubfoldersOnDownload}" 
+                                                       VerticalAlignment="Center" 
+                                                       FontSize="11.5" 
+                                                       Foreground="#333333" 
+                                                       Cursor="Hand"
+                                                       Margin="0,0,0,6"
+                                                       ToolTip="When enabled, downloaded families are saved into subfolders organized by their Revit category."/>
 
                                              <!-- 2. Set Default View as 3D -->
-                                             <RadioButton Content="Set Default View as 3D" 
-                                                          IsChecked="{Binding SetDefaultView3DOnDownload}" 
-                                                          VerticalAlignment="Center" 
-                                                          FontSize="11.5" 
-                                                          Foreground="#333333" 
-                                                          Cursor="Hand"
-                                                          Margin="0,0,0,6"
-                                                          ToolTip="When enabled, sets the default preview view of downloaded families to 3D before saving."/>
+                                             <CheckBox Content="Set Default View as 3D" 
+                                                       Style="{StaticResource SwitchStyle}"
+                                                       IsChecked="{Binding SetDefaultView3DOnDownload}" 
+                                                       VerticalAlignment="Center" 
+                                                       FontSize="11.5" 
+                                                       Foreground="#333333" 
+                                                       Cursor="Hand"
+                                                       Margin="0,0,0,6"
+                                                       ToolTip="When enabled, sets the default preview view of downloaded families to 3D before saving."/>
 
                                              <!-- 3. Include Export Log when download -->
-                                             <RadioButton Content="Include Export Log when download" 
-                                                          IsChecked="{Binding ExportLogOnDownload}" 
-                                                          VerticalAlignment="Center" 
-                                                          FontSize="11.5" 
-                                                          Foreground="#333333" 
-                                                          Cursor="Hand"
-                                                          ToolTip="When enabled, prompts for a log directory and saves a detailed .txt export report file when downloading families."/>
+                                             <CheckBox Content="Include Export Log when download" 
+                                                       Style="{StaticResource SwitchStyle}"
+                                                       IsChecked="{Binding ExportLogOnDownload}" 
+                                                       VerticalAlignment="Center" 
+                                                       FontSize="11.5" 
+                                                       Foreground="#333333" 
+                                                       Cursor="Hand"
+                                                       ToolTip="When enabled, prompts for a log directory and saves a detailed .txt export report file when downloading families."/>
                                          </StackPanel>
                                      </StackPanel>
                                 </Grid>

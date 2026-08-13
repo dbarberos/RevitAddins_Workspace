@@ -2908,6 +2908,18 @@ public partial class TransferPlusViewModel : ObservableObject
                     System.Windows.Threading.DispatcherPriority.Background,
                     new Action(() => { }));
 
+                string targetFolderForFamily = selectedFolder;
+                if (SaveInSubfoldersOnDownload)
+                {
+                    string catName = !string.IsNullOrWhiteSpace(family.CategoryName) ? family.CategoryName : "Uncategorized";
+                    string safeCatFolder = SanitizeFolderName(catName);
+                    targetFolderForFamily = System.IO.Path.Combine(selectedFolder, safeCatFolder);
+                    if (!System.IO.Directory.Exists(targetFolderForFamily))
+                    {
+                        System.IO.Directory.CreateDirectory(targetFolderForFamily);
+                    }
+                }
+
                 string errorMsg = string.Empty;
                 bool ok = false;
                 try
@@ -2916,10 +2928,11 @@ public partial class TransferPlusViewModel : ObservableObject
                         _app,
                         SelectedSourceDocument.Adoc,
                         family,
-                        selectedFolder,
+                        targetFolderForFamily,
                         activeSymbols,
                         overrideFamName,
-                        symbolRenameMap.Any() ? symbolRenameMap : null);
+                        symbolRenameMap.Any() ? symbolRenameMap : null,
+                        SetDefaultView3DOnDownload);
                 }
                 catch (Exception ex)
                 {
@@ -3172,5 +3185,18 @@ public partial class TransferPlusViewModel : ObservableObject
                 }
             }
         }
+    }
+
+    private static string SanitizeFolderName(string folderName)
+    {
+        if (string.IsNullOrWhiteSpace(folderName)) return "Uncategorized";
+        var invalidChars = System.IO.Path.GetInvalidFileNameChars()
+            .Concat(System.IO.Path.GetInvalidPathChars())
+            .Distinct();
+        foreach (var c in invalidChars)
+        {
+            folderName = folderName.Replace(c.ToString(), "_");
+        }
+        return folderName.Trim();
     }
 }
