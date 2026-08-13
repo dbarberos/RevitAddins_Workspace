@@ -9,7 +9,8 @@ public enum FamilySourceType
 {
     Directory,
     AzureStorage,
-    AutodeskDocs
+    AutodeskDocs,
+    AwsS3
 }
 
 public class FamilySourceItemModel
@@ -24,6 +25,26 @@ public class FamilySourceItemModel
     public string ContainerName { get; set; } = string.Empty;
     public string RootPath { get; set; } = string.Empty;
     public bool IsActive { get; set; } = true;
+
+    // AWS S3 Specific Fields
+    public string BucketName { get; set; } = string.Empty;
+    public string Region { get; set; } = string.Empty;
+    public string EncryptedAccessKey { get; set; } = string.Empty;
+    public string EncryptedSecretKey { get; set; } = string.Empty;
+
+    [JsonIgnore]
+    public string AccessKey
+    {
+        get => string.IsNullOrEmpty(EncryptedAccessKey) ? string.Empty : SecurityUtils.DecryptString(EncryptedAccessKey);
+        set => EncryptedAccessKey = string.IsNullOrEmpty(value) ? string.Empty : SecurityUtils.EncryptString(value);
+    }
+
+    [JsonIgnore]
+    public string SecretKey
+    {
+        get => string.IsNullOrEmpty(EncryptedSecretKey) ? string.Empty : SecurityUtils.DecryptString(EncryptedSecretKey);
+        set => EncryptedSecretKey = string.IsNullOrEmpty(value) ? string.Empty : SecurityUtils.EncryptString(value);
+    }
 
     // Autodesk Docs (APS / ACC) Specific Fields
     public string HubId { get; set; } = string.Empty;
@@ -82,12 +103,20 @@ public class FamilySourceItemModel
                 var accPath = string.Join(" / ", parts);
                 return string.IsNullOrWhiteSpace(accPath) ? "Autodesk Docs (APS)" : $"ACC: {accPath}";
             }
+            if (SourceType == FamilySourceType.AwsS3)
+            {
+                var awsParts = new List<string>();
+                if (!string.IsNullOrWhiteSpace(BucketName)) awsParts.Add(BucketName);
+                if (!string.IsNullOrWhiteSpace(RootPath)) awsParts.Add(RootPath);
+                var awsSubPath = string.Join("/", awsParts);
+                return string.IsNullOrWhiteSpace(awsSubPath) ? "AWS S3" : $"AWS S3: {awsSubPath}";
+            }
 
             var azureParts = new List<string>();
             if (!string.IsNullOrWhiteSpace(ContainerName)) azureParts.Add(ContainerName);
             if (!string.IsNullOrWhiteSpace(RootPath)) azureParts.Add(RootPath);
-            var subPath = string.Join("/", azureParts);
-            return string.IsNullOrWhiteSpace(subPath) ? "Azure Storage" : $"Azure: {subPath}";
+            var azureSubPath = string.Join("/", azureParts);
+            return string.IsNullOrWhiteSpace(azureSubPath) ? "Azure Storage" : $"Azure: {azureSubPath}";
         }
     }
 }

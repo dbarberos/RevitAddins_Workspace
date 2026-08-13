@@ -14,6 +14,9 @@ public partial class FamilySourceTypeViewModel : ObservableObject
     private bool _isAzureStorageSelected;
 
     [ObservableProperty]
+    private bool _isAwsS3Selected;
+
+    [ObservableProperty]
     private bool _isDirectorySelected;
 
     public FamilySourceType SelectedSourceType
@@ -22,12 +25,14 @@ public partial class FamilySourceTypeViewModel : ObservableObject
         {
             if (IsAutodeskDocsSelected) return FamilySourceType.AutodeskDocs;
             if (IsAzureStorageSelected) return FamilySourceType.AzureStorage;
+            if (IsAwsS3Selected) return FamilySourceType.AwsS3;
             return FamilySourceType.Directory;
         }
         set
         {
             IsAutodeskDocsSelected = (value == FamilySourceType.AutodeskDocs);
             IsAzureStorageSelected = (value == FamilySourceType.AzureStorage);
+            IsAwsS3Selected = (value == FamilySourceType.AwsS3);
             IsDirectorySelected = (value == FamilySourceType.Directory);
         }
     }

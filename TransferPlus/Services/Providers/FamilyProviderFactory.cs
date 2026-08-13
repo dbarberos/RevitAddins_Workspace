@@ -43,6 +43,11 @@ public static class FamilyProviderFactory
                     TelemetryLogger.LogInfo($"FamilyProviderFactory: Creado AzureStorageFamilyProvider para contenedor '{matchedSource.ContainerName}' ({matchedSource.Name})");
                     return new AzureStorageFamilyProvider(matchedSource, familyRevitService);
                 }
+                else if (matchedSource.SourceType == FamilySourceType.AwsS3)
+                {
+                    TelemetryLogger.LogInfo($"FamilyProviderFactory: Creado AwsS3StorageFamilyProvider para bucket '{matchedSource.BucketName}' ({matchedSource.Name})");
+                    return new AwsS3StorageFamilyProvider(matchedSource, familyRevitService);
+                }
                 else if (matchedSource.SourceType == FamilySourceType.AutodeskDocs)
                 {
                     TelemetryLogger.LogInfo($"FamilyProviderFactory: Creado AutodeskDocsFamilyProvider para carpeta ACC '{matchedSource.FolderName}' ({matchedSource.Name})");

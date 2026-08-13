@@ -15,14 +15,35 @@ public class Application : ExternalApplication
 {
     public override void OnStartup()
     {
+        AppDomain.CurrentDomain.AssemblyResolve += OnAssemblyResolve;
         try
         {
             CreateRibbon();
         }
         catch (Exception ex)
         {
-            System.Diagnostics.Debug.WriteLine("OnStartup Error: " + ex.Message);
+            LoggerService.LogError("OnStartup Error creating ribbon", ex);
         }
+    }
+
+    private static System.Reflection.Assembly? OnAssemblyResolve(object? sender, ResolveEventArgs args)
+    {
+        try
+        {
+            string assemblyName = new System.Reflection.AssemblyName(args.Name).Name + ".dll";
+            string folderPath = System.IO.Path.GetDirectoryName(typeof(Application).Assembly.Location) ?? string.Empty;
+            string assemblyPath = System.IO.Path.Combine(folderPath, assemblyName);
+
+            if (System.IO.File.Exists(assemblyPath))
+            {
+                return System.Reflection.Assembly.LoadFrom(assemblyPath);
+            }
+        }
+        catch
+        {
+            // Ignore assembly resolve errors
+        }
+        return null;
     }
 
     private void CreateRibbon()

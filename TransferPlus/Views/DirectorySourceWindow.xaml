@@ -26,12 +26,45 @@
         <!-- Form Body -->
         <StackPanel Grid.Row="1" Margin="20,16">
             <!-- Name Field -->
-            <TextBlock Text="Name" FontWeight="SemiBold" FontSize="12.5" Foreground="#333333" Margin="0,0,0,4"/>
+            <TextBlock Text="Name" FontWeight="SemiBold" FontSize="12.5" Foreground="#333333" Margin="0,0,0,4">
+                <TextBlock.ToolTip>
+                    <ToolTip MaxWidth="225">
+                        <TextBlock TextWrapping="Wrap" FontSize="11.5" LineHeight="15" Foreground="#333333">
+                            <Bold>Name</Bold><LineBreak/>
+                            Friendly label to identify this local folder source in the main selection dropdown.<LineBreak/><LineBreak/>
+                            <Bold>Example:</Bold> Office Standard Families<LineBreak/>
+                            <Bold>Where to find:</Bold> Arbitrary user-defined text.
+                        </TextBlock>
+                    </ToolTip>
+                </TextBlock.ToolTip>
+            </TextBlock>
             <TextBox Text="{Binding Name, UpdateSourceTrigger=PropertyChanged}" Height="28" Padding="6,4"
-                     BorderBrush="#CCCCCC" BorderThickness="1" Background="White" FontSize="12.5" Margin="0,0,0,14"/>
+                     BorderBrush="#CCCCCC" BorderThickness="1" Background="White" FontSize="12.5" Margin="0,0,0,14">
+                <TextBox.ToolTip>
+                    <ToolTip MaxWidth="225">
+                        <TextBlock TextWrapping="Wrap" FontSize="11.5" LineHeight="15" Foreground="#333333">
+                            <Bold>Name</Bold><LineBreak/>
+                            Friendly label to identify this local folder source in the main selection dropdown.<LineBreak/><LineBreak/>
+                            <Bold>Example:</Bold> Office Standard Families<LineBreak/>
+                            <Bold>Where to find:</Bold> Arbitrary user-defined text.
+                        </TextBlock>
+                    </ToolTip>
+                </TextBox.ToolTip>
+            </TextBox>
 
             <!-- Directory Field -->
-            <TextBlock Text="Directory" FontWeight="SemiBold" FontSize="12.5" Foreground="#333333" Margin="0,0,0,4"/>
+            <TextBlock Text="Directory" FontWeight="SemiBold" FontSize="12.5" Foreground="#333333" Margin="0,0,0,4">
+                <TextBlock.ToolTip>
+                    <ToolTip MaxWidth="225">
+                        <TextBlock TextWrapping="Wrap" FontSize="11.5" LineHeight="15" Foreground="#333333">
+                            <Bold>Directory Path</Bold><LineBreak/>
+                            Absolute file system folder path containing Revit family (.rfa) files to load.<LineBreak/><LineBreak/>
+                            <Bold>Example:</Bold> C:\BIM_Standards\Revit_Families<LineBreak/>
+                            <Bold>Where to find:</Bold> Windows File Explorer or local network shared drive.
+                        </TextBlock>
+                    </ToolTip>
+                </TextBlock.ToolTip>
+            </TextBlock>
             <Grid Margin="0,0,0,16">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
@@ -40,9 +73,28 @@
                 </Grid.ColumnDefinitions>
 
                 <TextBox Grid.Column="0" Text="{Binding Directory, UpdateSourceTrigger=PropertyChanged}" Height="28" Padding="6,4"
-                         BorderBrush="#CCCCCC" BorderThickness="1" Background="White" FontSize="12.5"/>
+                         BorderBrush="#CCCCCC" BorderThickness="1" Background="White" FontSize="12.5">
+                    <TextBox.ToolTip>
+                        <ToolTip MaxWidth="225">
+                            <TextBlock TextWrapping="Wrap" FontSize="11.5" LineHeight="15" Foreground="#333333">
+                                <Bold>Directory Path</Bold><LineBreak/>
+                                Absolute file system folder path containing Revit family (.rfa) files to load.<LineBreak/><LineBreak/>
+                                <Bold>Example:</Bold> C:\BIM_Standards\Revit_Families<LineBreak/>
+                                <Bold>Where to find:</Bold> Windows File Explorer or local network shared drive.
+                            </TextBlock>
+                        </ToolTip>
+                    </TextBox.ToolTip>
+                </TextBox>
                 
-                <Button Grid.Column="2" Command="{Binding BrowseDirectoryCommand}" Content="📁" Height="28" Width="36" ToolTip="Browse Folder">
+                <Button Grid.Column="2" Command="{Binding BrowseDirectoryCommand}" Content="📁" Height="28" Width="36">
+                    <Button.ToolTip>
+                        <ToolTip MaxWidth="225">
+                            <TextBlock TextWrapping="Wrap" FontSize="11.5" LineHeight="15" Foreground="#333333">
+                                <Bold>Browse Folder</Bold><LineBreak/>
+                                Opens a folder picker dialog to select a folder from your disk.
+                            </TextBlock>
+                        </ToolTip>
+                    </Button.ToolTip>
                     <Button.Style>
                         <Style TargetType="Button">
                             <Setter Property="Background" Value="#FFFFFF"/>
@@ -67,7 +119,18 @@
             </Grid>
 
             <!-- Active CheckBox -->
-            <CheckBox Content="Active" IsChecked="{Binding IsActive}" FontSize="12.5" Foreground="#222222" Cursor="Hand"/>
+            <CheckBox Content="Active" IsChecked="{Binding IsActive}" FontSize="12.5" Foreground="#222222" Cursor="Hand">
+                <CheckBox.ToolTip>
+                    <ToolTip MaxWidth="225">
+                        <TextBlock TextWrapping="Wrap" FontSize="11.5" LineHeight="15" Foreground="#333333">
+                            <Bold>Active Status</Bold><LineBreak/>
+                            Enables or disables this local folder source in the main application dropdown.<LineBreak/><LineBreak/>
+                            <Bold>Example:</Bold> Checked (Active)<LineBreak/>
+                            <Bold>Where to find:</Bold> User preference toggle.
+                        </TextBlock>
+                    </ToolTip>
+                </CheckBox.ToolTip>
+            </CheckBox>
         </StackPanel>
 
         <!-- Footer Buttons -->

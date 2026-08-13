@@ -36,6 +36,8 @@ When specific enterprise architecture concepts are needed, locate the following 
   * *Use cases:* Accessing Autodesk Construction Cloud models, ModelPathUtils, and opening cloud workshared documents.
 * **Autodesk Docs Provider Pattern:** [autodesk_docs_aps_provider_pattern_2026-08-05.md](file:///c:/Users/david.barbero/Documents/DOCUMENTOS/ALTEN/Workbench/RevitAddins_Workspace/RevitAddins_Workspace/.agents/skills/revit-api-enterprise/references/autodesk_docs_aps_provider_pattern_2026-08-05.md)
   * *Use cases:* ACC / APS Data Management REST integration, OAuth 2.0 PKCE, and decoupled IFamilyProvider pattern.
+* **AWS S3 Cloud Family Provider & Floci Integration:** [aws_s3_family_provider_floci_integration_2026-08-13.md](file:///c:/Users/david.barbero/Documents/DOCUMENTOS/ALTEN/Workbench/RevitAddins_Workspace/RevitAddins_Workspace/.agents/skills/revit-api-enterprise/references/aws_s3_family_provider_floci_integration_2026-08-13.md)
+  * *Use cases:* AWS S3 cloud family loading, Floci LocalStack Docker integration, path-style URL addressing, and DPAPI credential security.
 
 ---
 

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -7,25 +8,25 @@ using TransferPlus.Services;
 
 namespace TransferPlus.ViewModels;
 
-public partial class AzureStorageSourceViewModel : ObservableObject
+public partial class AwsS3SourceViewModel : ObservableObject
 {
     [ObservableProperty]
     private string _name = string.Empty;
 
     [ObservableProperty]
-    private string _connectionString = string.Empty;
+    private string _bucketName = string.Empty;
 
     [ObservableProperty]
-    private string _endpointUrl = string.Empty;
+    private string _region = "eu-west-1";
 
     [ObservableProperty]
-    private string _clientId = string.Empty;
+    private string _endpointUrl = "http://localhost:4566";
 
     [ObservableProperty]
-    private string _tenantId = string.Empty;
+    private string _accessKey = "test";
 
     [ObservableProperty]
-    private string _containerName = string.Empty;
+    private string _secretKey = "test";
 
     [ObservableProperty]
     private string _rootPath = string.Empty;
@@ -34,7 +35,7 @@ public partial class AzureStorageSourceViewModel : ObservableObject
     private bool _isActive = true;
 
     [ObservableProperty]
-    private string _signedInStatus = "Not signed in.";
+    private string _signedInStatus = "Not connected.";
 
     [ObservableProperty]
     private bool _isTestingConnection;
@@ -44,20 +45,20 @@ public partial class AzureStorageSourceViewModel : ObservableObject
 
     public List<string> EndpointPresets { get; } = new()
     {
-        "http://127.0.0.1:10000",
-        "https://core.windows.net"
+        "http://localhost:4566",
+        "https://s3.amazonaws.com"
     };
 
-    public AzureStorageSourceViewModel(FamilySourceItemModel? model = null)
+    public AwsS3SourceViewModel(FamilySourceItemModel? model = null)
     {
         if (model != null)
         {
             Name = model.Name;
-            ConnectionString = model.ConnectionString;
-            EndpointUrl = model.EndpointUrl;
-            ClientId = model.ClientId;
-            TenantId = model.TenantId;
-            ContainerName = model.ContainerName;
+            BucketName = model.BucketName;
+            Region = string.IsNullOrWhiteSpace(model.Region) ? "eu-west-1" : model.Region;
+            EndpointUrl = string.IsNullOrWhiteSpace(model.EndpointUrl) ? "http://localhost:4566" : model.EndpointUrl;
+            AccessKey = string.IsNullOrWhiteSpace(model.AccessKey) ? "test" : model.AccessKey;
+            SecretKey = string.IsNullOrWhiteSpace(model.SecretKey) ? "test" : model.SecretKey;
             RootPath = model.RootPath;
             IsActive = model.IsActive;
         }
@@ -71,9 +72,13 @@ public partial class AzureStorageSourceViewModel : ObservableObject
 
         try
         {
-            var (success, message) = await AzureStorageService.TestConnectionAsync(ConnectionString, ContainerName);
-            SignedInStatus = success ? "Connected successfully! ✓" : $"Connection failed: {message}";
-            
+            var tempModel = ToModel();
+            var (success, message, isFloci) = await AwsS3StorageService.TestConnectionAsync(tempModel);
+
+            SignedInStatus = success
+                ? (isFloci ? "Connected to Floci (AWS local) ✓" : "Connected to AWS S3 real ✓")
+                : $"Connection failed: {message}";
+
             System.Windows.MessageBox.Show(message, success ? "Connection Test" : "Connection Failed",
                 System.Windows.MessageBoxButton.OK,
                 success ? System.Windows.MessageBoxImage.Information : System.Windows.MessageBoxImage.Error);
@@ -81,7 +86,7 @@ public partial class AzureStorageSourceViewModel : ObservableObject
         catch (Exception ex)
         {
             SignedInStatus = $"Error: {ex.Message}";
-            TelemetryLogger.LogError("Error during connection test", ex);
+            TelemetryLogger.LogError("Error testing AWS S3 connection", ex);
         }
         finally
         {
@@ -98,9 +103,9 @@ public partial class AzureStorageSourceViewModel : ObservableObject
             return;
         }
 
-        if (string.IsNullOrWhiteSpace(ContainerName))
+        if (string.IsNullOrWhiteSpace(BucketName))
         {
-            System.Windows.MessageBox.Show("Please enter a valid container name.", "Validation Error", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Warning);
+            System.Windows.MessageBox.Show("Please enter a valid S3 Bucket name.", "Validation Error", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Warning);
             return;
         }
 
@@ -129,12 +134,12 @@ public partial class AzureStorageSourceViewModel : ObservableObject
         {
             Id = existingId ?? Guid.NewGuid().ToString(),
             Name = Name.Trim(),
-            SourceType = FamilySourceType.AzureStorage,
-            ConnectionString = ConnectionString.Trim(),
+            SourceType = FamilySourceType.AwsS3,
+            BucketName = BucketName.Trim(),
+            Region = Region.Trim(),
             EndpointUrl = EndpointUrl.Trim(),
-            ClientId = ClientId.Trim(),
-            TenantId = TenantId.Trim(),
-            ContainerName = ContainerName.Trim(),
+            AccessKey = AccessKey.Trim(),
+            SecretKey = SecretKey.Trim(),
             RootPath = RootPath.Trim(),
             IsActive = IsActive
         };

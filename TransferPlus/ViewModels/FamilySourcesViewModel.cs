@@ -67,7 +67,18 @@ public partial class FamilySourcesViewModel : ObservableObject
                         SelectedSource = newModel;
                     }
                 }
-                else
+                else if (typeVm.SelectedSourceType == FamilySourceType.AwsS3)
+                {
+                    var awsVm = new AwsS3SourceViewModel();
+                    var awsWin = new Views.AwsS3SourceWindow { DataContext = awsVm, Owner = ownerWindow };
+                    if (awsWin.ShowDialog() == true)
+                    {
+                        var newModel = awsVm.ToModel();
+                        Sources.Add(newModel);
+                        SelectedSource = newModel;
+                    }
+                }
+                else if (typeVm.SelectedSourceType == FamilySourceType.AzureStorage)
                 {
                     var azureVm = new AzureStorageSourceViewModel();
                     var azureWin = new Views.AzureStorageSourceWindow { DataContext = azureVm, Owner = ownerWindow };
@@ -123,7 +134,22 @@ public partial class FamilySourcesViewModel : ObservableObject
                     }
                 }
             }
-            else
+            else if (SelectedSource.SourceType == FamilySourceType.AwsS3)
+            {
+                var awsVm = new AwsS3SourceViewModel(SelectedSource);
+                var awsWin = new Views.AwsS3SourceWindow { DataContext = awsVm, Owner = ownerWindow };
+                if (awsWin.ShowDialog() == true)
+                {
+                    var updated = awsVm.ToModel(SelectedSource.Id);
+                    int index = Sources.IndexOf(SelectedSource);
+                    if (index >= 0)
+                    {
+                        Sources[index] = updated;
+                        SelectedSource = updated;
+                    }
+                }
+            }
+            else if (SelectedSource.SourceType == FamilySourceType.AzureStorage)
             {
                 var azureVm = new AzureStorageSourceViewModel(SelectedSource);
                 var azureWin = new Views.AzureStorageSourceWindow { DataContext = azureVm, Owner = ownerWindow };

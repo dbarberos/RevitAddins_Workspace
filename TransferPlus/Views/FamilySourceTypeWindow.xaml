@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d"
         x:Name="SourceTypeWin"
-        Title="Family source settings" Height="360" Width="520"
+        Title="Family source settings" Height="395" Width="520"
         WindowStartupLocation="CenterOwner"
         ResizeMode="NoResize"
         Background="#FAFAFA">
@@ -32,6 +32,8 @@
                     <RadioButton Content="Autodesk Docs (APS)" IsChecked="{Binding IsAutodeskDocsSelected}"
                                  FontSize="13" Foreground="#222222" Margin="4,6" Cursor="Hand"/>
                     <RadioButton Content="Azure Storage" IsChecked="{Binding IsAzureStorageSelected}"
+                                 FontSize="13" Foreground="#222222" Margin="4,6" Cursor="Hand"/>
+                    <RadioButton Content="AWS S3" IsChecked="{Binding IsAwsS3Selected}"
                                  FontSize="13" Foreground="#222222" Margin="4,6" Cursor="Hand"/>
                     <RadioButton Content="Directory" IsChecked="{Binding IsDirectorySelected}"
                                  FontSize="13" Foreground="#222222" Margin="4,6" Cursor="Hand"/>
