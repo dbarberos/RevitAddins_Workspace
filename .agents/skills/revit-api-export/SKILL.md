@@ -20,6 +20,7 @@ description: Mass Export, Batch PDF generation, IFC OpenBIM configurations, and 
 * **PDF & Printing Automation**: [34_PDF_and_PrintManager.md](file:///c:/Users/david.barbero/Documents/DOCUMENTOS/ALTEN/Workbench/RevitAddins_Workspace/RevitAddins_Workspace/.agents/skills/revit-api-export/references/34_PDF_and_PrintManager.md)
 * **CAD Export & Layer Setup**: [35_DWG_DXF_LayerMapping.md](file:///c:/Users/david.barbero/Documents/DOCUMENTOS/ALTEN/Workbench/RevitAddins_Workspace/RevitAddins_Workspace/.agents/skills/revit-api-export/references/35_DWG_DXF_LayerMapping.md)
 * **OpenBIM & IFC Generation**: [36_IFC_and_ThatOpen_Fragments.md](file:///c:/Users/david.barbero/Documents/DOCUMENTOS/ALTEN/Workbench/RevitAddins_Workspace/RevitAddins_Workspace/.agents/skills/revit-api-export/references/36_IFC_and_ThatOpen_Fragments.md)
+* **Family Export Logging & Dual Renaming**: [export_logger_and_family_type_renaming_guide.md](file:///c:/Users/david.barbero/Documents/DOCUMENTOS/ALTEN/Workbench/RevitAddins_Workspace/RevitAddins_Workspace/.agents/skills/revit-api-export/references/export_logger_and_family_type_renaming_guide.md)
 
 ## 4. Asset Mapping
 * [PdfExportManager.cs](file:///c:/Users/david.barbero/Documents/DOCUMENTOS/ALTEN/Workbench/RevitAddins_Workspace/RevitAddins_Workspace/.agents/skills/revit-api-export/assets/PdfExportManager.cs) -> Native PDF generation wrapper (Revit 2022+).

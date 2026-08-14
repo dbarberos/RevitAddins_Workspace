@@ -29,8 +29,10 @@ When specific creation concepts are needed, locate the following files in the re
 * **Views, Sheets & Annotation:** [09_Documentation_and_Views.md](file:///c:/Users/david.barbero/Documents/DOCUMENTOS/ALTEN/Workbench/RevitAddins_Workspace/RevitAddins_Workspace/.agents/skills/revit-api-families/references/09_Documentation_and_Views.md)
   * *Use cases:* Creating ViewPlans, generating TitleBlocks, placing Viewports, Tagging, and Dimensioning.
 * **Debugging ViewSheet TitleBlock & 2D Elements Copy:** [debugging_viewsheet_titleblock_2d_elements_copy_2026-07-20.md](file:///c:/Users/david.barbero/Documents/DOCUMENTOS/ALTEN/Workbench/RevitAddins_Workspace/RevitAddins_Workspace/.agents/skills/revit-api-families/references/debugging_viewsheet_titleblock_2d_elements_copy_2026-07-20.md)
-* **Parametric Content Creation:** [25_FamilyAPI_and_Generation.md](file:///c:/Users/david.barbero/Documents/DOCUMENTOS/ALTEN/Workbench/RevitAddins_Workspace/RevitAddins_Workspace/.agents/skills/revit-api-families/references/25_FamilyAPI_and_Generation.md)
+* **Parametric Content Creation:** [25_FamilyAPI_and_Generation.md](file:///c:/Users/david.barbero/Documents/DOCUMENTOS\ALTEN/Workbench/RevitAddins_Workspace/RevitAddins_Workspace/.agents/skills/revit-api-families/references/25_FamilyAPI_and_Generation.md)
   * *Use cases:* Opening family templates, drawing Reference Planes, creating Extrusions, and binding FamilyParameters.
+* **Family Download & Export Options:** [family_download_subfolders_3d_preview_saveas_options_2026-08-13.md](file:///c:/Users/david.barbero/Documents/DOCUMENTOS/ALTEN/Workbench/RevitAddins_Workspace/RevitAddins_Workspace/.agents/skills/revit-api-families/references/family_download_subfolders_3d_preview_saveas_options_2026-08-13.md)
+  * *Use cases:* Organizing exported families into category subfolders, configuring SaveAs 3D Preview views, and audit log generation.
 
 ---
 
@@ -38,6 +40,7 @@ When specific creation concepts are needed, locate the following files in the re
 Do not reinvent placement algorithms. Inject, adapt, or copy the exact implementations located in the assets folder:
 
 * [FamilyInstantiator.cs](file:///c:/Users/david.barbero/Documents/DOCUMENTOS/ALTEN/Workbench/RevitAddins_Workspace/RevitAddins_Workspace/.agents/skills/revit-api-families/assets/FamilyInstantiator.cs): Safe loading of .rfa files, symbol activation, and batch placement of instances on levels or faces.
+* [FamilyExportPreviewHelper.cs](file:///c:/Users/david.barbero/Documents/DOCUMENTOS/ALTEN/Workbench/RevitAddins_Workspace/RevitAddins_Workspace/.agents/skills/revit-api-families/assets/FamilyExportPreviewHelper.cs): Path sanitization and SaveAs 3D Preview view configuration helper.
 * [ViewSheetManager.cs](file:///c:/Users/david.barbero/Documents/DOCUMENTOS/ALTEN/Workbench/RevitAddins_Workspace/RevitAddins_Workspace/.agents/skills/revit-api-families/assets/ViewSheetManager.cs): Automated creation of Sheets, dynamic titleblock retrieval, and automated viewport alignment.
 * [AnnotationBuilder.cs](file:///c:/Users/david.barbero/Documents/DOCUMENTOS/ALTEN/Workbench/RevitAddins_Workspace/RevitAddins_Workspace/.agents/skills/revit-api-families/assets/AnnotationBuilder.cs): Utilities to extract geometric references and place linear dimensions and independent tags securely.
 * [FamilyDocumentBuilder.cs](file:///c:/Users/david.barbero/Documents/DOCUMENTOS/ALTEN/Workbench/RevitAddins_Workspace/RevitAddins_Workspace/.agents/skills/revit-api-families/assets/FamilyDocumentBuilder.cs): Boilerplate for the Family API: drawing reference planes, generating solids, and creating parametric constraints.

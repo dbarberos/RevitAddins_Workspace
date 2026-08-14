@@ -1,0 +1,25 @@
+DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://127.0.0.1:10000/devstoreaccount1;
+
+
+npm uninstall -g azurite
+
+
+Remove-Item -Recurse -Force .\__azurite
+Remove-Item -Recurse -Force .\__blobstorage__
+Remove-Item -Recurse -Force .\__queuestorage__
+
+
+npm install -g azurite
+
+Ejecuta: azurite
+
+Se abrirán los servicios en:
+
+Blob: http://127.0.0.1:10000
+
+Queue: http://127.0.0.1:10001
+
+Table: http://127.0.0.1:10002
+
+
+Para poder cargar archivos en el azurite (Azure simulado en local) es necesario emplear el programa Microsoft Azure Storage Explorer Setup.

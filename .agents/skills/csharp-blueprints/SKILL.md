@@ -25,6 +25,7 @@ This directory contains the "technical memory" of the most complex C# components
 - [debugging_preselection_apply_explorer_not_updating_2026-06-26](references/debugging_preselection_apply_explorer_not_updating_2026-06-26.md): Root cause analysis for Pre-Selection Apply button not updating the explorer tree due to bulk update locks and scope change events redundancy.
 - [debugging_wpf_isbulkupdating_scope_block_2026-06-30](references/debugging_wpf_isbulkupdating_scope_block_2026-06-30.md): Root cause analysis for UI TreeView failing to rebuild upon scope change due to an overly broad early exit check on `IsBulkUpdating` flag.
 - [debugging_preselection_wpf_binding_value_loss_2026-07-01](references/debugging_preselection_wpf_binding_value_loss_2026-07-01.md): Root cause analysis for WPF ComboBox binding resets, first-load value loss, cascading deletions, and debugging log tracing.
+- [provider_pattern_family_manager_guide](references/provider_pattern_family_manager_guide.md): Provider Pattern architecture for multi-source family management across Local Folders, Azure Cloud, Open Models, and Linked Models.
 
 ## 🔧 Assets (Reusable Code)
 

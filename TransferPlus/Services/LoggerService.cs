@@ -1,43 +1,45 @@
 using System;
 using System.Collections.ObjectModel;
+using System.IO;
 using System.Windows;
-using Autodesk.Revit.UI;
 
 namespace TransferPlus.Services;
 
 /// <summary>
-/// Secure logging service for TransferPlus that supports real-time UI updates.
+/// Secure logging service for TransferPlus with real-time UI updates and PII sanitization.
 /// </summary>
 public static class LoggerService
 {
     public static ObservableCollection<string> Logs { get; } = new ObservableCollection<string>();
-    private static System.Windows.Threading.Dispatcher _uiDispatcher;
+    private static System.Windows.Threading.Dispatcher? _uiDispatcher;
 
     public static void SetDispatcher(System.Windows.Threading.Dispatcher dispatcher)
     {
         _uiDispatcher = dispatcher;
     }
 
-    private static readonly string LogFilePath = @"c:\Users\david.barbero\Documents\DOCUMENTOS\ALTEN\Workbench\RevitAddins_Workspace\RevitAddins_Workspace\debug_log_transferplus.txt";
+    private static readonly string LogFilePath = Path.Combine(Path.GetTempPath(), "TransferPlus_debug_log.txt");
 
-    private static void WriteToFile(string entry, string stackTrace = null)
+    private static void WriteToFile(string entry, string? stackTrace = null)
     {
         try
         {
-            string content = entry + Environment.NewLine;
+            string sanitizedEntry = TelemetryLogger.SanitizePath(entry);
+            string content = sanitizedEntry + Environment.NewLine;
             if (!string.IsNullOrEmpty(stackTrace))
             {
-                content += stackTrace + Environment.NewLine;
+                content += TelemetryLogger.SanitizePath(stackTrace) + Environment.NewLine;
             }
-            System.IO.File.AppendAllText(LogFilePath, content);
+            File.AppendAllText(LogFilePath, content);
         }
         catch { }
     }
 
     public static void LogInfo(string message)
     {
+        string sanitizedMsg = TelemetryLogger.SanitizePath(message);
         string timestamp = DateTime.Now.ToString("HH:mm:ss.fff");
-        string entry = $"[{timestamp}] INFO: {message}";
+        string entry = $"[{timestamp}] INFO: {sanitizedMsg}";
         
         var dispatcher = _uiDispatcher ?? System.Windows.Application.Current?.Dispatcher ?? System.Windows.Threading.Dispatcher.CurrentDispatcher;
         if (dispatcher != null)
@@ -53,8 +55,10 @@ public static class LoggerService
 
     public static void LogError(string context, Exception ex)
     {
+        string sanitizedContext = TelemetryLogger.SanitizePath(context);
+        string sanitizedExMessage = TelemetryLogger.SanitizePath(ex.Message);
         string timestamp = DateTime.Now.ToString("HH:mm:ss.fff");
-        string entry = $"[{timestamp}] ERROR in {context}: {ex.Message}";
+        string entry = $"[{timestamp}] ERROR in {sanitizedContext}: {sanitizedExMessage}";
         
         var dispatcher = _uiDispatcher ?? System.Windows.Application.Current?.Dispatcher;
         if (dispatcher != null)
@@ -63,17 +67,21 @@ public static class LoggerService
         }
 
         System.Diagnostics.Debug.WriteLine(entry);
-        System.Diagnostics.Debug.WriteLine(ex.StackTrace);
+        if (ex.StackTrace != null)
+        {
+            System.Diagnostics.Debug.WriteLine(TelemetryLogger.SanitizePath(ex.StackTrace));
+        }
         WriteToFile(entry, ex.StackTrace);
 
-        string userMessage = $"An error occurred in {context}: {ex.Message}";
-        System.Windows.MessageBox.Show(userMessage, "TransferPlus Error", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
+        string userMessage = $"Ocurrió un error en {sanitizedContext}: {sanitizedExMessage}";
+        MessageBox.Show(userMessage, "TransferPlus Error", MessageBoxButton.OK, MessageBoxImage.Error);
     }
 
     public static void LogWarning(string message)
     {
+        string sanitizedMsg = TelemetryLogger.SanitizePath(message);
         string timestamp = DateTime.Now.ToString("HH:mm:ss.fff");
-        string entry = $"[{timestamp}] WARNING: {message}";
+        string entry = $"[{timestamp}] WARNING: {sanitizedMsg}";
         
         var dispatcher = _uiDispatcher ?? System.Windows.Application.Current?.Dispatcher ?? System.Windows.Threading.Dispatcher.CurrentDispatcher;
         if (dispatcher != null)
@@ -89,8 +97,10 @@ public static class LoggerService
 
     public static void LogExceptionSilently(string context, Exception ex)
     {
+        string sanitizedContext = TelemetryLogger.SanitizePath(context);
+        string sanitizedExMessage = TelemetryLogger.SanitizePath(ex.Message);
         string timestamp = DateTime.Now.ToString("HH:mm:ss.fff");
-        string entry = $"[{timestamp}] EXCEPTION in {context}: {ex.Message}";
+        string entry = $"[{timestamp}] EXCEPTION in {sanitizedContext}: {sanitizedExMessage}";
         
         var dispatcher = _uiDispatcher ?? System.Windows.Application.Current?.Dispatcher ?? System.Windows.Threading.Dispatcher.CurrentDispatcher;
         if (dispatcher != null)
@@ -99,7 +109,10 @@ public static class LoggerService
         }
 
         System.Diagnostics.Debug.WriteLine(entry);
-        System.Diagnostics.Debug.WriteLine(ex.StackTrace);
+        if (ex.StackTrace != null)
+        {
+            System.Diagnostics.Debug.WriteLine(TelemetryLogger.SanitizePath(ex.StackTrace));
+        }
         WriteToFile(entry, ex.StackTrace);
     }
 }

@@ -15,7 +15,7 @@ public partial class TreeItemViewModel : ObservableObject
     private string _category = string.Empty;
 
     [ObservableProperty]
-    private bool _isExpanded = true;
+    private bool _isExpanded = false;
 
     [ObservableProperty]
     private int _count;
@@ -50,6 +50,11 @@ public partial class TreeItemViewModel : ObservableObject
                 _isChecked = value;
                 OnPropertyChanged(nameof(IsChecked));
 
+                if (Item is FamilySymbolItemModel sym)
+                {
+                    sym.IsChecked = value == true;
+                }
+
                 if (!_isUpdatingState && !IsBulkUpdating)
                 {
                     _isUpdatingState = true;
@@ -65,13 +70,13 @@ public partial class TreeItemViewModel : ObservableObject
         }
     }
 
-    public Elemento? Item { get; set; }
+    public object? Item { get; set; }
 
     public ObservableCollection<TreeItemViewModel> Children { get; } = new();
 
     public TreeItemViewModel? Parent { get; set; }
 
-    public TreeItemViewModel(string name, string category, Elemento? item = null, TreeItemViewModel? parent = null, int level = 0)
+    public TreeItemViewModel(string name, string category, object? item = null, TreeItemViewModel? parent = null, int level = 0)
     {
         Name = name;
         Category = category;

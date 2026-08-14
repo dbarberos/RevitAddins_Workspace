@@ -1,0 +1,194 @@
+<Window x:Class="TransferPlus.Views.FamilySourcesWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:models="clr-namespace:TransferPlus.Models"
+        mc:Ignorable="d"
+        x:Name="SourcesMainWin"
+        Title="Family Sources Settings" Height="520" Width="740"
+        WindowStartupLocation="CenterScreen"
+        ResizeMode="CanResizeWithGrip"
+        Background="#FAFAFA">
+
+    <Grid Margin="0">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Soft Green Header Banner -->
+        <Border Grid.Row="0" Background="#E8F5E9" BorderBrush="#C3E6CB" BorderThickness="0,0,0,1" Padding="16,12">
+            <TextBlock Text="This view allows you to manage the sources used for Revit family files in the application. You can add new family sources, edit existing ones, or remove sources that are no longer needed. Each source can be activated or deactivated, and its active status determines which sources will be displayed in the 'Apply transfer from:' list in the main window. Use the controls provided to organize and maintain your family sources efficiently."
+                       Foreground="#155724" FontSize="11.5" TextWrapping="Wrap" LineHeight="16"/>
+        </Border>
+
+        <!-- Action Toolbar -->
+        <Border Grid.Row="1" Padding="16,10,16,6">
+            <StackPanel Orientation="Horizontal">
+                <!-- Add Button -->
+                <Button Command="{Binding AddSourceCommand}" CommandParameter="{Binding ElementName=SourcesMainWin}" 
+                        Width="28" Height="28" Margin="0,0,8,0" Cursor="Hand" ToolTip="Add Source">
+                    <Button.Template>
+                        <ControlTemplate TargetType="Button">
+                            <Border x:Name="border" Background="Transparent" CornerRadius="4" Padding="4">
+                                <Viewbox Width="18" Height="18">
+                                    <Path Data="M19,13H13V19H11V13H5V11H11V5H13V11H19V13Z" Fill="#777" x:Name="iconPath"/>
+                                </Viewbox>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter TargetName="border" Property="Background" Value="#eeeeee"/>
+                                    <Setter TargetName="iconPath" Property="Fill" Value="#333"/>
+                                </Trigger>
+                                <Trigger Property="IsPressed" Value="True">
+                                    <Setter TargetName="border" Property="Background" Value="#dddddd"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Button.Template>
+                </Button>
+
+                <!-- Edit Button -->
+                <Button Command="{Binding EditSourceCommand}" CommandParameter="{Binding ElementName=SourcesMainWin}" 
+                        Width="28" Height="28" Margin="0,0,8,0" Cursor="Hand" ToolTip="Edit Source">
+                    <Button.Template>
+                        <ControlTemplate TargetType="Button">
+                            <Border x:Name="border" Background="Transparent" CornerRadius="4" Padding="4">
+                                <Viewbox Width="18" Height="18">
+                                    <Path Data="M14.06,9.02L14.98,9.94L5.92,19H5V18.08L14.06,9.02M17.66,3C17.41,3 17.15,3.1 16.96,3.29L15.13,5.12L18.88,8.87L20.71,7.04C21.1,6.65 21.1,6 20.71,5.63L18.37,3.29C18.17,3.09 17.92,3 17.66,3M14.06,6.19L3,17.25V21H6.75L17.81,9.94L14.06,6.19Z" Fill="#777" x:Name="iconPath"/>
+                                </Viewbox>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter TargetName="border" Property="Background" Value="#eeeeee"/>
+                                    <Setter TargetName="iconPath" Property="Fill" Value="#333"/>
+                                </Trigger>
+                                <Trigger Property="IsPressed" Value="True">
+                                    <Setter TargetName="border" Property="Background" Value="#dddddd"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Button.Template>
+                </Button>
+
+                <!-- Remove Button -->
+                <Button Command="{Binding RemoveSourceCommand}" 
+                        Width="28" Height="28" Cursor="Hand" ToolTip="Remove Source">
+                    <Button.Template>
+                        <ControlTemplate TargetType="Button">
+                            <Border x:Name="border" Background="Transparent" CornerRadius="4" Padding="4">
+                                <Viewbox Width="18" Height="18">
+                                    <Path Data="M16,9V19H8V9H16M14.5,3H9.5L8.5,4H5V6H19V4H15.5L14.5,3M18,7H6V19A2,2 0 0,0 8,21H16A2,2 0 0,0 18,19V7Z" Fill="#777" x:Name="iconPath"/>
+                                </Viewbox>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter TargetName="border" Property="Background" Value="#eeeeee"/>
+                                    <Setter TargetName="iconPath" Property="Fill" Value="#333"/>
+                                </Trigger>
+                                <Trigger Property="IsPressed" Value="True">
+                                    <Setter TargetName="border" Property="Background" Value="#dddddd"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Button.Template>
+                </Button>
+            </StackPanel>
+        </Border>
+
+        <!-- Data Grid / ListView -->
+        <Border Grid.Row="2" Margin="16,4,16,12" Background="White" BorderBrush="#E0E0E0" BorderThickness="1" CornerRadius="4">
+            <ListView ItemsSource="{Binding Sources}" SelectedItem="{Binding SelectedSource}"
+                      VirtualizingStackPanel.IsVirtualizing="True"
+                      VirtualizingStackPanel.VirtualizationMode="Recycling"
+                      ScrollViewer.CanContentScroll="True"
+                      BorderThickness="0" Background="Transparent">
+                <ListView.View>
+                    <GridView>
+                        <!-- Active CheckBox Column -->
+                        <GridViewColumn Header="Active" Width="60">
+                            <GridViewColumn.CellTemplate>
+                                <DataTemplate DataType="{x:Type models:FamilySourceItemModel}">
+                                    <CheckBox IsChecked="{Binding IsActive}" HorizontalAlignment="Center" VerticalAlignment="Center" Cursor="Hand"/>
+                                </DataTemplate>
+                            </GridViewColumn.CellTemplate>
+                        </GridViewColumn>
+
+                        <!-- Name Column -->
+                        <GridViewColumn Header="Name" Width="200">
+                            <GridViewColumn.CellTemplate>
+                                <DataTemplate DataType="{x:Type models:FamilySourceItemModel}">
+                                    <TextBlock Text="{Binding Name}" FontWeight="SemiBold" Foreground="#333333" VerticalAlignment="Center"/>
+                                </DataTemplate>
+                            </GridViewColumn.CellTemplate>
+                        </GridViewColumn>
+
+                        <!-- Source Description Column -->
+                        <GridViewColumn Header="Source" Width="420">
+                            <GridViewColumn.CellTemplate>
+                                <DataTemplate DataType="{x:Type models:FamilySourceItemModel}">
+                                    <TextBlock Text="{Binding SourceDescription}" Foreground="#555555" VerticalAlignment="Center"/>
+                                </DataTemplate>
+                            </GridViewColumn.CellTemplate>
+                        </GridViewColumn>
+                    </GridView>
+                </ListView.View>
+            </ListView>
+        </Border>
+
+        <!-- Footer Buttons -->
+        <Border Grid.Row="3" Background="#F5F5F5" BorderBrush="#E0E0E0" BorderThickness="0,1,0,0" Padding="16,10">
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <Button Content="Save" Command="{Binding SaveCommand}" CommandParameter="{Binding ElementName=SourcesMainWin}" Height="28" Width="90" Margin="0,0,8,0">
+                    <Button.Style>
+                        <Style TargetType="Button">
+                            <Setter Property="Background" Value="#007ACC"/>
+                            <Setter Property="Foreground" Value="White"/>
+                            <Setter Property="FontWeight" Value="SemiBold"/>
+                            <Setter Property="FontSize" Value="12"/>
+                            <Setter Property="BorderThickness" Value="0"/>
+                            <Setter Property="Cursor" Value="Hand"/>
+                            <Style.Resources>
+                                <Style TargetType="Border">
+                                    <Setter Property="CornerRadius" Value="4"/>
+                                </Style>
+                            </Style.Resources>
+                            <Style.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter Property="Background" Value="#005999"/>
+                                </Trigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Button.Style>
+                </Button>
+
+                <Button Content="Cancel" Command="{Binding CancelCommand}" CommandParameter="{Binding ElementName=SourcesMainWin}" Height="28" Width="90">
+                    <Button.Style>
+                        <Style TargetType="Button">
+                            <Setter Property="Background" Value="#FFFFFF"/>
+                            <Setter Property="Foreground" Value="#555555"/>
+                            <Setter Property="BorderBrush" Value="#CCCCCC"/>
+                            <Setter Property="BorderThickness" Value="1"/>
+                            <Setter Property="FontWeight" Value="SemiBold"/>
+                            <Setter Property="FontSize" Value="12"/>
+                            <Setter Property="Cursor" Value="Hand"/>
+                            <Style.Resources>
+                                <Style TargetType="Border">
+                                    <Setter Property="CornerRadius" Value="4"/>
+                                </Style>
+                            </Style.Resources>
+                            <Style.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter Property="Background" Value="#F5F5F5"/>
+                                </Trigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Button.Style>
+                </Button>
+            </StackPanel>
+        </Border>
+    </Grid>
+</Window>

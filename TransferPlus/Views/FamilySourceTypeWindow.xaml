@@ -1,0 +1,96 @@
+<Window x:Class="TransferPlus.Views.FamilySourceTypeWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d"
+        x:Name="SourceTypeWin"
+        Title="Family source settings" Height="395" Width="520"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="NoResize"
+        Background="#FAFAFA">
+
+    <Grid Margin="0">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Soft Green Header Banner -->
+        <Border Grid.Row="0" Background="#E8F5E9" BorderBrush="#C3E6CB" BorderThickness="0,0,0,1" Padding="14,12">
+            <TextBlock Text="This view allows you to create a new family source by selecting from the available source types. Choose the type of family source you want to add from the list, then proceed to configure its settings. This helps you organize and manage your Revit family files according to your preferred source type."
+                       Foreground="#155724" FontSize="11.5" TextWrapping="Wrap" LineHeight="16"/>
+        </Border>
+
+        <!-- Body Content -->
+        <StackPanel Grid.Row="1" Margin="20,16">
+            <TextBlock Text="Select family source type" FontWeight="SemiBold" FontSize="12.5" Foreground="#333333" Margin="0,0,0,8"/>
+            
+            <Border BorderBrush="#CCCCCC" BorderThickness="1" Background="White" CornerRadius="4" Padding="4">
+                <StackPanel Margin="8">
+                    <RadioButton Content="Autodesk Docs (APS)" IsChecked="{Binding IsAutodeskDocsSelected}"
+                                 FontSize="13" Foreground="#222222" Margin="4,6" Cursor="Hand"/>
+                    <RadioButton Content="Azure Storage" IsChecked="{Binding IsAzureStorageSelected}"
+                                 FontSize="13" Foreground="#222222" Margin="4,6" Cursor="Hand"/>
+                    <RadioButton Content="AWS S3" IsChecked="{Binding IsAwsS3Selected}"
+                                 FontSize="13" Foreground="#222222" Margin="4,6" Cursor="Hand"/>
+                    <RadioButton Content="Directory" IsChecked="{Binding IsDirectorySelected}"
+                                 FontSize="13" Foreground="#222222" Margin="4,6" Cursor="Hand"/>
+                </StackPanel>
+            </Border>
+        </StackPanel>
+
+        <!-- Footer Buttons -->
+        <Border Grid.Row="2" Background="#F5F5F5" BorderBrush="#E0E0E0" BorderThickness="0,1,0,0" Padding="16,10">
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <Button Content="OK" Command="{Binding OkCommand}" CommandParameter="{Binding ElementName=SourceTypeWin}" Height="28" Width="80" Margin="0,0,8,0">
+                    <Button.Style>
+                        <Style TargetType="Button">
+                            <Setter Property="Background" Value="#007ACC"/>
+                            <Setter Property="Foreground" Value="White"/>
+                            <Setter Property="FontWeight" Value="SemiBold"/>
+                            <Setter Property="FontSize" Value="12"/>
+                            <Setter Property="BorderThickness" Value="0"/>
+                            <Setter Property="Cursor" Value="Hand"/>
+                            <Style.Resources>
+                                <Style TargetType="Border">
+                                    <Setter Property="CornerRadius" Value="4"/>
+                                </Style>
+                            </Style.Resources>
+                            <Style.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter Property="Background" Value="#005999"/>
+                                </Trigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Button.Style>
+                </Button>
+
+                <Button Content="Cancel" Command="{Binding CancelCommand}" CommandParameter="{Binding ElementName=SourceTypeWin}" Height="28" Width="80">
+                    <Button.Style>
+                        <Style TargetType="Button">
+                            <Setter Property="Background" Value="#FFFFFF"/>
+                            <Setter Property="Foreground" Value="#555555"/>
+                            <Setter Property="BorderBrush" Value="#CCCCCC"/>
+                            <Setter Property="BorderThickness" Value="1"/>
+                            <Setter Property="FontWeight" Value="SemiBold"/>
+                            <Setter Property="FontSize" Value="12"/>
+                            <Setter Property="Cursor" Value="Hand"/>
+                            <Style.Resources>
+                                <Style TargetType="Border">
+                                    <Setter Property="CornerRadius" Value="4"/>
+                                </Style>
+                            </Style.Resources>
+                            <Style.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter Property="Background" Value="#F5F5F5"/>
+                                </Trigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Button.Style>
+                </Button>
+            </StackPanel>
+        </Border>
+    </Grid>
+</Window>

@@ -78,6 +78,22 @@ public partial class ConfigurationViewModel : ObservableObject
                         MessageBoxImage.Information);
     }
 
+    public static Action? ToggleDebugWindowAction { get; set; }
+
+    [RelayCommand]
+    private void ToggleDebugWindow()
+    {
+        try
+        {
+            TelemetryLogger.LogInfo("ConfigurationViewModel: Executing ToggleDebugWindowAction...");
+            ToggleDebugWindowAction?.Invoke();
+        }
+        catch (Exception ex)
+        {
+            TelemetryLogger.LogError("ConfigurationViewModel: Error toggling debug window", ex);
+        }
+    }
+
     [RelayCommand]
     private void OpenPrivacyPolicy()
     {

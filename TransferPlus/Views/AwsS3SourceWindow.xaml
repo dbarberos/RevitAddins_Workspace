@@ -1,0 +1,335 @@
+<Window x:Class="TransferPlus.Views.AwsS3SourceWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d"
+        x:Name="AwsS3SourceWin"
+        Title="AWS S3 Family Source Settings" Height="540" Width="640"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="NoResize"
+        Background="#FAFAFA">
+
+    <Grid Margin="0">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Soft Green Header Banner -->
+        <Border Grid.Row="0" Background="#E8F5E9" BorderBrush="#C3E6CB" BorderThickness="0,0,0,1" Padding="14,12">
+            <TextBlock Text="This view allows you to configure an AWS S3 source for Revit family files. Enter the connection parameters (Bucket name, Region, Access Key, Secret Key, and Endpoint URL) to connect to either Floci (AWS local development) or real AWS S3. Keys are encrypted securely on disk via DPAPI."
+                       Foreground="#155724" FontSize="11.5" TextWrapping="Wrap" LineHeight="16"/>
+        </Border>
+
+        <!-- Form Body -->
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Padding="20,16">
+            <StackPanel>
+                <!-- 2-Column Grid for main options -->
+                <Grid Margin="0,0,0,12">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="20"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+
+                    <!-- Column 0: Left Fields -->
+                    <StackPanel Grid.Column="0">
+                        <TextBlock Text="Name" FontWeight="SemiBold" FontSize="12" Foreground="#333333" Margin="0,0,0,4">
+                            <TextBlock.ToolTip>
+                                <ToolTip MaxWidth="225">
+                                    <TextBlock TextWrapping="Wrap" FontSize="11.5" LineHeight="15" Foreground="#333333">
+                                        <Bold>Name</Bold><LineBreak/>
+                                        Friendly label to identify this AWS S3 source in the main selection dropdown.<LineBreak/><LineBreak/>
+                                        <Bold>Example:</Bold> AWS S3 Family Store<LineBreak/>
+                                        <Bold>Where to find:</Bold> Arbitrary user-defined text.
+                                    </TextBlock>
+                                </ToolTip>
+                            </TextBlock.ToolTip>
+                        </TextBlock>
+                        <TextBox Text="{Binding Name, UpdateSourceTrigger=PropertyChanged}" Height="28" Padding="6,4"
+                                 BorderBrush="#CCCCCC" BorderThickness="1" Background="White" FontSize="12" Margin="0,0,0,12">
+                            <TextBox.ToolTip>
+                                <ToolTip MaxWidth="225">
+                                    <TextBlock TextWrapping="Wrap" FontSize="11.5" LineHeight="15" Foreground="#333333">
+                                        <Bold>Name</Bold><LineBreak/>
+                                        Friendly label to identify this AWS S3 source in the main selection dropdown.<LineBreak/><LineBreak/>
+                                        <Bold>Example:</Bold> AWS S3 Family Store<LineBreak/>
+                                        <Bold>Where to find:</Bold> Arbitrary user-defined text.
+                                    </TextBlock>
+                                </ToolTip>
+                            </TextBox.ToolTip>
+                        </TextBox>
+
+                        <TextBlock Text="Bucket name" FontWeight="SemiBold" FontSize="12" Foreground="#333333" Margin="0,0,0,4">
+                            <TextBlock.ToolTip>
+                                <ToolTip MaxWidth="225">
+                                    <TextBlock TextWrapping="Wrap" FontSize="11.5" LineHeight="15" Foreground="#333333">
+                                        <Bold>Bucket Name</Bold><LineBreak/>
+                                        Amazon S3 bucket identifier storing your Revit family (.rfa) objects.<LineBreak/><LineBreak/>
+                                        <Bold>Example:</Bold> familias-revit<LineBreak/>
+                                        <Bold>Where to find:</Bold> AWS Console -> S3 -> Buckets list.
+                                    </TextBlock>
+                                </ToolTip>
+                            </TextBlock.ToolTip>
+                        </TextBlock>
+                        <TextBox Text="{Binding BucketName, UpdateSourceTrigger=PropertyChanged}" Height="28" Padding="6,4"
+                                 BorderBrush="#CCCCCC" BorderThickness="1" Background="White" FontSize="12" Margin="0,0,0,12">
+                            <TextBox.ToolTip>
+                                <ToolTip MaxWidth="225">
+                                    <TextBlock TextWrapping="Wrap" FontSize="11.5" LineHeight="15" Foreground="#333333">
+                                        <Bold>Bucket Name</Bold><LineBreak/>
+                                        Amazon S3 bucket identifier storing your Revit family (.rfa) objects.<LineBreak/><LineBreak/>
+                                        <Bold>Example:</Bold> familias-revit<LineBreak/>
+                                        <Bold>Where to find:</Bold> AWS Console -> S3 -> Buckets list.
+                                    </TextBlock>
+                                </ToolTip>
+                            </TextBox.ToolTip>
+                        </TextBox>
+
+                        <TextBlock Text="Region" FontWeight="SemiBold" FontSize="12" Foreground="#333333" Margin="0,0,0,4">
+                            <TextBlock.ToolTip>
+                                <ToolTip MaxWidth="225">
+                                    <TextBlock TextWrapping="Wrap" FontSize="11.5" LineHeight="15" Foreground="#333333">
+                                        <Bold>AWS Region</Bold><LineBreak/>
+                                        Geographical region code where your S3 bucket is hosted.<LineBreak/><LineBreak/>
+                                        <Bold>Example:</Bold> eu-west-1<LineBreak/>
+                                        <Bold>Where to find:</Bold> AWS Console S3 Bucket Properties tab.
+                                    </TextBlock>
+                                </ToolTip>
+                            </TextBlock.ToolTip>
+                        </TextBlock>
+                        <TextBox Text="{Binding Region, UpdateSourceTrigger=PropertyChanged}" Height="28" Padding="6,4"
+                                 BorderBrush="#CCCCCC" BorderThickness="1" Background="White" FontSize="12" Margin="0,0,0,12">
+                            <TextBox.ToolTip>
+                                <ToolTip MaxWidth="225">
+                                    <TextBlock TextWrapping="Wrap" FontSize="11.5" LineHeight="15" Foreground="#333333">
+                                        <Bold>AWS Region</Bold><LineBreak/>
+                                        Geographical region code where your S3 bucket is hosted.<LineBreak/><LineBreak/>
+                                        <Bold>Example:</Bold> eu-west-1<LineBreak/>
+                                        <Bold>Where to find:</Bold> AWS Console S3 Bucket Properties tab.
+                                    </TextBlock>
+                                </ToolTip>
+                            </TextBox.ToolTip>
+                        </TextBox>
+
+                        <TextBlock Text="Root path (Prefix)" FontWeight="SemiBold" FontSize="12" Foreground="#333333" Margin="0,0,0,4">
+                            <TextBlock.ToolTip>
+                                <ToolTip MaxWidth="225">
+                                    <TextBlock TextWrapping="Wrap" FontSize="11.5" LineHeight="15" Foreground="#333333">
+                                        <Bold>Root Path (Prefix)</Bold><LineBreak/>
+                                        Optional subfolder prefix inside the bucket to filter specific family files.<LineBreak/><LineBreak/>
+                                        <Bold>Example:</Bold> Architecture/Doors/<LineBreak/>
+                                        <Bold>Where to find:</Bold> Folder path hierarchy inside your S3 bucket.
+                                    </TextBlock>
+                                </ToolTip>
+                            </TextBlock.ToolTip>
+                        </TextBlock>
+                        <TextBox Text="{Binding RootPath, UpdateSourceTrigger=PropertyChanged}" Height="28" Padding="6,4"
+                                 BorderBrush="#CCCCCC" BorderThickness="1" Background="White" FontSize="12" Margin="0,0,0,12">
+                            <TextBox.ToolTip>
+                                <ToolTip MaxWidth="225">
+                                    <TextBlock TextWrapping="Wrap" FontSize="11.5" LineHeight="15" Foreground="#333333">
+                                        <Bold>Root Path (Prefix)</Bold><LineBreak/>
+                                        Optional subfolder prefix inside the bucket to filter specific family files.<LineBreak/><LineBreak/>
+                                        <Bold>Example:</Bold> Architecture/Doors/<LineBreak/>
+                                        <Bold>Where to find:</Bold> Folder path hierarchy inside your S3 bucket.
+                                    </TextBlock>
+                                </ToolTip>
+                            </TextBox.ToolTip>
+                        </TextBox>
+                    </StackPanel>
+
+                    <!-- Column 2: Right Fields -->
+                    <StackPanel Grid.Column="2">
+                        <TextBlock Text="Endpoint URL" FontWeight="SemiBold" FontSize="12" Foreground="#333333" Margin="0,0,0,4">
+                            <TextBlock.ToolTip>
+                                <ToolTip MaxWidth="225">
+                                    <TextBlock TextWrapping="Wrap" FontSize="11.5" LineHeight="15" Foreground="#333333">
+                                        <Bold>Endpoint URL</Bold><LineBreak/>
+                                        Service URL enabling switching between Floci (local Docker) and real AWS S3.<LineBreak/><LineBreak/>
+                                        <Bold>Example:</Bold> http://localhost:4566<LineBreak/>
+                                        <Bold>Where to find:</Bold> Select preset or enter custom S3 service URL.
+                                    </TextBlock>
+                                </ToolTip>
+                            </TextBlock.ToolTip>
+                        </TextBlock>
+                        <!-- Editable ComboBox with quick presets for Floci vs AWS S3 Real -->
+                        <ComboBox ItemsSource="{Binding EndpointPresets}" Text="{Binding EndpointUrl, UpdateSourceTrigger=PropertyChanged}"
+                                  IsEditable="True" Height="28" Padding="6,2" BorderBrush="#CCCCCC" BorderThickness="1"
+                                  Background="White" FontSize="12" Margin="0,0,0,12">
+                            <ComboBox.ToolTip>
+                                <ToolTip MaxWidth="225">
+                                    <TextBlock TextWrapping="Wrap" FontSize="11.5" LineHeight="15" Foreground="#333333">
+                                        <Bold>Endpoint URL</Bold><LineBreak/>
+                                        Service URL enabling switching between Floci (local Docker) and real AWS S3.<LineBreak/><LineBreak/>
+                                        <Bold>Example:</Bold> http://localhost:4566<LineBreak/>
+                                        <Bold>Where to find:</Bold> Select preset or enter custom S3 service URL.
+                                    </TextBlock>
+                                </ToolTip>
+                            </ComboBox.ToolTip>
+                        </ComboBox>
+
+                        <TextBlock Text="Access Key (ID)" FontWeight="SemiBold" FontSize="12" Foreground="#333333" Margin="0,0,0,4">
+                            <TextBlock.ToolTip>
+                                <ToolTip MaxWidth="225">
+                                    <TextBlock TextWrapping="Wrap" FontSize="11.5" LineHeight="15" Foreground="#333333">
+                                        <Bold>Access Key (ID)</Bold><LineBreak/>
+                                        AWS IAM Access Key ID used to authenticate requests to the S3 API.<LineBreak/><LineBreak/>
+                                        <Bold>Example:</Bold> AKIAIOSFODNN7EXAMPLE (or 'test' for Floci)<LineBreak/>
+                                        <Bold>Where to find:</Bold> AWS Console -> IAM -> Security credentials.
+                                    </TextBlock>
+                                </ToolTip>
+                            </TextBlock.ToolTip>
+                        </TextBlock>
+                        <TextBox Text="{Binding AccessKey, UpdateSourceTrigger=PropertyChanged}" Height="28" Padding="6,4"
+                                 BorderBrush="#CCCCCC" BorderThickness="1" Background="White" FontSize="12" Margin="0,0,0,12">
+                            <TextBox.ToolTip>
+                                <ToolTip MaxWidth="225">
+                                    <TextBlock TextWrapping="Wrap" FontSize="11.5" LineHeight="15" Foreground="#333333">
+                                        <Bold>Access Key (ID)</Bold><LineBreak/>
+                                        AWS IAM Access Key ID used to authenticate requests to the S3 API.<LineBreak/><LineBreak/>
+                                        <Bold>Example:</Bold> AKIAIOSFODNN7EXAMPLE (or 'test' for Floci)<LineBreak/>
+                                        <Bold>Where to find:</Bold> AWS Console -> IAM -> Security credentials.
+                                    </TextBlock>
+                                </ToolTip>
+                            </TextBox.ToolTip>
+                        </TextBox>
+
+                        <TextBlock Text="Secret Key (Encrypted via DPAPI)" FontWeight="SemiBold" FontSize="12" Foreground="#333333" Margin="0,0,0,4">
+                            <TextBlock.ToolTip>
+                                <ToolTip MaxWidth="225">
+                                    <TextBlock TextWrapping="Wrap" FontSize="11.5" LineHeight="15" Foreground="#333333">
+                                        <Bold>Secret Key</Bold><LineBreak/>
+                                        Secret Access Key paired with your Access Key ID to sign S3 requests.<LineBreak/><LineBreak/>
+                                        <Bold>Example:</Bold> wJalrXUtnFEMI... (or 'test' for Floci)<LineBreak/>
+                                        <Bold>Where to find:</Bold> AWS Console IAM Credentials. Encrypted via DPAPI.
+                                    </TextBlock>
+                                </ToolTip>
+                            </TextBlock.ToolTip>
+                        </TextBlock>
+                        <TextBox Text="{Binding SecretKey, UpdateSourceTrigger=PropertyChanged}" Height="28" Padding="6,4"
+                                 BorderBrush="#CCCCCC" BorderThickness="1" Background="White" FontSize="11.5" FontFamily="Consolas" Margin="0,0,0,12">
+                            <TextBox.ToolTip>
+                                <ToolTip MaxWidth="225">
+                                    <TextBlock TextWrapping="Wrap" FontSize="11.5" LineHeight="15" Foreground="#333333">
+                                        <Bold>Secret Key</Bold><LineBreak/>
+                                        Secret Access Key paired with your Access Key ID to sign S3 requests.<LineBreak/><LineBreak/>
+                                        <Bold>Example:</Bold> wJalrXUtnFEMI... (or 'test' for Floci)<LineBreak/>
+                                        <Bold>Where to find:</Bold> AWS Console IAM Credentials. Encrypted via DPAPI.
+                                    </TextBlock>
+                                </ToolTip>
+                            </TextBox.ToolTip>
+                        </TextBox>
+                    </StackPanel>
+                </Grid>
+
+                <!-- Active CheckBox and Test Connection Row -->
+                <Grid Margin="0,4,0,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <CheckBox Grid.Column="0" Content="Active" IsChecked="{Binding IsActive}" FontSize="12" Foreground="#222222" Cursor="Hand" VerticalAlignment="Center">
+                        <CheckBox.ToolTip>
+                            <ToolTip MaxWidth="225">
+                                <TextBlock TextWrapping="Wrap" FontSize="11.5" LineHeight="15" Foreground="#333333">
+                                    <Bold>Active Status</Bold><LineBreak/>
+                                    Enables or disables this AWS S3 source in the main application dropdown.<LineBreak/><LineBreak/>
+                                    <Bold>Example:</Bold> Checked (Active)<LineBreak/>
+                                    <Bold>Where to find:</Bold> User preference toggle.
+                                </TextBlock>
+                            </ToolTip>
+                        </CheckBox.ToolTip>
+                    </CheckBox>
+
+                    <!-- Status Indicator -->
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" Margin="20,0,0,0" VerticalAlignment="Center">
+                        <TextBlock Text="☁️" FontSize="14" Foreground="#888888" Margin="0,0,6,0" VerticalAlignment="Center"/>
+                        <TextBlock Text="{Binding SignedInStatus}" FontSize="11.5" FontWeight="SemiBold" Foreground="#333333" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                    </StackPanel>
+
+                    <!-- Test Connection Button -->
+                    <Button Grid.Column="2" Content="⚡ Test Connection" Command="{Binding TestConnectionCommand}" Height="26" Padding="10,2">
+                        <Button.Style>
+                            <Style TargetType="Button">
+                                <Setter Property="Background" Value="#FFFFFF"/>
+                                <Setter Property="Foreground" Value="#007ACC"/>
+                                <Setter Property="BorderBrush" Value="#007ACC"/>
+                                <Setter Property="BorderThickness" Value="1"/>
+                                <Setter Property="FontWeight" Value="SemiBold"/>
+                                <Setter Property="FontSize" Value="11.5"/>
+                                <Setter Property="Cursor" Value="Hand"/>
+                                <Style.Resources>
+                                    <Style TargetType="Border">
+                                        <Setter Property="CornerRadius" Value="4"/>
+                                    </Style>
+                                </Style.Resources>
+                                <Style.Triggers>
+                                    <Trigger Property="IsMouseOver" Value="True">
+                                        <Setter Property="Background" Value="#EBF5FC"/>
+                                    </Trigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Button.Style>
+                    </Button>
+                </Grid>
+            </StackPanel>
+        </ScrollViewer>
+
+        <!-- Footer Buttons -->
+        <Border Grid.Row="2" Background="#F5F5F5" BorderBrush="#E0E0E0" BorderThickness="0,1,0,0" Padding="16,10">
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <Button Content="OK" Command="{Binding OkCommand}" CommandParameter="{Binding ElementName=AwsS3SourceWin}" Height="28" Width="80" Margin="0,0,8,0">
+                    <Button.Style>
+                        <Style TargetType="Button">
+                            <Setter Property="Background" Value="#007ACC"/>
+                            <Setter Property="Foreground" Value="White"/>
+                            <Setter Property="FontWeight" Value="SemiBold"/>
+                            <Setter Property="FontSize" Value="12"/>
+                            <Setter Property="BorderThickness" Value="0"/>
+                            <Setter Property="Cursor" Value="Hand"/>
+                            <Style.Resources>
+                                <Style TargetType="Border">
+                                    <Setter Property="CornerRadius" Value="4"/>
+                                </Style>
+                            </Style.Resources>
+                            <Style.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter Property="Background" Value="#005999"/>
+                                </Trigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Button.Style>
+                </Button>
+
+                <Button Content="Cancel" Command="{Binding CancelCommand}" CommandParameter="{Binding ElementName=AwsS3SourceWin}" Height="28" Width="80">
+                    <Button.Style>
+                        <Style TargetType="Button">
+                            <Setter Property="Background" Value="#FFFFFF"/>
+                            <Setter Property="Foreground" Value="#555555"/>
+                            <Setter Property="BorderBrush" Value="#CCCCCC"/>
+                            <Setter Property="BorderThickness" Value="1"/>
+                            <Setter Property="FontWeight" Value="SemiBold"/>
+                            <Setter Property="FontSize" Value="12"/>
+                            <Setter Property="Cursor" Value="Hand"/>
+                            <Style.Resources>
+                                <Style TargetType="Border">
+                                    <Setter Property="CornerRadius" Value="4"/>
+                                </Style>
+                            </Style.Resources>
+                            <Style.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter Property="Background" Value="#F5F5F5"/>
+                                </Trigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Button.Style>
+                </Button>
+            </StackPanel>
+        </Border>
+    </Grid>
+</Window>
