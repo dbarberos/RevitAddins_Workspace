@@ -1784,198 +1784,233 @@ public class TransferOrchestrator
                 }
             }
 
+            // ── 2. Evaluate duplicates against target document ("On Duplicates") ──
             View existingCallout = FindExistingViewByName(destino, calloutView.Name);
             if (existingCallout != null && existingCallout.IsValidObject)
             {
-                LoggerService.LogInfo($"ponCallouts: Callout view '{calloutView.Name}' already exists in target document (Target ViewId: {existingCallout.Id.Value}). Re-using existing callout view.");
-                if (CopiaDetalles)
+                if (config != null && config.cf_rbAbortTransaction)
                 {
-                    View consolidatedExisting = ponDependientes(origen, calloutView, existingCallout, copyOptions);
-                    if (consolidatedExisting != null && consolidatedExisting.IsValidObject)
+                    var dupList = new List<TransferPlus.Models.DuplicateElementInfo>
                     {
-                        existingCallout = consolidatedExisting;
-                    }
+                        new TransferPlus.Models.DuplicateElementInfo("Views", calloutView.ViewType.ToString(), calloutView.GetType().Name, calloutView.Name)
+                    };
+                    var cancelEx = new OperationCanceledException("Transfer canceled: Duplicate callout view name found.");
+                    cancelEx.Data["Duplicates"] = dupList;
+                    throw cancelEx;
                 }
-                if (config != null)
+                else if (config == null || config.cf_rbKeepOriginal)
                 {
-                    matchPlantilla(origen, destino, calloutView, existingCallout, copyOptions, config, new List<TransferPlus.Models.DuplicateElementInfo>());
+                    LoggerService.LogInfo($"ponCallouts: Callout view '{calloutView.Name}' already exists in target document (Target ViewId: {existingCallout.Id.Value}). Option 'Keep Original' active. Re-using existing callout view.");
+                    if (CopiaDetalles)
+                    {
+                        View consolidatedExisting = ponDependientes(origen, calloutView, existingCallout, copyOptions);
+                        if (consolidatedExisting != null && consolidatedExisting.IsValidObject)
+                        {
+                            existingCallout = consolidatedExisting;
+                        }
+                    }
+                    if (config != null)
+                    {
+                        matchPlantilla(origen, destino, calloutView, existingCallout, copyOptions, config, new List<TransferPlus.Models.DuplicateElementInfo>());
+                        SyncViewPhaseAndFilter(origen, destino, calloutView, existingCallout);
+                        EnsureViewerSymbolsVisible(destino, existingCallout, vistadestino.Scale);
+                        EnsureViewerSymbolsVisible(destino, vistadestino, vistadestino.Scale);
+                    }
+                    if (processedViewsMap != null) processedViewsMap[calloutView.Id] = existingCallout.Id;
+                    ponCallouts(origen, destino, calloutView, existingCallout, copyOptions, CopiaDetalles, Contador + 1, transforma, T, config, processedViewsMap);
+                    continue;
                 }
-                if (processedViewsMap != null) processedViewsMap[calloutView.Id] = existingCallout.Id;
-                ponCallouts(origen, destino, calloutView, existingCallout, copyOptions, CopiaDetalles, Contador + 1, transforma, T, config, processedViewsMap);
-                continue;
+                else if (config.cf_rbAppendSuffix)
+                {
+                    LoggerService.LogInfo($"ponCallouts: Callout view '{calloutView.Name}' already exists in target. Option 'Append Suffix' active. Proceeding to create new callout copy with suffix.");
+                }
             }
 
             try
             {
                 View targetCalloutView = null;
+                ElementId elementToCopy = viewerSymbol != null ? viewerSymbol.Id : calloutView.Id;
 
-                // Try native View.CreateCallout API to draw the physical Callout Bubble on vistadestino
+                // ── Strategy 1 (Primary): Native View-to-View CopyElements ──
+                // Copies the callout from vistaorigen into vistadestino, automatically creating and placing the 2D callout boundary and bubble.
                 try
                 {
-                    ElementId targetVftId = GetMatchingViewFamilyType(origen, destino, calloutView.GetTypeId());
-                    BoundingBoxXYZ cropBox = calloutView.CropBox;
-
-                    if (targetVftId != ElementId.InvalidElementId && cropBox != null)
-                    {
-                        // --- STRATEGY: EXACT RELATIVE VIEW-SPACE MAPPING (matching CopyElements) ---
-                        // Use parent view's fixed 2D plane coordinate system (view.Origin), which matches
-                        // Revit's CopyElements 2D coordinate space. This ensures the callout bubble is drawn
-                        // over the exact same situation of elements as in the source file, regardless of crop box center offsets.
-
-                        Transform calloutTf = cropBox.Transform ?? Transform.Identity;
-
-                        // Always use parent view's fixed plane origin and orientation
-                        Transform srcParentTf = Transform.Identity;
-                        srcParentTf.Origin = vistaorigen.Origin;
-                        srcParentTf.BasisX = vistaorigen.RightDirection;
-                        srcParentTf.BasisY = vistaorigen.UpDirection;
-                        srcParentTf.BasisZ = vistaorigen.ViewDirection;
-
-                        Transform tgtParentTf = Transform.Identity;
-                        tgtParentTf.Origin = vistadestino.Origin;
-                        tgtParentTf.BasisX = vistadestino.RightDirection;
-                        tgtParentTf.BasisY = vistadestino.UpDirection;
-                        tgtParentTf.BasisZ = vistadestino.ViewDirection;
-
-
-                        // Collect 8 corners of the callout crop box in local callout space
-                        XYZ cMin = cropBox.Min;
-                        XYZ cMax = cropBox.Max;
-                        XYZ[] localCorners = new XYZ[]
-                        {
-                            new XYZ(cMin.X, cMin.Y, cMin.Z),
-                            new XYZ(cMax.X, cMin.Y, cMin.Z),
-                            new XYZ(cMin.X, cMax.Y, cMin.Z),
-                            new XYZ(cMax.X, cMax.Y, cMin.Z),
-                            new XYZ(cMin.X, cMin.Y, cMax.Z),
-                            new XYZ(cMax.X, cMin.Y, cMax.Z),
-                            new XYZ(cMin.X, cMax.Y, cMax.Z),
-                            new XYZ(cMax.X, cMax.Y, cMax.Z)
-                        };
-
-                        List<XYZ> targetWorldCorners = new List<XYZ>();
-
-                        foreach (XYZ corner in localCorners)
-                        {
-                            XYZ tgtWorldPt;
-                            if (transforma && T != null)
-                            {
-                                // Transformed directly by link/shared coordinates matrix T
-                                tgtWorldPt = T.OfPoint(calloutTf.OfPoint(corner));
-                            }
-                            else
-                            {
-                                // 1. Local callout corner -> Source World point
-                                XYZ srcWorldPt = calloutTf.OfPoint(corner);
-
-                                // 2. Source World point -> vistaorigen 2D local space (u, v, w)
-                                XYZ deltaSrc = srcWorldPt - srcParentTf.Origin;
-                                double u = deltaSrc.DotProduct(srcParentTf.BasisX);
-                                double v = deltaSrc.DotProduct(srcParentTf.BasisY);
-                                double w = deltaSrc.DotProduct(srcParentTf.BasisZ);
-
-                                // 3. (u, v, w) -> vistadestino Target World point
-                                tgtWorldPt = tgtParentTf.Origin + u * tgtParentTf.BasisX + v * tgtParentTf.BasisY + w * tgtParentTf.BasisZ;
-                            }
-                            targetWorldCorners.Add(tgtWorldPt);
-                        }
-
-                        // 4. Compute bounding box pMin and pMax in Target World Space
-                        double minX = targetWorldCorners.Min(p => p.X);
-                        double minY = targetWorldCorners.Min(p => p.Y);
-                        double minZ = targetWorldCorners.Min(p => p.Z);
-                        double maxX = targetWorldCorners.Max(p => p.X);
-                        double maxY = targetWorldCorners.Max(p => p.Y);
-                        double maxZ = targetWorldCorners.Max(p => p.Z);
-
-                        // Ensure adequate 3D depth centered on the parent view's cut plane
-                        // so the 3D callout box intersects the parent view's cut plane across level elevation offsets.
-                        double targetCutPlaneZ = vistadestino.Origin?.Z ?? 0.0;
-                        try
-                        {
-                            if (vistadestino is ViewPlan vpTarget && vpTarget.GenLevel != null)
-                            {
-                                PlanViewRange pvr = vpTarget.GetViewRange();
-                                double cutOffset = pvr.GetOffset(PlanViewPlane.CutPlane);
-                                targetCutPlaneZ = vpTarget.GenLevel.Elevation + cutOffset;
-                            }
-                        }
-                        catch { }
-
-                        double zCenter = targetCutPlaneZ;
-                        double zHalfDepth = Math.Max((maxZ - minZ) * 0.5, 15.0);
-
-                        XYZ pMin = new XYZ(minX, minY, zCenter - zHalfDepth);
-                        XYZ pMax = new XYZ(maxX, maxY, zCenter + zHalfDepth);
-
-                        LoggerService.LogInfo($"ponCallouts [CALLOUT RELATIVE COORDS OK]: " +
-                            $"Mapped {localCorners.Length} corners | Target pMin={pMin:F3} pMax={pMax:F3} (CutPlaneZ: {targetCutPlaneZ:F3})");
-
-                        if (calloutView is ViewSection || calloutView is ViewPlan || calloutView.ViewType == ViewType.Section || calloutView.ViewType == ViewType.Detail || calloutView.ViewType == ViewType.FloorPlan || calloutView.ViewType == ViewType.EngineeringPlan)
-                        {
-                            LoggerService.LogInfo($"ponCallouts [NATIVE CALLOUT CREATION]: Calling ViewSection.CreateCallout on parent view '{vistadestino.Name}' (Id: {vistadestino.Id.Value}) for callout '{calloutView.Name}'...");
-                            targetCalloutView = ViewSection.CreateCallout(destino, vistadestino.Id, targetVftId, pMin, pMax);
-                        }
-                    }
-
-                }
-                catch (Exception exNative)
-                {
-                    LoggerService.LogWarning($"ponCallouts [NATIVE CALLOUT EXCEPTION]: {exNative.Message}. Falling back to CopyElements.");
-                }
-
-                // Fallback to CopyElements if native CreateCallout did not produce a view
-                if (targetCalloutView == null)
-                {
-                    ElementId elementToCopy = viewerSymbol != null ? viewerSymbol.Id : calloutView.Id;
-                    if (viewerSymbol != null)
-                    {
-                        LoggerService.LogInfo($"ponCallouts: Copying callout bubble symbol (Category: '{viewerSymbol.Category?.Name}', Id: {viewerSymbol.Id.Value}) to draw callout boundary on target view '{vistadestino.Name}'.");
-                    }
-                    else
-                    {
-                        LoggerService.LogInfo($"ponCallouts: Viewer symbol not found for '{calloutView.Name}'. Copying view directly (Id: {calloutView.Id.Value}).");
-                    }
-
+                    LoggerService.LogInfo($"ponCallouts [STRATEGY 1 COPYELEMENTS]: Copying callout element (Id: {elementToCopy.Value}) from '{vistaorigen.Name}' into '{vistadestino.Name}'...");
                     var source = ElementTransformUtils.CopyElements(vistaorigen, new List<ElementId> { elementToCopy }, vistadestino, null, copyOptions);
 
-                    targetCalloutView = source.Select(id => destino.GetElement(id)).OfType<View>().FirstOrDefault();
-
-                    if (targetCalloutView == null && source.Any())
+                    if (source != null && source.Any())
                     {
-                        ElementId createdId = source.FirstOrDefault();
-                        Element createdElem = destino.GetElement(createdId);
-                        if (createdElem != null && createdElem.IsValidObject)
+                        targetCalloutView = source.Select(id => destino.GetElement(id)).OfType<View>().FirstOrDefault();
+
+                        if (targetCalloutView == null)
                         {
-                            foreach (Parameter p in createdElem.Parameters)
+                            foreach (ElementId cId in source)
                             {
-                                if (p != null && p.StorageType == StorageType.ElementId)
+                                Element cElem = destino.GetElement(cId);
+                                if (cElem != null && cElem.IsValidObject)
                                 {
-                                    ElementId targetId = p.AsElementId();
-                                    if (targetId != null && targetId != ElementId.InvalidElementId && targetId != vistadestino.Id)
+                                    foreach (Parameter p in cElem.Parameters)
                                     {
-                                        if (destino.GetElement(targetId) is View targetView)
+                                        if (p != null && p.StorageType == StorageType.ElementId && p.AsElementId() is ElementId pId && pId != ElementId.InvalidElementId && pId != vistadestino.Id)
                                         {
-                                            targetCalloutView = targetView;
-                                            break;
+                                            if (destino.GetElement(pId) is View pView && pView.IsValidObject)
+                                            {
+                                                targetCalloutView = pView;
+                                                break;
+                                            }
                                         }
                                     }
                                 }
+                                if (targetCalloutView != null) break;
+                            }
+                        }
+
+                        if (targetCalloutView != null)
+                        {
+                            LoggerService.LogInfo($"ponCallouts [STRATEGY 1 SUCCESS]: Copied callout view '{targetCalloutView.Name}' (Target Id: {targetCalloutView.Id.Value}) with native viewer symbol.");
+                        }
+                    }
+                }
+                catch (Exception exCopy)
+                {
+                    LoggerService.LogWarning($"ponCallouts [STRATEGY 1 FAILED]: {exCopy.Message}. Trying native ViewSection.CreateCallout fallback.");
+                }
+
+                // ── Strategy 2 (Fallback): ViewSection.CreateCallout ──
+                if (targetCalloutView == null)
+                {
+                    try
+                    {
+                        ElementId targetVftId = GetMatchingViewFamilyType(origen, destino, calloutView.GetTypeId());
+                        BoundingBoxXYZ cropBox = calloutView.CropBox;
+
+                        if (targetVftId != ElementId.InvalidElementId && cropBox != null)
+                        {
+                            Transform calloutTf = cropBox.Transform ?? Transform.Identity;
+
+                            Transform srcParentTf = Transform.Identity;
+                            srcParentTf.Origin = vistaorigen.Origin;
+                            srcParentTf.BasisX = vistaorigen.RightDirection;
+                            srcParentTf.BasisY = vistaorigen.UpDirection;
+                            srcParentTf.BasisZ = vistaorigen.ViewDirection;
+
+                            Transform tgtParentTf = Transform.Identity;
+                            tgtParentTf.Origin = vistadestino.Origin;
+                            tgtParentTf.BasisX = vistadestino.RightDirection;
+                            tgtParentTf.BasisY = vistadestino.UpDirection;
+                            tgtParentTf.BasisZ = vistadestino.ViewDirection;
+
+                            XYZ cMin = cropBox.Min;
+                            XYZ cMax = cropBox.Max;
+                            XYZ[] localCorners = new XYZ[]
+                            {
+                                new XYZ(cMin.X, cMin.Y, cMin.Z),
+                                new XYZ(cMax.X, cMin.Y, cMin.Z),
+                                new XYZ(cMin.X, cMax.Y, cMin.Z),
+                                new XYZ(cMax.X, cMax.Y, cMin.Z),
+                                new XYZ(cMin.X, cMin.Y, cMax.Z),
+                                new XYZ(cMax.X, cMin.Y, cMax.Z),
+                                new XYZ(cMin.X, cMax.Y, cMax.Z),
+                                new XYZ(cMax.X, cMax.Y, cMax.Z)
+                            };
+
+                            List<XYZ> targetWorldCorners = new List<XYZ>();
+
+                            foreach (XYZ corner in localCorners)
+                            {
+                                XYZ tgtWorldPt;
+                                if (transforma && T != null)
+                                {
+                                    tgtWorldPt = T.OfPoint(calloutTf.OfPoint(corner));
+                                }
+                                else
+                                {
+                                    XYZ srcWorldPt = calloutTf.OfPoint(corner);
+                                    XYZ deltaSrc = srcWorldPt - srcParentTf.Origin;
+                                    double u = deltaSrc.DotProduct(srcParentTf.BasisX);
+                                    double v = deltaSrc.DotProduct(srcParentTf.BasisY);
+                                    double w = deltaSrc.DotProduct(srcParentTf.BasisZ);
+                                    tgtWorldPt = tgtParentTf.Origin + u * tgtParentTf.BasisX + v * tgtParentTf.BasisY + w * tgtParentTf.BasisZ;
+                                }
+                                targetWorldCorners.Add(tgtWorldPt);
+                            }
+
+                            double minX = targetWorldCorners.Min(p => p.X);
+                            double minY = targetWorldCorners.Min(p => p.Y);
+                            double minZ = targetWorldCorners.Min(p => p.Z);
+                            double maxX = targetWorldCorners.Max(p => p.X);
+                            double maxY = targetWorldCorners.Max(p => p.Y);
+                            double maxZ = targetWorldCorners.Max(p => p.Z);
+
+                            double targetCutPlaneZ = vistadestino.Origin?.Z ?? 0.0;
+                            try
+                            {
+                                if (vistadestino is ViewPlan vpTarget && vpTarget.GenLevel != null)
+                                {
+                                    PlanViewRange pvr = vpTarget.GetViewRange();
+                                    double cutOffset = pvr.GetOffset(PlanViewPlane.CutPlane);
+                                    targetCutPlaneZ = vpTarget.GenLevel.Elevation + cutOffset;
+                                }
+                            }
+                            catch { }
+
+                            double zCenter = targetCutPlaneZ;
+                            double zHalfDepth = Math.Max((maxZ - minZ) * 0.5, 15.0);
+
+                            XYZ pMin = new XYZ(minX, minY, zCenter - zHalfDepth);
+                            XYZ pMax = new XYZ(maxX, maxY, zCenter + zHalfDepth);
+
+                            if (calloutView is ViewSection || calloutView is ViewPlan || calloutView.ViewType == ViewType.Section || calloutView.ViewType == ViewType.Detail || calloutView.ViewType == ViewType.FloorPlan || calloutView.ViewType == ViewType.EngineeringPlan)
+                            {
+                                LoggerService.LogInfo($"ponCallouts [STRATEGY 2 CREATECALLOUT]: Calling ViewSection.CreateCallout on '{vistadestino.Name}' for '{calloutView.Name}'...");
+                                targetCalloutView = ViewSection.CreateCallout(destino, vistadestino.Id, targetVftId, pMin, pMax);
                             }
                         }
                     }
-
-                    if (targetCalloutView == null)
+                    catch (Exception exNative)
                     {
-                        targetCalloutView = FindExistingViewByName(destino, calloutView.Name);
+                        LoggerService.LogWarning($"ponCallouts [STRATEGY 2 FAILED]: {exNative.Message}");
                     }
                 }
 
                 if (targetCalloutView != null && targetCalloutView.IsValidObject)
                 {
-                    LoggerService.LogInfo($"ponCallouts: Created linked callout view '{targetCalloutView.Name}' (Target ViewId: {targetCalloutView.Id.Value}). Transferring 2D elements and settings...");
+                    LoggerService.LogInfo($"ponCallouts: Target callout view '{targetCalloutView.Name}' (Id: {targetCalloutView.Id.Value}) ready. Applying parameters and On Duplicates naming...");
 
-                    // Sychronize Discipline
+                    // ── 3. Renaming respecting "On Duplicates" ──
+                    string desiredName = calloutView.Name;
+                    if (config != null && config.cf_rbAppendSuffix && existingCallout != null)
+                    {
+                        string suffixText = !string.IsNullOrEmpty(config.cf_suffixText) ? config.cf_suffixText : " 1";
+                        desiredName = GetUniqueViewName(destino, calloutView.Name + suffixText, targetCalloutView.ViewType);
+                    }
+
+                    try
+                    {
+                        if (!targetCalloutView.Name.Equals(desiredName, StringComparison.OrdinalIgnoreCase))
+                        {
+                            View conflictView = FindExistingViewByName(destino, desiredName);
+                            if (conflictView == null || conflictView.Id == targetCalloutView.Id)
+                            {
+                                targetCalloutView.Name = desiredName;
+                                LoggerService.LogInfo($"ponCallouts [RENAME SUCCESS]: Renamed callout view to '{desiredName}'.");
+                            }
+                            else
+                            {
+                                string uniqueName = GetUniqueViewName(destino, desiredName, targetCalloutView.ViewType);
+                                targetCalloutView.Name = uniqueName;
+                                LoggerService.LogInfo($"ponCallouts [RENAME UNIQUE]: Name '{desiredName}' taken. Set to unique '{uniqueName}'.");
+                            }
+                        }
+                    }
+                    catch (Exception exRename)
+                    {
+                        LoggerService.LogWarning($"ponCallouts [RENAME FAILED]: {exRename.Message}");
+                    }
+
+                    if (processedViewsMap != null) processedViewsMap[calloutView.Id] = targetCalloutView.Id;
+
+                    // ── 4. Discipline synchronization ──
                     try
                     {
                         var srcDisciplineParam = calloutView.get_Parameter(BuiltInParameter.VIEW_DISCIPLINE);
@@ -1998,37 +2033,14 @@ public class TransferOrchestrator
                     }
                     catch { }
 
-                    // Synchronize Phase and PhaseFilter
+                    // ── 5. Phase and PhaseFilter synchronization ──
                     SyncViewPhaseAndFilter(origen, destino, calloutView, targetCalloutView);
 
-                    // Ensure viewers and scale threshold are unlocked
+                    // ── 6. Ensure viewers and scale threshold are unlocked ──
                     EnsureViewerSymbolsVisible(destino, targetCalloutView, vistadestino.Scale);
                     EnsureViewerSymbolsVisible(destino, vistadestino, vistadestino.Scale);
 
-                    // Only rename if the source name is not already occupied in the target document.
-                    try
-                    {
-                        if (!targetCalloutView.Name.Equals(calloutView.Name, StringComparison.OrdinalIgnoreCase))
-                        {
-                            bool nameAlreadyTaken = FindExistingViewByName(destino, calloutView.Name) != null;
-                            if (!nameAlreadyTaken)
-                            {
-                                targetCalloutView.Name = calloutView.Name;
-                                LoggerService.LogInfo($"ponCallouts [RENAME SUCCESS]: Renamed callout view to '{calloutView.Name}'.");
-                            }
-                            else
-                            {
-                                LoggerService.LogWarning($"ponCallouts [RENAME SKIPPED]: Name '{calloutView.Name}' already exists in target. Keeping current name '{targetCalloutView.Name}' to avoid duplicate.");
-                            }
-                        }
-                    }
-                    catch (Exception exRename)
-                    {
-                        LoggerService.LogWarning($"ponCallouts [RENAME FAILED]: Could not rename callout to '{calloutView.Name}': {exRename.Message}");
-                    }
-
-                    if (processedViewsMap != null) processedViewsMap[calloutView.Id] = targetCalloutView.Id;
-
+                    // ── 7. Match View Template ──
                     if (config != null)
                     {
                         matchPlantilla(origen, destino, calloutView, targetCalloutView, copyOptions, config, new List<TransferPlus.Models.DuplicateElementInfo>());
@@ -2037,12 +2049,14 @@ public class TransferOrchestrator
                         EnsureViewerSymbolsVisible(destino, vistadestino, vistadestino.Scale);
                     }
 
+                    // ── 8. Transfer 2D details ──
                     if (CopiaDetalles)
                     {
                         View consolidatedCallout = ponDependientes(origen, calloutView, targetCalloutView, copyOptions);
                         if (consolidatedCallout != null && consolidatedCallout.IsValidObject)
                         {
                             targetCalloutView = consolidatedCallout;
+                            if (processedViewsMap != null) processedViewsMap[calloutView.Id] = targetCalloutView.Id;
                             if (config != null)
                             {
                                 matchPlantilla(origen, destino, calloutView, targetCalloutView, copyOptions, config, new List<TransferPlus.Models.DuplicateElementInfo>());
@@ -2350,7 +2364,7 @@ public class TransferOrchestrator
                         View? mappedSection = destino.GetElement(mappedId) as View;
                         if (mappedSection != null && mappedSection.IsValidObject)
                         {
-                            LoggerService.LogInfo($"ponSections: Section '{sectionView.Name}' already processed (Target: {mappedId.Value}). Re-using.");
+                            LoggerService.LogInfo($"ponSections: Section '{sectionView.Name}' already processed (Target: {mappedId.Value}). Re-using mapped section.");
                             if (CopiaDetalles)
                             {
                                 View consolidatedMapped = ponDependientes(origen, sectionView, mappedSection, copyOptions);
@@ -2365,184 +2379,229 @@ public class TransferOrchestrator
                         }
                     }
 
-                    // ── 2b. Skip if a matching view already exists in target ──
-                    View? existingSection = null;
-                    try
+                    // ── 2b. Evaluate duplicates against target document ("On Duplicates") ──
+                    View? existingSection = FindExistingViewByName(destino, sectionView.Name);
+                    if (existingSection != null && existingSection.IsValidObject)
                     {
-                        existingSection = FindExistingViewByName(destino, sectionView.Name);
-                        if (existingSection == null || existingSection.ViewType != ViewType.Section && existingSection.ViewType != ViewType.Detail)
+                        if (config != null && config.cf_rbAbortTransaction)
                         {
-                            existingSection = new FilteredElementCollector(destino)
-                                .OfClass(typeof(View))
-                                .Cast<View>()
-                                .FirstOrDefault(v => v != null && v.IsValidObject && !v.IsTemplate
-                                                 && (v.ViewType == ViewType.Section || v.ViewType == ViewType.Detail)
-                                                 && v.Name.Equals(sectionView.Name, StringComparison.OrdinalIgnoreCase));
+                            var dupList = new List<TransferPlus.Models.DuplicateElementInfo>
+                            {
+                                new TransferPlus.Models.DuplicateElementInfo("Views", sectionView.ViewType.ToString(), sectionView.GetType().Name, sectionView.Name)
+                            };
+                            var cancelEx = new OperationCanceledException("Transfer canceled: Duplicate section view name found.");
+                            cancelEx.Data["Duplicates"] = dupList;
+                            throw cancelEx;
+                        }
+                        else if (config == null || config.cf_rbKeepOriginal)
+                        {
+                            LoggerService.LogInfo($"ponSections: Section '{sectionView.Name}' already exists in target (Id: {existingSection.Id.Value}). Option 'Keep Original' active. Re-using existing section view.");
+                            if (CopiaDetalles)
+                            {
+                                View consolidatedExisting = ponDependientes(origen, sectionView, existingSection, copyOptions);
+                                if (consolidatedExisting != null && consolidatedExisting.IsValidObject)
+                                {
+                                    existingSection = consolidatedExisting;
+                                }
+                            }
+                            if (config != null)
+                            {
+                                matchPlantilla(origen, destino, sectionView, existingSection, copyOptions, config, new List<DuplicateElementInfo>());
+                                SyncViewPhaseAndFilter(origen, destino, sectionView, existingSection);
+                                EnsureViewerSymbolsVisible(destino, existingSection, vistadestino.Scale);
+                                EnsureViewerSymbolsVisible(destino, vistadestino, vistadestino.Scale);
+                            }
+                            processedViewsMap?.TryAdd(sectionView.Id, existingSection.Id);
+                            ponSections(origen, destino, sectionView, existingSection, copyOptions, CopiaDetalles, transforma, T, config, processedViewsMap, Contador + 1);
+                            continue;
+                        }
+                        else if (config.cf_rbAppendSuffix)
+                        {
+                            LoggerService.LogInfo($"ponSections: Section '{sectionView.Name}' already exists in target. Option 'Append Suffix' active. Proceeding to create new section copy with suffix.");
                         }
                     }
-                    catch { }
 
-                    if (existingSection != null)
+                    // ── 3. Create / Copy Section View ──
+                    View? targetSectionView = null;
+
+                    // ── Strategy 1 (Primary): Native View-to-View CopyElements ──
+                    // Copies the section from vistaorigen into vistadestino, automatically generating the 2D section cut line & heads on vistadestino.
+                    try
                     {
-                        LoggerService.LogInfo($"ponSections: Section '{sectionView.Name}' already exists in target (Id: {existingSection.Id.Value}). Re-using existing.");
-                        if (CopiaDetalles)
+                        LoggerService.LogInfo($"ponSections [STRATEGY 1 COPYELEMENTS]: Copying section view '{sectionView.Name}' (Id: {sectionView.Id.Value}) from '{vistaorigen.Name}' into '{vistadestino.Name}'...");
+                        var source = ElementTransformUtils.CopyElements(vistaorigen, new List<ElementId> { sectionView.Id }, vistadestino, null, copyOptions);
+
+                        if (source != null && source.Any())
                         {
-                            View consolidatedExisting = ponDependientes(origen, sectionView, existingSection, copyOptions);
-                            if (consolidatedExisting != null && consolidatedExisting.IsValidObject)
+                            targetSectionView = source.Select(id => destino.GetElement(id)).OfType<View>().FirstOrDefault();
+
+                            if (targetSectionView == null)
                             {
-                                existingSection = consolidatedExisting;
+                                foreach (ElementId cId in source)
+                                {
+                                    Element cElem = destino.GetElement(cId);
+                                    if (cElem != null && cElem.IsValidObject)
+                                    {
+                                        foreach (Parameter p in cElem.Parameters)
+                                        {
+                                            if (p != null && p.StorageType == StorageType.ElementId && p.AsElementId() is ElementId pId && pId != ElementId.InvalidElementId && pId != vistadestino.Id)
+                                            {
+                                                if (destino.GetElement(pId) is View pView && pView.IsValidObject)
+                                                {
+                                                    targetSectionView = pView;
+                                                    break;
+                                                }
+                                            }
+                                        }
+                                    }
+                                    if (targetSectionView != null) break;
+                                }
+                            }
+
+                            if (targetSectionView != null)
+                            {
+                                LoggerService.LogInfo($"ponSections [STRATEGY 1 SUCCESS]: Copied section view '{targetSectionView.Name}' (Target Id: {targetSectionView.Id.Value}) with native viewer symbol.");
                             }
                         }
-                        if (config != null)
-                        {
-                            matchPlantilla(origen, destino, sectionView, existingSection, copyOptions, config, new List<DuplicateElementInfo>());
-                        }
-                        processedViewsMap?.TryAdd(sectionView.Id, existingSection.Id);
-                        ponSections(origen, destino, sectionView, existingSection, copyOptions, CopiaDetalles, transforma, T, config, processedViewsMap, Contador + 1);
-                        continue;
+                    }
+                    catch (Exception exCopySec)
+                    {
+                        LoggerService.LogWarning($"ponSections [STRATEGY 1 FAILED]: {exCopySec.Message}. Falling back to Strategy 2 (ViewSection.CreateSection).");
                     }
 
-                    // ── 3. Reconstruct the section BoundingBoxXYZ in target coordinate space ──
-                    BoundingBoxXYZ? srcBox = null;
-                    try
+                    // ── Strategy 2 (Fallback): ViewSection.CreateSection via BoundingBoxXYZ ──
+                    if (targetSectionView == null)
                     {
-                        srcBox = sectionView.CropBox;
-                    }
-                    catch (Exception exBox)
-                    {
-                        LoggerService.LogWarning($"ponSections: Could not get CropBox for '{sectionView.Name}': {exBox.Message}. Skipping.");
-                        continue;
-                    }
-
-                    XYZ srcOriginWorld = sectionView.Origin;
-                    XYZ basisX_raw     = sectionView.RightDirection;
-                    XYZ basisY_raw     = sectionView.UpDirection;
-                    XYZ basisZ_raw     = sectionView.ViewDirection;
-
-                    if (srcBox == null)
-                    {
-                        LoggerService.LogWarning($"ponSections: SectionBox is null for '{sectionView.Name}'. Skipping.");
-                        continue;
-                    }
-
-                    // Project into the coordinate system of the target document
-                    XYZ tgtOriginWorld = srcOriginWorld;
-                    XYZ basisX = basisX_raw;
-                    XYZ basisY = basisY_raw;
-                    XYZ basisZ = basisZ_raw;
-
-                    if (transforma && T != null)
-                    {
-                        tgtOriginWorld = T.OfPoint(srcOriginWorld);
                         try
                         {
-                            basisX = T.OfVector(basisX_raw).Normalize();
-                            basisY = T.OfVector(basisY_raw).Normalize();
-                            basisZ = T.OfVector(basisZ_raw).Normalize();
-                        }
-                        catch { }
-                    }
-                    else if (!transforma)
-                    {
-                        // Cross-document with different elevations: adjust Z using the same
-                        // level-offset strategy validated in ponCallouts.
-                        double srcViewZ = vistaorigen.Origin?.Z ?? 0.0;
-                        double tgtViewZ = vistadestino.Origin?.Z ?? 0.0;
-                        double zDelta   = tgtViewZ - srcViewZ;
-                        tgtOriginWorld  = new XYZ(srcOriginWorld.X, srcOriginWorld.Y, srcOriginWorld.Z + zDelta);
-                    }
+                            BoundingBoxXYZ? srcBox = sectionView.CropBox;
+                            if (srcBox != null)
+                            {
+                                Transform srcBoxTf = srcBox.Transform ?? Transform.Identity;
+                                XYZ srcOriginWorld = srcBoxTf.Origin;
+                                XYZ basisX_raw     = srcBoxTf.BasisX;
+                                XYZ basisY_raw     = srcBoxTf.BasisY;
+                                XYZ basisZ_raw     = srcBoxTf.BasisZ;
 
-                    // Compute target Cut Plane elevation so the section box is guaranteed
-                    // to intersect the parent view's cut plane vertically.
-                    double targetCutPlaneZ = vistadestino.Origin?.Z ?? 0.0;
-                    try
-                    {
-                        if (vistadestino is ViewPlan vpTarget && vpTarget.GenLevel != null)
+                                XYZ tgtOriginWorld = srcOriginWorld;
+                                XYZ basisX = basisX_raw;
+                                XYZ basisY = basisY_raw;
+                                XYZ basisZ = basisZ_raw;
+
+                                if (transforma && T != null)
+                                {
+                                    tgtOriginWorld = T.OfPoint(srcOriginWorld);
+                                    try
+                                    {
+                                        basisX = T.OfVector(basisX_raw).Normalize();
+                                        basisY = T.OfVector(basisY_raw).Normalize();
+                                        basisZ = T.OfVector(basisZ_raw).Normalize();
+                                    }
+                                    catch { }
+                                }
+                                else if (!transforma)
+                                {
+                                    double srcViewZ = vistaorigen.Origin?.Z ?? 0.0;
+                                    double tgtViewZ = vistadestino.Origin?.Z ?? 0.0;
+                                    double zDelta   = tgtViewZ - srcViewZ;
+                                    tgtOriginWorld  = new XYZ(srcOriginWorld.X, srcOriginWorld.Y, srcOriginWorld.Z + zDelta);
+                                }
+
+                                double targetCutPlaneZ = vistadestino.Origin?.Z ?? 0.0;
+                                try
+                                {
+                                    if (vistadestino is ViewPlan vpTarget && vpTarget.GenLevel != null)
+                                    {
+                                        PlanViewRange pvr = vpTarget.GetViewRange();
+                                        double cutOffset = pvr.GetOffset(PlanViewPlane.CutPlane);
+                                        targetCutPlaneZ = vpTarget.GenLevel.Elevation + cutOffset;
+                                    }
+                                }
+                                catch { }
+
+                                double distToCutPlane = Math.Abs(targetCutPlaneZ - tgtOriginWorld.Z);
+                                double halfWidth  = Math.Abs(srcBox.Max.X - srcBox.Min.X) / 2.0;
+                                double halfHeight = Math.Max(Math.Abs(srcBox.Max.Y - srcBox.Min.Y) / 2.0, distToCutPlane + 30.0);
+                                double halfDepth  = Math.Max(Math.Abs(srcBox.Max.Z - srcBox.Min.Z) / 2.0, 15.0);
+
+                                var tgtTransform = Transform.Identity;
+                                tgtTransform.Origin = tgtOriginWorld;
+                                tgtTransform.BasisX = basisX;
+                                tgtTransform.BasisY = basisY;
+                                tgtTransform.BasisZ = basisZ;
+
+                                var tgtBox = new BoundingBoxXYZ
+                                {
+                                    Transform = tgtTransform,
+                                    Min = new XYZ(-halfWidth, -halfHeight, -halfDepth),
+                                    Max = new XYZ( halfWidth,  halfHeight,  halfDepth)
+                                };
+
+                                string srcVftName = (origen.GetElement(sectionView.GetTypeId()) as ViewFamilyType)?.Name ?? string.Empty;
+                                ViewFamily targetVF = sectionView.ViewType == ViewType.Detail ? ViewFamily.Detail : ViewFamily.Section;
+                                ViewFamilyType? tgtVft = new FilteredElementCollector(destino)
+                                    .OfClass(typeof(ViewFamilyType))
+                                    .Cast<ViewFamilyType>()
+                                    .FirstOrDefault(vft => vft.ViewFamily == targetVF &&
+                                                    (string.IsNullOrEmpty(srcVftName) || vft.Name.Equals(srcVftName, StringComparison.OrdinalIgnoreCase)));
+                                tgtVft ??= new FilteredElementCollector(destino)
+                                    .OfClass(typeof(ViewFamilyType))
+                                    .Cast<ViewFamilyType>()
+                                    .FirstOrDefault(vft => vft.ViewFamily == targetVF);
+
+                                if (tgtVft != null)
+                                {
+                                    LoggerService.LogInfo($"ponSections [STRATEGY 2 CREATESECTION]: Calling ViewSection.CreateSection on '{vistadestino.Name}' for '{sectionView.Name}'...");
+                                    targetSectionView = ViewSection.CreateSection(destino, tgtVft.Id, tgtBox);
+                                }
+                            }
+                        }
+                        catch (Exception exFallback)
                         {
-                            PlanViewRange pvr = vpTarget.GetViewRange();
-                            double cutOffset = pvr.GetOffset(PlanViewPlane.CutPlane);
-                            targetCutPlaneZ = vpTarget.GenLevel.Elevation + cutOffset;
+                            LoggerService.LogWarning($"ponSections [STRATEGY 2 FAILED]: {exFallback.Message}");
                         }
-                    }
-                    catch { }
-
-                    // Guarantee sufficient vertical height and depth so the section box penetrates the cut plane
-                    double distToCutPlane = Math.Abs(targetCutPlaneZ - tgtOriginWorld.Z);
-                    double halfWidth  = Math.Abs(srcBox.Max.X - srcBox.Min.X) / 2.0;
-                    double halfHeight = Math.Max(Math.Abs(srcBox.Max.Y - srcBox.Min.Y) / 2.0, distToCutPlane + 30.0);
-                    double halfDepth  = Math.Max(Math.Abs(srcBox.Max.Z - srcBox.Min.Z) / 2.0, 15.0);
-
-                    var tgtTransform = Transform.Identity;
-                    tgtTransform.Origin = tgtOriginWorld;
-                    tgtTransform.BasisX = basisX;
-                    tgtTransform.BasisY = basisY;
-                    tgtTransform.BasisZ = basisZ;
-
-                    var tgtBox = new BoundingBoxXYZ
-                    {
-                        Transform = tgtTransform,
-                        Min = new XYZ(-halfWidth, -halfHeight, -halfDepth),
-                        Max = new XYZ( halfWidth,  halfHeight,  halfDepth)
-                    };
-
-                    LoggerService.LogInfo($"ponSections [COORDS]: '{sectionView.Name}' srcOrigin=({srcOriginWorld.X:F3},{srcOriginWorld.Y:F3},{srcOriginWorld.Z:F3}) → tgtOrigin=({tgtOriginWorld.X:F3},{tgtOriginWorld.Y:F3},{tgtOriginWorld.Z:F3}) (CutPlaneZ: {targetCutPlaneZ:F3}, halfHeight: {halfHeight:F3})");
-
-                    // ── 4. Find matching ViewFamilyType in target document ──
-                    ElementId tgtVftId = ElementId.InvalidElementId;
-                    try
-                    {
-                        string srcVftName = (origen.GetElement(sectionView.GetTypeId()) as ViewFamilyType)?.Name ?? string.Empty;
-                        ViewFamily targetVF = sectionView.ViewType == ViewType.Detail ? ViewFamily.Detail : ViewFamily.Section;
-
-                        ViewFamilyType? tgtVft = new FilteredElementCollector(destino)
-                            .OfClass(typeof(ViewFamilyType))
-                            .Cast<ViewFamilyType>()
-                            .FirstOrDefault(vft => vft.ViewFamily == targetVF &&
-                                            (string.IsNullOrEmpty(srcVftName) || vft.Name.Equals(srcVftName, StringComparison.OrdinalIgnoreCase)));
-
-                        // Fallback: first VFT of the correct family
-                        tgtVft ??= new FilteredElementCollector(destino)
-                            .OfClass(typeof(ViewFamilyType))
-                            .Cast<ViewFamilyType>()
-                            .FirstOrDefault(vft => vft.ViewFamily == targetVF);
-
-                        if (tgtVft != null) tgtVftId = tgtVft.Id;
-                    }
-                    catch (Exception exVft)
-                    {
-                        LoggerService.LogWarning($"ponSections: Could not find ViewFamilyType for '{sectionView.Name}': {exVft.Message}.");
-                    }
-
-                    if (tgtVftId == ElementId.InvalidElementId)
-                    {
-                        LoggerService.LogWarning($"ponSections: No compatible ViewFamilyType found in target for '{sectionView.Name}'. Skipping.");
-                        continue;
-                    }
-
-                    // ── 5. Create the Section natively ──
-                    View? targetSectionView = null;
-                    try
-                    {
-                        LoggerService.LogInfo($"ponSections [CREATE]: Calling ViewSection.CreateSection on '{vistadestino.Name}' for '{sectionView.Name}'...");
-                        targetSectionView = ViewSection.CreateSection(destino, tgtVftId, tgtBox);
-                    }
-                    catch (Exception exCreate)
-                    {
-                        LoggerService.LogWarning($"ponSections [CREATE FAILED]: {exCreate.Message}. Skipping '{sectionView.Name}'.");
-                        continue;
                     }
 
                     if (targetSectionView == null || !targetSectionView.IsValidObject)
                     {
-                        LoggerService.LogWarning($"ponSections: ViewSection.CreateSection returned null for '{sectionView.Name}'.");
+                        LoggerService.LogWarning($"ponSections: Could not create or copy section view for '{sectionView.Name}'. Skipping.");
                         continue;
                     }
 
-                    LoggerService.LogInfo($"ponSections [CREATED]: '{sectionView.Name}' → Target Id: {targetSectionView.Id.Value}");
+                    // ── 4. Renaming respecting "On Duplicates" ──
+                    string desiredSectionName = sectionView.Name;
+                    if (config != null && config.cf_rbAppendSuffix && existingSection != null)
+                    {
+                        string suffixText = !string.IsNullOrEmpty(config.cf_suffixText) ? config.cf_suffixText : " 1";
+                        desiredSectionName = GetUniqueViewName(destino, sectionView.Name + suffixText, targetSectionView.ViewType);
+                    }
 
-                    // ── 6. Visibility safeguards ──
+                    try
+                    {
+                        if (!targetSectionView.Name.Equals(desiredSectionName, StringComparison.OrdinalIgnoreCase))
+                        {
+                            View conflictView = FindExistingViewByName(destino, desiredSectionName);
+                            if (conflictView == null || conflictView.Id == targetSectionView.Id)
+                            {
+                                targetSectionView.Name = desiredSectionName;
+                                LoggerService.LogInfo($"ponSections [RENAME SUCCESS]: Renamed section view to '{desiredSectionName}'.");
+                            }
+                            else
+                            {
+                                string uniqueName = GetUniqueViewName(destino, desiredSectionName, targetSectionView.ViewType);
+                                targetSectionView.Name = uniqueName;
+                                LoggerService.LogInfo($"ponSections [RENAME UNIQUE]: Name '{desiredSectionName}' taken. Set to unique '{uniqueName}'.");
+                            }
+                        }
+                    }
+                    catch (Exception exRename)
+                    {
+                        LoggerService.LogWarning($"ponSections [RENAME FAILED]: {exRename.Message}");
+                    }
 
-                    // 6a. Synchronize Discipline (View Discipline) to prevent Revit hiding sections across disciplines
+                    processedViewsMap?.TryAdd(sectionView.Id, targetSectionView.Id);
+
+                    // ── 5. Discipline synchronization ──
                     try
                     {
                         var srcDisciplineParam = sectionView.get_Parameter(BuiltInParameter.VIEW_DISCIPLINE);
@@ -2565,49 +2624,21 @@ public class TransferOrchestrator
                     }
                     catch { }
 
-                    // 6b. Synchronize Phase and Phase Filter
+                    // ── 6. Phase and PhaseFilter synchronization ──
                     SyncViewPhaseAndFilter(origen, destino, sectionView, targetSectionView);
 
-                    // 6c. Apply view template
-                    try
+                    // ── 7. Match View Template ──
+                    if (config != null)
                     {
                         matchPlantilla(origen, destino, sectionView, targetSectionView, copyOptions, config, new List<DuplicateElementInfo>());
                         SyncViewPhaseAndFilter(origen, destino, sectionView, targetSectionView);
                     }
-                    catch { }
 
-                    // 6d. Ensure viewer symbols and scale thresholds are unlocked
+                    // ── 8. Ensure viewers and scale threshold are unlocked ──
                     EnsureViewerSymbolsVisible(destino, targetSectionView, vistadestino.Scale);
                     EnsureViewerSymbolsVisible(destino, vistadestino, vistadestino.Scale);
 
-                    // ── 7. Rename to match source ──
-                    try
-                    {
-                        bool nameExists = new FilteredElementCollector(destino)
-                            .OfClass(typeof(View))
-                            .Cast<View>()
-                            .Any(v => v != null && v.IsValidObject && v.Id.Value != targetSectionView.Id.Value
-                                  && v.Name.Equals(sectionView.Name, StringComparison.OrdinalIgnoreCase));
-
-                        if (!nameExists)
-                        {
-                            targetSectionView.Name = sectionView.Name;
-                            LoggerService.LogInfo($"ponSections [RENAME OK]: Renamed to '{sectionView.Name}'.");
-                        }
-                        else
-                        {
-                            LoggerService.LogWarning($"ponSections [RENAME SKIP]: Name '{sectionView.Name}' already taken in target. Keeping '{targetSectionView.Name}'.");
-                        }
-                    }
-                    catch (Exception exRename)
-                    {
-                        LoggerService.LogWarning($"ponSections [RENAME FAIL]: {exRename.Message}");
-                    }
-
-                    // ── 8. Register in processedViewsMap ──
-                    processedViewsMap?.TryAdd(sectionView.Id, targetSectionView.Id);
-
-                    // ── 9. Transfer 2D annotation elements inside the section view & consolidate ──
+                    // ── 9. Transfer 2D details ──
                     if (CopiaDetalles)
                     {
                         try
