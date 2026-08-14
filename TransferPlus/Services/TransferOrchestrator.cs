@@ -375,12 +375,22 @@ public class TransferOrchestrator
                     if (linkInstances.Any())
                     {
                         transform = linkInstances.First().GetTotalTransform();
+                        LoggerService.LogInfo($"Transform [Link]: Applied link instance TotalTransform (Origin: {transform.Origin}).");
+                    }
+                    else
+                    {
+                        LoggerService.LogInfo("Transform [Link]: No matching link instance found in target document. Defaulting to Identity transform.");
                     }
                 }
                 else if (config.cf_chk_GetTransformShared)
                 {
                     Transform sourceTransform = sourceDoc.ActiveProjectLocation.GetTotalTransform();
                     transform = targetDoc.ActiveProjectLocation.GetTotalTransform().Multiply(sourceTransform.Inverse);
+                    LoggerService.LogInfo($"Transform [Shared]: Applied Shared Coordinates differential transform (Origin: {transform.Origin}).");
+                }
+                else
+                {
+                    LoggerService.LogInfo("Transform [None]: Internal Origin (0,0,0) alignment selected. Transform is Identity.");
                 }
 
                 var finalCopyList = new List<ElementId>();
@@ -623,12 +633,22 @@ public class TransferOrchestrator
                     if (linkInstances.Any())
                     {
                         transform = linkInstances.First().GetTotalTransform();
+                        LoggerService.LogInfo($"SheetTransfer [TransformLink]: Applied link instance TotalTransform (Origin: {transform.Origin}).");
+                    }
+                    else
+                    {
+                        LoggerService.LogInfo("SheetTransfer [TransformLink]: No matching link instance found in target document. Defaulting to Identity transform.");
                     }
                 }
                 else if (config.cf_chk_GetTransformShared)
                 {
                     Transform sourceTransform = sourceDoc.ActiveProjectLocation.GetTotalTransform();
                     transform = targetDoc.ActiveProjectLocation.GetTotalTransform().Multiply(sourceTransform.Inverse);
+                    LoggerService.LogInfo($"SheetTransfer [TransformShared]: Applied Shared Coordinates differential transform (Origin: {transform.Origin}).");
+                }
+                else
+                {
+                    LoggerService.LogInfo("SheetTransfer [TransformNone]: Internal Origin (0,0,0) alignment selected. Transform is Identity.");
                 }
 
                 foreach (var item in sheetsToTransfer)

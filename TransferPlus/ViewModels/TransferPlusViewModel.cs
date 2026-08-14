@@ -146,6 +146,33 @@ public partial class TransferPlusViewModel : ObservableObject
     [ObservableProperty]
     private bool _transformShared;
 
+    partial void OnTransformNoneChanged(bool value)
+    {
+        if (value)
+        {
+            TransformLink = false;
+            TransformShared = false;
+        }
+    }
+
+    partial void OnTransformLinkChanged(bool value)
+    {
+        if (value)
+        {
+            TransformNone = false;
+            TransformShared = false;
+        }
+    }
+
+    partial void OnTransformSharedChanged(bool value)
+    {
+        if (value)
+        {
+            TransformNone = false;
+            TransformLink = false;
+        }
+    }
+
     [ObservableProperty]
     private bool _acceptAllWarnings = true;
 
