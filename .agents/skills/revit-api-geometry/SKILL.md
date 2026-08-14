@@ -36,6 +36,8 @@ When specific spatial analysis concepts are needed, locate the following files i
   * *Use cases:* Calculating callout bounding boxes across models with differing Project Base Points or Survey Points.
 * **Cross-Document Coordinate Transformations & Element Applicability:** [technical_reference_transform_by_coordinate_systems_and_element_applicability.md](file:///c:/Users/david.barbero/Documents/DOCUMENTOS/ALTEN/Workbench/RevitAddins_Workspace/RevitAddins_Workspace/.agents/skills/revit-api-geometry/references/technical_reference_transform_by_coordinate_systems_and_element_applicability.md)
   * *Use cases:* "Transform By" logic (None, Link, Shared), mathematical matrix extraction, and element-level applicability rules.
+* **Section & Callout Viewer Visibility Across Coordinate Systems:** [debugging_section_and_callout_viewer_visibility_across_coordinate_systems_2026-08-14.md](file:///c:/Users/david.barbero/Documents/DOCUMENTOS/ALTEN/Workbench/RevitAddins_Workspace/RevitAddins_Workspace/.agents/skills/revit-api-geometry/references/debugging_section_and_callout_viewer_visibility_across_coordinate_systems_2026-08-14.md)
+  * *Use cases:* Ensuring section lines and callout bubbles render on plan views across coordinates, view range cut planes, scale filters, and disciplines.
 
 ---
 

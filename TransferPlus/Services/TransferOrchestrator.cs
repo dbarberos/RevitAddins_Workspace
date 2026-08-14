@@ -363,35 +363,7 @@ public class TransferOrchestrator
                     options.SetDuplicateTypeNamesHandler(new CustomCopyHandlerOk());
                 }
 
-                Transform? transform = null;
-                if (config.cf_chk_GetTransformLink)
-                {
-                    var linkInstances = new FilteredElementCollector(targetDoc)
-                        .OfClass(typeof(RevitLinkInstance))
-                        .Cast<RevitLinkInstance>()
-                        .Where(i => i.GetLinkDocument()?.Title?.Equals(sourceDoc.Title) == true)
-                        .ToList();
-
-                    if (linkInstances.Any())
-                    {
-                        transform = linkInstances.First().GetTotalTransform();
-                        LoggerService.LogInfo($"Transform [Link]: Applied link instance TotalTransform (Origin: {transform.Origin}).");
-                    }
-                    else
-                    {
-                        LoggerService.LogInfo("Transform [Link]: No matching link instance found in target document. Defaulting to Identity transform.");
-                    }
-                }
-                else if (config.cf_chk_GetTransformShared)
-                {
-                    Transform sourceTransform = sourceDoc.ActiveProjectLocation.GetTotalTransform();
-                    transform = targetDoc.ActiveProjectLocation.GetTotalTransform().Multiply(sourceTransform.Inverse);
-                    LoggerService.LogInfo($"Transform [Shared]: Applied Shared Coordinates differential transform (Origin: {transform.Origin}).");
-                }
-                else
-                {
-                    LoggerService.LogInfo("Transform [None]: Internal Origin (0,0,0) alignment selected. Transform is Identity.");
-                }
+                Transform? transform = GetTransformForSource(sourceDoc, targetDoc, config);
 
                 var finalCopyList = new List<ElementId>();
                 bool hasDuplicates = false;
@@ -621,35 +593,7 @@ public class TransferOrchestrator
                     options.SetDuplicateTypeNamesHandler(new CustomCopyHandlerOk());
                 }
 
-                Transform? transform = null;
-                if (config.cf_chk_GetTransformLink)
-                {
-                    var linkInstances = new FilteredElementCollector(targetDoc)
-                        .OfClass(typeof(RevitLinkInstance))
-                        .Cast<RevitLinkInstance>()
-                        .Where(i => i.GetLinkDocument()?.Title?.Equals(sourceDoc.Title) == true)
-                        .ToList();
-
-                    if (linkInstances.Any())
-                    {
-                        transform = linkInstances.First().GetTotalTransform();
-                        LoggerService.LogInfo($"SheetTransfer [TransformLink]: Applied link instance TotalTransform (Origin: {transform.Origin}).");
-                    }
-                    else
-                    {
-                        LoggerService.LogInfo("SheetTransfer [TransformLink]: No matching link instance found in target document. Defaulting to Identity transform.");
-                    }
-                }
-                else if (config.cf_chk_GetTransformShared)
-                {
-                    Transform sourceTransform = sourceDoc.ActiveProjectLocation.GetTotalTransform();
-                    transform = targetDoc.ActiveProjectLocation.GetTotalTransform().Multiply(sourceTransform.Inverse);
-                    LoggerService.LogInfo($"SheetTransfer [TransformShared]: Applied Shared Coordinates differential transform (Origin: {transform.Origin}).");
-                }
-                else
-                {
-                    LoggerService.LogInfo("SheetTransfer [TransformNone]: Internal Origin (0,0,0) alignment selected. Transform is Identity.");
-                }
+                Transform? transform = GetTransformForSource(sourceDoc, targetDoc, config);
 
                 foreach (var item in sheetsToTransfer)
                 {
@@ -1146,6 +1090,8 @@ public class TransferOrchestrator
                 if (config.cf_chk_AcceptAll) WarningSwallower.AttachToTransaction(tPlans);
                 CopyPasteOptions options = new CopyPasteOptions();
 
+                Transform? transform = GetTransformForSource(sourceDoc, targetDoc, config);
+
                 LogTargetViewsCheckpoint(targetDoc, "4-BEFORE_PLAN_VIEWS_LOOP");
                 foreach (var item in planViewsToTransfer)
                 {
@@ -1201,6 +1147,8 @@ public class TransferOrchestrator
                         {
                             LoggerService.LogInfo($"Transfer: Calling matchPlantilla for '{targetPlanToUse.Name}'...");
                             matchPlantilla(sourceDoc, targetDoc, srcViewPlan, targetPlanToUse, options, config, duplicateItems);
+                            SyncViewPhaseAndFilter(sourceDoc, targetDoc, srcViewPlan, targetPlanToUse);
+                            EnsureViewerSymbolsVisible(targetDoc, targetPlanToUse, targetPlanToUse.Scale);
                             LogTargetViewsCheckpoint(targetDoc, "12-AFTER_MATCH_PLANTILLA");
 
                             if (config.cf_chk_ViewElements)
@@ -1219,6 +1167,8 @@ public class TransferOrchestrator
 
                                         LoggerService.LogInfo($"Transfer [RE-APPLYING TEMPLATE]: Re-applying matchPlantilla on consolidated plan view '{targetPlanToUse.Name}'...");
                                         matchPlantilla(sourceDoc, targetDoc, srcViewPlan, targetPlanToUse, options, config, duplicateItems);
+                                        SyncViewPhaseAndFilter(sourceDoc, targetDoc, srcViewPlan, targetPlanToUse);
+                                        EnsureViewerSymbolsVisible(targetDoc, targetPlanToUse, targetPlanToUse.Scale);
                                     }
                                 }
                                 LogTargetViewsCheckpoint(targetDoc, "13-AFTER_PON_DEPENDIENTES");
@@ -1227,15 +1177,39 @@ public class TransferOrchestrator
                             if (config.cf_chk_Callout)
                             {
                                 LoggerService.LogInfo($"Transfer: Calling ponCallouts for '{targetPlanToUse.Name}'...");
-                                ponCallouts(sourceDoc, targetDoc, srcViewPlan, targetPlanToUse, options, config.cf_chk_ViewElements, 1, false, null, config, processedViewsMap);
+                                ponCallouts(sourceDoc, targetDoc, srcViewPlan, targetPlanToUse, options, config.cf_chk_ViewElements, 1, transform != null, transform, config, processedViewsMap);
                                 LogTargetViewsCheckpoint(targetDoc, "14-AFTER_PON_CALLOUTS");
                             }
 
                             if (config.cf_chk_Section)
                             {
                                 LoggerService.LogInfo($"Transfer: Calling ponSections for '{targetPlanToUse.Name}'...");
-                                ponSections(sourceDoc, targetDoc, srcViewPlan, targetPlanToUse, options, config.cf_chk_ViewElements, false, null, config, processedViewsMap);
+                                ponSections(sourceDoc, targetDoc, srcViewPlan, targetPlanToUse, options, config.cf_chk_ViewElements, transform != null, transform, config, processedViewsMap);
                                 LogTargetViewsCheckpoint(targetDoc, "15-AFTER_PON_SECTIONS");
+                            }
+                            // ── Final sweep: ensure ALL created section/callout views have
+                            // their scale thresholds unlocked. This is a safety net because
+                            // View Templates applied during ponCallouts/ponSections may have
+                            // re-locked the SECTION_COARSER_SCALE_PULLDOWN parameter.
+                            EnsureViewerSymbolsVisible(targetDoc, targetPlanToUse, targetPlanToUse.Scale);
+                            if (processedViewsMap != null && processedViewsMap.Count > 0)
+                            {
+                                LoggerService.LogInfo($"Transfer [FINAL SWEEP]: Ensuring scale thresholds on {processedViewsMap.Count} mapped views...");
+                                foreach (var kvp in processedViewsMap)
+                                {
+                                    try
+                                    {
+                                        View mappedView = targetDoc.GetElement(kvp.Value) as View;
+                                        if (mappedView != null && mappedView.IsValidObject
+                                            && (mappedView.ViewType == ViewType.Section
+                                                || mappedView.ViewType == ViewType.Detail
+                                                || mappedView is ViewPlan))
+                                        {
+                                            EnsureViewerSymbolsVisible(targetDoc, mappedView, targetPlanToUse.Scale);
+                                        }
+                                    }
+                                    catch { }
+                                }
                             }
 
                             LoggerService.LogInfo($"Transfer: Successfully processed plan view '{srcViewPlan.Name}'.");
@@ -1883,17 +1857,26 @@ public class TransferOrchestrator
 
                         foreach (XYZ corner in localCorners)
                         {
-                            // 1. Local callout corner -> Source World point
-                            XYZ srcWorldPt = calloutTf.OfPoint(corner);
+                            XYZ tgtWorldPt;
+                            if (transforma && T != null)
+                            {
+                                // Transformed directly by link/shared coordinates matrix T
+                                tgtWorldPt = T.OfPoint(calloutTf.OfPoint(corner));
+                            }
+                            else
+                            {
+                                // 1. Local callout corner -> Source World point
+                                XYZ srcWorldPt = calloutTf.OfPoint(corner);
 
-                            // 2. Source World point -> vistaorigen 2D local space (u, v, w)
-                            XYZ deltaSrc = srcWorldPt - srcParentTf.Origin;
-                            double u = deltaSrc.DotProduct(srcParentTf.BasisX);
-                            double v = deltaSrc.DotProduct(srcParentTf.BasisY);
-                            double w = deltaSrc.DotProduct(srcParentTf.BasisZ);
+                                // 2. Source World point -> vistaorigen 2D local space (u, v, w)
+                                XYZ deltaSrc = srcWorldPt - srcParentTf.Origin;
+                                double u = deltaSrc.DotProduct(srcParentTf.BasisX);
+                                double v = deltaSrc.DotProduct(srcParentTf.BasisY);
+                                double w = deltaSrc.DotProduct(srcParentTf.BasisZ);
 
-                            // 3. (u, v, w) -> vistadestino Target World point
-                            XYZ tgtWorldPt = tgtParentTf.Origin + u * tgtParentTf.BasisX + v * tgtParentTf.BasisY + w * tgtParentTf.BasisZ;
+                                // 3. (u, v, w) -> vistadestino Target World point
+                                tgtWorldPt = tgtParentTf.Origin + u * tgtParentTf.BasisX + v * tgtParentTf.BasisY + w * tgtParentTf.BasisZ;
+                            }
                             targetWorldCorners.Add(tgtWorldPt);
                         }
 
@@ -1905,16 +1888,28 @@ public class TransferOrchestrator
                         double maxY = targetWorldCorners.Max(p => p.Y);
                         double maxZ = targetWorldCorners.Max(p => p.Z);
 
-                        // Ensure adequate 3D depth (Z half-depth >= 10.0 ft) so the 3D callout box
-                        // intersects the parent view's cut plane across level elevation offsets (DeltaZ).
-                        double zCenter = (minZ + maxZ) * 0.5;
-                        double zHalfDepth = Math.Max((maxZ - minZ) * 0.5, 10.0);
+                        // Ensure adequate 3D depth centered on the parent view's cut plane
+                        // so the 3D callout box intersects the parent view's cut plane across level elevation offsets.
+                        double targetCutPlaneZ = vistadestino.Origin?.Z ?? 0.0;
+                        try
+                        {
+                            if (vistadestino is ViewPlan vpTarget && vpTarget.GenLevel != null)
+                            {
+                                PlanViewRange pvr = vpTarget.GetViewRange();
+                                double cutOffset = pvr.GetOffset(PlanViewPlane.CutPlane);
+                                targetCutPlaneZ = vpTarget.GenLevel.Elevation + cutOffset;
+                            }
+                        }
+                        catch { }
+
+                        double zCenter = targetCutPlaneZ;
+                        double zHalfDepth = Math.Max((maxZ - minZ) * 0.5, 15.0);
 
                         XYZ pMin = new XYZ(minX, minY, zCenter - zHalfDepth);
                         XYZ pMax = new XYZ(maxX, maxY, zCenter + zHalfDepth);
 
                         LoggerService.LogInfo($"ponCallouts [CALLOUT RELATIVE COORDS OK]: " +
-                            $"Mapped {localCorners.Length} corners | Target pMin={pMin:F3} pMax={pMax:F3}");
+                            $"Mapped {localCorners.Length} corners | Target pMin={pMin:F3} pMax={pMax:F3} (CutPlaneZ: {targetCutPlaneZ:F3})");
 
                         if (calloutView is ViewSection || calloutView is ViewPlan || calloutView.ViewType == ViewType.Section || calloutView.ViewType == ViewType.Detail || calloutView.ViewType == ViewType.FloorPlan || calloutView.ViewType == ViewType.EngineeringPlan)
                         {
@@ -1980,43 +1975,37 @@ public class TransferOrchestrator
                 {
                     LoggerService.LogInfo($"ponCallouts: Created linked callout view '{targetCalloutView.Name}' (Target ViewId: {targetCalloutView.Id.Value}). Transferring 2D elements and settings...");
 
-                    // FIX 1: Unlock Scale Filter Threshold so the callout bubble is rendered on coarse views (e.g. 1:1000)
+                    // Sychronize Discipline
                     try
                     {
-                        Parameter hideParam = targetCalloutView.Parameters.Cast<Parameter>().FirstOrDefault(p => p != null && p.Definition != null && (
-                                                p.Definition.Name.IndexOf("coarser", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                                                p.Definition.Name.IndexOf("escala", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                                                p.Definition.Name.IndexOf("ocultar", StringComparison.OrdinalIgnoreCase) >= 0));
-
-                        if (hideParam != null && !hideParam.IsReadOnly)
+                        var srcDisciplineParam = calloutView.get_Parameter(BuiltInParameter.VIEW_DISCIPLINE);
+                        var tgtDisciplineParam = targetCalloutView.get_Parameter(BuiltInParameter.VIEW_DISCIPLINE);
+                        if (tgtDisciplineParam != null && !tgtDisciplineParam.IsReadOnly)
                         {
-                            int parentScale = vistadestino.Scale;
-                            int currentHideScale = hideParam.AsInteger();
-                            if (currentHideScale < parentScale && currentHideScale > 0)
+                            if (srcDisciplineParam != null)
                             {
-                                hideParam.Set(parentScale);
-                                LoggerService.LogInfo($"ponCallouts [SCALE HIDE UNLOCKED]: Updated callout '{targetCalloutView.Name}' hide-coarser-than parameter from {currentHideScale} to {parentScale} (parent view scale) so the bubble is rendered.");
+                                tgtDisciplineParam.Set(srcDisciplineParam.AsInteger());
+                            }
+                            else
+                            {
+                                var parentDiscipline = vistadestino.get_Parameter(BuiltInParameter.VIEW_DISCIPLINE);
+                                if (parentDiscipline != null)
+                                {
+                                    tgtDisciplineParam.Set(parentDiscipline.AsInteger());
+                                }
                             }
                         }
                     }
-                    catch (Exception exScale)
-                    {
-                        LoggerService.LogWarning($"ponCallouts [SCALE HIDE EXCEPTION]: Could not update hide-coarser-than parameter: {exScale.Message}");
-                    }
-
-                    // FIX 2: Ensure OST_Viewers and OST_CalloutBoundary categories are unhidden in vistadestino
-                    try
-                    {
-                        if (vistadestino.CanCategoryBeHidden(new ElementId(BuiltInCategory.OST_Viewers)))
-                            vistadestino.SetCategoryHidden(new ElementId(BuiltInCategory.OST_Viewers), false);
-                        if (vistadestino.CanCategoryBeHidden(new ElementId(BuiltInCategory.OST_CalloutBoundary)))
-                            vistadestino.SetCategoryHidden(new ElementId(BuiltInCategory.OST_CalloutBoundary), false);
-                    }
                     catch { }
 
-                    // FIX 3: Only rename if the source name is not already occupied in the target document.
-                    // If the desired name already exists (e.g. a side-effect view grabbed it), skip renaming
-                    // to avoid Revit auto-incrementing to an unexpected number (Llamada N+2).
+                    // Synchronize Phase and PhaseFilter
+                    SyncViewPhaseAndFilter(origen, destino, calloutView, targetCalloutView);
+
+                    // Ensure viewers and scale threshold are unlocked
+                    EnsureViewerSymbolsVisible(destino, targetCalloutView, vistadestino.Scale);
+                    EnsureViewerSymbolsVisible(destino, vistadestino, vistadestino.Scale);
+
+                    // Only rename if the source name is not already occupied in the target document.
                     try
                     {
                         if (!targetCalloutView.Name.Equals(calloutView.Name, StringComparison.OrdinalIgnoreCase))
@@ -2038,12 +2027,14 @@ public class TransferOrchestrator
                         LoggerService.LogWarning($"ponCallouts [RENAME FAILED]: Could not rename callout to '{calloutView.Name}': {exRename.Message}");
                     }
 
-
                     if (processedViewsMap != null) processedViewsMap[calloutView.Id] = targetCalloutView.Id;
 
                     if (config != null)
                     {
                         matchPlantilla(origen, destino, calloutView, targetCalloutView, copyOptions, config, new List<TransferPlus.Models.DuplicateElementInfo>());
+                        SyncViewPhaseAndFilter(origen, destino, calloutView, targetCalloutView);
+                        EnsureViewerSymbolsVisible(destino, targetCalloutView, vistadestino.Scale);
+                        EnsureViewerSymbolsVisible(destino, vistadestino, vistadestino.Scale);
                     }
 
                     if (CopiaDetalles)
@@ -2055,9 +2046,15 @@ public class TransferOrchestrator
                             if (config != null)
                             {
                                 matchPlantilla(origen, destino, calloutView, targetCalloutView, copyOptions, config, new List<TransferPlus.Models.DuplicateElementInfo>());
+                                SyncViewPhaseAndFilter(origen, destino, calloutView, targetCalloutView);
+                                EnsureViewerSymbolsVisible(destino, targetCalloutView, vistadestino.Scale);
+                                EnsureViewerSymbolsVisible(destino, vistadestino, vistadestino.Scale);
                             }
                         }
                     }
+
+                    EnsureViewerSymbolsVisible(destino, targetCalloutView, vistadestino.Scale);
+                    EnsureViewerSymbolsVisible(destino, vistadestino, vistadestino.Scale);
 
                     if (processedViewsMap != null && targetCalloutView != null && targetCalloutView.IsValidObject)
                     {
@@ -2430,9 +2427,20 @@ public class TransferOrchestrator
 
                     // Project into the coordinate system of the target document
                     XYZ tgtOriginWorld = srcOriginWorld;
+                    XYZ basisX = basisX_raw;
+                    XYZ basisY = basisY_raw;
+                    XYZ basisZ = basisZ_raw;
+
                     if (transforma && T != null)
                     {
                         tgtOriginWorld = T.OfPoint(srcOriginWorld);
+                        try
+                        {
+                            basisX = T.OfVector(basisX_raw).Normalize();
+                            basisY = T.OfVector(basisY_raw).Normalize();
+                            basisZ = T.OfVector(basisZ_raw).Normalize();
+                        }
+                        catch { }
                     }
                     else if (!transforma)
                     {
@@ -2444,15 +2452,25 @@ public class TransferOrchestrator
                         tgtOriginWorld  = new XYZ(srcOriginWorld.X, srcOriginWorld.Y, srcOriginWorld.Z + zDelta);
                     }
 
-                    // Preserve orientation vectors
-                    XYZ basisX = basisX_raw;
-                    XYZ basisY = basisY_raw;
-                    XYZ basisZ = basisZ_raw;
+                    // Compute target Cut Plane elevation so the section box is guaranteed
+                    // to intersect the parent view's cut plane vertically.
+                    double targetCutPlaneZ = vistadestino.Origin?.Z ?? 0.0;
+                    try
+                    {
+                        if (vistadestino is ViewPlan vpTarget && vpTarget.GenLevel != null)
+                        {
+                            PlanViewRange pvr = vpTarget.GetViewRange();
+                            double cutOffset = pvr.GetOffset(PlanViewPlane.CutPlane);
+                            targetCutPlaneZ = vpTarget.GenLevel.Elevation + cutOffset;
+                        }
+                    }
+                    catch { }
 
-                    // Guarantee sufficient Z-depth so the section box intersects the cut plane
+                    // Guarantee sufficient vertical height and depth so the section box penetrates the cut plane
+                    double distToCutPlane = Math.Abs(targetCutPlaneZ - tgtOriginWorld.Z);
                     double halfWidth  = Math.Abs(srcBox.Max.X - srcBox.Min.X) / 2.0;
-                    double halfHeight = Math.Abs(srcBox.Max.Y - srcBox.Min.Y) / 2.0;
-                    double halfDepth  = Math.Max(Math.Abs(srcBox.Max.Z - srcBox.Min.Z) / 2.0, 10.0);
+                    double halfHeight = Math.Max(Math.Abs(srcBox.Max.Y - srcBox.Min.Y) / 2.0, distToCutPlane + 30.0);
+                    double halfDepth  = Math.Max(Math.Abs(srcBox.Max.Z - srcBox.Min.Z) / 2.0, 15.0);
 
                     var tgtTransform = Transform.Identity;
                     tgtTransform.Origin = tgtOriginWorld;
@@ -2467,7 +2485,7 @@ public class TransferOrchestrator
                         Max = new XYZ( halfWidth,  halfHeight,  halfDepth)
                     };
 
-                    LoggerService.LogInfo($"ponSections [COORDS]: '{sectionView.Name}' srcOrigin=({srcOriginWorld.X:F3},{srcOriginWorld.Y:F3},{srcOriginWorld.Z:F3}) → tgtOrigin=({tgtOriginWorld.X:F3},{tgtOriginWorld.Y:F3},{tgtOriginWorld.Z:F3})");
+                    LoggerService.LogInfo($"ponSections [COORDS]: '{sectionView.Name}' srcOrigin=({srcOriginWorld.X:F3},{srcOriginWorld.Y:F3},{srcOriginWorld.Z:F3}) → tgtOrigin=({tgtOriginWorld.X:F3},{tgtOriginWorld.Y:F3},{tgtOriginWorld.Z:F3}) (CutPlaneZ: {targetCutPlaneZ:F3}, halfHeight: {halfHeight:F3})");
 
                     // ── 4. Find matching ViewFamilyType in target document ──
                     ElementId tgtVftId = ElementId.InvalidElementId;
@@ -2524,44 +2542,43 @@ public class TransferOrchestrator
 
                     // ── 6. Visibility safeguards ──
 
-                    // 6a. Unlock scale threshold so bubble renders at parent view scale
+                    // 6a. Synchronize Discipline (View Discipline) to prevent Revit hiding sections across disciplines
                     try
                     {
-                        var hideParam = targetSectionView.get_Parameter(BuiltInParameter.SECTION_COARSER_SCALE_PULLDOWN_IMPERIAL);
-                        if (hideParam == null)
-                            hideParam = targetSectionView.get_Parameter(BuiltInParameter.SECTION_COARSER_SCALE_PULLDOWN_METRIC);
-
-                        int parentScale = vistadestino.Scale > 0 ? vistadestino.Scale : 100;
-                        if (hideParam != null && !hideParam.IsReadOnly)
+                        var srcDisciplineParam = sectionView.get_Parameter(BuiltInParameter.VIEW_DISCIPLINE);
+                        var tgtDisciplineParam = targetSectionView.get_Parameter(BuiltInParameter.VIEW_DISCIPLINE);
+                        if (tgtDisciplineParam != null && !tgtDisciplineParam.IsReadOnly)
                         {
-                            int currentHideScale = hideParam.AsInteger();
-                            if (currentHideScale < parentScale)
+                            if (srcDisciplineParam != null)
                             {
-                                hideParam.Set(parentScale);
-                                LoggerService.LogInfo($"ponSections [SCALE UNLOCK]: Updated scale threshold from {currentHideScale} to {parentScale} for '{targetSectionView.Name}'.");
+                                tgtDisciplineParam.Set(srcDisciplineParam.AsInteger());
+                            }
+                            else
+                            {
+                                var parentDiscipline = vistadestino.get_Parameter(BuiltInParameter.VIEW_DISCIPLINE);
+                                if (parentDiscipline != null)
+                                {
+                                    tgtDisciplineParam.Set(parentDiscipline.AsInteger());
+                                }
                             }
                         }
                     }
-                    catch (Exception exScale)
-                    {
-                        LoggerService.LogWarning($"ponSections [SCALE EXCEPTION]: {exScale.Message}");
-                    }
-
-                    // 6b. Unhide OST_Viewers & OST_SectionBox in the parent target view
-                    try
-                    {
-                        var viewersCat  = Category.GetCategory(destino, BuiltInCategory.OST_Viewers);
-                        var sectionCat  = Category.GetCategory(destino, BuiltInCategory.OST_SectionBox);
-                        if (viewersCat != null && vistadestino.CanCategoryBeHidden(viewersCat.Id))
-                            vistadestino.SetCategoryHidden(viewersCat.Id, false);
-                        if (sectionCat != null && vistadestino.CanCategoryBeHidden(sectionCat.Id))
-                            vistadestino.SetCategoryHidden(sectionCat.Id, false);
-                    }
                     catch { }
+
+                    // 6b. Synchronize Phase and Phase Filter
+                    SyncViewPhaseAndFilter(origen, destino, sectionView, targetSectionView);
 
                     // 6c. Apply view template
-                    try { matchPlantilla(origen, destino, sectionView, targetSectionView, copyOptions, config, new List<DuplicateElementInfo>()); }
+                    try
+                    {
+                        matchPlantilla(origen, destino, sectionView, targetSectionView, copyOptions, config, new List<DuplicateElementInfo>());
+                        SyncViewPhaseAndFilter(origen, destino, sectionView, targetSectionView);
+                    }
                     catch { }
+
+                    // 6d. Ensure viewer symbols and scale thresholds are unlocked
+                    EnsureViewerSymbolsVisible(destino, targetSectionView, vistadestino.Scale);
+                    EnsureViewerSymbolsVisible(destino, vistadestino, vistadestino.Scale);
 
                     // ── 7. Rename to match source ──
                     try
@@ -2600,10 +2617,18 @@ public class TransferOrchestrator
                             {
                                 targetSectionView = consolidated;
                                 if (processedViewsMap != null) processedViewsMap[sectionView.Id] = targetSectionView.Id;
+                                if (config != null)
+                                {
+                                    matchPlantilla(origen, destino, sectionView, targetSectionView, copyOptions, config, new List<DuplicateElementInfo>());
+                                    SyncViewPhaseAndFilter(origen, destino, sectionView, targetSectionView);
+                                }
                             }
                         }
                         catch (Exception exDep) { LoggerService.LogWarning($"ponSections [DEPENDIENTES FAIL]: {exDep.Message}"); }
                     }
+
+                    EnsureViewerSymbolsVisible(destino, targetSectionView, vistadestino.Scale);
+                    EnsureViewerSymbolsVisible(destino, vistadestino, vistadestino.Scale);
 
                     // ── 10. Traversal of child callouts or sections nested inside this section ──
                     try
@@ -3049,6 +3074,243 @@ public class TransferOrchestrator
         }
 
         return string.Empty;
+    }
+
+    private static string StripRvtExtension(string? title)
+    {
+        if (string.IsNullOrEmpty(title)) return string.Empty;
+        if (title.EndsWith(".rvt", StringComparison.OrdinalIgnoreCase))
+            return title.Substring(0, title.Length - 4).Trim();
+        return title.Trim();
+    }
+
+    public static Transform? GetTransformForSource(Document sourceDoc, Document targetDoc, Configuraciones config)
+    {
+        if (config.cf_chk_GetTransformLink)
+        {
+            string cleanSourceTitle = StripRvtExtension(sourceDoc.Title);
+
+            var linkInstances = new FilteredElementCollector(targetDoc)
+                .OfClass(typeof(RevitLinkInstance))
+                .Cast<RevitLinkInstance>()
+                .ToList();
+
+            var matchingLink = linkInstances.FirstOrDefault(i =>
+            {
+                string cleanLinkTitle = GetLinkCleanName(i, targetDoc);
+                if (!string.IsNullOrEmpty(cleanLinkTitle) && cleanLinkTitle.Equals(cleanSourceTitle, StringComparison.OrdinalIgnoreCase))
+                    return true;
+
+                string docTitle = StripRvtExtension(i.GetLinkDocument()?.Title);
+                if (!string.IsNullOrEmpty(docTitle) && docTitle.Equals(cleanSourceTitle, StringComparison.OrdinalIgnoreCase))
+                    return true;
+
+                if (!string.IsNullOrEmpty(i.Name) && i.Name.IndexOf(cleanSourceTitle, StringComparison.OrdinalIgnoreCase) >= 0)
+                    return true;
+
+                return false;
+            });
+
+            if (matchingLink != null)
+            {
+                Transform tf = matchingLink.GetTotalTransform();
+                LoggerService.LogInfo($"Transform [Link]: Matched link instance '{matchingLink.Name}' (CleanName: '{GetLinkCleanName(matchingLink, targetDoc)}'). Applied TotalTransform (Origin: {tf.Origin}).");
+                return tf;
+            }
+            else
+            {
+                string availableLinks = string.Join(", ", linkInstances.Select(l => $"'{l.Name}' (Clean: '{GetLinkCleanName(l, targetDoc)}')"));
+                LoggerService.LogWarning($"Transform [Link]: No matching link instance found for source '{sourceDoc.Title}' (Clean: '{cleanSourceTitle}'). Available links in target: [{availableLinks}]. Defaulting to Identity transform.");
+                return Transform.Identity;
+            }
+        }
+        else if (config.cf_chk_GetTransformShared)
+        {
+            try
+            {
+                Transform sourceTransform = sourceDoc.ActiveProjectLocation.GetTotalTransform();
+                Transform tf = targetDoc.ActiveProjectLocation.GetTotalTransform().Multiply(sourceTransform.Inverse);
+                LoggerService.LogInfo($"Transform [Shared]: Applied Shared Coordinates differential transform (Origin: {tf.Origin}).");
+                return tf;
+            }
+            catch (Exception exShared)
+            {
+                LoggerService.LogWarning($"Transform [Shared]: Failed to compute shared transform: {exShared.Message}. Defaulting to Identity.");
+                return Transform.Identity;
+            }
+        }
+        else
+        {
+            LoggerService.LogInfo("Transform [None]: Internal Origin (0,0,0) alignment selected. Transform is Identity.");
+            return Transform.Identity;
+        }
+    }
+
+    public static void EnsureViewerSymbolsVisible(Document doc, View view, int minScale)
+    {
+        if (view == null || !view.IsValidObject) return;
+
+        // 1. Unhide OST_Viewers and all its subcategories on the view
+        try
+        {
+            Category viewersCat = Category.GetCategory(doc, BuiltInCategory.OST_Viewers);
+            if (viewersCat != null)
+            {
+                if (view.CanCategoryBeHidden(viewersCat.Id))
+                    view.SetCategoryHidden(viewersCat.Id, false);
+
+                foreach (Category subCat in viewersCat.SubCategories)
+                {
+                    if (subCat != null && view.CanCategoryBeHidden(subCat.Id))
+                    {
+                        try { view.SetCategoryHidden(subCat.Id, false); } catch { }
+                    }
+                }
+
+                // Also check on the view template if assigned
+                if (view.ViewTemplateId != ElementId.InvalidElementId)
+                {
+                    View tmpl = doc.GetElement(view.ViewTemplateId) as View;
+                    if (tmpl != null)
+                    {
+                        if (tmpl.CanCategoryBeHidden(viewersCat.Id))
+                            tmpl.SetCategoryHidden(viewersCat.Id, false);
+
+                        foreach (Category subCat in viewersCat.SubCategories)
+                        {
+                            if (subCat != null && tmpl.CanCategoryBeHidden(subCat.Id))
+                            {
+                                try { tmpl.SetCategoryHidden(subCat.Id, false); } catch { }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Also unhide OST_CalloutBoundary
+            Category calloutCat = Category.GetCategory(doc, BuiltInCategory.OST_CalloutBoundary);
+            if (calloutCat != null)
+            {
+                if (view.CanCategoryBeHidden(calloutCat.Id))
+                    view.SetCategoryHidden(calloutCat.Id, false);
+
+                if (view.ViewTemplateId != ElementId.InvalidElementId)
+                {
+                    View tmpl = doc.GetElement(view.ViewTemplateId) as View;
+                    if (tmpl != null && tmpl.CanCategoryBeHidden(calloutCat.Id))
+                    {
+                        try { tmpl.SetCategoryHidden(calloutCat.Id, false); } catch { }
+                    }
+                }
+            }
+        }
+        catch (Exception exCat)
+        {
+            LoggerService.LogWarning($"EnsureViewerSymbolsVisible [Category]: {exCat.Message}");
+        }
+
+        // 2. Unlock "Hide at scales coarser than" parameter on view and its template
+        // Use a guaranteed-safe minimum of 10000 to ensure marks show at all common
+        // architectural scales (1:50 through 1:10000). This prevents the issue where
+        // recursive calls pass a section view's scale (~100) instead of the root plan
+        // view's scale (~1000), resulting in marks being hidden.
+        try
+        {
+            int targetScale = Math.Max(Math.Max(view.Scale, minScale), 10000);
+
+            void UnlockScale(View v)
+            {
+                if (v == null || !v.IsValidObject) return;
+                Parameter hideParam = v.get_Parameter(BuiltInParameter.SECTION_COARSER_SCALE_PULLDOWN_IMPERIAL)
+                                   ?? v.get_Parameter(BuiltInParameter.SECTION_COARSER_SCALE_PULLDOWN_METRIC);
+
+                if (hideParam != null && !hideParam.IsReadOnly)
+                {
+                    int current = hideParam.AsInteger();
+                    if (current != targetScale)
+                    {
+                        hideParam.Set(targetScale);
+                        LoggerService.LogInfo($"EnsureViewerSymbolsVisible: Set scale threshold on '{v.Name}' from {current} to {targetScale}.");
+                    }
+                }
+                else
+                {
+                    LoggerService.LogInfo($"EnsureViewerSymbolsVisible: Scale param on '{v.Name}' is {(hideParam == null ? "NULL" : "READ-ONLY")}. Cannot set.");
+                }
+            }
+
+            UnlockScale(view);
+            if (view.ViewTemplateId != ElementId.InvalidElementId)
+            {
+                View tmpl = doc.GetElement(view.ViewTemplateId) as View;
+                if (tmpl != null) UnlockScale(tmpl);
+            }
+        }
+        catch (Exception exScale)
+        {
+            LoggerService.LogWarning($"EnsureViewerSymbolsVisible [Scale]: {exScale.Message}");
+        }
+    }
+
+    public static void SyncViewPhaseAndFilter(Document srcDoc, Document tgtDoc, View srcView, View tgtView)
+    {
+        if (srcView == null || tgtView == null) return;
+        try
+        {
+            // 1. Sync Phase
+            Parameter srcPhaseParam = srcView.get_Parameter(BuiltInParameter.VIEW_PHASE);
+            Parameter tgtPhaseParam = tgtView.get_Parameter(BuiltInParameter.VIEW_PHASE);
+            if (srcPhaseParam != null && tgtPhaseParam != null && !tgtPhaseParam.IsReadOnly)
+            {
+                ElementId srcPhaseId = srcPhaseParam.AsElementId();
+                if (srcPhaseId != null && srcPhaseId != ElementId.InvalidElementId)
+                {
+                    Phase srcPhase = srcDoc.GetElement(srcPhaseId) as Phase;
+                    if (srcPhase != null)
+                    {
+                        Phase tgtPhase = new FilteredElementCollector(tgtDoc)
+                            .OfClass(typeof(Phase))
+                            .Cast<Phase>()
+                            .FirstOrDefault(p => p.Name.Equals(srcPhase.Name, StringComparison.OrdinalIgnoreCase));
+
+                        if (tgtPhase != null && tgtPhase.Id != tgtPhaseParam.AsElementId())
+                        {
+                            tgtPhaseParam.Set(tgtPhase.Id);
+                            LoggerService.LogInfo($"SyncViewPhaseAndFilter: Synchronized Phase '{tgtPhase.Name}' for view '{tgtView.Name}'.");
+                        }
+                    }
+                }
+            }
+
+            // 2. Sync Phase Filter
+            Parameter srcFilterParam = srcView.get_Parameter(BuiltInParameter.VIEW_PHASE_FILTER);
+            Parameter tgtFilterParam = tgtView.get_Parameter(BuiltInParameter.VIEW_PHASE_FILTER);
+            if (srcFilterParam != null && tgtFilterParam != null && !tgtFilterParam.IsReadOnly)
+            {
+                ElementId srcFilterId = srcFilterParam.AsElementId();
+                if (srcFilterId != null && srcFilterId != ElementId.InvalidElementId)
+                {
+                    PhaseFilter srcPf = srcDoc.GetElement(srcFilterId) as PhaseFilter;
+                    if (srcPf != null)
+                    {
+                        PhaseFilter tgtPf = new FilteredElementCollector(tgtDoc)
+                            .OfClass(typeof(PhaseFilter))
+                            .Cast<PhaseFilter>()
+                            .FirstOrDefault(pf => pf.Name.Equals(srcPf.Name, StringComparison.OrdinalIgnoreCase));
+
+                        if (tgtPf != null && tgtPf.Id != tgtFilterParam.AsElementId())
+                        {
+                            tgtFilterParam.Set(tgtPf.Id);
+                            LoggerService.LogInfo($"SyncViewPhaseAndFilter: Synchronized PhaseFilter '{tgtPf.Name}' for view '{tgtView.Name}'.");
+                        }
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            LoggerService.LogWarning($"SyncViewPhaseAndFilter: {ex.Message}");
+        }
     }
 
     private static void CopyViewGraphicsAndOverrides(
