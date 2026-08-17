@@ -1,0 +1,89 @@
+{
+  "runtimeTarget": {
+    "name": ".NETCoreApp,Version=v10.0",
+    "signature": ""
+  },
+  "compilationOptions": {},
+  "targets": {
+    ".NETCoreApp,Version=v10.0": {
+      "FilterPlus/1.6.0": {
+        "dependencies": {
+          "CommunityToolkit.Mvvm": "8.2.2",
+          "JetBrains.Annotations": "2025.2.4",
+          "Nice3point.Revit.Extensions": "2027.0.2",
+          "Nice3point.Revit.Toolkit": "2027.0.0"
+        },
+        "runtime": {
+          "FilterPlus.dll": {}
+        }
+      },
+      "CommunityToolkit.Mvvm/8.2.2": {
+        "runtime": {
+          "lib/net6.0/CommunityToolkit.Mvvm.dll": {
+            "assemblyVersion": "8.2.0.0",
+            "fileVersion": "8.2.2.1"
+          }
+        }
+      },
+      "JetBrains.Annotations/2025.2.4": {
+        "runtime": {
+          "lib/netstandard2.0/JetBrains.Annotations.dll": {
+            "assemblyVersion": "4242.42.42.42",
+            "fileVersion": "2025.2.4.0"
+          }
+        }
+      },
+      "Nice3point.Revit.Extensions/2027.0.2": {
+        "runtime": {
+          "lib/net10.0-windows7.0/Nice3point.Revit.Extensions.dll": {
+            "assemblyVersion": "2027.0.2.0",
+            "fileVersion": "2027.0.2.0"
+          }
+        }
+      },
+      "Nice3point.Revit.Toolkit/2027.0.0": {
+        "runtime": {
+          "lib/net10.0-windows7.0/Nice3point.Revit.Toolkit.dll": {
+            "assemblyVersion": "2027.0.0.0",
+            "fileVersion": "2027.0.0.0"
+          }
+        }
+      }
+    }
+  },
+  "libraries": {
+    "FilterPlus/1.6.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "CommunityToolkit.Mvvm/8.2.2": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-r0g0k9tGYdrnz8R7T3x5UiokDffeevzK/2P/9SBL6fqLgN8B157MIi/bVUWI1KAz6ZorZrK9AdABCWUeXZZsvA==",
+      "path": "communitytoolkit.mvvm/8.2.2",
+      "hashPath": "communitytoolkit.mvvm.8.2.2.nupkg.sha512"
+    },
+    "JetBrains.Annotations/2025.2.4": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-TwbgxAkXxY+vNEhNVx/QXjJ4vqxmepOjsgRvvImQPbHkHMMb4W+ahL3laMsxXKtNT7iMy+E1B3xkqao2hf1n3A==",
+      "path": "jetbrains.annotations/2025.2.4",
+      "hashPath": "jetbrains.annotations.2025.2.4.nupkg.sha512"
+    },
+    "Nice3point.Revit.Extensions/2027.0.2": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-8J45tvcNjaxSbXK1XILzMDxuJeFNdZ0zo+NzzlCSXnDKa9YbECCIq93VAuQbhhlhCGrvZr3DyBBkhucD6WXIAw==",
+      "path": "nice3point.revit.extensions/2027.0.2",
+      "hashPath": "nice3point.revit.extensions.2027.0.2.nupkg.sha512"
+    },
+    "Nice3point.Revit.Toolkit/2027.0.0": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-kAUZtgXMWZkRJQTacJmUyI17M3iga9iqdnZ6+Frk1ScIkPjlasyXPn6U+xafO4ayH2V3LtBOBgJSxcTzK08ssg==",
+      "path": "nice3point.revit.toolkit/2027.0.0",
+      "hashPath": "nice3point.revit.toolkit.2027.0.0.nupkg.sha512"
+    }
+  }
+}

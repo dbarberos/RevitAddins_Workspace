@@ -548,7 +548,7 @@ public static class AutodeskDocsService
         response.EnsureSuccessStatusCode();
 
         using var memoryStream = new MemoryStream();
-        await response.Content.CopyToAsync(memoryStream, cancellationToken);
+        await response.Content.CopyToAsync(memoryStream);
         memoryStream.Position = 0;
 
         string localPath = FamilyFileManager.CreateFamilyLocalFile(memoryStream, rawFileName);

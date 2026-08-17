@@ -1,42 +1,41 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <ApplicationPackage
   SchemaVersion="1.0"
   AppVersion="1.6.0"
   Author="DBDev_dbarberos"
   Description="FilterPlus"
   Name="FilterPlus"
-  ProductCode="6B94C890-EA5B-469A-AC3D-E36D488BEB1C"
+  ProductCode="80A0E96D-DF31-4337-AD1E-7A89CC95D152"
   OnlineDocumentation="https://dbdev-dbarberos.github.io/PrivacyPolicy/"
   ProductType="Application"
-  Icon="./Contents/Resources/Icons/RibbonIcon32.png"
-  HelpFile="./docs/user_guide.md">
+  Icon="./Contents/Resources/Icon32.png"
+  HelpFile="./Contents/Resources/Help.html">
 
   <CompanyDetails
-    Name="DBDev_dbarberos"
-    Url="https://apps.autodesk.com/en/Publisher/PublisherHomepage"
+    Name="DBDev Solutions"
+    Url="https://dbdev-dbarberos.github.io"
     Email="dbarberos@outlook.com" />
 
-  <!-- The components will be dynamically injected here by the PowerShell script -->
-    <Components Description="FilterPlus Add-in for Revit 2024">
-    <RuntimeRequirements OS="Win64" Platform="Revit" SeriesMin="R2024" SeriesMax="R2024" />
-    <ComponentEntry AppName="FilterPlus" Version="1.6.0" ModuleName="./Contents/2024/FilterPlus.addin" AppDescription="Filter and Selection add-in" LoadOnRevitStartup="True" />
+  <!-- Components injected dynamically by build-bundle.ps1 -->
+  <Components Description="FilterPlus Add-in for Revit 2023">
+    <RuntimeRequirements OS="Win64" Platform="Revit" SeriesMin="2023" SeriesMax="2023" />
+    <ComponentEntry AppName="FilterPlus" Version="1.6.0" ModuleName="./Contents/2023/FilterPlus.addin" AppDescription="DBDev Solutions" LoadOnRevitStartup="True" />
+  </Components>
+  <Components Description="FilterPlus Add-in for Revit 2024">
+    <RuntimeRequirements OS="Win64" Platform="Revit" SeriesMin="2024" SeriesMax="2024" />
+    <ComponentEntry AppName="FilterPlus" Version="1.6.0" ModuleName="./Contents/2024/FilterPlus.addin" AppDescription="DBDev Solutions" LoadOnRevitStartup="True" />
   </Components>
   <Components Description="FilterPlus Add-in for Revit 2025">
-    <RuntimeRequirements OS="Win64" Platform="Revit" SeriesMin="R2025" SeriesMax="R2025" />
-    <ComponentEntry AppName="FilterPlus" Version="1.6.0" ModuleName="./Contents/2025/FilterPlus.addin" AppDescription="Filter and Selection add-in" LoadOnRevitStartup="True" />
-  </Components>
-  <Components Description="FilterPlus Add-in for Revit 2023">
-    <RuntimeRequirements OS="Win64" Platform="Revit" SeriesMin="R2023" SeriesMax="R2023" />
-    <ComponentEntry AppName="FilterPlus" Version="1.6.0" ModuleName="./Contents/2023/FilterPlus.addin" AppDescription="Filter and Selection add-in" LoadOnRevitStartup="True" />
+    <RuntimeRequirements OS="Win64" Platform="Revit" SeriesMin="2025" SeriesMax="2025" />
+    <ComponentEntry AppName="FilterPlus" Version="1.6.0" ModuleName="./Contents/2025/FilterPlus.addin" AppDescription="DBDev Solutions" LoadOnRevitStartup="True" />
   </Components>
   <Components Description="FilterPlus Add-in for Revit 2026">
-    <RuntimeRequirements OS="Win64" Platform="Revit" SeriesMin="R2026" SeriesMax="R2026" />
-    <ComponentEntry AppName="FilterPlus" Version="1.6.0" ModuleName="./Contents/2026/FilterPlus.addin" AppDescription="Filter and Selection add-in" LoadOnRevitStartup="True" />
+    <RuntimeRequirements OS="Win64" Platform="Revit" SeriesMin="2026" SeriesMax="2026" />
+    <ComponentEntry AppName="FilterPlus" Version="1.6.0" ModuleName="./Contents/2026/FilterPlus.addin" AppDescription="DBDev Solutions" LoadOnRevitStartup="True" />
   </Components>
   <Components Description="FilterPlus Add-in for Revit 2027">
-    <RuntimeRequirements OS="Win64" Platform="Revit" SeriesMin="R2027" SeriesMax="R2027" />
-    <ComponentEntry AppName="FilterPlus" Version="1.6.0" ModuleName="./Contents/2027/FilterPlus.addin" AppDescription="Filter and Selection add-in" LoadOnRevitStartup="True" />
+    <RuntimeRequirements OS="Win64" Platform="Revit" SeriesMin="2027" SeriesMax="2027" />
+    <ComponentEntry AppName="FilterPlus" Version="1.6.0" ModuleName="./Contents/2027/FilterPlus.addin" AppDescription="DBDev Solutions" LoadOnRevitStartup="True" />
   </Components>
-
 
 </ApplicationPackage>

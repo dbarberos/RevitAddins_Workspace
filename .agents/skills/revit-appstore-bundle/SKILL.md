@@ -5,37 +5,23 @@ description: Generates the Autodesk App Store .bundle folder structure and Packa
 
 # Revit AppStore Bundle
 
-This skill standardizes and automates the generation of `.bundle` format packages ready to be published on the **Autodesk App Store**.
+Automates packaging multi-version Revit add-ins (2023–2027) into standardized Autodesk App Store `.bundle` packages and `.zip` archives.
 
-When Autodesk rejects a custom MSI installer (especially for free Add-ins) or it is required to comply with their standard format, it is necessary to deliver the add-in within a standardized structure known as "Bundle Format" which the Autodesk store then compiles into its own installers.
+## 🚨 Mandatory Bundle Rules
+1. **Full Dependency Bundling**: Every version folder (`Contents/202X/`) must contain the primary assembly (`[AppName].dll`) alongside all required dependencies (`Nice3point.Revit.Toolkit.dll`, `Nice3point.Revit.Extensions.dll`, `CommunityToolkit.Mvvm.dll`, `System.*.dll`). Never leave isolated single DLLs.
+2. **Identity Sanitization**: Every `.addin` manifest must strictly declare:
+   - `<VendorId>DBDev_dbarberos</VendorId>`
+   - `<VendorDescription>DBDev Solutions</VendorDescription>`
+   - `<VendorEmail>dbarberos@outlook.com</VendorEmail>`
+   - `<Assembly>[AppName].dll</Assembly>`
+   Never allow placeholder identities (e.g. `AI_CORP` / `AI Solutions`).
+3. **Valid XML Declaration**: `PackageContents.xml` must strictly start with `<?xml version="1.0" encoding="utf-8"?>`.
+4. **Contextual Help**: Associated `help.html` and icons must be present inside `Contents/Resources/`.
 
-## Purpose
-- Automate the creation of the `[AppName].bundle` folder.
-- Generate the required `PackageContents.xml` file, populated with the author's information, supported versions, and Revit loading structure.
-- Copy the dynamic libraries (`.dll`) and the manifest (`.addin`) into the version-specific folders (`Contents/2024/`, etc.).
-- Compress the structure into a `.zip` file ready to be uploaded to the Autodesk Developer Portal.
+## 📚 Technical References
+- `references/debugging_appstore_bundle_missing_dependencies_and_identity_collision_2026-08-17.md`: Root cause analysis and resolution for AppStore bundle loading failures.
 
-## 🚨 Critical Rules for Autodesk App Store
-1. **Contextual Help (Mandatory)**: The Ribbon button MUST have a local HTML help file associated with it via `SetContextualHelp`. This file (`help.html`) must be generated from the User Guide and placed in the bundle's `Resources/` folder.
-2. **XML Exclusion in ZIP**: Although we generate `PackageContents.xml` for local developer testing, it must **NOT** be included within the final `.zip` file. Autodesk generates this file automatically during the submission process in the store.
-3. **Developer Identity**: When generating `PackageContents.xml` files or running scripts, the agent MUST strictly use `DBDev_dbarberos` as the Author/Name and `DBDev Solutions` as the Company Name. The use of generic AI placeholders like "AI_Corp" or "AI Solutions" is strictly forbidden.
-
-## 📦 Assets (Templates and Source Code)
-The following files are located in the `assets/` folder:
-*   `assets/PackageContents.xml`: Base template of the Bundle manifest describing compatibility, company, and references to load.
-
-## 🛠️ Scripts (Automation)
-To execute this skill, use the provided PowerShell script in the `scripts/` folder.
-
-### `scripts/build-bundle.ps1`
-**Typical usage:**
+## 🛠️ Scripts & Automation
 ```powershell
-.\.agents\skills\revit-appstore-bundle\scripts\build-bundle.ps1 -AppName "FilterPlus" -Version "1.1.0" -Author "Your Name" -Email "your@email.com"
+.\.agents\skills\revit-appstore-bundle\scripts\build-bundle.ps1 -AppName "FilterPlus" -Version "1.6.0" -ProjectDir ".\FilterPlus"
 ```
-**Parameters:**
-- `-AppName`: The name of the Add-in (and the resulting folder).
-- `-Version`: The current version (e.g., `1.0.0`).
-- `-Author`: Developer or company name (e.g., `DBDev_dbarberos`).
-- `-Email`: Contact email of the developer.
-
-The script will read the local build folders (`bin/Debug.R24`, `bin/Debug.R25`, etc.) and assemble the Bundle with the available versions found, ultimately creating a zip file.

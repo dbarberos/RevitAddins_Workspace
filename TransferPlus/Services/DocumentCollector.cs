@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Autodesk.Revit.DB;
+using Nice3point.Revit.Extensions;
 using TransferPlus.Models;
 
 namespace TransferPlus.Services;
@@ -148,7 +149,7 @@ public static class DocumentCollector
                 }
                 if (element7.get_Parameter((BuiltInParameter)(-1002051))?.AsValueString() != null || view.ViewType == ViewType.Legend || view.ViewType == ViewType.Schedule || view.ViewType == ViewType.DrawingSheet)
                 {
-                    if (view.GetPrimaryViewId().IntegerValue != -1)
+                    if (view.GetPrimaryViewId() != ElementId.InvalidElementId)
                     {
                         flag = true;
                     }
@@ -534,7 +535,7 @@ public static class DocumentCollector
             {
                 try
                 {
-                    if (element28.Category.Id.IntegerValue == -2000160)
+                    if (element28.Category.Id.Value == (long)BuiltInCategory.OST_Rooms)
                     {
                         Elemento item27 = new Elemento(element28, "Rooms", 0, _doc_origen);
                         elementsAFiltrar.Add(item27);
@@ -554,7 +555,7 @@ public static class DocumentCollector
         Report("Collecting Categories", categories.Size);
         foreach (object obj in categories)
         {
-            if (obj is Category category && category.Id.IntegerValue <= 0)
+            if (obj is Category category && category.Id.Value <= 0)
             {
                 CategoryNameMap subCategories = category.SubCategories;
                 if (subCategories != null && subCategories.Size != 0)
@@ -698,7 +699,7 @@ public static class DocumentCollector
             if (obj is Category category && category.Parent == null)
             {
                 string familyName = "Model Objects";
-                if (category.Id.IntegerValue > 0)
+                if (category.Id.Value > 0)
                 {
                     familyName = "Imported Objects";
                 }

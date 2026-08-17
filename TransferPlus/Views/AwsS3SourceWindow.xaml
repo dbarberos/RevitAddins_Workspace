@@ -6,6 +6,7 @@
         mc:Ignorable="d"
         x:Name="AwsS3SourceWin"
         Title="AWS S3 Family Source Settings" Height="540" Width="640"
+        Icon="pack://application:,,,/TransferPlus;component/Resources/Icons/TransferPlus32x32.png"
         WindowStartupLocation="CenterOwner"
         ResizeMode="NoResize"
         Background="#FAFAFA">

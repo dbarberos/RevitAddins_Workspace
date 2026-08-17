@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>FilterPlus User Guide</title>
+<style>
+body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 20px; line-height: 1.6; color: #333; max-width: 900px; margin: auto; }
+h1, h2, h3 { color: #005A9C; }
+code { background-color: #f4f4f4; padding: 2px 5px; border-radius: 3px; font-family: Consolas, monospace; }
+table { border-collapse: collapse; width: 100%; margin-bottom: 20px; }
+th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+th { background-color: #f2f2f2; }
+.alert { padding: 15px; margin-bottom: 20px; border: 1px solid transparent; border-radius: 4px; }
+.alert-warning { background-color: #fcf8e3; border-color: #faebcc; color: #8a6d3b; }
+.alert-info { background-color: #d9edf7; border-color: #bce8f1; color: #31708f; }
+</style>
+</head>
+<body>
+
+<h1>FilterPlus</h1>
+<p><strong>Current Version:</strong> v1.6.0<br/>
+<strong>Add-in ID (GUID):</strong> <code>A5265BB9-214C-4109-8DDC-DF1F6E4305B9</code></p>
+<hr>
+
+<h2>1. Overview</h2>
+<p><strong>FilterPlus</strong> is an advanced selection and filtering add-in for Autodesk Revit designed to overcome the limitations of the native project browser. It allows for the massive, asynchronous collection of elements, visualizing them in a virtualized Category/Family/Type/Instance tree, and refining selections through dynamic rules (Intersections, Group membership, View visibility) without freezing the UI.</p>
+<hr>
+
+<h2>2. Requirements and Compatibility</h2>
+<div class="alert alert-warning">
+<strong>WARNING:</strong> This add-in is compiled for multiple versions using the <code>Debug.R[XX]</code> and <code>Release.R[XX]</code> configurations.
+</div>
+<ul>
+<li><strong>Platform</strong>: .NET Framework 4.8 (Revit 2023, 2024) / .NET 8 (Revit 2025+).</li>
+<li><strong>Supported Revit Versions</strong>: 2023, 2024, 2025, 2026, 2027.</li>
+</ul>
+<hr>
+
+<h2>3. Installation & Uninstallation</h2>
+<p>The installer that ran when you downloaded this plug-in from the Autodesk App Store has already installed the plug-in. You may need to restart the Autodesk product to activate the plug-in.</p>
+<p>To uninstall this plug-in, exit the Autodesk product if you are currently running it, simply rerun the installer by downloading it again from the Autodesk App Store, and select the 'Uninstall' button, or you can uninstall it from 'Control Panel\Programs\Programs and Features' (Windows 10/11), just as you would uninstall any other application from your system.</p>
+<hr>
+
+<h2>4. Commands and Features Guide</h2>
+<h3>4.1. Ribbon Panel Integration</h3>
+<p>The add-in creates a custom tab containing the FilterPlus panel.</p>
+<table>
+<tr><th>Command</th><th>Function</th><th>Technical Class</th></tr>
+<tr><td><strong>FilterPlus</strong></td><td>Opens the main window for hierarchical selection and filtering.</td><td><code>FilterPlus.Application</code></td></tr>
+<tr><td><strong>(Context Menu)</strong></td><td>In Revit 2025+, FilterPlus integrates into the right-click menu for instant filtering.</td><td><code>FilterPlus.ViewModels.SelectionFilterViewModel</code></td></tr>
+</table>
+<hr>
+
+<h2>5. Comprehensive Usage Guide</h2>
+
+<h3>FilterPlus Hierarchical Explorer</h3>
+<p>The main FilterPlus application allows you to filter and navigate elements in your active selection or project. It constructs a dynamic hierarchical tree-view categorized by <strong>Category &gt; Family &gt; Type &gt; Instance (Element ID)</strong>. Unlike standard flat selection filters, it displays element counts at each level and allows you to select, check, or uncheck elements interactively, immediately synchronizing your choices with the active Revit selection.</p>
+
+<h3>Document and Linked Model Selector</h3>
+<p>At the top of the main FilterPlus interface, the document selection area allows you to choose the target model context:</p>
+<ul>
+<li><strong>Selected Models Display:</strong> A read-only text box wrapped in a primary blue (<code>#007ACC</code>) border displays the currently active filter scope.</li>
+<li><strong>Select Button:</strong> Opens the advanced "Select model or models" modal window to check or uncheck individual link instances.</li>
+<li><strong>Select All Models:</strong> Circular checkbox at the top allows you to process operations across host and link documents combined.</li>
+<li><strong>Simultaneous Cross-Document Selection:</strong> Selection highlights use link transformations to highlight linked elements concurrently in viewport.</li>
+<li><strong>Cache Limit Fallback & Warning:</strong> Enforces a combined limit of <strong>100,000 elements</strong>. If this count is exceeded, only active/host model elements are loaded, and links are omitted. An orange warning icon with a tooltip is displayed in the main window.</li>
+</ul>
+
+<h3>Pre-Filtering (Dropdown Filters)</h3>
+<p>Filter and narrow down elements before selecting or displaying them. Dropdown controls let you pre-filter elements based on Category, Family, Type, Level, and Workset.</p>
+
+<h3>Pre-Selection Rules Filter (Rules & Sets)</h3>
+<p>Filter elements dynamically using logical operators (AND/OR). Click the Pre-Selection button to construct rules:</p>
+<ul>
+<li><strong>Scope Selection:</strong> Choose between "All Model Elements" or "Elements in View" via mutually exclusive RadioButtons.</li>
+<li><strong>Rule Constraints & Pruning:</strong> Family rules require Category rules; Type rules require Family rules. Changing a parent rule type automatically prunes dependent child rules.</li>
+</ul>
+
+<h3>Semantic Grouping & Sorting</h3>
+<p>You can dynamically restructure the explorer's hierarchy by grouping elements semantically. Toggle the grouping options on/off to sort elements by Phase, Level, and Workset.</p>
+
+<h3>Element Scope Filters</h3>
+<p>Toggles at the top let you filter the active scope on the fly (Mutual exclusion logic):</p>
+<ul>
+<li><strong>3D Model Elements only</strong>: Hides 2D views, annotations, and system elements.</li>
+<li><strong>Annotation Elements only</strong>: Isolates text, dimensions, and detail items.</li>
+<li><strong>Has Bounding Box only</strong>: Filters elements to show only those possessing valid geometric boundaries.</li>
+</ul>
+
+<h3>Text Search & Regex System</h3>
+<p>Locate elements quickly by typing keywords in the search bar. You must click <strong>Apply</strong> to execute the search, which allows you to set the parameters calmly:</p>
+<ul>
+<li><strong>Search only by name</strong>: Limits matches strictly to element name strings.</li>
+<li><strong>Use Regex</strong>: Enables advanced Regular Expression pattern matching.</li>
+<li><strong>Use OR Logic</strong>: If active, new search matches are appended to the currently checked elements. If inactive, search resets checks to only matching items.</li>
+</ul>
+
+<h3>Increase Checked (Expand Selection)</h3>
+<p>Expand your current selection based on advanced relational and geometric rules. You can toggle checkboxes under the "Increase Checked" section to find:</p>
+<ul>
+<li><strong>Same Category / Same Family / Same Type / Same Workset / Same MEP System</strong></li>
+<li><strong>Host of Element / Hosted Elements</strong></li>
+<li><strong>Nested Elements / Supercomponents</strong></li>
+<li><strong>Joined Elements / Intersecting Elements</strong></li>
+<li><strong>Group of Assembly</strong></li>
+<li><strong>Dependent Elements</strong></li>
+</ul>
+
+<h4>Expansion Constraints:</h4>
+<ul>
+<li><strong>Search Range (WHERE)</strong>: Limit expansion to the <strong>Entire Model</strong>, the <strong>Current View</strong>, or <strong>Visible in current view</strong>.</li>
+<li><strong>Result Output (HOW)</strong>: Choose to either <strong>Add to Current Selection</strong> or <strong>Select Only New Elements</strong>.</li>
+<li><strong>Exclusions (Unselect Elements If)</strong>: Automatically unselect/exclude elements that belong to Groups or Assemblies to prevent editing locked objects.</li>
+</ul>
+
+<div class="alert alert-info">
+<strong>TIP - Standalone Purge Mode:</strong> You do not need to check any "WHAT" rules to use the exclusion tool. If you want to clean your current selection to remove grouped items, simply check "Belongs to Group" and hit Apply. The system performs a global purge.
+</div>
+
+<h3>Interactive Element Picking (Pick in Revit)</h3>
+<p>Click the Pick Elements button to temporarily hide the FilterPlus window and select objects directly in the Revit viewport. Once selection is complete, the window automatically reappears, and the new elements are loaded into the tree view and checked.</p>
+<p>Depending on the models checked under "Apply FilterPlus with:", selection is isolated as follows:</p>
+<ul>
+<li><strong>Host Selection Phase:</strong> When selecting host elements (alone or during the first phase of sequential selection), selecting <code>RevitLinkInstance</code> as a block is blocked to allow only native element picking.</li>
+<li><strong>Linked Selection Phase:</strong> When selecting linked elements (alone or during the second phase of sequential selection), the cursor restricts picking to elements within the linked models checked in "Apply FilterPlus with:". Elements of other link instances or the active model are ignored.</li>
+</ul>
+
+<h3>Persistent Saved Selections</h3>
+<p>FilterPlus allows you to save and recover element selections persistently across sessions inside your Revit project.</p>
+<ul>
+<li><strong>Dropdown List:</strong> Displays already saved selections. The first element is a blank placeholder representing "no selection active".</li>
+<li><strong>Recover/Delete:</strong> Buttons trigger selection restoration or selection deletion in the Revit document. Dropdown resets to the placeholder and disables action buttons afterwards.</li>
+<li><strong>Save Selection Dialog:</strong> Supports saving a new configuration or overwriting an existing one, featuring confirmation prompts, synchronized button widths, and 15px bottom spacing.</li>
+</ul>
+<hr>
+
+<h2>6. Version History (Changelog)</h2>
+
+<h3>v1.6.0</h3>
+<h4>Added</h4>
+<ul>
+<li><strong>Persistent Saved Selections:</strong> Save and recover selection sets persistently within active Revit projects.</li>
+<li><strong>Save Selection Window:</strong> A dedicated window to save new selections or overwrite existing ones.</li>
+<li><strong>Save Selection UI Polish:</strong> Standardized button widths and increased bottom spacing for improved visual alignment.</li>
+<li><strong>Dropdown Auto-Reset:</strong> Dropdowns reset to their default empty states and action buttons automatically disable after recovering or deleting selections.</li>
+<li><strong>WPF Window Custom Icons:</strong> Added custom title bar icons to all WPF windows.</li>
+<li><strong>Sort by Model Grouping:</strong> Group elements in the explorer tree by their host or link models, respecting the active grouping hierarchy.</li>
+<li><strong>100k Element Cache Warning:</strong> Integrates an orange warning icon and tooltip to signal when the combined elements exceed 100,000, triggering an automatic fallback to Active Model Only.</li>
+<li><strong>Isolated Selection Filters:</strong> Restricts host selection from picking <code>RevitLinkInstance</code> blocks, and restricts linked selection strictly to unchecked link models.</li>
+</ul>
+
+<h3>v1.5.0</h3>
+<h4>Added</h4>
+<ul>
+<li><strong>Multi-Document Selection Dialog:</strong> A new selection modal window to manage host and link instance checkboxes individually or in bulk.</li>
+<li><strong>Unified Button Corners:</strong> Standardized button corner roundness across all windows and controls.</li>
+</ul>
+
+<h3>v1.4.0</h3>
+<h4>Added</h4>
+<ul>
+<li><strong>Multi-Model Support:</strong> Query, select, and highlight elements across host and linked models simultaneously.</li>
+<li><strong>Improved Loading Feedback:</strong> The loading spinner overlay now updates responsively when building trees or running operations.</li>
+<li><strong>Right Column Layout:</strong> Added scroll support and positioned the scrollbar on the left side of the card area for a clean layout separator.</li>
+<li><strong>Simplified Header:</strong> Reorganized the top row header context layout to fit cleanly into the window background.</li>
+</ul>
+
+<h3>v1.3.1</h3>
+<h4>Added</h4>
+<ul>
+<li><strong>Scope RadioButtons:</strong> Replaced checkboxes with RadioButtons for clearer mutual exclusivity.</li>
+<li><strong>Cascading Rule Pruning:</strong> Prunes child family or type rules dynamically when parent rules are updated.</li>
+<li><strong>Rule Activity Logging:</strong> Enabled internal tracing for rule configurations and states.</li>
+</ul>
+
+<h3>v1.3.0</h3>
+<h4>Added</h4>
+<ul>
+<li><strong>Pre-Selection Logic:</strong> An advanced query builder to construct logical selection rules.</li>
+<li><strong>Dynamic Family and Type Rules:</strong> Selectable family and type dropdown values are filtered dynamically based on parent category constraints.</li>
+<li><strong>Pre-Selection Scope Exclusions:</strong> Mutual exclusion toggles between active view elements and entire model elements.</li>
+<li><strong>Pre-Selection Scope Synchronization:</strong> Selected rule scope is automatically synchronized with the main interface.</li>
+</ul>
+<h4>Changed</h4>
+<ul>
+<li><strong>Dynamic Action Button Color:</strong> The apply selection button dynamically highlights blue when selection adjustments exist.</li>
+<li><strong>Clear Selection Flow:</strong> The clear button unchecks selection trees and requests confirmation via the apply button.</li>
+</ul>
+
+<h3>v1.2.0</h3>
+<h4>Added</h4>
+<ul>
+<li><strong>Active View Visible Scope:</strong> Added a filter to target strictly visible elements in the current active view.</li>
+<li><strong>Installer Integration:</strong> Setup MSI installer support for Revit 2023-2027 deployments.</li>
+</ul>
+<h4>Changed</h4>
+<ul>
+<li><strong>Exclusion Filters Scope:</strong> The unselection exclusions now act on the entire unified selection scope.</li>
+</ul>
+
+<h3>v1.0.0</h3>
+<h4>Added</h4>
+<ul>
+<li><strong>MSI Installer:</strong> Automated multi-version support for Revit 2023-2027 installations.</li>
+<li><strong>Security Hardening:</strong> Standardized input validations and path checks to secure application configurations.</li>
+<li><strong>Context Menu:</strong> Contextual right-click menu integration for newer Revit versions.</li>
+</ul>
+<hr>
+
+<h2>7. Support and Contact</h2>
+<p>For bug reports, feature requests, or commercial support, please contact:</p>
+<ul>
+<li><strong>Developer / Company</strong>: DBDev_dbarberos / DBDev Solutions</li>
+<li><strong>Support</strong>: dbarberos@outlook.com</li>
+</ul>
+
+</body>
+</html>

@@ -143,6 +143,11 @@ FilterPlus allows you to save and recover element selections persistently across
 - **100k Element Cache Warning**: Integrates an orange warning icon and tooltip to signal when the combined elements exceed 100,000, triggering an automatic fallback to Active Model Only to preserve performance.
 - **Isolated Selection Filters**: Introduces custom selection filters during "Select in Revit" to prevent selecting `RevitLinkInstance` blocks in Host phase and block selection of elements inside unchecked link models in Linked phase.
 
+#### Fixed
+- **App Store Bundle Assembly Resolution**: Bundled full runtime dependencies (`Nice3point.Revit.Toolkit.dll`, `Nice3point.Revit.Extensions.dll`, `CommunityToolkit.Mvvm.dll`, `System.Text.Json.dll`, etc.) inside all multi-version folders (Revit 2023–2027) preventing startup `System.IO.FileNotFoundException` crashes.
+- **Publisher Identity Sanitization**: Eliminated all legacy placeholder metadata across `.addin` manifests and `PackageContents.xml`, strictly unifying the identity under `DBDev Solutions` and `DBDev_dbarberos`.
+- **W3C XML Conformance**: Standardized XML declaration headers to `<?xml version="1.0" encoding="utf-8"?>` across all package manifests.
+
 ### v1.5.0
 
 #### Added

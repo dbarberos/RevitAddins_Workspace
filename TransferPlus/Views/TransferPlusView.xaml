@@ -7,6 +7,7 @@
         xmlns:viewmodels="clr-namespace:TransferPlus.ViewModels"
         mc:Ignorable="d"
         Title="TransferPlus" Height="840"
+        Icon="pack://application:,,,/TransferPlus;component/Resources/Icons/TransferPlus32x32.png"
         WindowStartupLocation="CenterScreen"
         Background="#FAFAFA">
 

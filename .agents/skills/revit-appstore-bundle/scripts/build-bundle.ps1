@@ -1,149 +1,183 @@
 param(
     [string]$AppName = "FilterPlus",
-    [string]$Version = "1.1.0",
+    [string]$Version = "1.0.0",
     [string]$Author = "DBDev_dbarberos",
     [string]$Email = "dbarberos@outlook.com",
+    [string[]]$TargetYears = @("2024", "2025", "2026", "2027"),
     [string]$ProjectDir = "."
 )
 
 $ErrorActionPreference = "Stop"
 
-# Paths
-$BundleName = "$AppName.bundle"
-$DeployDir = Join-Path $ProjectDir "Deploy"
-$BundlePath = Join-Path $DeployDir $BundleName
-$AssetsDir = Join-Path $ProjectDir "..\.agents\skills\revit-appstore-bundle\assets"
+Write-Host "================================================================" -ForegroundColor Cyan
+Write-Host " Building Autodesk App Store Bundle for $AppName v$Version" -ForegroundColor Cyan
+Write-Host " Publisher: $Author (DBDev Solutions)" -ForegroundColor Cyan
+Write-Host " Target Years: $([string]::Join(', ', $TargetYears))" -ForegroundColor Cyan
+Write-Host "================================================================" -ForegroundColor Cyan
 
-Write-Host "Building Autodesk App Store Bundle for $AppName v$Version..."
+# Paths
+$resolvedProjectDir = (Resolve-Path $ProjectDir).Path
+$BundleName = "$AppName.bundle"
+$DeployDir = Join-Path $resolvedProjectDir "Deploy"
+$PublishPackageDir = Join-Path $resolvedProjectDir "$($AppName)PublishPackage"
+if (-not (Test-Path $PublishPackageDir)) {
+    $PublishPackageDir = Join-Path $resolvedProjectDir "FilterPlusPublishPackage"
+}
+$BundlePath = Join-Path $DeployDir $BundleName
+$AssetsDir = Join-Path $resolvedProjectDir "..\.agents\skills\revit-appstore-bundle\assets"
+
+# Extract AddInId from source .addin file
+$ProjectAddinPath = Join-Path $resolvedProjectDir "$AppName.addin"
+$AppAddinId = "A5265BB9-214C-4109-8DDC-DF1F6E4305B9"
+if (Test-Path $ProjectAddinPath) {
+    try {
+        [xml]$parsedAddin = Get-Content -Path $ProjectAddinPath -Raw
+        $foundId = $parsedAddin.RevitAddIns.AddIn.AddInId
+        if ($foundId) { $AppAddinId = $foundId }
+    } catch {
+        Write-Warning "Could not parse $AppName.addin. Using default ID."
+    }
+}
+Write-Host " AddInId GUID: $AppAddinId" -ForegroundColor DarkCyan
 
 # Prepare Deploy and Archive directories
-if (-not (Test-Path $DeployDir)) {
-    New-Item -ItemType Directory -Path $DeployDir | Out-Null
-}
+if (-not (Test-Path $DeployDir)) { New-Item -ItemType Directory -Path $DeployDir | Out-Null }
 $ArchiveDir = Join-Path $DeployDir "Archive"
-if (-not (Test-Path $ArchiveDir)) {
-    New-Item -ItemType Directory -Path $ArchiveDir | Out-Null
-}
+if (-not (Test-Path $ArchiveDir)) { New-Item -ItemType Directory -Path $ArchiveDir | Out-Null }
 
-# Archive any older zip files found in Deploy
+# Archive older zips
 $OldZips = Get-ChildItem -Path $DeployDir -Filter "*.zip"
 foreach ($zip in $OldZips) {
-    # We move it to archive if it's not the one we are about to create
     Move-Item -Path $zip.FullName -Destination $ArchiveDir -Force
 }
 
-# Clean ONLY the temporary staging bundle folder, not the whole Deploy dir
+# Clean temporary staging bundle folder
 if (Test-Path $BundlePath) {
     Remove-Item -Path $BundlePath -Recurse -Force
 }
 New-Item -ItemType Directory -Path $BundlePath | Out-Null
 
-# Create basic Contents folder
 $ContentsPath = Join-Path $BundlePath "Contents"
 New-Item -ItemType Directory -Path $ContentsPath | Out-Null
 
-# We will scan for compiled versions in bin/ (either Release or Debug, prefer Release)
-$BinDir = Join-Path $ProjectDir "bin"
+# Scan for compiled versions in bin/
+$BinDir = Join-Path $resolvedProjectDir "bin"
 if (-not (Test-Path $BinDir)) {
-    Write-Error "Bin directory not found. Please compile the project first."
-}
-
-# Find all version folders (e.g. Release.R24, Debug.R25)
-$AllDirs = Get-ChildItem -Path $BinDir -Directory | Where-Object { $_.Name -match "\.R(\d{2})$" }
-if ($AllDirs.Count -eq 0) {
-    Write-Error "No compiled versions found in bin/. E.g. bin/Release.R24"
-}
-
-# Group by Year and select Release if available, else whatever is there
-$VersionDirs = @()
-$Groups = $AllDirs | Group-Object { $_.Name -replace ".*\.R(\d{2})$", "`$1" }
-foreach ($g in $Groups) {
-    $release = $g.Group | Where-Object { $_.Name -like "Release*" } | Select-Object -First 1
-    if ($release) {
-        $VersionDirs += $release
-    } else {
-        $VersionDirs += $g.Group[0]
-    }
+    Write-Error "Bin directory not found. Please compile the project first with Release configurations."
 }
 
 $ComponentsXml = ""
 
-foreach ($vDir in $VersionDirs) {
-    # Extract year (e.g. R24 -> 2024)
-    $vDir.Name -match "R(\d{2})$" | Out-Null
-    $Year = "20" + $matches[1]
+foreach ($Year in $TargetYears) {
+    $ShortYear = $Year.Substring(2) # "24", "25", etc.
+    $ConfigName = "Release.R$ShortYear"
+    $Candidates = @(
+        (Join-Path $BinDir "$ConfigName\publish\$AppName"),
+        (Join-Path $BinDir "$ConfigName"),
+        (Join-Path $BinDir "Debug.R$ShortYear\publish\$AppName"),
+        (Join-Path $BinDir "Debug.R$ShortYear")
+    )
 
-    # Look for the publish folder generated by Nice3point
-    $PublishDir = Join-Path $vDir.FullName "publish\$AppName"
-    if (-not (Test-Path $PublishDir)) {
-        Write-Warning "Publish folder not found for $Year ($PublishDir). Skipping."
+    $PublishDir = $null
+    foreach ($cand in $Candidates) {
+        if ((Test-Path $cand) -and (Test-Path (Join-Path $cand "$AppName.dll"))) {
+            $PublishDir = $cand
+            break
+        }
+    }
+
+    if (-not $PublishDir) {
+        Write-Warning "Publish directory not found for Revit $Year ($ConfigName). Attempting compilation..."
+        $Csproj = Join-Path $resolvedProjectDir "$AppName.csproj"
+        try {
+            dotnet build $Csproj -c $ConfigName /p:DeployAddin=false
+        } catch {
+            Write-Warning "Compilation failed for $ConfigName. Skipping $Year."
+        }
+        foreach ($cand in $Candidates) {
+            if ((Test-Path $cand) -and (Test-Path (Join-Path $cand "$AppName.dll"))) {
+                $PublishDir = $cand
+                break
+            }
+        }
+    }
+
+    if (-not $PublishDir) {
+        Write-Warning "Skipping Revit $($Year): Compiled output not available"
         continue
     }
 
-    Write-Host "Found version $Year, packing..."
+    Write-Host "Packing Revit $Year from $PublishDir..." -ForegroundColor Green
     
     # Create Contents/202X folder
     $TargetVersionDir = Join-Path $ContentsPath $Year
     New-Item -ItemType Directory -Path $TargetVersionDir -Force | Out-Null
     
-    # Copy all files from publish
-    Copy-Item -Path "$PublishDir\*" -Destination $TargetVersionDir -Recurse -Force
+    # 1. Copy ALL binaries and dependency DLLs (Nice3point, CommunityToolkit, System.*, etc.)
+    $CopiedFiles = Copy-Item -Path "$PublishDir\*" -Destination $TargetVersionDir -Recurse -Force -PassThru
+    Write-Host "  -> Copied $($CopiedFiles.Count) binaries/resources for $Year" -ForegroundColor Gray
 
-    # Ensure help.html is included in the version's Resources folder for Contextual Help
-    $TargetResourcesDir = Join-Path $TargetVersionDir "Resources"
-    if (-not (Test-Path $TargetResourcesDir)) { New-Item -ItemType Directory -Path $TargetResourcesDir | Out-Null }
-    $HelpSrc = Join-Path $ProjectDir "Resources\help.html"
-    if (Test-Path $HelpSrc) {
-        Copy-Item -Path $HelpSrc -Destination $TargetResourcesDir -Force
-    }
+    # 2. Generate standardized .addin manifest with DBDev Solutions identity and correct GUID
+    $AddinContent = @"
+<RevitAddIns>
+    <AddIn Type="Application">
+        <Name>$AppName</Name>
+        <Assembly>$AppName.dll</Assembly>
+        <AddInId>$AppAddinId</AddInId>
+        <FullClassName>$AppName.Application</FullClassName>
+        <VendorId>$Author</VendorId>
+        <VendorDescription>DBDev Solutions</VendorDescription>
+        <VendorEmail>$Email</VendorEmail>
+        <ContextName>$AppName</ContextName>
+    </AddIn>
+</RevitAddIns>
+"@
+    $TargetAddinPath = Join-Path $TargetVersionDir "$AppName.addin"
+    [System.IO.File]::WriteAllText($TargetAddinPath, $AddinContent, [System.Text.Encoding]::UTF8)
 
-    # If the addin is in the version folder, move it to the correct path or leave it?
-    # Actually, Autodesk requires the addin file inside the bundle.
-    # The xml should point to: ./Contents/2024/AppName.addin
-
-    # Generate XML snippet
+    # 3. Add Component Entry to PackageContents XML
     $ComponentsXml += @"
   <Components Description="$AppName Add-in for Revit $Year">
-    <RuntimeRequirements OS="Win64" Platform="Revit" SeriesMin="R$Year" SeriesMax="R$Year" />
-    <ComponentEntry AppName="$AppName" Version="$Version" ModuleName="./Contents/$Year/$AppName.addin" AppDescription="Filter and Selection add-in" LoadOnRevitStartup="True" />
+    <RuntimeRequirements OS="Win64" Platform="Revit" SeriesMin="$Year" SeriesMax="$Year" />
+    <ComponentEntry AppName="$AppName" Version="$Version" ModuleName="./Contents/$Year/$AppName.addin" AppDescription="DBDev Solutions" LoadOnRevitStartup="True" />
   </Components>
 "@ + "`r`n"
 }
 
-# Also copy Resources/Icons if available so they can be referenced in XML
-$IconsSrc = Join-Path $ProjectDir "Resources\Icons"
+# Copy root Resources (Icons, Help)
+$ResourcesDest = Join-Path $ContentsPath "Resources"
+New-Item -ItemType Directory -Path $ResourcesDest -Force | Out-Null
+
+$HelpSrc = Join-Path $resolvedProjectDir "Resources\help.html"
+if (Test-Path $HelpSrc) {
+    Copy-Item -Path $HelpSrc -Destination $ResourcesDest -Force
+}
+
+$IconsSrc = Join-Path $resolvedProjectDir "Resources\Icons"
 if (Test-Path $IconsSrc) {
-    $IconsDest = Join-Path $ContentsPath "Resources\Icons"
+    $IconsDest = Join-Path $ResourcesDest "Icons"
     New-Item -ItemType Directory -Path $IconsDest -Force | Out-Null
     Copy-Item -Path "$IconsSrc\*" -Destination $IconsDest -Recurse -Force
-}
-
-# Also copy Docs if available (Only the user_guide, we don't want internal references)
-$DocsSrc = Join-Path $ProjectDir "docs"
-if (Test-Path $DocsSrc) {
-    $DocsDest = Join-Path $BundlePath "docs"
-    New-Item -ItemType Directory -Path $DocsDest -Force | Out-Null
     
-    # Check if user_guide is in docs or docs/references
-    $UserGuidePath = Join-Path $DocsSrc "references\user_guide.md"
-    if (-not (Test-Path $UserGuidePath)) {
-        $UserGuidePath = Join-Path $DocsSrc "user_guide.md"
+    # Also copy standard icon names to root of Resources
+    if (Test-Path (Join-Path $IconsSrc "RibbonIcon16.png")) {
+        Copy-Item -Path (Join-Path $IconsSrc "RibbonIcon16.png") -Destination (Join-Path $ResourcesDest "Icon16.png") -Force
+    } elseif (Test-Path (Join-Path $IconsSrc "$($AppName)16x16.png")) {
+        Copy-Item -Path (Join-Path $IconsSrc "$($AppName)16x16.png") -Destination (Join-Path $ResourcesDest "Icon16.png") -Force
     }
 
-    if (Test-Path $UserGuidePath) {
-        Copy-Item -Path $UserGuidePath -Destination $DocsDest -Force
+    if (Test-Path (Join-Path $IconsSrc "RibbonIcon32.png")) {
+        Copy-Item -Path (Join-Path $IconsSrc "RibbonIcon32.png") -Destination (Join-Path $ResourcesDest "Icon32.png") -Force
+    } elseif (Test-Path (Join-Path $IconsSrc "$($AppName)32x32.png")) {
+        Copy-Item -Path (Join-Path $IconsSrc "$($AppName)32x32.png") -Destination (Join-Path $ResourcesDest "Icon32.png") -Force
     }
 }
 
-# Generate ProductCode (New GUID)
+# Generate ProductCode GUID
 $ProductCode = [guid]::NewGuid().ToString().ToUpper()
 
-# Process XML Template
+# Process PackageContents.xml Template
 $XmlTemplatePath = Join-Path $AssetsDir "PackageContents.xml"
-if (-not (Test-Path $XmlTemplatePath)) {
-    Write-Error "PackageContents.xml template not found at $XmlTemplatePath"
-}
-
 $XmlContent = Get-Content -Path $XmlTemplatePath -Raw
 $XmlContent = $XmlContent -replace "\{\{Version\}\}", $Version
 $XmlContent = $XmlContent -replace "\{\{AppName\}\}", $AppName
@@ -153,31 +187,35 @@ $XmlContent = $XmlContent -replace "\{\{ProductCode\}\}", $ProductCode
 $XmlContent = $XmlContent -replace "\{\{Components\}\}", $ComponentsXml
 
 $XmlTargetPath = Join-Path $BundlePath "PackageContents.xml"
-[System.IO.File]::WriteAllText($XmlTargetPath, $XmlContent)
+[System.IO.File]::WriteAllText($XmlTargetPath, $XmlContent, [System.Text.Encoding]::UTF8)
 
-Write-Host "Bundle folder generated at: $BundlePath"
+Write-Host "Bundle folder generated at: $BundlePath" -ForegroundColor Green
 
-# Compress to ZIP
+# Compress to ZIP with root .bundle directory
 $ZipPath = Join-Path $DeployDir "$AppName`_v$Version.zip"
 if (Test-Path $ZipPath) { Remove-Item $ZipPath -Force }
 
-Write-Host "Waiting a moment to release file locks..."
-Start-Sleep -Seconds 3
+Write-Host "Waiting 2 seconds to release file locks..." -ForegroundColor Gray
+Start-Sleep -Seconds 2
 
-# Temporarily move PackageContents.xml out of the bundle so it's not in the ZIP (Autodesk Store rule)
-$XmlTempPath = Join-Path $DeployDir "PackageContents.xml"
-if (Test-Path $XmlTargetPath) {
-    Move-Item -Path $XmlTargetPath -Destination $XmlTempPath -Force
+Compress-Archive -Path $BundlePath -DestinationPath $ZipPath -Force
+
+# If PublishPackage folder exists, update it as well
+if (Test-Path $PublishPackageDir) {
+    Write-Host "Syncing package to $PublishPackageDir..." -ForegroundColor Cyan
+    $PkgBundle = Join-Path $PublishPackageDir $BundleName
+    if (Test-Path $PkgBundle) { Remove-Item -Path $PkgBundle -Recurse -Force }
+    Copy-Item -Path $BundlePath -Destination $PublishPackageDir -Recurse -Force
+    
+    $PkgZip = Join-Path $PublishPackageDir "$AppName.bundle.zip"
+    if (Test-Path $PkgZip) { Remove-Item -Path $PkgZip -Force }
+    Copy-Item -Path $ZipPath -Destination $PkgZip -Force
 }
 
-Write-Host "Zipping bundle (without PackageContents.xml for App Store)..."
-Add-Type -AssemblyName System.IO.Compression.FileSystem
-[System.IO.Compression.ZipFile]::CreateFromDirectory($BundlePath, $ZipPath)
-
-# Move PackageContents.xml back so local testing still works
-if (Test-Path $XmlTempPath) {
-    Move-Item -Path $XmlTempPath -Destination $XmlTargetPath -Force
+Write-Host "================================================================" -ForegroundColor Green
+Write-Host " SUCCESS: Autodesk App Store Bundle ready at:" -ForegroundColor Green
+Write-Host " -> $ZipPath" -ForegroundColor Yellow
+if (Test-Path $PublishPackageDir) {
+    Write-Host " -> $(Join-Path $PublishPackageDir "$AppName.bundle.zip")" -ForegroundColor Yellow
 }
-
-Write-Host "Bundle ZIP created at: $ZipPath"
-Write-Host "Done!"
+Write-Host "================================================================" -ForegroundColor Green

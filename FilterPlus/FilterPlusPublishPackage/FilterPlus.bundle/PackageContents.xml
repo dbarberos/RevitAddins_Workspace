@@ -1,24 +1,41 @@
-<?xml version="1.6.0" encoding="utf-8" ?>
-<ApplicationPackage AppVersion="1.6.0" Author="DBDev_dbarberos" AutodeskProduct="Revit" Description="DBDev Solutions" Name="FilterPlus" SchemaVersion="1.6.0">
-    <CompanyDetails Email="dbarberos@outlook.com" Name="DBDev Solutions" Url="https://dbdev-dbarberos.github.io"/>
-    <Components>
-        <RuntimeRequirements OS="Win64" Platform="Revit" SeriesMax="2023" SeriesMin="2023"/>
-        <ComponentEntry AppDescription="DBDev Solutions" AppName="FilterPlus" LoadOnCommandInvocation="False" LoadOnRevitStartup="True" ModuleName="./Contents/2023/FilterPlus.addin" Version="1.6.0"/>
-    </Components>
-    <Components>
-        <RuntimeRequirements OS="Win64" Platform="Revit" SeriesMax="2024" SeriesMin="2024"/>
-        <ComponentEntry AppDescription="DBDev Solutions" AppName="FilterPlus" LoadOnCommandInvocation="False" LoadOnRevitStartup="True" ModuleName="./Contents/2024/FilterPlus.addin" Version="1.6.0"/>
-    </Components>
-    <Components>
-        <RuntimeRequirements OS="Win64" Platform="Revit" SeriesMax="2025" SeriesMin="2025"/>
-        <ComponentEntry AppDescription="DBDev Solutions" AppName="FilterPlus" LoadOnCommandInvocation="False" LoadOnRevitStartup="True" ModuleName="./Contents/2025/FilterPlus.addin" Version="1.6.0"/>
-    </Components>
-    <Components>
-        <RuntimeRequirements OS="Win64" Platform="Revit" SeriesMax="2026" SeriesMin="2026"/>
-        <ComponentEntry AppDescription="DBDev Solutions" AppName="FilterPlus" LoadOnCommandInvocation="False" LoadOnRevitStartup="True" ModuleName="./Contents/2026/FilterPlus.addin" Version="1.6.0"/>
-    </Components>
-    <Components>
-        <RuntimeRequirements OS="Win64" Platform="Revit" SeriesMax="2027" SeriesMin="2027"/>
-        <ComponentEntry AppDescription="DBDev Solutions" AppName="FilterPlus" LoadOnCommandInvocation="False" LoadOnRevitStartup="True" ModuleName="./Contents/2027/FilterPlus.addin" Version="1.6.0"/>
-    </Components>
+﻿<?xml version="1.0" encoding="utf-8"?>
+<ApplicationPackage
+  SchemaVersion="1.0"
+  AppVersion="1.6.0"
+  Author="DBDev_dbarberos"
+  Description="FilterPlus"
+  Name="FilterPlus"
+  ProductCode="80A0E96D-DF31-4337-AD1E-7A89CC95D152"
+  OnlineDocumentation="https://dbdev-dbarberos.github.io/PrivacyPolicy/"
+  ProductType="Application"
+  Icon="./Contents/Resources/Icon32.png"
+  HelpFile="./Contents/Resources/Help.html">
+
+  <CompanyDetails
+    Name="DBDev Solutions"
+    Url="https://dbdev-dbarberos.github.io"
+    Email="dbarberos@outlook.com" />
+
+  <!-- Components injected dynamically by build-bundle.ps1 -->
+  <Components Description="FilterPlus Add-in for Revit 2023">
+    <RuntimeRequirements OS="Win64" Platform="Revit" SeriesMin="2023" SeriesMax="2023" />
+    <ComponentEntry AppName="FilterPlus" Version="1.6.0" ModuleName="./Contents/2023/FilterPlus.addin" AppDescription="DBDev Solutions" LoadOnRevitStartup="True" />
+  </Components>
+  <Components Description="FilterPlus Add-in for Revit 2024">
+    <RuntimeRequirements OS="Win64" Platform="Revit" SeriesMin="2024" SeriesMax="2024" />
+    <ComponentEntry AppName="FilterPlus" Version="1.6.0" ModuleName="./Contents/2024/FilterPlus.addin" AppDescription="DBDev Solutions" LoadOnRevitStartup="True" />
+  </Components>
+  <Components Description="FilterPlus Add-in for Revit 2025">
+    <RuntimeRequirements OS="Win64" Platform="Revit" SeriesMin="2025" SeriesMax="2025" />
+    <ComponentEntry AppName="FilterPlus" Version="1.6.0" ModuleName="./Contents/2025/FilterPlus.addin" AppDescription="DBDev Solutions" LoadOnRevitStartup="True" />
+  </Components>
+  <Components Description="FilterPlus Add-in for Revit 2026">
+    <RuntimeRequirements OS="Win64" Platform="Revit" SeriesMin="2026" SeriesMax="2026" />
+    <ComponentEntry AppName="FilterPlus" Version="1.6.0" ModuleName="./Contents/2026/FilterPlus.addin" AppDescription="DBDev Solutions" LoadOnRevitStartup="True" />
+  </Components>
+  <Components Description="FilterPlus Add-in for Revit 2027">
+    <RuntimeRequirements OS="Win64" Platform="Revit" SeriesMin="2027" SeriesMax="2027" />
+    <ComponentEntry AppName="FilterPlus" Version="1.6.0" ModuleName="./Contents/2027/FilterPlus.addin" AppDescription="DBDev Solutions" LoadOnRevitStartup="True" />
+  </Components>
+
 </ApplicationPackage>

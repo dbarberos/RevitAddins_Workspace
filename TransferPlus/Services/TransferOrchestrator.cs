@@ -3792,7 +3792,7 @@ public class TransferOrchestrator
         return new FilteredElementCollector(view.Document)
             .WherePasses(elementParameterFilter)
             .ToElementIds()
-            .FirstOrDefault(a => a.IntegerValue != view.Id.IntegerValue) ?? ElementId.InvalidElementId;
+            .FirstOrDefault(a => a != view.Id) ?? ElementId.InvalidElementId;
     }
 
     private static XYZ DameVectorReposicionOrigenTransformada(View vistaorigen, View vistadestino, Transform T)

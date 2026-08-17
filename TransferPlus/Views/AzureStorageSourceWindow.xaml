@@ -6,6 +6,7 @@
         mc:Ignorable="d"
         x:Name="AzureSourceWin"
         Title="Family source settings" Height="520" Width="640"
+        Icon="pack://application:,,,/TransferPlus;component/Resources/Icons/TransferPlus32x32.png"
         WindowStartupLocation="CenterOwner"
         ResizeMode="NoResize"
         Background="#FAFAFA">
