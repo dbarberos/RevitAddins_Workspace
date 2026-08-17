@@ -203,10 +203,14 @@
                 </StackPanel>
                 <Border Grid.Row="1" BorderBrush="#ddd" BorderThickness="1" Background="White" Margin="0,0,0,10">
                     <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto">
-                        <ItemsControl ItemsSource="{Binding DestinationDocuments}" Margin="10">
+                        <ItemsControl ItemsSource="{Binding DestinationDocuments}" Margin="10,6">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
-                                    <CheckBox Content="{Binding Nombre}" IsChecked="{Binding Checked, Mode=TwoWay}" Margin="0,4" FontSize="12"/>
+                                    <CheckBox IsChecked="{Binding Checked, Mode=TwoWay}" Margin="0,3" VerticalContentAlignment="Center" Cursor="Hand">
+                                        <CheckBox.Content>
+                                            <TextBlock Text="{Binding Nombre}" VerticalAlignment="Center" Margin="0" FontSize="12" Foreground="#222" FontWeight="Normal"/>
+                                        </CheckBox.Content>
+                                    </CheckBox>
                                 </DataTemplate>
                             </ItemsControl.ItemTemplate>
                         </ItemsControl>

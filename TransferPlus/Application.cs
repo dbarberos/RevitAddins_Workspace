@@ -18,7 +18,9 @@ public class Application : ExternalApplication
         AppDomain.CurrentDomain.AssemblyResolve += OnAssemblyResolve;
         try
         {
+            LoggerService.LogInfo("TransferPlus: Application.OnStartup started.");
             CreateRibbon();
+            LoggerService.LogInfo("TransferPlus: Application.OnStartup completed.");
         }
         catch (Exception ex)
         {
@@ -53,12 +55,15 @@ public class Application : ExternalApplication
             var settings = SettingsService.Load();
             RibbonPanel? panel = null;
 
+            LoggerService.LogInfo($"CreateRibbon: SelectedTabOption={settings.SelectedTabOption}, CustomTabName='{settings.CustomTabName}'");
+
             if (settings.SelectedTabOption == TabOption.RevitDefault)
             {
                 // Try inserting directly inside the native "Settings" (Configuración) panel on "Manage" tab
                 bool addedToNativePanel = TryAddButtonToNativeSettingsPanel();
                 if (addedToNativePanel)
                 {
+                    LoggerService.LogInfo("CreateRibbon: Button added to native Settings panel on Manage tab.");
                     return; // Button successfully placed inside native Settings group!
                 }
 
@@ -74,9 +79,9 @@ public class Application : ExternalApplication
                     {
                         panel = Application.CreatePanel(panelName);
                     }
-                    catch
+                    catch (Exception exP)
                     {
-                        // Fallback
+                        LoggerService.LogWarning($"CreateRibbon: Fallback create panel '{panelName}' failed: {exP.Message}");
                     }
                 }
             }
@@ -97,40 +102,51 @@ public class Application : ExternalApplication
                     try
                     {
                         Application.CreateRibbonTab(tabName);
+                        LoggerService.LogInfo($"CreateRibbon: Created ribbon tab '{tabName}'.");
                     }
                     catch
                     {
                         // Tab already exists in current Revit session
+                        LoggerService.LogInfo($"CreateRibbon: Ribbon tab '{tabName}' already exists.");
                     }
                 }
 
                 try
                 {
                     panel = Application.CreatePanel("TransferPlus", tabName);
+                    LoggerService.LogInfo($"CreateRibbon: Created panel 'TransferPlus' on tab '{tabName}'.");
                 }
-                catch
+                catch (Exception exPanel)
                 {
+                    LoggerService.LogWarning($"CreateRibbon: CreatePanel 'TransferPlus' on tab '{tabName}' failed: {exPanel.Message}. Attempting fallback to Add-Ins tab.");
                     try
                     {
                         panel = Application.CreatePanel("TransferPlus");
                     }
-                    catch
+                    catch (Exception exDef)
                     {
-                        // Fallback to Add-Ins tab
+                        LoggerService.LogError("CreateRibbon: Fallback CreatePanel 'TransferPlus' failed", exDef);
                     }
                 }
             }
 
             if (panel != null)
             {
-                panel.AddPushButton<CmdTransferPlus>("Transfer\nPlus")
-                    .SetImage("/TransferPlus;component/Resources/Icons/TransferPlus16x16.png")
-                    .SetLargeImage("/TransferPlus;component/Resources/Icons/TransferPlus32x32.png");
+                var pushButton = panel.AddPushButton<CmdTransferPlus>("Transfer\nPlus");
+                pushButton.SetImage("/TransferPlus;component/Resources/Icons/TransferPlus16x16.png");
+                pushButton.SetLargeImage("/TransferPlus;component/Resources/Icons/TransferPlus32x32.png");
+                pushButton.ToolTip = "TransferPlus Multi-Document & Cloud Transfer";
+                pushButton.LongDescription = "Advanced transfer of elements, views, sheets, phases, and standards across Revit models, local disks, Autodesk Docs, Azure, and AWS.";
+                LoggerService.LogInfo("CreateRibbon: PushButton 'TransferPlus' successfully registered on Ribbon.");
+            }
+            else
+            {
+                LoggerService.LogError("CreateRibbon: Panel is null, could not add PushButton.", new InvalidOperationException("RibbonPanel is null"));
             }
         }
         catch (Exception ex)
         {
-            System.Diagnostics.Debug.WriteLine("Ribbon Creation Error: " + ex.Message);
+            LoggerService.LogError("CreateRibbon Error", ex);
         }
     }
 

@@ -2128,6 +2128,8 @@ public class TransferOrchestrator
         {
             // Initialize result list early so all strategies can contribute
             var childSectionViews = new List<View>();
+            // Map: sectionViewId → viewerMarkId (the 2D annotation symbol on the host view)
+            var viewerMarkMap = new Dictionary<long, ElementId>();
 
             // ══════════════════════════════════════════════════════════════════
             // STRATEGY 0 (PRIMARY): View-scoped FilteredElementCollector + Dereferencing
@@ -2179,6 +2181,7 @@ public class TransferOrchestrator
                                     if (!childSectionViews.Any(cv => cv.Id.Value == refView.Id.Value))
                                     {
                                         childSectionViews.Add(refView);
+                                        viewerMarkMap[refView.Id.Value] = viewer.Id;
                                         LoggerService.LogInfo($"ponSections [DISCOVERY via Strategy 0 Direct View]: Found '{refView.Name}' (Id: {refView.Id.Value}) via viewer mark {viewer.Id.Value}");
                                     }
                                 }
@@ -2234,6 +2237,7 @@ public class TransferOrchestrator
                                     if (!childSectionViews.Any(cv => cv.Id.Value == depView.Id.Value))
                                     {
                                         childSectionViews.Add(depView);
+                                        viewerMarkMap[depView.Id.Value] = viewer.Id;
                                         LoggerService.LogInfo($"ponSections [DISCOVERY via Strategy 0 Viewer Dependent]: Found '{depView.Name}' (Id: {depView.Id.Value})");
                                     }
                                 }
@@ -2424,31 +2428,87 @@ public class TransferOrchestrator
                     // ── 3. Create / Copy Section View ──
                     View? targetSectionView = null;
 
-                    // ── Strategy 1 (Primary): Native View-to-View CopyElements ──
-                    // Copies the section from vistaorigen into vistadestino, automatically generating the 2D section cut line & heads on vistadestino.
+                    // ── Strategy 1 (Primary): Copy VIEWER MARK via View-to-View CopyElements ──
+                    // The viewer mark (OST_Viewers) is the 2D annotation symbol (section cut line,
+                    // heads, tail) displayed on the host view. Copying the viewer mark forces Revit
+                    // to recreate BOTH the visible symbol AND the associated ViewSection in the target.
+                    // If no viewer mark was found in Strategy 0, fall back to copying the View element
+                    // at the document level.
                     try
                     {
-                        LoggerService.LogInfo($"ponSections [STRATEGY 1 COPYELEMENTS]: Copying section view '{sectionView.Name}' (Id: {sectionView.Id.Value}) from '{vistaorigen.Name}' into '{vistadestino.Name}'...");
-                        var source = ElementTransformUtils.CopyElements(vistaorigen, new List<ElementId> { sectionView.Id }, vistadestino, null, copyOptions);
+                        ElementId elementToCopy;
+                        string copyStrategy;
 
-                        if (source != null && source.Any())
+                        if (viewerMarkMap.TryGetValue(sectionView.Id.Value, out ElementId viewerMarkId))
                         {
-                            targetSectionView = source.Select(id => destino.GetElement(id)).OfType<View>().FirstOrDefault();
+                            elementToCopy = viewerMarkId;
+                            copyStrategy = "VIEWER_MARK";
+                        }
+                        else
+                        {
+                            elementToCopy = sectionView.Id;
+                            copyStrategy = "VIEW_ELEMENT";
+                        }
+
+                        LoggerService.LogInfo($"ponSections [STRATEGY 1 COPYELEMENTS ({copyStrategy})]: Copying '{sectionView.Name}' element Id {elementToCopy.Value} from '{vistaorigen.Name}' into '{vistadestino.Name}'...");
+
+                        ICollection<ElementId> copiedIds;
+                        if (copyStrategy == "VIEWER_MARK")
+                        {
+                            // Copy the viewer mark between views – this recreates the 2D symbol AND the view
+                            copiedIds = ElementTransformUtils.CopyElements(vistaorigen, new List<ElementId> { elementToCopy }, vistadestino, null, copyOptions);
+                        }
+                        else
+                        {
+                            // Fallback: copy the view at document level
+                            copiedIds = ElementTransformUtils.CopyElements(origen, new List<ElementId> { elementToCopy }, destino, null, copyOptions);
+                        }
+
+                        if (copiedIds != null && copiedIds.Any())
+                        {
+                            LoggerService.LogInfo($"ponSections [STRATEGY 1 COPY RESULT]: Copied {copiedIds.Count} element(s): [{string.Join(", ", copiedIds.Select(id => $"{id.Value}({destino.GetElement(id)?.GetType().Name})"))}]");
+
+                            // Find the target ViewSection from the copied elements
+                            targetSectionView = copiedIds.Select(id => destino.GetElement(id)).OfType<View>().FirstOrDefault(v => !v.IsTemplate);
 
                             if (targetSectionView == null)
                             {
-                                foreach (ElementId cId in source)
+                                // The copied element might be the viewer mark; find the view via its parameters
+                                foreach (ElementId cId in copiedIds)
                                 {
                                     Element cElem = destino.GetElement(cId);
                                     if (cElem != null && cElem.IsValidObject)
                                     {
+                                        // Check dependent elements of the copied viewer mark
+                                        try
+                                        {
+                                            var depIds = cElem.GetDependentElements(null);
+                                            if (depIds != null)
+                                            {
+                                                foreach (var depId in depIds)
+                                                {
+                                                    if (destino.GetElement(depId) is View depV && depV.IsValidObject && !depV.IsTemplate)
+                                                    {
+                                                        targetSectionView = depV;
+                                                        LoggerService.LogInfo($"ponSections [STRATEGY 1 RESOLVE]: Found view '{depV.Name}' (Id: {depV.Id.Value}) via dependent element of copied viewer mark.");
+                                                        break;
+                                                    }
+                                                }
+                                            }
+                                        }
+                                        catch { }
+
+                                        if (targetSectionView != null) break;
+
+                                        // Also check ElementId parameters
                                         foreach (Parameter p in cElem.Parameters)
                                         {
                                             if (p != null && p.StorageType == StorageType.ElementId && p.AsElementId() is ElementId pId && pId != ElementId.InvalidElementId && pId != vistadestino.Id)
                                             {
-                                                if (destino.GetElement(pId) is View pView && pView.IsValidObject)
+                                                if (destino.GetElement(pId) is View pView && pView.IsValidObject && !pView.IsTemplate)
                                                 {
                                                     targetSectionView = pView;
+                                                    LoggerService.LogInfo($"ponSections [STRATEGY 1 RESOLVE]: Found view '{pView.Name}' (Id: {pView.Id.Value}) via parameter of copied element.");
                                                     break;
                                                 }
                                             }
@@ -2460,7 +2520,11 @@ public class TransferOrchestrator
 
                             if (targetSectionView != null)
                             {
-                                LoggerService.LogInfo($"ponSections [STRATEGY 1 SUCCESS]: Copied section view '{targetSectionView.Name}' (Target Id: {targetSectionView.Id.Value}) with native viewer symbol.");
+                                LoggerService.LogInfo($"ponSections [STRATEGY 1 SUCCESS ({copyStrategy})]: Copied '{targetSectionView.Name}' (Target Id: {targetSectionView.Id.Value}) with native viewer symbol.");
+                            }
+                            else
+                            {
+                                LoggerService.LogWarning($"ponSections [STRATEGY 1 PARTIAL]: Copied {copiedIds.Count} element(s) but could not resolve target ViewSection. Viewer mark may still be visible.");
                             }
                         }
                     }
