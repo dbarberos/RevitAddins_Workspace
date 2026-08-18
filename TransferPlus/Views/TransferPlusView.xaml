@@ -760,7 +760,7 @@
                                 </Grid.RowDefinitions>
                                 
                                 <!-- Card Header Row: Title on Left, Category & Version Metadata on Right (when 1 family selected) -->
-                                <Grid Grid.Row="0" Margin="0,0,0,6">
+                                <Grid Grid.Row="0" Margin="0,0,0,3">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="Auto"/>
                                         <ColumnDefinition Width="*"/>
@@ -838,15 +838,16 @@
                                                  </Border>
                                              </StackPanel>
                                              
-                                             <!-- Right Column: Family Name, Type, Category, Revit Version, Host (Title stacked above property value) -->
+                                                                      <!-- Right Column: Family Name, Type, Category, Revit Version, Host (Title stacked above property value) -->
                                              <StackPanel Grid.Column="1" VerticalAlignment="Top" Margin="0,0,0,0">
                                                  <!-- Family Name -->
                                                  <TextBlock Text="{Binding SelectedFamily.Name}" 
-                                                            FontWeight="Bold" FontSize="13" Foreground="#111111"
-                                                            TextWrapping="Wrap" Margin="0,0,0,5"/>
+                                                            FontWeight="Bold" FontSize="12" Foreground="#111111"
+                                                            TextWrapping="NoWrap" TextTrimming="CharacterEllipsis"
+                                                            ToolTip="{Binding SelectedFamily.Name}" Margin="0,0,0,1"/>
 
                                                  <!-- Type Name (Visible when a type node is selected in tree) -->
-                                                 <StackPanel Margin="0,0,0,3">
+                                                 <StackPanel Margin="0,0,0,1">
                                                      <StackPanel.Style>
                                                          <Style TargetType="StackPanel">
                                                              <Setter Property="Visibility" Value="Visible"/>
@@ -857,26 +858,26 @@
                                                              </Style.Triggers>
                                                          </Style>
                                                      </StackPanel.Style>
-                                                     <TextBlock Text="Type" FontWeight="Bold" FontSize="11" Foreground="#111111"/>
-                                                     <TextBlock Text="{Binding SelectedSymbol.Name}" FontSize="11" Foreground="#333333" TextWrapping="Wrap"/>
+                                                     <TextBlock Text="Type" FontWeight="Bold" FontSize="10" Foreground="#111111" Margin="0,0,0,-1"/>
+                                                     <TextBlock Text="{Binding SelectedSymbol.Name}" FontSize="10" Foreground="#333333" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" ToolTip="{Binding SelectedSymbol.Name}"/>
                                                  </StackPanel>
 
                                                  <!-- Category -->
-                                                 <StackPanel Margin="0,0,0,3">
-                                                     <TextBlock Text="Category" FontWeight="Bold" FontSize="11" Foreground="#111111"/>
-                                                     <TextBlock Text="{Binding SelectedFamily.CategoryName}" FontSize="11" Foreground="#333333" TextWrapping="Wrap"/>
+                                                 <StackPanel Margin="0,0,0,1">
+                                                     <TextBlock Text="Category" FontWeight="Bold" FontSize="10" Foreground="#111111" Margin="0,0,0,-1"/>
+                                                     <TextBlock Text="{Binding SelectedFamily.CategoryName}" FontSize="10" Foreground="#333333" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" ToolTip="{Binding SelectedFamily.CategoryName}"/>
                                                  </StackPanel>
 
                                                  <!-- Revit Version -->
-                                                 <StackPanel Margin="0,0,0,3">
-                                                     <TextBlock Text="Revit" FontWeight="Bold" FontSize="11" Foreground="#111111"/>
-                                                     <TextBlock Text="{Binding SelectedFamily.RevitVersion}" FontSize="11" Foreground="#333333"/>
+                                                 <StackPanel Margin="0,0,0,1">
+                                                     <TextBlock Text="Revit" FontWeight="Bold" FontSize="10" Foreground="#111111" Margin="0,0,0,-1"/>
+                                                     <TextBlock Text="{Binding SelectedFamily.RevitVersion}" FontSize="10" Foreground="#333333"/>
                                                  </StackPanel>
 
                                                  <!-- Host Type -->
-                                                 <StackPanel Margin="0,0,0,3">
-                                                     <TextBlock Text="Host" FontWeight="Bold" FontSize="11" Foreground="#111111"/>
-                                                     <TextBlock Text="{Binding SelectedFamily.HostTypeDescription}" FontSize="11" Foreground="#333333"/>
+                                                 <StackPanel Margin="0,0,0,0">
+                                                     <TextBlock Text="Host" FontWeight="Bold" FontSize="10" Foreground="#111111" Margin="0,0,0,-1"/>
+                                                     <TextBlock Text="{Binding SelectedFamily.HostTypeDescription}" FontSize="10" Foreground="#333333" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" ToolTip="{Binding SelectedFamily.HostTypeDescription}"/>
                                                  </StackPanel>
                                              </StackPanel>
                                          </Grid>
@@ -897,7 +898,7 @@
                                     </Grid>
                                     
                                     <!-- Separator Line -->
-                                    <Border Grid.Row="1" BorderBrush="#E0E0E0" BorderThickness="0,1,0,0" Margin="0,6,0,6"/>
+                                    <Border Grid.Row="1" BorderBrush="#E0E0E0" BorderThickness="0,1,0,0" Margin="0,2,0,3"/>
                                     
                                      <!-- Action Buttons Row (Left-aligned: Delete, Download, and 3 Stacked Download Option RadioButtons) -->
                                      <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Left" VerticalAlignment="Center">
@@ -963,7 +964,7 @@
                                                        FontSize="11.5" 
                                                        Foreground="#333333" 
                                                        Cursor="Hand"
-                                                       Margin="0,0,0,6"
+                                                       Margin="0,0,0,3"
                                                        ToolTip="When enabled, downloaded families are saved into subfolders organized by their Revit category."/>
 
                                              <!-- 2. Set Default View as 3D -->
@@ -974,7 +975,7 @@
                                                        FontSize="11.5" 
                                                        Foreground="#333333" 
                                                        Cursor="Hand"
-                                                       Margin="0,0,0,6"
+                                                       Margin="0,0,0,3"
                                                        ToolTip="When enabled, sets the default preview view of downloaded families to 3D before saving."/>
 
                                              <!-- 3. Include Export Log when download -->
@@ -985,6 +986,7 @@
                                                        FontSize="11.5" 
                                                        Foreground="#333333" 
                                                        Cursor="Hand"
+                                                       Margin="0,0,0,0"
                                                        ToolTip="When enabled, prompts for a log directory and saves a detailed .txt export report file when downloading families."/>
                                          </StackPanel>
                                      </StackPanel>
