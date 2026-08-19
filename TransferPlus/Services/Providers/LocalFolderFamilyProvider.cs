@@ -54,6 +54,19 @@ public class LocalFolderFamilyProvider : IFamilyProvider
                 string revitVersion = string.IsNullOrWhiteSpace(ver) ? "RFA File" : ver;
                 string categoryName = string.IsNullOrWhiteSpace(cat) ? "General" : cat;
 
+                long? sizeBytes = null;
+                DateTime? lastMod = null;
+                try
+                {
+                    var fi = new FileInfo(filePath);
+                    if (fi.Exists)
+                    {
+                        sizeBytes = fi.Length;
+                        lastMod = fi.LastWriteTime;
+                    }
+                }
+                catch { }
+
                 result.Add(new FamilyItemModel
                 {
                     Name = familyName,
@@ -62,6 +75,8 @@ public class LocalFolderFamilyProvider : IFamilyProvider
                     StatusMessage = $"{symbols.Count} tipo(s) disponible(s)",
                     ImagePreviewUrl = filePath,
                     RevitVersion = revitVersion,
+                    FileSizeBytes = sizeBytes,
+                    LastModified = lastMod,
                     Symbols = symbols
                 });
             }

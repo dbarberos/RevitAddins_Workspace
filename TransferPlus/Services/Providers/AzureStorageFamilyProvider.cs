@@ -66,6 +66,9 @@ public class AzureStorageFamilyProvider : IFamilyProvider
                 var (ver, cat, symbols) = RfaMetadataExtractor.ExtractCategoryAndSymbols(_familyRevitService?.RevitApp, cachedFilePath);
                 string categoryName = string.IsNullOrWhiteSpace(cat) ? "Azure Family" : cat;
 
+                long? azSize = blob.ContentLength > 0 ? blob.ContentLength : (File.Exists(cachedFilePath) ? new FileInfo(cachedFilePath).Length : (long?)null);
+                DateTime? azLastMod = blob.LastModified.HasValue ? blob.LastModified.Value.DateTime : (File.Exists(cachedFilePath) ? new FileInfo(cachedFilePath).LastWriteTime : (DateTime?)null);
+
                 result.Add(new FamilyItemModel
                 {
                     Name = blob.FamilyName,
@@ -74,6 +77,8 @@ public class AzureStorageFamilyProvider : IFamilyProvider
                     StatusMessage = $"Azure Blob ({blob.FormattedSize})",
                     ImagePreviewUrl = File.Exists(cachedFilePath) ? cachedFilePath : blob.BlobName,
                     RevitVersion = string.IsNullOrWhiteSpace(ver) ? "Azure Cloud" : ver,
+                    FileSizeBytes = azSize,
+                    LastModified = azLastMod,
                     Symbols = symbols
                 });
             }

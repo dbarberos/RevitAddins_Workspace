@@ -72,6 +72,25 @@ The central explorer categorizes all transferrable project items:
 - **Azure Blob Storage**: Enterprise private cloud storage containers.
 - **AWS S3**: Scalable S3 family buckets.
 
+### Family Details & Metadata Inspection
+- **Real-time Preview**: Instant asynchronous 128x128 pixel thumbnail rendering.
+- **Dynamic File Size**: Formatted size display (`File size`) in `KB` or `MB`.
+- **Last Modified Timestamp**: Date formatting (`Last modified`) in `yyyy-MM-dd`.
+- **Single-Line Trimming**: Zero vertical clipping with full tooltip inspection.
+
+---
+
+## Version History (Changelog)
+
+### v1.1.0 - 2026-08-19
+- Added `File size` and `Last modified` properties in Family Details.
+- Standardized custom window icons across all dialogs via Pack URIs.
+- Compact UI layout optimization with character ellipsis and tooltips.
+- Full multi-version packaging for Revit 2024, 2025, 2026, and 2027.
+
+### v1.0.0
+- Initial release with multi-document transfer engine, hierarchical asset tree, conflict resolution, and cloud family providers.
+
 ---
 
 ## Support and Contact

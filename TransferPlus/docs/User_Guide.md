@@ -1,6 +1,6 @@
 # TransferPlus
 
-> **Current Version:** v1.0.0  
+> **Current Version:** v1.1.0  
 > **Add-in ID (GUID):** `D1981E8C-1951-45C0-B24C-CA821B7288D2`  
 
 ---
@@ -99,7 +99,35 @@ Manage and import Revit families directly from multiple external repositories:
 
 ---
 
+### 5.7. Family Details & Metadata Inspection
+When a family or family type is selected in Family Mode, the right-hand **Family Details** card provides instant inspection:
+* **Real-time Thumbnail Preview**: Dynamic 128x128 pixel visual preview extracted asynchronously.
+* **Family & Type Information**: Full name, active type, category, and host classification (Wall, Floor, Ceiling, Face, Unhosted).
+* **Target Revit Version**: Displays the Revit build version of the `.rfa` asset (e.g. `Revit 2024`).
+* **File Size (`File size`)**: Real-time display of physical family file size formatted in `KB` or `MB`.
+* **Last Modified (`Last modified`)**: Date timestamp (`yyyy-MM-dd`) indicating when the family was last saved on disk or in the cloud.
+* **Optimized Single-Line Layout**: Text trimming with ellipsis (`CharacterEllipsis`) and full tooltips ensure all metadata rows remain visible within the card height.
+
+---
+
 ## 6. Version History (Changelog)
+
+### v1.1.0 - 2026-08-19
+
+#### Added
+- **Family Details Metadata**: Added **`File size`** (formatted in KB/MB) and **`Last modified`** (`yyyy-MM-dd`) properties dynamically populated across Local Folders, Azure Blob Storage, AWS S3, Autodesk Docs (ACC/BIM360), and Open/Linked documents.
+- **Window Icon Standardization**: Integrated Pack URI resources (`pack://application:,,,/TransferPlus;component/Resources/Icons/TransferPlus32x32.png`) across all 14 application windows, preventing default Revit host icon fallbacks.
+- **Multi-Version App Store Packaging**: Created automated `build-bundle.ps1` deployment script producing standardized `TransferPlus.bundle` packages for Revit 2024, 2025, 2026, and 2027.
+
+#### Changed
+- **Family Details UI Spacing**: Equalized vertical gaps between property titles, property values, and consecutive rows to a uniform minimal spacing (`Margin="0,0,0,0"`).
+- **Single-Line Text Trimming**: Enabled `TextWrapping="NoWrap"`, `TextTrimming="CharacterEllipsis"`, and tooltips on all detail rows to guarantee all properties fit seamlessly in the card.
+
+#### Fixed
+- **Secondary Window Headers**: Resolved default Revit icon display in child modal windows.
+- **Ternary Nullable Type Conversions**: Fixed compilation ambiguity for nullable timestamps and file lengths in storage providers.
+
+---
 
 ### v1.0.0
 

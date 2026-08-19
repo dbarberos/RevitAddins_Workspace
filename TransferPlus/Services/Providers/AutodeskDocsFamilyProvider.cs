@@ -81,6 +81,9 @@ public class AutodeskDocsFamilyProvider : IFamilyProvider
                 var (ver, cat, symbols) = RfaMetadataExtractor.ExtractCategoryAndSymbols(_familyRevitService?.RevitApp, cachedFilePath);
                 string categoryName = string.IsNullOrWhiteSpace(cat) ? "Autodesk Docs" : cat;
 
+                long? accSize = item.ContentLength > 0 ? item.ContentLength : (File.Exists(cachedFilePath) ? new FileInfo(cachedFilePath).Length : (long?)null);
+                DateTime? accLastMod = item.LastModified.HasValue ? item.LastModified : (File.Exists(cachedFilePath) ? new FileInfo(cachedFilePath).LastWriteTime : (DateTime?)null);
+
                 result.Add(new FamilyItemModel
                 {
                     Name = familyName,
@@ -89,6 +92,8 @@ public class AutodeskDocsFamilyProvider : IFamilyProvider
                     StatusMessage = $"ACC Cloud ({FormatFileSize(item.ContentLength)})",
                     ImagePreviewUrl = item.Id, // ACC Item URN stored here for downloading
                     RevitVersion = string.IsNullOrWhiteSpace(ver) ? "ACC Cloud" : ver,
+                    FileSizeBytes = accSize,
+                    LastModified = accLastMod,
                     Symbols = symbols
                 });
             }

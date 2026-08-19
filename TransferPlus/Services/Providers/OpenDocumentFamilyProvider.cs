@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -61,6 +62,16 @@ public class OpenDocumentFamilyProvider : IFamilyProvider
                     }
                 }
 
+                DateTime? docLastMod = null;
+                try
+                {
+                    if (!string.IsNullOrWhiteSpace(_sourceDoc.PathName) && File.Exists(_sourceDoc.PathName))
+                    {
+                        docLastMod = new FileInfo(_sourceDoc.PathName).LastWriteTime;
+                    }
+                }
+                catch { }
+
                 result.Add(new FamilyItemModel
                 {
                     Name = family.Name,
@@ -70,6 +81,7 @@ public class OpenDocumentFamilyProvider : IFamilyProvider
                     Symbols = symbolModels,
                     NativeFamily = family,
                     SourceDocument = _sourceDoc,
+                    LastModified = docLastMod,
                     HostTypeDescription = FamilyHostTypeHelper.DetermineHostTypeDescription(family)
                 });
             }
