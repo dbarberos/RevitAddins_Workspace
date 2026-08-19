@@ -6,7 +6,7 @@
   "compilationOptions": {},
   "targets": {
     ".NETCoreApp,Version=v10.0": {
-      "TransferPlus/1.0.0": {
+      "TransferPlus/1.1.0": {
         "dependencies": {
           "AWSSDK.S3": "3.7.511.8",
           "Azure.Storage.Blobs": "12.23.0",
@@ -144,7 +144,7 @@
     }
   },
   "libraries": {
-    "TransferPlus/1.0.0": {
+    "TransferPlus/1.1.0": {
       "type": "project",
       "serviceable": false,
       "sha512": ""

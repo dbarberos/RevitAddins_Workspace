@@ -195,10 +195,14 @@ Write-Host "Bundle folder generated at: $BundlePath" -ForegroundColor Green
 $ZipPath = Join-Path $DeployDir "$AppName`_v$Version.zip"
 if (Test-Path $ZipPath) { Remove-Item $ZipPath -Force }
 
-Write-Host "Waiting 2 seconds to release file locks..." -ForegroundColor Gray
-Start-Sleep -Seconds 2
-
-Compress-Archive -Path $BundlePath -DestinationPath $ZipPath -Force
+Write-Host "Archiving bundle to $ZipPath..." -ForegroundColor Gray
+Add-Type -AssemblyName System.IO.Compression.FileSystem
+try {
+    [System.IO.Compression.ZipFile]::CreateFromDirectory($BundlePath, $ZipPath, [System.IO.Compression.CompressionLevel]::Optimal, $true)
+} catch {
+    Write-Warning "ZipFile failed: $_. Falling back to Compress-Archive..."
+    Compress-Archive -Path $BundlePath -DestinationPath $ZipPath -Force
+}
 
 # If PublishPackage folder exists, update it as well
 if (Test-Path $PublishPackageDir) {

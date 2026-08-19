@@ -21,7 +21,8 @@ public static class DocumentCollector
             progressCallback?.Invoke(stepName, num, maxMain);
         }
 
-        // 1. Element Types
+        // 1. Element Types (System Families, System Annotation Types, etc.)
+        // Note: Loadable component families (.rfa) are exclusively managed via the dedicated Family Mode.
         var collection = new FilteredElementCollector(_doc_origen).WhereElementIsElementType().ToElementIds();
         Report("Collecting Element Types", collection.Count);
         foreach (ElementId elementId in collection)
@@ -29,6 +30,12 @@ public static class DocumentCollector
             Element element = _doc_origen.GetElement(elementId);
             if (element != null && element is not AssemblyType && element is not RevitLinkType && element.Category != null)
             {
+                // Exclude loadable component families (.rfa editable families) to keep standard tree lightweight
+                if (element is FamilySymbol familySymbol && familySymbol.Family != null && familySymbol.Family.IsEditable && !familySymbol.Family.IsInPlace)
+                {
+                    continue;
+                }
+
                 try
                 {
                     Elemento item = new Elemento(element);
@@ -580,22 +587,8 @@ public static class DocumentCollector
             }
         }
 
-        // 28. Loadable Families
-        var list25 = new FilteredElementCollector(_doc_origen).OfClass(typeof(Family)).Select(i => i.Id).ToList();
-        Report("Collecting Loadable Families", list25.Count);
-        foreach (ElementId elementId28 in list25)
-        {
-            Element element30 = _doc_origen.GetElement(elementId28);
-            if (element30 != null && element30 is Family family)
-            {
-                try
-                {
-                    Elemento item30 = new Elemento(element30, "Loadable Families (Overwrite All Types)", family.FamilyCategory?.Name ?? "Generic", _doc_origen);
-                    elementsAFiltrar.Add(item30);
-                }
-                catch { }
-            }
-        }
+        // 28. Loadable Families (Skipped in Standard Mode; fully and granularly managed in Family Mode)
+        Report("Skipping Loadable Families (Handled in Family Mode)", 0);
 
         // 29. Global Parameters
         var list26 = new FilteredElementCollector(_doc_origen).OfClass(typeof(GlobalParameter)).Select(i => i.Id).ToList();
