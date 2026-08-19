@@ -1,0 +1,37 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<ApplicationPackage
+  SchemaVersion="1.0"
+  AppVersion="1.1.0"
+  Author="DBDev_dbarberos"
+  Description="TransferPlus"
+  Name="TransferPlus"
+  ProductCode="3E837CCE-ACFF-4A32-B4B3-B61EF8CDF05B"
+  OnlineDocumentation="https://dbdev-dbarberos.github.io/PrivacyPolicy/"
+  ProductType="Application"
+  Icon="./Contents/Resources/Icon32.png"
+  HelpFile="./Contents/Resources/Help.html">
+
+  <CompanyDetails
+    Name="DBDev Solutions"
+    Url="https://dbdev-dbarberos.github.io"
+    Email="dbarberos@outlook.com" />
+
+  <!-- Components injected dynamically by build-bundle.ps1 -->
+  <Components Description="TransferPlus Add-in for Revit 2024">
+    <RuntimeRequirements OS="Win64" Platform="Revit" SeriesMin="2024" SeriesMax="2024" />
+    <ComponentEntry AppName="TransferPlus" Version="1.1.0" ModuleName="./Contents/2024/TransferPlus.addin" AppDescription="DBDev Solutions" LoadOnRevitStartup="True" />
+  </Components>
+  <Components Description="TransferPlus Add-in for Revit 2025">
+    <RuntimeRequirements OS="Win64" Platform="Revit" SeriesMin="2025" SeriesMax="2025" />
+    <ComponentEntry AppName="TransferPlus" Version="1.1.0" ModuleName="./Contents/2025/TransferPlus.addin" AppDescription="DBDev Solutions" LoadOnRevitStartup="True" />
+  </Components>
+  <Components Description="TransferPlus Add-in for Revit 2026">
+    <RuntimeRequirements OS="Win64" Platform="Revit" SeriesMin="2026" SeriesMax="2026" />
+    <ComponentEntry AppName="TransferPlus" Version="1.1.0" ModuleName="./Contents/2026/TransferPlus.addin" AppDescription="DBDev Solutions" LoadOnRevitStartup="True" />
+  </Components>
+  <Components Description="TransferPlus Add-in for Revit 2027">
+    <RuntimeRequirements OS="Win64" Platform="Revit" SeriesMin="2027" SeriesMax="2027" />
+    <ComponentEntry AppName="TransferPlus" Version="1.1.0" ModuleName="./Contents/2027/TransferPlus.addin" AppDescription="DBDev Solutions" LoadOnRevitStartup="True" />
+  </Components>
+
+</ApplicationPackage>

@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>TransferPlus User Guide</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 25px; line-height: 1.6; color: #333; max-width: 950px; margin: auto; }
+        h1, h2, h3 { color: #005A9C; }
+        h1 { border-bottom: 2px solid #005A9C; padding-bottom: 10px; }
+        h2 { border-bottom: 1px solid #ddd; padding-bottom: 6px; margin-top: 30px; }
+        code { background-color: #f4f4f4; padding: 2px 5px; border-radius: 3px; font-family: Consolas, monospace; }
+        table { border-collapse: collapse; width: 100%; margin: 15px 0; }
+        th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
+        th { background-color: #f8f9fa; font-weight: 600; }
+        .badge { display: inline-block; padding: 4px 8px; font-size: 12px; font-weight: bold; border-radius: 4px; background-color: #007ACC; color: white; }
+        .alert { padding: 15px; margin: 15px 0; border: 1px solid transparent; border-radius: 4px; }
+        .alert-info { background-color: #e7f3fe; border-color: #b6d4fe; color: #084298; }
+        .alert-warning { background-color: #fff3cd; border-color: #ffecb5; color: #664d03; }
+        ul, ol { padding-left: 25px; }
+        li { margin-bottom: 6px; }
+    </style>
+</head>
+<body>
+
+    <h1>TransferPlus</h1>
+    <p>
+        <span class="badge">Version 1.1.0</span> &nbsp;
+        <strong>Add-in ID (GUID):</strong> <code>D1981E8C-1951-45C0-B24C-CA821B7288D2</code>
+    </p>
+
+    <h2>1. Overview</h2>
+    <p><strong>TransferPlus</strong> is an enterprise-grade multi-model asset transfer and management solution for Autodesk Revit. Designed to overcome the limitations of Revit's native <em>Transfer Project Standards</em> tool, TransferPlus enables granular, asynchronous transferring of project standards, loadable/system families, 2D/3D views (plans, sections, elevations, callouts, drafting views, 3D views), sheets, schedules, legends, and model geometry between active documents, linked models, local directories, Autodesk Docs (ACC/BIM360), Azure Blob Storage, and AWS S3 cloud buckets.</p>
+
+    <h2>2. Requirements and Compatibility</h2>
+    <div class="alert alert-warning">
+        <strong>Compatibility:</strong> Supported on 64-bit Windows across Autodesk Revit 2023, 2024, 2025, 2026, and 2027.
+    </div>
+    <ul>
+        <li><strong>Platform</strong>: .NET Framework 4.8 (Revit 2023–2024) / .NET 8 (Revit 2025–2027).</li>
+        <li><strong>Host Application</strong>: Autodesk Revit 2023, 2024, 2025, 2026, 2027 (Win64).</li>
+    </ul>
+
+    <h2>3. Installation & Uninstallation</h2>
+    <p>The installer that ran when you downloaded this plug-in from the Autodesk App Store has already installed the plug-in. You may need to restart the Autodesk product to activate the plug-in.</p>
+    <p>To uninstall this plug-in, exit the Autodesk product if you are currently running it, simply rerun the installer by downloading it again from the Autodesk App Store, and select the 'Uninstall' button, or you can uninstall it from 'Control Panel\Programs\Programs and Features' (Windows 10/11), just as you would uninstall any other application from your system.</p>
+
+    <h2>4. Commands and Features Guide</h2>
+    <table>
+        <tr>
+            <th>Command</th>
+            <th>Function</th>
+            <th>Technical Class</th>
+        </tr>
+        <tr>
+            <td><strong>TransferPlus</strong></td>
+            <td>Opens the main multi-document transfer and asset explorer window.</td>
+            <td><code>TransferPlus.Application</code></td>
+        </tr>
+        <tr>
+            <td><strong>Transfer Rename</strong></td>
+            <td>Opens the PowerRename batch preview dialog for rule-based regex renaming.</td>
+            <td><code>TransferPlus.ViewModels.RenamePreviewViewModel</code></td>
+        </tr>
+    </table>
+
+    <h2>5. Comprehensive Usage Guide</h2>
+
+    <h3>5.1. Target Document Selection (<code>Transfer to:</code>)</h3>
+    <ul>
+        <li><strong>Multi-Model Selection</strong>: Check one or multiple destination documents simultaneously.</li>
+        <li><strong>Open & Linked Models</strong>: Operates across active project files and loaded link instances.</li>
+        <li><strong>Status Count</strong>: Live indicator showing total checked target models.</li>
+    </ul>
+
+    <h3>5.2. Hierarchical Asset Explorer (<code>What:</code>)</h3>
+    <ul>
+        <li><strong>Families</strong>: Loadable families with real-time thumbnail previews and system families.</li>
+        <li><strong>Views</strong>: Floor Plans, Ceiling Plans, Structural Plans, Sections, Elevations, Drafting Views, 3D Views, and Callouts.</li>
+        <li><strong>Sheets</strong>: Titleblocks, sheets, and placed viewports.</li>
+        <li><strong>Schedules & Legends</strong>: Single/multi-category schedules and component legends.</li>
+        <li><strong>Project Standards</strong>: Line styles, materials, fill patterns, filters, object styles, text/dimension styles, and phases.</li>
+    </ul>
+
+    <h3>5.3. Conflict Resolution (<code>On Duplicates:</code>)</h3>
+    <ul>
+        <li><strong>Keep Original</strong>: Skips existing elements, avoiding duplicates in target models.</li>
+        <li><strong>Abort Transaction</strong>: Safely aborts and rolls back the operation if conflicts occur.</li>
+        <li><strong>Append Suffix</strong>: Appends custom suffixes (e.g. <code>_Copy</code>) to transferred names.</li>
+        <li><strong>PowerRename</strong>: Real-time regex pattern find/replace, prefixes, suffixes, and numbering.</li>
+    </ul>
+
+    <h3>5.4. View & Geometry Rules (<code>On Views & Geometry:</code>)</h3>
+    <ul>
+        <li><strong>Accept on all Dialogs</strong>: Automatic suppression of non-fatal Revit warnings.</li>
+        <li><strong>Transfer Sheet with Views</strong>: Discovers and copies all placed views alongside sheets.</li>
+        <li><strong>Use Legend/Schedule if Exists</strong>: Re-references existing schedules without duplicates.</li>
+        <li><strong>Transfer Callouts & Sections</strong>: Preserves callout bounds and section cut planes.</li>
+        <li><strong>Transfer View Elements</strong>: Copies 2D annotations and 3D model geometry within views.</li>
+        <li><strong>Force Level in Level Base Views</strong>: Preserves level associations across distinct model elevations.</li>
+    </ul>
+
+    <h3>5.5. Coordinate Transformations (<code>Transform By:</code>)</h3>
+    <ul>
+        <li><strong>None (Origin to Origin)</strong>: Maps $(0,0,0)$ Internal Origins directly.</li>
+        <li><strong>Link (WYSIWYG)</strong>: Aligns elements to their visual link instance placement.</li>
+        <li><strong>Shared Coordinates</strong>: Computes differential survey point and shared coordinate matrices.</li>
+    </ul>
+
+    <h3>5.6. Cloud & External Family Providers</h3>
+    <ul>
+        <li><strong>Local Folders</strong>: Direct <code>.rfa</code> directory loading.</li>
+        <li><strong>Autodesk Docs / ACC</strong>: Cloud BIM 360 project integration.</li>
+        <li><strong>Azure Blob Storage</strong>: Private cloud storage containers.</li>
+        <li><strong>AWS S3</strong>: Scalable S3 family buckets.</li>
+    </ul>
+
+    <h3>5.7. Family Details & Metadata Inspection</h3>
+    <ul>
+        <li><strong>Real-time Thumbnail Preview</strong>: Dynamic 128x128 pixel visual preview extracted asynchronously.</li>
+        <li><strong>Metadata Inspection</strong>: Full name, active type, category, and host classification.</li>
+        <li><strong>File Size (<code>File size</code>)</strong>: Formatted size in <code>KB</code> or <code>MB</code> across local and cloud sources.</li>
+        <li><strong>Last Modified (<code>Last modified</code>)</strong>: Formatted date timestamp (<code>yyyy-MM-dd</code>).</li>
+        <li><strong>Single-Line Trimming</strong>: Ellipsis truncation and tooltips ensure clean display without clipping.</li>
+    </ul>
+
+    <h2>6. Version History (Changelog)</h2>
+    <h3>v1.1.0</h3>
+    <ul>
+        <li><strong>Family Details Metadata</strong>: Dynamic extraction of <code>File size</code> (KB/MB) and <code>Last modified</code> date (yyyy-MM-dd).</li>
+        <li><strong>Pack URI Icons</strong>: High-resolution custom icon standardization across all 14 secondary dialogs.</li>
+        <li><strong>UI Optimization</strong>: Zero-gap vertical layout and character ellipsis text trimming on all metadata cards.</li>
+        <li><strong>Multi-Version Packaging</strong>: Automated App Store bundle deployment for Revit 2024–2027.</li>
+    </ul>
+
+    <h3>v1.0.0</h3>
+    <ul>
+        <li><strong>Initial Release</strong>: Comprehensive multi-model asset and standards transfer engine.</li>
+        <li><strong>Multi-Version Support</strong>: Native compatibility across Revit 2023, 2024, 2025, 2026, and 2027.</li>
+        <li><strong>Security Hardening</strong>: DPAPI secret encryption, zero-trust path sanitization, and transaction rollback protection.</li>
+    </ul>
+
+    <h2>7. Support and Contact</h2>
+    <p>
+        <strong>Developer:</strong> DBDev_dbarberos<br>
+        <strong>Company:</strong> DBDev Solutions<br>
+        <strong>Website:</strong> <a href="https://dbdev-dbarberos.github.io">https://dbdev-dbarberos.github.io</a><br>
+        <strong>Support Email:</strong> <a href="mailto:dbarberos@outlook.com">dbarberos@outlook.com</a>
+    </p>
+
+</body>
+</html>

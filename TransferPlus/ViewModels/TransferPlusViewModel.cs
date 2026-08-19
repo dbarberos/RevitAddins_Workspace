@@ -146,6 +146,33 @@ public partial class TransferPlusViewModel : ObservableObject
     [ObservableProperty]
     private bool _transformShared;
 
+    partial void OnTransformNoneChanged(bool value)
+    {
+        if (value)
+        {
+            TransformLink = false;
+            TransformShared = false;
+        }
+    }
+
+    partial void OnTransformLinkChanged(bool value)
+    {
+        if (value)
+        {
+            TransformNone = false;
+            TransformShared = false;
+        }
+    }
+
+    partial void OnTransformSharedChanged(bool value)
+    {
+        if (value)
+        {
+            TransformNone = false;
+            TransformLink = false;
+        }
+    }
+
     [ObservableProperty]
     private bool _acceptAllWarnings = true;
 
@@ -279,6 +306,17 @@ public partial class TransferPlusViewModel : ObservableObject
                 if (!string.IsNullOrWhiteSpace(ver)) family.RevitVersion = ver;
                 if (!string.IsNullOrWhiteSpace(cat)) family.CategoryName = cat;
                 SelectedFamilyRevitVersion = family.RevitVersion;
+
+                try
+                {
+                    var fi = new System.IO.FileInfo(family.ImagePreviewUrl);
+                    if (fi.Exists)
+                    {
+                        if (!family.FileSizeBytes.HasValue || family.FileSizeBytes <= 0) family.FileSizeBytes = fi.Length;
+                        if (!family.LastModified.HasValue) family.LastModified = fi.LastWriteTime;
+                    }
+                }
+                catch { }
             }
 
             if (token.IsCancellationRequested)
@@ -1258,6 +1296,8 @@ public partial class TransferPlusViewModel : ObservableObject
                                     ImagePreviewUrl = fam.ImagePreviewUrl,
                                     NativeFamily = fam.NativeFamily,
                                     RevitVersion = fam.RevitVersion,
+                                    FileSizeBytes = fam.FileSizeBytes,
+                                    LastModified = fam.LastModified,
                                     Symbols = missingSymbols
                                 };
 
@@ -1584,7 +1624,10 @@ public partial class TransferPlusViewModel : ObservableObject
                     NativeFamily = fam.NativeFamily,
                     SourceDocument = fam.SourceDocument,
                     HostTypeDescription = fam.HostTypeDescription,
-                    ImagePreviewUrl = fam.ImagePreviewUrl
+                    ImagePreviewUrl = fam.ImagePreviewUrl,
+                    RevitVersion = fam.RevitVersion,
+                    FileSizeBytes = fam.FileSizeBytes,
+                    LastModified = fam.LastModified
                 };
 
                 if (!list.Any(f => f.Name == filteredFam.Name && f.SourceName == filteredFam.SourceName))

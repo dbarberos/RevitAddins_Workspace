@@ -34,12 +34,17 @@ When specific spatial analysis concepts are needed, locate the following files i
   * *Use cases:* Voxelization, spatial boundaries, and reading `.rcp` files safely.
 * **Cross-Document Callout Coordinate Projection:** [debugging_callout_cross_document_coordinate_projection_2026-07-30.md](file:///c:/Users/david.barbero/Documents/DOCUMENTOS/ALTEN/Workbench/RevitAddins_Workspace/RevitAddins_Workspace/.agents/skills/revit-api-geometry/references/debugging_callout_cross_document_coordinate_projection_2026-07-30.md)
   * *Use cases:* Calculating callout bounding boxes across models with differing Project Base Points or Survey Points.
+* **Cross-Document Coordinate Transformations & Element Applicability:** [technical_reference_transform_by_coordinate_systems_and_element_applicability.md](file:///c:/Users/david.barbero/Documents/DOCUMENTOS/ALTEN/Workbench/RevitAddins_Workspace/RevitAddins_Workspace/.agents/skills/revit-api-geometry/references/technical_reference_transform_by_coordinate_systems_and_element_applicability.md)
+  * *Use cases:* "Transform By" logic (None, Link, Shared), mathematical matrix extraction, and element-level applicability rules.
+* **Section & Callout Viewer Visibility Across Coordinate Systems:** [debugging_section_and_callout_viewer_visibility_across_coordinate_systems_2026-08-14.md](file:///c:/Users/david.barbero/Documents/DOCUMENTOS/ALTEN/Workbench/RevitAddins_Workspace/RevitAddins_Workspace/.agents/skills/revit-api-geometry/references/debugging_section_and_callout_viewer_visibility_across_coordinate_systems_2026-08-14.md)
+  * *Use cases:* Ensuring section lines and callout bubbles render on plan views across coordinates, view range cut planes, scale filters, and disciplines.
 
 ---
 
 ## 4. Asset Mapping (Code Blueprints)
 Do not reinvent vector mathematics. Inject, adapt, or copy the exact implementations located in the assets folder:
 
+* [CrossDocumentTransformHelper.cs](file:///c:/Users/david.barbero/Documents/DOCUMENTOS/ALTEN/Workbench/RevitAddins_Workspace/RevitAddins_Workspace/.agents/skills/revit-api-geometry/assets/CrossDocumentTransformHelper.cs): Reusable helper for computing cross-document coordinate transformation matrices (None, Link, Shared).
 * [CalloutCoordinateHelper.cs](file:///c:/Users/david.barbero/Documents/DOCUMENTOS/ALTEN/Workbench/RevitAddins_Workspace/RevitAddins_Workspace/.agents/skills/revit-api-geometry/assets/CalloutCoordinateHelper.cs): Reusable 8-corner relative view-space coordinate transformation helper for ViewSection.CreateCallout.
 * [VectorMathExtensions.cs](file:///c:/Users/david.barbero/Documents/DOCUMENTOS/ALTEN/Workbench/RevitAddins_Workspace/RevitAddins_Workspace/.agents/skills/revit-api-geometry/assets/VectorMathExtensions.cs): Core extension methods for XYZ manipulation, safe normalization, and coordinate translations.
 * [RaytraceAuditor.cs](file:///c:/Users/david.barbero/Documents/DOCUMENTOS/ALTEN/Workbench/RevitAddins_Workspace/RevitAddins_Workspace/.agents/skills/revit-api-geometry/assets/RaytraceAuditor.cs): Wrapper for `ReferenceIntersector` to shoot rays (e.g., find the nearest floor below an element) and perform hard clash detection.

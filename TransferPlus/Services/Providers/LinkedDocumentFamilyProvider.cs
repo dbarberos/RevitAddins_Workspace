@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -76,6 +77,16 @@ public class LinkedDocumentFamilyProvider : IFamilyProvider
                     }
                 }
 
+                DateTime? docLastMod = null;
+                try
+                {
+                    if (!string.IsNullOrWhiteSpace(linkDoc.PathName) && File.Exists(linkDoc.PathName))
+                    {
+                        docLastMod = new FileInfo(linkDoc.PathName).LastWriteTime;
+                    }
+                }
+                catch { }
+
                 result.Add(new FamilyItemModel
                 {
                     Name = family.Name,
@@ -85,6 +96,7 @@ public class LinkedDocumentFamilyProvider : IFamilyProvider
                     Symbols = symbolModels,
                     NativeFamily = family,
                     SourceDocument = linkDoc,
+                    LastModified = docLastMod,
                     HostTypeDescription = FamilyHostTypeHelper.DetermineHostTypeDescription(family)
                 });
             }

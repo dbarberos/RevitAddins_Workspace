@@ -44,6 +44,31 @@ namespace TransferPlus.Models
         public string RevitVersion { get; set; } = string.Empty;
         
         [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(FileSizeFormatted))]
+        private long? _fileSizeBytes;
+
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(LastModifiedFormatted))]
+        private System.DateTime? _lastModified;
+
+        public string FileSizeFormatted
+        {
+            get
+            {
+                if (!FileSizeBytes.HasValue || FileSizeBytes.Value <= 0) return "-";
+                double kb = FileSizeBytes.Value / 1024.0;
+                if (kb < 1024.0)
+                {
+                    return $"{kb:F0} KB";
+                }
+                double mb = kb / 1024.0;
+                return $"{mb:F1} MB";
+            }
+        }
+
+        public string LastModifiedFormatted => LastModified.HasValue ? LastModified.Value.ToString("yyyy-MM-dd") : "-";
+
+        [ObservableProperty]
         private string _hostTypeDescription = "Stand-alone";
 
         [ObservableProperty]

@@ -8,15 +8,14 @@
   ProductCode="{{ProductCode}}"
   OnlineDocumentation="https://dbdev-dbarberos.github.io/PrivacyPolicy/"
   ProductType="Application"
-  Icon="./Contents/Resources/Icons/RibbonIcon32.png"
-  HelpFile="./docs/user_guide.md">
+  Icon="./Contents/Resources/Icon32.png"
+  HelpFile="./Contents/Resources/Help.html">
 
   <CompanyDetails
-    Name="{{Author}}"
-    Url="https://apps.autodesk.com/en/Publisher/PublisherHomepage"
+    Name="DBDev Solutions"
+    Url="https://dbdev-dbarberos.github.io"
     Email="{{Email}}" />
 
-  <!-- The components will be dynamically injected here by the PowerShell script -->
-  {{Components}}
-
+  <!-- Components injected dynamically by build-bundle.ps1 -->
+{{Components}}
 </ApplicationPackage>

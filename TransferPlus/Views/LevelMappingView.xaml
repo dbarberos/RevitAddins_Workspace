@@ -4,6 +4,7 @@
         xmlns:models="clr-namespace:TransferPlus.Models"
         x:Name="ThisWindow"
         Title="Resolve Missing Levels" 
+        Icon="pack://application:,,,/TransferPlus;component/Resources/Icons/TransferPlus32x32.png"
         Height="500" Width="680"
         WindowStartupLocation="CenterScreen"
         ResizeMode="NoResize"

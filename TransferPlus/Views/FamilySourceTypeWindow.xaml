@@ -6,6 +6,7 @@
         mc:Ignorable="d"
         x:Name="SourceTypeWin"
         Title="Family source settings" Height="395" Width="520"
+        Icon="pack://application:,,,/TransferPlus;component/Resources/Icons/TransferPlus32x32.png"
         WindowStartupLocation="CenterOwner"
         ResizeMode="NoResize"
         Background="#FAFAFA">

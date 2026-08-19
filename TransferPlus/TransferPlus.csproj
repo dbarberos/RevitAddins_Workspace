@@ -9,7 +9,7 @@
         <ImplicitUsings>enable</ImplicitUsings>
         <Configurations>Debug.R23;Debug.R24;Debug.R25;Debug.R26;Debug.R27</Configurations>
         <Configurations>$(Configurations);Release.R23;Release.R24;Release.R25;Release.R26;Release.R27</Configurations>
-        <Version>1.0.0</Version>
+        <Version>1.1.0</Version>
         <Company>DBDev_dbarberos</Company>
         <Authors>DBDev_dbarberos</Authors>
         <Copyright>Copyright © 2026 DBDev_dbarberos</Copyright>
@@ -30,12 +30,13 @@
         <!-- MVVM & Utilities -->
         <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2"/>
         <PackageReference Include="System.Text.Json" Version="8.0.5"/>
+        <PackageReference Include="System.Drawing.Common" Version="8.0.4"/>
         <PackageReference Include="Azure.Storage.Blobs" Version="12.23.0"/>
         <PackageReference Include="AWSSDK.S3" Version="3.7.*"/>
 
         <!-- Development Dependencies -->
         <PackageReference Include="JetBrains.Annotations" Version="2025.2.4" PrivateAssets="all"/>
-        <PackageReference Include="Polyfill" Version="10.5.1" PrivateAssets="all"/>
+        <PackageReference Include="Polyfill" Version="10.0.0" PrivateAssets="all"/>
         <PackageReference Include="Obfuscar" Version="2.2.50" PrivateAssets="all"/>
     </ItemGroup>
 
@@ -46,6 +47,12 @@
     <ItemGroup>
         <Resource Include="Resources\Icons\TransferPlus16x16.png"/>
         <Resource Include="Resources\Icons\TransferPlus32x32.png"/>
+        <Resource Include="Resources\Icons\TransferPlus120x120.png"/>
+        <Resource Include="Resources\Icons\RibbonIcon16.png"/>
+        <Resource Include="Resources\Icons\RibbonIcon32.png"/>
+        <None Update="Resources\help.html">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </None>
     </ItemGroup>
 
     <ItemGroup>

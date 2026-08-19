@@ -6,6 +6,7 @@
         mc:Ignorable="d"
         x:Name="AccSourceWin"
         Title="Autodesk Docs (APS) Family Source Settings" Height="620" Width="660"
+        Icon="pack://application:,,,/TransferPlus;component/Resources/Icons/TransferPlus32x32.png"
         WindowStartupLocation="CenterOwner"
         Background="#FAFAFA">
 

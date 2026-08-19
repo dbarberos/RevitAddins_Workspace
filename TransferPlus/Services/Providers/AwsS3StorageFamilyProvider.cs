@@ -59,6 +59,9 @@ public class AwsS3StorageFamilyProvider : IFamilyProvider
                 var (ver, cat, symbols) = RfaMetadataExtractor.ExtractCategoryAndSymbols(_familyRevitService?.RevitApp, cachedFilePath);
                 string categoryName = string.IsNullOrWhiteSpace(cat) ? "AWS S3 Family" : cat;
 
+                long? s3Size = s3Obj.SizeBytes > 0 ? s3Obj.SizeBytes : (File.Exists(cachedFilePath) ? new FileInfo(cachedFilePath).Length : (long?)null);
+                DateTime? s3LastMod = s3Obj.LastModified != default ? s3Obj.LastModified : (File.Exists(cachedFilePath) ? new FileInfo(cachedFilePath).LastWriteTime : (DateTime?)null);
+
                 result.Add(new FamilyItemModel
                 {
                     Name = s3Obj.FamilyName,
@@ -67,6 +70,8 @@ public class AwsS3StorageFamilyProvider : IFamilyProvider
                     StatusMessage = $"AWS S3 ({s3Obj.FormattedSize})",
                     ImagePreviewUrl = File.Exists(cachedFilePath) ? cachedFilePath : s3Obj.ObjectKey,
                     RevitVersion = string.IsNullOrWhiteSpace(ver) ? "AWS S3 Cloud" : ver,
+                    FileSizeBytes = s3Size,
+                    LastModified = s3LastMod,
                     Symbols = symbols
                 });
             }

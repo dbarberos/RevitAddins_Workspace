@@ -7,6 +7,7 @@
         xmlns:viewmodels="clr-namespace:TransferPlus.ViewModels"
         mc:Ignorable="d"
         Title="TransferPlus" Height="840"
+        Icon="pack://application:,,,/TransferPlus;component/Resources/Icons/TransferPlus32x32.png"
         WindowStartupLocation="CenterScreen"
         Background="#FAFAFA">
 
@@ -203,10 +204,14 @@
                 </StackPanel>
                 <Border Grid.Row="1" BorderBrush="#ddd" BorderThickness="1" Background="White" Margin="0,0,0,10">
                     <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto">
-                        <ItemsControl ItemsSource="{Binding DestinationDocuments}" Margin="10">
+                        <ItemsControl ItemsSource="{Binding DestinationDocuments}" Margin="10,6">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
-                                    <CheckBox Content="{Binding Nombre}" IsChecked="{Binding Checked, Mode=TwoWay}" Margin="0,4" FontSize="12"/>
+                                    <CheckBox IsChecked="{Binding Checked, Mode=TwoWay}" Margin="0,3" VerticalContentAlignment="Center" Cursor="Hand">
+                                        <CheckBox.Content>
+                                            <TextBlock Text="{Binding Nombre}" VerticalAlignment="Center" Margin="0" FontSize="12" Foreground="#222" FontWeight="Normal"/>
+                                        </CheckBox.Content>
+                                    </CheckBox>
                                 </DataTemplate>
                             </ItemsControl.ItemTemplate>
                         </ItemsControl>
@@ -730,11 +735,19 @@
                                 
                                 <Border BorderBrush="#E0E0E0" BorderThickness="0,1,0,0" Margin="0,10,0,10"/>
                                 
-                                <TextBlock Text="Transform By:" FontWeight="Bold" FontSize="12" Foreground="#999" Margin="0,0,0,8"/>
+                                <TextBlock Text="Transform By:" FontWeight="Bold" FontSize="12" Foreground="#999" Margin="0,0,0,8"
+                                           ToolTipService.InitialShowDelay="400"
+                                           ToolTip="Transfer Coordinate System&#x0a;&#x0a;Defines the coordinate system and transformation matrix applied when transferring 3D model elements, view crop boxes, sections, elevations, and callouts.&#x0a;&#x0a;(Does not affect project standards, family definitions in browser, or schedules)."/>
                                 <StackPanel Orientation="Horizontal" Margin="0,0,0,0">
-                                    <RadioButton Content="None" IsChecked="{Binding TransformNone}" Margin="0,0,15,0" ToolTipService.InitialShowDelay="600" ToolTip="Do not apply coordinate transformations.&#x0a;&#x0a;Use when linking directly."/>
-                                    <RadioButton Content="Link" IsChecked="{Binding TransformLink}" Margin="0,0,15,0" ToolTipService.InitialShowDelay="600" ToolTip="Apply the geometry transformation of the linked instance.&#x0a;&#x0a;Use when transferring from a loaded link."/>
-                                    <RadioButton Content="Shared" IsChecked="{Binding TransformShared}" ToolTipService.InitialShowDelay="600" ToolTip="Apply Shared Coordinates transformation.&#x0a;&#x0a;Use when transferring to a different model sharing site coordinates."/>
+                                    <RadioButton Content="None" GroupName="TransformByGroup" IsChecked="{Binding TransformNone}" Margin="0,0,15,0"
+                                                 ToolTipService.InitialShowDelay="400"
+                                                 ToolTip="Internal Origin (0, 0, 0)&#x0a;&#x0a;• Applies to: 3D Elements, View Crop Boxes, Sections, Elevations, and Callouts.&#x0a;• Behavior: Strictly aligns the source Internal Origin (0,0,0) with the active model's Internal Origin, ignoring any visual link movement or rotation.&#x0a;• Recommended: When both models share the exact same Origin-to-Origin insertion point."/>
+                                    <RadioButton Content="Link" GroupName="TransformByGroup" IsChecked="{Binding TransformLink}" Margin="0,0,15,0"
+                                                 ToolTipService.InitialShowDelay="400"
+                                                 ToolTip="Link Instance Transform (Default / WYSIWYG)&#x0a;&#x0a;• Applies to: 3D Elements, View Crop Boxes, Sections, Elevations, and Callouts.&#x0a;• Behavior: Honors the current position and rotation of the link instance on screen. Transferred elements will land exactly where you visually see them in the model view.&#x0a;• Recommended: Standard choice for transfers from loaded Revit links."/>
+                                    <RadioButton Content="Shared" GroupName="TransformByGroup" IsChecked="{Binding TransformShared}"
+                                                 ToolTipService.InitialShowDelay="400"
+                                                 ToolTip="Shared Coordinates (Survey Point)&#x0a;&#x0a;• Applies to: 3D Elements, View Crop Boxes, Sections, Elevations, and Callouts.&#x0a;• Behavior: Calculates position and rotation using the published Shared Coordinate system and Survey Point offset between both project files.&#x0a;• Recommended: For master plans, infrastructure, or projects where buildings use localized axes linked via shared geographical coordinates."/>
                                 </StackPanel>
                             </StackPanel>
                         </Border>
@@ -747,7 +760,7 @@
                                 </Grid.RowDefinitions>
                                 
                                 <!-- Card Header Row: Title on Left, Category & Version Metadata on Right (when 1 family selected) -->
-                                <Grid Grid.Row="0" Margin="0,0,0,6">
+                                <Grid Grid.Row="0" Margin="0,0,0,3">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="Auto"/>
                                         <ColumnDefinition Width="*"/>
@@ -825,15 +838,16 @@
                                                  </Border>
                                              </StackPanel>
                                              
-                                             <!-- Right Column: Family Name, Type, Category, Revit Version, Host (Title stacked above property value) -->
+                                                                      <!-- Right Column: Family Name, Type, Category, Revit Version, Host, File size, Last modified (Title stacked above property value with 50% reduced uniform spacing) -->
                                              <StackPanel Grid.Column="1" VerticalAlignment="Top" Margin="0,0,0,0">
                                                  <!-- Family Name -->
                                                  <TextBlock Text="{Binding SelectedFamily.Name}" 
-                                                            FontWeight="Bold" FontSize="13" Foreground="#111111"
-                                                            TextWrapping="Wrap" Margin="0,0,0,5"/>
+                                                            FontWeight="Bold" FontSize="12" Foreground="#111111"
+                                                            TextWrapping="NoWrap" TextTrimming="CharacterEllipsis"
+                                                            ToolTip="{Binding SelectedFamily.Name}" Margin="0,0,0,0"/>
 
                                                  <!-- Type Name (Visible when a type node is selected in tree) -->
-                                                 <StackPanel Margin="0,0,0,3">
+                                                 <StackPanel Margin="0,-1,0,0">
                                                      <StackPanel.Style>
                                                          <Style TargetType="StackPanel">
                                                              <Setter Property="Visibility" Value="Visible"/>
@@ -844,26 +858,38 @@
                                                              </Style.Triggers>
                                                          </Style>
                                                      </StackPanel.Style>
-                                                     <TextBlock Text="Type" FontWeight="Bold" FontSize="11" Foreground="#111111"/>
-                                                     <TextBlock Text="{Binding SelectedSymbol.Name}" FontSize="11" Foreground="#333333" TextWrapping="Wrap"/>
+                                                     <TextBlock Text="Type" FontWeight="Bold" FontSize="10" Foreground="#111111" Margin="0,0,0,-2"/>
+                                                     <TextBlock Text="{Binding SelectedSymbol.Name}" FontSize="10" Foreground="#333333" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" ToolTip="{Binding SelectedSymbol.Name}" Margin="0,0,0,-1"/>
                                                  </StackPanel>
 
                                                  <!-- Category -->
-                                                 <StackPanel Margin="0,0,0,3">
-                                                     <TextBlock Text="Category" FontWeight="Bold" FontSize="11" Foreground="#111111"/>
-                                                     <TextBlock Text="{Binding SelectedFamily.CategoryName}" FontSize="11" Foreground="#333333" TextWrapping="Wrap"/>
+                                                 <StackPanel Margin="0,-1,0,0">
+                                                     <TextBlock Text="Category" FontWeight="Bold" FontSize="10" Foreground="#111111" Margin="0,0,0,-2"/>
+                                                     <TextBlock Text="{Binding SelectedFamily.CategoryName}" FontSize="10" Foreground="#333333" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" ToolTip="{Binding SelectedFamily.CategoryName}" Margin="0,0,0,-1"/>
                                                  </StackPanel>
 
                                                  <!-- Revit Version -->
-                                                 <StackPanel Margin="0,0,0,3">
-                                                     <TextBlock Text="Revit" FontWeight="Bold" FontSize="11" Foreground="#111111"/>
-                                                     <TextBlock Text="{Binding SelectedFamily.RevitVersion}" FontSize="11" Foreground="#333333"/>
+                                                 <StackPanel Margin="0,-1,0,0">
+                                                     <TextBlock Text="Revit" FontWeight="Bold" FontSize="10" Foreground="#111111" Margin="0,0,0,-2"/>
+                                                     <TextBlock Text="{Binding SelectedFamily.RevitVersion}" FontSize="10" Foreground="#333333" Margin="0,0,0,-1"/>
                                                  </StackPanel>
 
                                                  <!-- Host Type -->
-                                                 <StackPanel Margin="0,0,0,3">
-                                                     <TextBlock Text="Host" FontWeight="Bold" FontSize="11" Foreground="#111111"/>
-                                                     <TextBlock Text="{Binding SelectedFamily.HostTypeDescription}" FontSize="11" Foreground="#333333"/>
+                                                 <StackPanel Margin="0,-1,0,0">
+                                                     <TextBlock Text="Host" FontWeight="Bold" FontSize="10" Foreground="#111111" Margin="0,0,0,-2"/>
+                                                     <TextBlock Text="{Binding SelectedFamily.HostTypeDescription}" FontSize="10" Foreground="#333333" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" ToolTip="{Binding SelectedFamily.HostTypeDescription}" Margin="0,0,0,-1"/>
+                                                 </StackPanel>
+
+                                                 <!-- File size -->
+                                                 <StackPanel Margin="0,-1,0,0">
+                                                     <TextBlock Text="File size" FontWeight="Bold" FontSize="10" Foreground="#111111" Margin="0,0,0,-2"/>
+                                                     <TextBlock Text="{Binding SelectedFamily.FileSizeFormatted}" FontSize="10" Foreground="#333333" Margin="0,0,0,-1"/>
+                                                 </StackPanel>
+
+                                                 <!-- Last modified -->
+                                                 <StackPanel Margin="0,-1,0,0">
+                                                     <TextBlock Text="Last modified" FontWeight="Bold" FontSize="10" Foreground="#111111" Margin="0,0,0,-2"/>
+                                                     <TextBlock Text="{Binding SelectedFamily.LastModifiedFormatted}" FontSize="10" Foreground="#333333" Margin="0,0,0,0"/>
                                                  </StackPanel>
                                              </StackPanel>
                                          </Grid>
@@ -884,7 +910,7 @@
                                     </Grid>
                                     
                                     <!-- Separator Line -->
-                                    <Border Grid.Row="1" BorderBrush="#E0E0E0" BorderThickness="0,1,0,0" Margin="0,6,0,6"/>
+                                    <Border Grid.Row="1" BorderBrush="#E0E0E0" BorderThickness="0,1,0,0" Margin="0,2,0,3"/>
                                     
                                      <!-- Action Buttons Row (Left-aligned: Delete, Download, and 3 Stacked Download Option RadioButtons) -->
                                      <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Left" VerticalAlignment="Center">
@@ -950,7 +976,7 @@
                                                        FontSize="11.5" 
                                                        Foreground="#333333" 
                                                        Cursor="Hand"
-                                                       Margin="0,0,0,6"
+                                                       Margin="0,0,0,3"
                                                        ToolTip="When enabled, downloaded families are saved into subfolders organized by their Revit category."/>
 
                                              <!-- 2. Set Default View as 3D -->
@@ -961,7 +987,7 @@
                                                        FontSize="11.5" 
                                                        Foreground="#333333" 
                                                        Cursor="Hand"
-                                                       Margin="0,0,0,6"
+                                                       Margin="0,0,0,3"
                                                        ToolTip="When enabled, sets the default preview view of downloaded families to 3D before saving."/>
 
                                              <!-- 3. Include Export Log when download -->
@@ -972,6 +998,7 @@
                                                        FontSize="11.5" 
                                                        Foreground="#333333" 
                                                        Cursor="Hand"
+                                                       Margin="0,0,0,0"
                                                        ToolTip="When enabled, prompts for a log directory and saves a detailed .txt export report file when downloading families."/>
                                          </StackPanel>
                                      </StackPanel>

@@ -38,6 +38,7 @@ public class AccItemModel
     public string DisplayName { get; set; } = string.Empty;
     public string VersionId { get; set; } = string.Empty;
     public long ContentLength { get; set; }
+    public DateTime? LastModified { get; set; }
 }
 
 public class AccUserProfileModel
@@ -446,11 +447,19 @@ public static class AutodeskDocsService
                         if (displayName.EndsWith(".rfa", StringComparison.OrdinalIgnoreCase))
                         {
                             long size = attributes.TryGetProperty("storageSize", out var szProp) ? szProp.GetInt64() : 0;
+                            DateTime? lastMod = null;
+                            if (attributes.TryGetProperty("lastModifiedTime", out var lmtProp) &&
+                                DateTime.TryParse(lmtProp.GetString(), out var dt))
+                            {
+                                lastMod = dt;
+                            }
+
                             rfaItems.Add(new AccItemModel
                             {
                                 Id = id,
                                 DisplayName = displayName,
-                                ContentLength = size
+                                ContentLength = size,
+                                LastModified = lastMod
                             });
                         }
                     }
@@ -548,7 +557,7 @@ public static class AutodeskDocsService
         response.EnsureSuccessStatusCode();
 
         using var memoryStream = new MemoryStream();
-        await response.Content.CopyToAsync(memoryStream, cancellationToken);
+        await response.Content.CopyToAsync(memoryStream);
         memoryStream.Position = 0;
 
         string localPath = FamilyFileManager.CreateFamilyLocalFile(memoryStream, rawFileName);

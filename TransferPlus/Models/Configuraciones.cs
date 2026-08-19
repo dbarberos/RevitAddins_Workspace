@@ -53,10 +53,10 @@ namespace TransferPlus.Models
 		public bool cf_chk_Links = true;
 
 		// Token: 0x0400007F RID: 127
-		public bool cf_chk_GetTransformNone = true;
+		public bool cf_chk_GetTransformNone;
 
 		// Token: 0x04000080 RID: 128
-		public bool cf_chk_GetTransformLink;
+		public bool cf_chk_GetTransformLink = true;
 
 		// Token: 0x04000081 RID: 129
 		public bool cf_chk_GetTransformShared;

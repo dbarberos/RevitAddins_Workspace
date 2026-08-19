@@ -1,0 +1,244 @@
+{
+  "runtimeTarget": {
+    "name": ".NETCoreApp,Version=v10.0",
+    "signature": ""
+  },
+  "compilationOptions": {},
+  "targets": {
+    ".NETCoreApp,Version=v10.0": {
+      "TransferPlus/1.1.0": {
+        "dependencies": {
+          "AWSSDK.S3": "3.7.511.8",
+          "Azure.Storage.Blobs": "12.23.0",
+          "CommunityToolkit.Mvvm": "8.4.2",
+          "JetBrains.Annotations": "2025.2.4",
+          "Nice3point.Revit.Extensions": "2027.0.4",
+          "Nice3point.Revit.Toolkit": "2027.0.0"
+        },
+        "runtime": {
+          "TransferPlus.dll": {}
+        }
+      },
+      "AWSSDK.Core/3.7.501.1": {
+        "runtime": {
+          "lib/net8.0/AWSSDK.Core.dll": {
+            "assemblyVersion": "3.3.0.0",
+            "fileVersion": "3.7.501.1"
+          }
+        }
+      },
+      "AWSSDK.S3/3.7.511.8": {
+        "dependencies": {
+          "AWSSDK.Core": "3.7.501.1"
+        },
+        "runtime": {
+          "lib/net8.0/AWSSDK.S3.dll": {
+            "assemblyVersion": "3.3.0.0",
+            "fileVersion": "3.7.511.8"
+          }
+        }
+      },
+      "Azure.Core/1.44.1": {
+        "dependencies": {
+          "Microsoft.Bcl.AsyncInterfaces": "6.0.0",
+          "System.ClientModel": "1.1.0",
+          "System.Memory.Data": "6.0.0"
+        },
+        "runtime": {
+          "lib/net6.0/Azure.Core.dll": {
+            "assemblyVersion": "1.44.1.0",
+            "fileVersion": "1.4400.124.50905"
+          }
+        }
+      },
+      "Azure.Storage.Blobs/12.23.0": {
+        "dependencies": {
+          "Azure.Storage.Common": "12.22.0"
+        },
+        "runtime": {
+          "lib/net6.0/Azure.Storage.Blobs.dll": {
+            "assemblyVersion": "12.23.0.0",
+            "fileVersion": "12.2300.24.56203"
+          }
+        }
+      },
+      "Azure.Storage.Common/12.22.0": {
+        "dependencies": {
+          "Azure.Core": "1.44.1",
+          "System.IO.Hashing": "6.0.0"
+        },
+        "runtime": {
+          "lib/net6.0/Azure.Storage.Common.dll": {
+            "assemblyVersion": "12.22.0.0",
+            "fileVersion": "12.2200.24.56203"
+          }
+        }
+      },
+      "CommunityToolkit.Mvvm/8.4.2": {
+        "runtime": {
+          "lib/net8.0/CommunityToolkit.Mvvm.dll": {
+            "assemblyVersion": "8.4.0.0",
+            "fileVersion": "8.4.2.1"
+          }
+        }
+      },
+      "JetBrains.Annotations/2025.2.4": {
+        "runtime": {
+          "lib/netstandard2.0/JetBrains.Annotations.dll": {
+            "assemblyVersion": "4242.42.42.42",
+            "fileVersion": "2025.2.4.0"
+          }
+        }
+      },
+      "Microsoft.Bcl.AsyncInterfaces/6.0.0": {
+        "runtime": {
+          "lib/netstandard2.1/Microsoft.Bcl.AsyncInterfaces.dll": {
+            "assemblyVersion": "6.0.0.0",
+            "fileVersion": "6.0.21.52210"
+          }
+        }
+      },
+      "Nice3point.Revit.Extensions/2027.0.4": {
+        "runtime": {
+          "lib/net10.0-windows7.0/Nice3point.Revit.Extensions.dll": {
+            "assemblyVersion": "2027.0.4.0",
+            "fileVersion": "2027.0.4.0"
+          }
+        }
+      },
+      "Nice3point.Revit.Toolkit/2027.0.0": {
+        "runtime": {
+          "lib/net10.0-windows7.0/Nice3point.Revit.Toolkit.dll": {
+            "assemblyVersion": "2027.0.0.0",
+            "fileVersion": "2027.0.0.0"
+          }
+        }
+      },
+      "System.ClientModel/1.1.0": {
+        "dependencies": {
+          "System.Memory.Data": "6.0.0"
+        },
+        "runtime": {
+          "lib/net6.0/System.ClientModel.dll": {
+            "assemblyVersion": "1.1.0.0",
+            "fileVersion": "1.100.24.46703"
+          }
+        }
+      },
+      "System.IO.Hashing/6.0.0": {
+        "runtime": {
+          "lib/net6.0/System.IO.Hashing.dll": {
+            "assemblyVersion": "6.0.0.0",
+            "fileVersion": "6.0.21.52210"
+          }
+        }
+      },
+      "System.Memory.Data/6.0.0": {
+        "runtime": {
+          "lib/net6.0/System.Memory.Data.dll": {
+            "assemblyVersion": "6.0.0.0",
+            "fileVersion": "6.0.21.52210"
+          }
+        }
+      }
+    }
+  },
+  "libraries": {
+    "TransferPlus/1.1.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "AWSSDK.Core/3.7.501.1": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-VZR0LRAawpn5FQwXNPzhOO8DHhfffhBSvcSZT1d0ctcZ+kmsz3tzTArZnTQ9Haf/TNEqNLzKupHfjV2ndWAL4A==",
+      "path": "awssdk.core/3.7.501.1",
+      "hashPath": "awssdk.core.3.7.501.1.nupkg.sha512"
+    },
+    "AWSSDK.S3/3.7.511.8": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-QLHt7ucegMurWnwB3GomMeP6DiCG033aEittRiabMGnTOMZ5xyu7tbmTkqs3ZU5tBz4AK53Ak8WJkF+kk+s4Tw==",
+      "path": "awssdk.s3/3.7.511.8",
+      "hashPath": "awssdk.s3.3.7.511.8.nupkg.sha512"
+    },
+    "Azure.Core/1.44.1": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-YyznXLQZCregzHvioip07/BkzjuWNXogJEVz9T5W6TwjNr17ax41YGzYMptlo2G10oLCuVPoyva62y0SIRDixg==",
+      "path": "azure.core/1.44.1",
+      "hashPath": "azure.core.1.44.1.nupkg.sha512"
+    },
+    "Azure.Storage.Blobs/12.23.0": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-wokJ5KX/iViQQ32xyCu69+Ter0aR4B9QQ+oR9NCpc/WPIanxnDErrmFfdmE7K8ZdccjHkvE/wEnqJxaF1+5wFg==",
+      "path": "azure.storage.blobs/12.23.0",
+      "hashPath": "azure.storage.blobs.12.23.0.nupkg.sha512"
+    },
+    "Azure.Storage.Common/12.22.0": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-0Vm30bRpQ0fcswB0xQMhKAOSXnRygnF2f/029uPaIDLaj1/yfX4jmU0fFjJe9ojGEj/vlAmsApCEOyL9if6zHg==",
+      "path": "azure.storage.common/12.22.0",
+      "hashPath": "azure.storage.common.12.22.0.nupkg.sha512"
+    },
+    "CommunityToolkit.Mvvm/8.4.2": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-WadCzGEc2U+3e20avRLng4qNtt4zoOGWrdUISqJWrHe3/FSnrYjuM5Sb4yQb09LhkBXrrI4Zt3dLKgRMbItsrg==",
+      "path": "communitytoolkit.mvvm/8.4.2",
+      "hashPath": "communitytoolkit.mvvm.8.4.2.nupkg.sha512"
+    },
+    "JetBrains.Annotations/2025.2.4": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-TwbgxAkXxY+vNEhNVx/QXjJ4vqxmepOjsgRvvImQPbHkHMMb4W+ahL3laMsxXKtNT7iMy+E1B3xkqao2hf1n3A==",
+      "path": "jetbrains.annotations/2025.2.4",
+      "hashPath": "jetbrains.annotations.2025.2.4.nupkg.sha512"
+    },
+    "Microsoft.Bcl.AsyncInterfaces/6.0.0": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-UcSjPsst+DfAdJGVDsu346FX0ci0ah+lw3WRtn18NUwEqRt70HaOQ7lI72vy3+1LxtqI3T5GWwV39rQSrCzAeg==",
+      "path": "microsoft.bcl.asyncinterfaces/6.0.0",
+      "hashPath": "microsoft.bcl.asyncinterfaces.6.0.0.nupkg.sha512"
+    },
+    "Nice3point.Revit.Extensions/2027.0.4": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-IjeZYzE0IDO1B7ZrAA+DH4+ymac3ekZ7EKATsomfB9dF3P+Qe6q+1bDZcnRqWvxRdNmrKcAvIAZ8+OlfVwJ2Sw==",
+      "path": "nice3point.revit.extensions/2027.0.4",
+      "hashPath": "nice3point.revit.extensions.2027.0.4.nupkg.sha512"
+    },
+    "Nice3point.Revit.Toolkit/2027.0.0": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-kAUZtgXMWZkRJQTacJmUyI17M3iga9iqdnZ6+Frk1ScIkPjlasyXPn6U+xafO4ayH2V3LtBOBgJSxcTzK08ssg==",
+      "path": "nice3point.revit.toolkit/2027.0.0",
+      "hashPath": "nice3point.revit.toolkit.2027.0.0.nupkg.sha512"
+    },
+    "System.ClientModel/1.1.0": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-UocOlCkxLZrG2CKMAAImPcldJTxeesHnHGHwhJ0pNlZEvEXcWKuQvVOER2/NiOkJGRJk978SNdw3j6/7O9H1lg==",
+      "path": "system.clientmodel/1.1.0",
+      "hashPath": "system.clientmodel.1.1.0.nupkg.sha512"
+    },
+    "System.IO.Hashing/6.0.0": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-Rfm2jYCaUeGysFEZjDe7j1R4x6Z6BzumS/vUT5a1AA/AWJuGX71PoGB0RmpyX3VmrGqVnAwtfMn39OHR8Y/5+g==",
+      "path": "system.io.hashing/6.0.0",
+      "hashPath": "system.io.hashing.6.0.0.nupkg.sha512"
+    },
+    "System.Memory.Data/6.0.0": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-ntFHArH3I4Lpjf5m4DCXQHJuGwWPNVJPaAvM95Jy/u+2Yzt2ryiyIN04LAogkjP9DeRcEOiviAjQotfmPq/FrQ==",
+      "path": "system.memory.data/6.0.0",
+      "hashPath": "system.memory.data.6.0.0.nupkg.sha512"
+    }
+  }
+}

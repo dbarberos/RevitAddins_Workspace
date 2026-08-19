@@ -3,6 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:viewmodels="clr-namespace:TransferPlus.ViewModels"
         Title="TransferPlus Debug Log" Height="450" Width="650"
+        Icon="pack://application:,,,/TransferPlus;component/Resources/Icons/TransferPlus32x32.png"
         WindowStartupLocation="Manual"
         Topmost="True" Background="#1e1e1e">
     <Window.DataContext>
