@@ -2075,6 +2075,10 @@ public partial class TransferPlusViewModel : ObservableObject
     [RelayCommand(CanExecute = nameof(CanActivateFamiliesManager))]
     private void ActivateFamiliesManager()
     {
+        if (IsCadDetailsManagerActive)
+        {
+            IsCadDetailsManagerActive = false;
+        }
         IsFamiliesManagerActive = true;
     }
 
@@ -2086,6 +2090,39 @@ public partial class TransferPlusViewModel : ObservableObject
 
     partial void OnIsFamiliesManagerActiveChanged(bool value)
     {
+        ActivateFamiliesManagerCommand.NotifyCanExecuteChanged();
+        DeactivateFamiliesManagerCommand.NotifyCanExecuteChanged();
+        ActivateCadDetailsManagerCommand.NotifyCanExecuteChanged();
+        DeactivateCadDetailsManagerCommand.NotifyCanExecuteChanged();
+        LoadDocuments();
+    }
+
+    [ObservableProperty]
+    private bool _isCadDetailsManagerActive;
+
+    private bool CanActivateCadDetailsManager() => !IsCadDetailsManagerActive;
+    private bool CanDeactivateCadDetailsManager() => IsCadDetailsManagerActive;
+
+    [RelayCommand(CanExecute = nameof(CanActivateCadDetailsManager))]
+    private void ActivateCadDetailsManager()
+    {
+        if (IsFamiliesManagerActive)
+        {
+            IsFamiliesManagerActive = false;
+        }
+        IsCadDetailsManagerActive = true;
+    }
+
+    [RelayCommand(CanExecute = nameof(CanDeactivateCadDetailsManager))]
+    private void DeactivateCadDetailsManager()
+    {
+        IsCadDetailsManagerActive = false;
+    }
+
+    partial void OnIsCadDetailsManagerActiveChanged(bool value)
+    {
+        ActivateCadDetailsManagerCommand.NotifyCanExecuteChanged();
+        DeactivateCadDetailsManagerCommand.NotifyCanExecuteChanged();
         ActivateFamiliesManagerCommand.NotifyCanExecuteChanged();
         DeactivateFamiliesManagerCommand.NotifyCanExecuteChanged();
         LoadDocuments();
