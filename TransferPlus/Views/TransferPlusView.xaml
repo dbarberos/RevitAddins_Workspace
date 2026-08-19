@@ -838,16 +838,16 @@
                                                  </Border>
                                              </StackPanel>
                                              
-                                                                      <!-- Right Column: Family Name, Type, Category, Revit Version, Host, File size, Last modified (Title stacked above property value with uniform minimal spacing) -->
+                                                                      <!-- Right Column: Family Name, Type, Category, Revit Version, Host, File size, Last modified (Title stacked above property value with 50% reduced uniform spacing) -->
                                              <StackPanel Grid.Column="1" VerticalAlignment="Top" Margin="0,0,0,0">
                                                  <!-- Family Name -->
                                                  <TextBlock Text="{Binding SelectedFamily.Name}" 
                                                             FontWeight="Bold" FontSize="12" Foreground="#111111"
                                                             TextWrapping="NoWrap" TextTrimming="CharacterEllipsis"
-                                                            ToolTip="{Binding SelectedFamily.Name}" Margin="0,0,0,1"/>
+                                                            ToolTip="{Binding SelectedFamily.Name}" Margin="0,0,0,0"/>
 
                                                  <!-- Type Name (Visible when a type node is selected in tree) -->
-                                                 <StackPanel Margin="0,0,0,0">
+                                                 <StackPanel Margin="0,-1,0,0">
                                                      <StackPanel.Style>
                                                          <Style TargetType="StackPanel">
                                                              <Setter Property="Visibility" Value="Visible"/>
@@ -858,38 +858,38 @@
                                                              </Style.Triggers>
                                                          </Style>
                                                      </StackPanel.Style>
-                                                     <TextBlock Text="Type" FontWeight="Bold" FontSize="10" Foreground="#111111"/>
-                                                     <TextBlock Text="{Binding SelectedSymbol.Name}" FontSize="10" Foreground="#333333" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" ToolTip="{Binding SelectedSymbol.Name}"/>
+                                                     <TextBlock Text="Type" FontWeight="Bold" FontSize="10" Foreground="#111111" Margin="0,0,0,-2"/>
+                                                     <TextBlock Text="{Binding SelectedSymbol.Name}" FontSize="10" Foreground="#333333" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" ToolTip="{Binding SelectedSymbol.Name}" Margin="0,0,0,-1"/>
                                                  </StackPanel>
 
                                                  <!-- Category -->
-                                                 <StackPanel Margin="0,0,0,0">
-                                                     <TextBlock Text="Category" FontWeight="Bold" FontSize="10" Foreground="#111111"/>
-                                                     <TextBlock Text="{Binding SelectedFamily.CategoryName}" FontSize="10" Foreground="#333333" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" ToolTip="{Binding SelectedFamily.CategoryName}"/>
+                                                 <StackPanel Margin="0,-1,0,0">
+                                                     <TextBlock Text="Category" FontWeight="Bold" FontSize="10" Foreground="#111111" Margin="0,0,0,-2"/>
+                                                     <TextBlock Text="{Binding SelectedFamily.CategoryName}" FontSize="10" Foreground="#333333" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" ToolTip="{Binding SelectedFamily.CategoryName}" Margin="0,0,0,-1"/>
                                                  </StackPanel>
 
                                                  <!-- Revit Version -->
-                                                 <StackPanel Margin="0,0,0,0">
-                                                     <TextBlock Text="Revit" FontWeight="Bold" FontSize="10" Foreground="#111111"/>
-                                                     <TextBlock Text="{Binding SelectedFamily.RevitVersion}" FontSize="10" Foreground="#333333"/>
+                                                 <StackPanel Margin="0,-1,0,0">
+                                                     <TextBlock Text="Revit" FontWeight="Bold" FontSize="10" Foreground="#111111" Margin="0,0,0,-2"/>
+                                                     <TextBlock Text="{Binding SelectedFamily.RevitVersion}" FontSize="10" Foreground="#333333" Margin="0,0,0,-1"/>
                                                  </StackPanel>
 
                                                  <!-- Host Type -->
-                                                 <StackPanel Margin="0,0,0,0">
-                                                     <TextBlock Text="Host" FontWeight="Bold" FontSize="10" Foreground="#111111"/>
-                                                     <TextBlock Text="{Binding SelectedFamily.HostTypeDescription}" FontSize="10" Foreground="#333333" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" ToolTip="{Binding SelectedFamily.HostTypeDescription}"/>
+                                                 <StackPanel Margin="0,-1,0,0">
+                                                     <TextBlock Text="Host" FontWeight="Bold" FontSize="10" Foreground="#111111" Margin="0,0,0,-2"/>
+                                                     <TextBlock Text="{Binding SelectedFamily.HostTypeDescription}" FontSize="10" Foreground="#333333" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" ToolTip="{Binding SelectedFamily.HostTypeDescription}" Margin="0,0,0,-1"/>
                                                  </StackPanel>
 
                                                  <!-- File size -->
-                                                 <StackPanel Margin="0,0,0,0">
-                                                     <TextBlock Text="File size" FontWeight="Bold" FontSize="10" Foreground="#111111"/>
-                                                     <TextBlock Text="{Binding SelectedFamily.FileSizeFormatted}" FontSize="10" Foreground="#333333"/>
+                                                 <StackPanel Margin="0,-1,0,0">
+                                                     <TextBlock Text="File size" FontWeight="Bold" FontSize="10" Foreground="#111111" Margin="0,0,0,-2"/>
+                                                     <TextBlock Text="{Binding SelectedFamily.FileSizeFormatted}" FontSize="10" Foreground="#333333" Margin="0,0,0,-1"/>
                                                  </StackPanel>
 
                                                  <!-- Last modified -->
-                                                 <StackPanel Margin="0,0,0,0">
-                                                     <TextBlock Text="Last modified" FontWeight="Bold" FontSize="10" Foreground="#111111"/>
-                                                     <TextBlock Text="{Binding SelectedFamily.LastModifiedFormatted}" FontSize="10" Foreground="#333333"/>
+                                                 <StackPanel Margin="0,-1,0,0">
+                                                     <TextBlock Text="Last modified" FontWeight="Bold" FontSize="10" Foreground="#111111" Margin="0,0,0,-2"/>
+                                                     <TextBlock Text="{Binding SelectedFamily.LastModifiedFormatted}" FontSize="10" Foreground="#333333" Margin="0,0,0,0"/>
                                                  </StackPanel>
                                              </StackPanel>
                                          </Grid>
