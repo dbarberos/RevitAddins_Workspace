@@ -8,8 +8,10 @@
 
 ## 1. Summary of Changes
 
-1. **Equalization of UI Gaps in Family Details Card:**
-   - Standardized the vertical spacing between property titles (bold label) and property values to be identical to the gap between consecutive property rows (`Margin="0,0,0,0"` uniform minimal spacing).
+1. **Equalization and 50% Reduction of UI Gaps in Family Details Card:**
+   - Standardized the vertical spacing between property titles (bold label) and property values to be identical to the gap between consecutive property rows.
+   - Applied negative margins (`Margin="0,0,0,-2"` on titles, `Margin="0,0,0,-1"` on values, and `Margin="0,-1,0,0"` on row StackPanels) to reduce default font-leading separation by 50%.
+   - Configured `TextWrapping="NoWrap" TextTrimming="CharacterEllipsis"` and tooltips on all detail rows to ensure all 6 property fields (`Type`, `Category`, `Revit`, `Host`, `File size`, `Last modified`) fit visibly within the 128px card height.
 2. **New Metadata Properties Added:**
    - **File size (`File size`):** Displays formatted family file size in `KB` or `MB` (e.g. `245 KB`, `1.4 MB`, or `-` if in-memory without physical file).
    - **Last modified (`Last modified`):** Displays the last date the family or its source file was saved in standard format `yyyy-MM-dd` (e.g. `2024-05-12` or `-`).
