@@ -1034,11 +1034,70 @@
                                     <!-- Left Column: Origin -->
                                     <StackPanel Grid.Column="0" Margin="0,0,10,0">
                                         <TextBlock Text="ORIGIN" FontSize="9" FontWeight="SemiBold" Foreground="#999" Margin="0,0,0,5"/>
-                                        <RadioButton Content="CAD Links / CAD Imports" GroupName="CadDetailsOriginGroup" IsChecked="{Binding CadOriginLinksAndImports}" FontSize="11" Margin="0,0,0,6"/>
-                                        <RadioButton Content="Drafting Views" GroupName="CadDetailsOriginGroup" IsChecked="{Binding CadOriginDraftingViews}" FontSize="11" Margin="0,0,0,6"/>
-                                        <RadioButton Content="Details Views / Detail Callouts" GroupName="CadDetailsOriginGroup" IsChecked="{Binding CadOriginDetailViewsAndCallouts}" FontSize="11" Margin="0,0,0,6"/>
-                                        <RadioButton Content="Details Groups" GroupName="CadDetailsOriginGroup" IsChecked="{Binding CadOriginDetailGroups}" FontSize="11" Margin="0,0,0,6"/>
-                                        <RadioButton Content="Details Items" GroupName="CadDetailsOriginGroup" IsChecked="{Binding CadOriginDetailItems}" FontSize="11" Margin="0,0,0,0"/>
+                                        <RadioButton Content="CAD Links / CAD Imports" GroupName="CadDetailsOriginGroup" IsChecked="{Binding CadOriginLinksAndImports}" FontSize="11" Margin="0,0,0,6">
+                                            <RadioButton.ToolTip>
+                                                <ToolTip MaxWidth="260">
+                                                    <TextBlock TextWrapping="Wrap" FontSize="11.5" LineHeight="15" Foreground="#333333">
+                                                        <Bold>CAD Links / CAD Imports</Bold><LineBreak/>
+                                                        Collects external DWG, DXF, DGN, and SAT vector files imported or linked into the source model.<LineBreak/><LineBreak/>
+                                                        <Bold>Elements shown:</Bold> ImportInstance elements (Linked and Imported CAD drawings) categorized with their host views.<LineBreak/><LineBreak/>
+                                                        <Bold>Where to find:</Bold> Placed in 2D Floor/Ceiling Plans, Elevations, Sections, or Drafting Views via Insert tab -> Link CAD / Import CAD.
+                                                    </TextBlock>
+                                                </ToolTip>
+                                            </RadioButton.ToolTip>
+                                        </RadioButton>
+
+                                        <RadioButton Content="Drafting Views" GroupName="CadDetailsOriginGroup" IsChecked="{Binding CadOriginDraftingViews}" FontSize="11" Margin="0,0,0,6">
+                                            <RadioButton.ToolTip>
+                                                <ToolTip MaxWidth="260">
+                                                    <TextBlock TextWrapping="Wrap" FontSize="11.5" LineHeight="15" Foreground="#333333">
+                                                        <Bold>Drafting Views</Bold><LineBreak/>
+                                                        Collects 2D drafting views containing detail sketches, standard construction details, notes, and embedded CAD drawings.<LineBreak/><LineBreak/>
+                                                        <Bold>Elements shown:</Bold> Non-template ViewDrafting elements with their sheet placements and embedded CAD counts.<LineBreak/><LineBreak/>
+                                                        <Bold>Where to find:</Bold> Project Browser -> Drafting Views (Detail). Created via View tab -> Create panel -> Drafting View.
+                                                    </TextBlock>
+                                                </ToolTip>
+                                            </RadioButton.ToolTip>
+                                        </RadioButton>
+
+                                        <RadioButton Content="Details Views / Detail Callouts" GroupName="CadDetailsOriginGroup" IsChecked="{Binding CadOriginDetailViewsAndCallouts}" FontSize="11" Margin="0,0,0,6">
+                                            <RadioButton.ToolTip>
+                                                <ToolTip MaxWidth="260">
+                                                    <TextBlock TextWrapping="Wrap" FontSize="11.5" LineHeight="15" Foreground="#333333">
+                                                        <Bold>Details Views / Detail Callouts</Bold><LineBreak/>
+                                                        Collects dedicated 2D/3D detail section cuts and callout views generated from parent model views.<LineBreak/><LineBreak/>
+                                                        <Bold>Elements shown:</Bold> ViewSection and ViewPlan elements configured as Detail views or Callouts (IsCallout = true).<LineBreak/><LineBreak/>
+                                                        <Bold>Where to find:</Bold> Project Browser -> Sections (Detail) or Floor/Ceiling Plans (Callouts). Created via View tab -> Create panel -> Callout / Section.
+                                                    </TextBlock>
+                                                </ToolTip>
+                                            </RadioButton.ToolTip>
+                                        </RadioButton>
+
+                                        <RadioButton Content="Details Groups" GroupName="CadDetailsOriginGroup" IsChecked="{Binding CadOriginDetailGroups}" FontSize="11" Margin="0,0,0,6">
+                                            <RadioButton.ToolTip>
+                                                <ToolTip MaxWidth="260">
+                                                    <TextBlock TextWrapping="Wrap" FontSize="11.5" LineHeight="15" Foreground="#333333">
+                                                        <Bold>Details Groups</Bold><LineBreak/>
+                                                        Collects 2D Detail Groups composed of lines, text notes, regions, and detail components grouped together.<LineBreak/><LineBreak/>
+                                                        <Bold>Elements shown:</Bold> Placed 2D Group instances and unplaced GroupType definitions (OST_IOSDetailGroups).<LineBreak/><LineBreak/>
+                                                        <Bold>Where to find:</Bold> Project Browser -> Groups -> Detail. Placed in views via Annotate/Architecture tab -> Model/Detail Group.
+                                                    </TextBlock>
+                                                </ToolTip>
+                                            </RadioButton.ToolTip>
+                                        </RadioButton>
+
+                                        <RadioButton Content="Details Items" GroupName="CadDetailsOriginGroup" IsChecked="{Binding CadOriginDetailItems}" FontSize="11" Margin="0,0,0,0">
+                                            <RadioButton.ToolTip>
+                                                <ToolTip MaxWidth="260">
+                                                    <TextBlock TextWrapping="Wrap" FontSize="11.5" LineHeight="15" Foreground="#333333">
+                                                        <Bold>Details Items</Bold><LineBreak/>
+                                                        Collects 2D parametric Detail Component families, Filled Regions, and Masking Regions used for construction detailing.<LineBreak/><LineBreak/>
+                                                        <Bold>Elements shown:</Bold> Detail Item FamilyInstances (OST_DetailComponents), FilledRegion, and MaskingRegion elements.<LineBreak/><LineBreak/>
+                                                        <Bold>Where to find:</Bold> Placed in 2D views via Annotate tab -> Detail panel -> Component, Filled Region, or Masking Region.
+                                                    </TextBlock>
+                                                </ToolTip>
+                                            </RadioButton.ToolTip>
+                                        </RadioButton>
                                     </StackPanel>
 
                                     <!-- Vertical Separator -->
@@ -1047,56 +1106,86 @@
                                     <!-- Right Column: Organize -->
                                     <StackPanel Grid.Column="2" Margin="10,0,0,0">
                                         <TextBlock Text="ORGANIZE" FontSize="9" FontWeight="SemiBold" Foreground="#999" Margin="0,0,0,5"/>
-                                        <CheckBox Content="Sort by Sheet" IsChecked="{Binding CadSortBySheet}" Style="{StaticResource SwitchStyle}" FontSize="11" Margin="0,0,0,6"/>
-                                        <CheckBox Content="Sort by View" IsChecked="{Binding CadSortByView}" Style="{StaticResource SwitchStyle}" FontSize="11" Margin="0,0,0,6"/>
-                                        <CheckBox Content="Sort by Name" IsChecked="{Binding CadSortByName}" Style="{StaticResource SwitchStyle}" FontSize="11" Margin="0,0,0,0"/>
+                                        <CheckBox Content="Sort by Sheet" IsChecked="{Binding CadSortBySheet}" Style="{StaticResource SwitchStyle}" FontSize="11" Margin="0,0,0,6">
+                                            <CheckBox.ToolTip>
+                                                <ToolTip MaxWidth="260">
+                                                    <TextBlock TextWrapping="Wrap" FontSize="11.5" LineHeight="15" Foreground="#333333">
+                                                        <Bold>Sort by Sheet</Bold><LineBreak/>
+                                                        Organizes elements into a 3-level tree hierarchy: Sheet (Number - Name) -> View -> Item.<LineBreak/><LineBreak/>
+                                                        <Bold>Behavior:</Bold> Items placed on sheets are grouped under their respective sheet title. Unassigned items appear under (No Sheet / Standalone).
+                                                    </TextBlock>
+                                                </ToolTip>
+                                            </CheckBox.ToolTip>
+                                        </CheckBox>
+
+                                        <CheckBox Content="Sort by View" IsChecked="{Binding CadSortByView}" Style="{StaticResource SwitchStyle}" FontSize="11" Margin="0,0,0,6">
+                                            <CheckBox.ToolTip>
+                                                <ToolTip MaxWidth="260">
+                                                    <TextBlock TextWrapping="Wrap" FontSize="11.5" LineHeight="15" Foreground="#333333">
+                                                        <Bold>Sort by View</Bold><LineBreak/>
+                                                        Organizes elements into a 2-level tree hierarchy: View -> Item.<LineBreak/><LineBreak/>
+                                                        <Bold>Behavior:</Bold> Groups all items directly under their parent host view name regardless of whether the view is placed on a sheet.
+                                                    </TextBlock>
+                                                </ToolTip>
+                                            </CheckBox.ToolTip>
+                                        </CheckBox>
+
+                                        <CheckBox Content="Sort by Name" IsChecked="{Binding CadSortByName}" Style="{StaticResource SwitchStyle}" FontSize="11" Margin="0,0,0,0">
+                                            <CheckBox.ToolTip>
+                                                <ToolTip MaxWidth="260">
+                                                    <TextBlock TextWrapping="Wrap" FontSize="11.5" LineHeight="15" Foreground="#333333">
+                                                        <Bold>Sort by Name</Bold><LineBreak/>
+                                                        Displays all collected elements in a flat alphabetical list sorted from A to Z.<LineBreak/><LineBreak/>
+                                                        <Bold>Behavior:</Bold> Omits intermediate folder groupings for fast direct selection across all items in the model.
+                                                    </TextBlock>
+                                                </ToolTip>
+                                            </CheckBox.ToolTip>
+                                        </CheckBox>
                                     </StackPanel>
                                 </Grid>
 
                                 <!-- Horizontal Separator Line -->
                                 <Border BorderBrush="#E0E0E0" BorderThickness="0,1,0,0" Margin="0,10,0,10"/>
 
-                                <!-- Centered 200x200 Thumbnail Container -->
-                                <StackPanel HorizontalAlignment="Center" Margin="0,0,0,4">
-                                    <Border Width="200" Height="200" Background="#FAFAFA" BorderBrush="#E5E5E5" BorderThickness="1" CornerRadius="4">
-                                        <Grid>
-                                            <!-- Placeholder text when NO CAD detail is selected -->
-                                            <TextBlock Text="Select a detail or CAD item to view preview" 
-                                                       Foreground="#999" FontStyle="Italic" FontSize="11" TextWrapping="Wrap"
-                                                       TextAlignment="Center" Margin="12" VerticalAlignment="Center" HorizontalAlignment="Center">
-                                                <TextBlock.Style>
-                                                    <Style TargetType="TextBlock">
-                                                        <Setter Property="Visibility" Value="Collapsed"/>
-                                                        <Style.Triggers>
-                                                            <DataTrigger Binding="{Binding HasSelectedCadThumbnail}" Value="False">
-                                                                <Setter Property="Visibility" Value="Visible"/>
-                                                            </DataTrigger>
-                                                        </Style.Triggers>
-                                                    </Style>
-                                                </TextBlock.Style>
-                                            </TextBlock>
+                                <!-- Thumbnail Container: Full Column Width with 200px height and side gap -->
+                                <Border Height="200" HorizontalAlignment="Stretch" Margin="2,0,2,4" Background="#FAFAFA" BorderBrush="#E5E5E5" BorderThickness="1" CornerRadius="4">
+                                    <Grid>
+                                        <!-- Placeholder text when NO CAD detail is selected -->
+                                        <TextBlock Text="Select a detail or CAD item to view preview" 
+                                                   Foreground="#999" FontStyle="Italic" FontSize="11" TextWrapping="Wrap"
+                                                   TextAlignment="Center" Margin="16" VerticalAlignment="Center" HorizontalAlignment="Center">
+                                            <TextBlock.Style>
+                                                <Style TargetType="TextBlock">
+                                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding HasSelectedCadThumbnail}" Value="False">
+                                                            <Setter Property="Visibility" Value="Visible"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </TextBlock.Style>
+                                        </TextBlock>
 
-                                            <!-- Image Preview -->
-                                            <Image Source="{Binding SelectedCadThumbnail}" Stretch="Uniform" Margin="4">
-                                                <Image.Style>
-                                                    <Style TargetType="Image">
-                                                        <Setter Property="Visibility" Value="Visible"/>
-                                                        <Style.Triggers>
-                                                            <DataTrigger Binding="{Binding HasSelectedCadThumbnail}" Value="False">
-                                                                <Setter Property="Visibility" Value="Collapsed"/>
-                                                            </DataTrigger>
-                                                        </Style.Triggers>
-                                                    </Style>
-                                                </Image.Style>
-                                            </Image>
+                                        <!-- Image Preview: Scaled Uniformly to fit dynamic width & 200px height -->
+                                        <Image Source="{Binding SelectedCadThumbnail}" Stretch="Uniform" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="6">
+                                            <Image.Style>
+                                                <Style TargetType="Image">
+                                                    <Setter Property="Visibility" Value="Visible"/>
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding HasSelectedCadThumbnail}" Value="False">
+                                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </Image.Style>
+                                        </Image>
 
-                                            <!-- Loading Spinner -->
-                                            <ProgressBar IsIndeterminate="True" Width="28" Height="28" 
-                                                         HorizontalAlignment="Center" VerticalAlignment="Center"
-                                                         Visibility="{Binding IsLoadingCadThumbnail, Converter={StaticResource BoolToVis}}"/>
-                                        </Grid>
-                                    </Border>
-                                </StackPanel>
+                                        <!-- Loading Spinner -->
+                                        <ProgressBar IsIndeterminate="True" Width="28" Height="28" 
+                                                     HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                     Visibility="{Binding IsLoadingCadThumbnail, Converter={StaticResource BoolToVis}}"/>
+                                    </Grid>
+                                </Border>
                             </StackPanel>
                         </Border>
 
