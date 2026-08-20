@@ -57,12 +57,12 @@
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="60"/>
                     </Grid.ColumnDefinitions>
                     
                     <CheckBox Grid.Column="0" IsChecked="{Binding IsChecked}" IsThreeState="True" VerticalAlignment="Center" Margin="0,0,6,0"/>
-                    <TextBlock x:Name="NodeNameText" Grid.Column="1" Text="{Binding Name}" FontWeight="Normal" Foreground="#333333" VerticalAlignment="Center" TextWrapping="NoWrap"/>
-                    <TextBlock Grid.Column="2" Text="{Binding Count}" Foreground="#888888" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="15,0,10,0"/>
+                    <TextBlock x:Name="NodeNameText" Grid.Column="1" Text="{Binding Name}" FontWeight="Normal" Foreground="#333333" VerticalAlignment="Center" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" ToolTip="{Binding Name}"/>
+                    <TextBlock Grid.Column="2" Text="{Binding Count}" Foreground="#888888" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,10,0"/>
                 </Grid>
                 <HierarchicalDataTemplate.Triggers>
                     <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=TreeViewItem}, Path=IsMouseOver}" Value="True">
@@ -262,7 +262,7 @@
                               VirtualizingStackPanel.IsVirtualizing="True"
                               VirtualizingStackPanel.VirtualizationMode="Recycling"
                               ScrollViewer.VerticalScrollBarVisibility="Auto"
-                              ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                              ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                               BorderThickness="0" Background="Transparent">
                         <TreeView.ItemContainerStyle>
                             <Style TargetType="TreeViewItem">
