@@ -33,6 +33,8 @@ When specific creation concepts are needed, locate the following files in the re
   * *Use cases:* Opening family templates, drawing Reference Planes, creating Extrusions, and binding FamilyParameters.
 * **Family Download & Export Options:** [family_download_subfolders_3d_preview_saveas_options_2026-08-13.md](file:///c:/Users/david.barbero/Documents/DOCUMENTOS/ALTEN/Workbench/RevitAddins_Workspace/RevitAddins_Workspace/.agents/skills/revit-api-families/references/family_download_subfolders_3d_preview_saveas_options_2026-08-13.md)
   * *Use cases:* Organizing exported families into category subfolders, configuring SaveAs 3D Preview views, and audit log generation.
+* **Drafting Views & CAD Details Transfer:** [drafting_views_and_cad_instances_transfer_guide.md](file:///c:/Users/david.barbero/Documents/DOCUMENTOS/ALTEN/Workbench/RevitAddins_Workspace/RevitAddins_Workspace/.agents/skills/revit-api-families/references/drafting_views_and_cad_instances_transfer_guide.md)
+  * *Use cases:* Inter-document copying of 2D drafting views and generating drafting view containers for CAD instances.
 
 ---
 
@@ -41,6 +43,7 @@ Do not reinvent placement algorithms. Inject, adapt, or copy the exact implement
 
 * [FamilyInstantiator.cs](file:///c:/Users/david.barbero/Documents/DOCUMENTOS/ALTEN/Workbench/RevitAddins_Workspace/RevitAddins_Workspace/.agents/skills/revit-api-families/assets/FamilyInstantiator.cs): Safe loading of .rfa files, symbol activation, and batch placement of instances on levels or faces.
 * [FamilyExportPreviewHelper.cs](file:///c:/Users/david.barbero/Documents/DOCUMENTOS/ALTEN/Workbench/RevitAddins_Workspace/RevitAddins_Workspace/.agents/skills/revit-api-families/assets/FamilyExportPreviewHelper.cs): Path sanitization and SaveAs 3D Preview view configuration helper.
+* [DraftingViewProvider.cs](file:///c:/Users/david.barbero/Documents/DOCUMENTOS/ALTEN/Workbench/RevitAddins_Workspace/RevitAddins_Workspace/.agents/skills/revit-api-families/assets/DraftingViewProvider.cs): Collector utility for Drafting Views in Revit documents.
 * [ViewSheetManager.cs](file:///c:/Users/david.barbero/Documents/DOCUMENTOS/ALTEN/Workbench/RevitAddins_Workspace/RevitAddins_Workspace/.agents/skills/revit-api-families/assets/ViewSheetManager.cs): Automated creation of Sheets, dynamic titleblock retrieval, and automated viewport alignment.
 * [AnnotationBuilder.cs](file:///c:/Users/david.barbero/Documents/DOCUMENTOS/ALTEN/Workbench/RevitAddins_Workspace/RevitAddins_Workspace/.agents/skills/revit-api-families/assets/AnnotationBuilder.cs): Utilities to extract geometric references and place linear dimensions and independent tags securely.
 * [FamilyDocumentBuilder.cs](file:///c:/Users/david.barbero/Documents/DOCUMENTOS/ALTEN/Workbench/RevitAddins_Workspace/RevitAddins_Workspace/.agents/skills/revit-api-families/assets/FamilyDocumentBuilder.cs): Boilerplate for the Family API: drawing reference planes, generating solids, and creating parametric constraints.
