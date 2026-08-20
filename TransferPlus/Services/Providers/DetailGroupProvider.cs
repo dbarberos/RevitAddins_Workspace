@@ -18,8 +18,8 @@ namespace TransferPlus.Services.Providers
 
             try
             {
-                // 1. Mapeo de Vistas colocadas en Planos (ViewId -> SheetNumber / Name)
-                var viewToSheetMap = new Dictionary<ElementId, string>();
+                // 1. Mapeo de Vistas colocadas en Planos (ViewId -> SheetNumber / Name y SheetId)
+                var viewToSheetMap = new Dictionary<ElementId, (ElementId SheetId, string SheetName)>();
                 var viewports = new FilteredElementCollector(doc)
                     .OfClass(typeof(Viewport))
                     .Cast<Viewport>()
@@ -33,7 +33,7 @@ namespace TransferPlus.Services.Providers
                         var sheetId = vp.SheetId;
                         if (sheetId != ElementId.InvalidElementId && doc.GetElement(sheetId) is ViewSheet sheet)
                         {
-                            viewToSheetMap[viewId] = $"{sheet.SheetNumber} - {sheet.Name}";
+                            viewToSheetMap[viewId] = (sheet.Id, $"{sheet.SheetNumber} - {sheet.Name}");
                         }
                     }
                     catch { }
@@ -55,13 +55,15 @@ namespace TransferPlus.Services.Providers
                     string groupName = !string.IsNullOrWhiteSpace(group.Name) ? group.Name : (group.GroupType?.Name ?? $"Group_{group.Id.Value}");
                     string viewName = "Model / Unassigned View";
                     string sheetName = string.Empty;
+                    ElementId? sheetId = null;
 
                     if (group.OwnerViewId != ElementId.InvalidElementId && doc.GetElement(group.OwnerViewId) is View ownerView)
                     {
                         viewName = ownerView.Name;
-                        if (viewToSheetMap.TryGetValue(ownerView.Id, out var sName))
+                        if (viewToSheetMap.TryGetValue(ownerView.Id, out var sInfo))
                         {
-                            sheetName = sName;
+                            sheetName = sInfo.SheetName;
+                            sheetId = sInfo.SheetId;
                         }
                     }
 
@@ -75,6 +77,7 @@ namespace TransferPlus.Services.Providers
                         Name = groupName,
                         ViewName = viewName,
                         SheetName = sheetName,
+                        SheetId = sheetId,
                         Category = "Detail Groups",
                         IsDraftingView = false,
                         IsLinked = false,

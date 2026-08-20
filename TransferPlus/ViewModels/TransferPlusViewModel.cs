@@ -1077,7 +1077,29 @@ public partial class TransferPlusViewModel : ObservableObject
 
             foreach (var sheetGroup in sheetGroups)
             {
-                var sheetNode = new TreeItemViewModel(sheetGroup.Key, "Sheet", null, allNode, 1)
+                CadDetailItemModel? sheetCadItem = null;
+                var firstWithSheet = sheetGroup.FirstOrDefault(x => x.SheetId != null && x.SheetId != ElementId.InvalidElementId);
+                if (firstWithSheet != null && firstWithSheet.SourceDocument is Document sheetDoc && firstWithSheet.SheetId != null)
+                {
+                    var sheetElem = sheetDoc.GetElement(firstWithSheet.SheetId);
+                    sheetCadItem = new CadDetailItemModel
+                    {
+                        Name = sheetGroup.Key,
+                        ViewName = sheetGroup.Key,
+                        SheetName = sheetGroup.Key,
+                        SheetId = firstWithSheet.SheetId,
+                        Category = "Sheet",
+                        IsDraftingView = false,
+                        IsLinked = false,
+                        ElementId = firstWithSheet.SheetId,
+                        OwnerViewId = firstWithSheet.SheetId,
+                        NativeElement = sheetElem,
+                        SourceDocument = sheetDoc,
+                        SourceDocumentName = sheetDoc.Title
+                    };
+                }
+
+                var sheetNode = new TreeItemViewModel(sheetGroup.Key, "Sheet", sheetCadItem, allNode, 1)
                 {
                     Count = sheetGroup.Count(),
                     IsExpanded = true
@@ -1089,7 +1111,29 @@ public partial class TransferPlusViewModel : ObservableObject
 
                 foreach (var viewGroup in viewGroups)
                 {
-                    var viewNode = new TreeItemViewModel(viewGroup.Key, "View", null, sheetNode, 2)
+                    CadDetailItemModel? viewCadItem = null;
+                    var firstWithView = viewGroup.FirstOrDefault(x => x.OwnerViewId != null && x.OwnerViewId != ElementId.InvalidElementId);
+                    if (firstWithView != null && firstWithView.SourceDocument is Document viewDoc && firstWithView.OwnerViewId != null)
+                    {
+                        var ownerView = viewDoc.GetElement(firstWithView.OwnerViewId) as View;
+                        viewCadItem = new CadDetailItemModel
+                        {
+                            Name = viewGroup.Key,
+                            ViewName = viewGroup.Key,
+                            SheetName = firstWithView.SheetName,
+                            SheetId = firstWithView.SheetId,
+                            Category = "Drafting Views",
+                            IsDraftingView = ownerView?.ViewType == ViewType.DraftingView,
+                            IsLinked = false,
+                            ElementId = firstWithView.OwnerViewId,
+                            OwnerViewId = firstWithView.OwnerViewId,
+                            NativeElement = ownerView,
+                            SourceDocument = viewDoc,
+                            SourceDocumentName = viewDoc.Title
+                        };
+                    }
+
+                    var viewNode = new TreeItemViewModel(viewGroup.Key, "View", viewCadItem, sheetNode, 2)
                     {
                         Count = viewGroup.Count(),
                         IsExpanded = false
@@ -1127,7 +1171,29 @@ public partial class TransferPlusViewModel : ObservableObject
                     viewDisplayName = $"{viewGroup.Key} [{firstWithSheet.SheetName}]";
                 }
 
-                var viewNode = new TreeItemViewModel(viewDisplayName, "View", null, allNode, 1)
+                CadDetailItemModel? viewCadItem = null;
+                var firstWithView = viewGroup.FirstOrDefault(x => x.OwnerViewId != null && x.OwnerViewId != ElementId.InvalidElementId);
+                if (firstWithView != null && firstWithView.SourceDocument is Document viewDoc && firstWithView.OwnerViewId != null)
+                {
+                    var ownerView = viewDoc.GetElement(firstWithView.OwnerViewId) as View;
+                    viewCadItem = new CadDetailItemModel
+                    {
+                        Name = viewDisplayName,
+                        ViewName = viewGroup.Key,
+                        SheetName = firstWithView.SheetName,
+                        SheetId = firstWithView.SheetId,
+                        Category = "Drafting Views",
+                        IsDraftingView = ownerView?.ViewType == ViewType.DraftingView,
+                        IsLinked = false,
+                        ElementId = firstWithView.OwnerViewId,
+                        OwnerViewId = firstWithView.OwnerViewId,
+                        NativeElement = ownerView,
+                        SourceDocument = viewDoc,
+                        SourceDocumentName = viewDoc.Title
+                    };
+                }
+
+                var viewNode = new TreeItemViewModel(viewDisplayName, "View", viewCadItem, allNode, 1)
                 {
                     Count = viewGroup.Count(),
                     IsExpanded = false

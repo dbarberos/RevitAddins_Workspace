@@ -18,8 +18,8 @@ namespace TransferPlus.Services.Providers
 
             try
             {
-                // 1. Mapeo de Vistas colocadas en Planos (ViewId -> SheetNumber / Name)
-                var viewToSheetMap = new Dictionary<ElementId, string>();
+                // 1. Mapeo de Vistas colocadas en Planos (ViewId -> SheetNumber / Name y SheetId)
+                var viewToSheetMap = new Dictionary<ElementId, (ElementId SheetId, string SheetName)>();
                 var viewports = new FilteredElementCollector(doc)
                     .OfClass(typeof(Viewport))
                     .Cast<Viewport>()
@@ -33,7 +33,7 @@ namespace TransferPlus.Services.Providers
                         var sheetId = vp.SheetId;
                         if (sheetId != ElementId.InvalidElementId && doc.GetElement(sheetId) is ViewSheet sheet)
                         {
-                            viewToSheetMap[viewId] = $"{sheet.SheetNumber} - {sheet.Name}";
+                            viewToSheetMap[viewId] = (sheet.Id, $"{sheet.SheetNumber} - {sheet.Name}");
                         }
                     }
                     catch { }
@@ -54,13 +54,15 @@ namespace TransferPlus.Services.Providers
 
                     string viewName = "Model / Unassigned View";
                     string sheetName = string.Empty;
+                    ElementId? sheetId = null;
 
                     if (inst.OwnerViewId != ElementId.InvalidElementId && doc.GetElement(inst.OwnerViewId) is View ownerView)
                     {
                         viewName = ownerView.Name;
-                        if (viewToSheetMap.TryGetValue(ownerView.Id, out var sName))
+                        if (viewToSheetMap.TryGetValue(ownerView.Id, out var sInfo))
                         {
-                            sheetName = sName;
+                            sheetName = sInfo.SheetName;
+                            sheetId = sInfo.SheetId;
                         }
                     }
 
@@ -69,6 +71,7 @@ namespace TransferPlus.Services.Providers
                         Name = displayName,
                         ViewName = viewName,
                         SheetName = sheetName,
+                        SheetId = sheetId,
                         Category = "Detail Items",
                         IsDraftingView = false,
                         IsLinked = false,

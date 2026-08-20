@@ -44,6 +44,7 @@ namespace TransferPlus.Models
 
         public ElementId? ElementId { get; set; }
         public ElementId? OwnerViewId { get; set; }
+        public ElementId? SheetId { get; set; }
 
         /// <summary>
         /// Referencia opcional al elemento nativo Revit (ViewDrafting o ImportInstance).

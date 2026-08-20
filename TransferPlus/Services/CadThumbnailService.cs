@@ -54,8 +54,9 @@ namespace TransferPlus.Services
 
                 // 1. CASO A: Elemento de Detalle individual 2D (FamilyInstance / FamilySymbol / Group)
                 // -> Renderizar exclusivamente el elemento aislado en vista temporal con ImageExportOptions
-                if (cadItem.Category == "Detail Items" || cadItem.Category == "Details Groups" ||
-                    cadItem.NativeElement is FamilyInstance || cadItem.NativeElement is FamilySymbol || cadItem.NativeElement is Group)
+                if ((cadItem.Category == "Detail Items" || cadItem.Category == "Details Groups" ||
+                     cadItem.NativeElement is FamilyInstance || cadItem.NativeElement is FamilySymbol || cadItem.NativeElement is Group) &&
+                    !(cadItem.NativeElement is ViewSheet) && !(cadItem.NativeElement is View) && cadItem.Category != "Sheet")
                 {
                     if (doc != null && cadItem.ElementId != null && cadItem.ElementId != ElementId.InvalidElementId)
                     {
@@ -73,12 +74,20 @@ namespace TransferPlus.Services
                         result = ExtractNativeElementThumbnail(elem, cancellationToken);
                     }
                 }
-                // 2. CASO B: Vista Completa (View, ViewDrafting, Detail View, Detail Callout) o ImportInstance CAD
+                // 2. CASO B: Plano Completo (ViewSheet) o Vista Completa (View, ViewDrafting, Detail View, Detail Callout) o ImportInstance CAD
                 else
                 {
                     ElementId? viewId = null;
 
-                    if (cadItem.NativeElement is View v)
+                    if (cadItem.NativeElement is ViewSheet vs)
+                    {
+                        viewId = vs.Id;
+                    }
+                    else if (cadItem.Category == "Sheet" && (cadItem.SheetId != null || cadItem.ElementId != null))
+                    {
+                        viewId = cadItem.SheetId ?? cadItem.ElementId;
+                    }
+                    else if (cadItem.NativeElement is View v)
                     {
                         viewId = v.Id;
                     }

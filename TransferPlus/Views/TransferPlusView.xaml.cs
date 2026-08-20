@@ -135,55 +135,133 @@ public partial class TransferPlusView : Window
             {
                 vm.SelectedCadDetail = cadItem;
             }
-            else if (selectedNode.Category == "View" && selectedNode.Children.Any(c => c.Item is Models.CadDetailItemModel))
+            else if (selectedNode.Category == "Sheet")
             {
-                var firstChildCad = selectedNode.Children.FirstOrDefault(c => c.Item is Models.CadDetailItemModel)?.Item as Models.CadDetailItemModel;
-                if (firstChildCad != null && firstChildCad.OwnerViewId != null && firstChildCad.SourceDocument is Autodesk.Revit.DB.Document sDoc)
+                if (selectedNode.Item is Models.CadDetailItemModel sheetItem)
                 {
-                    var ownerView = sDoc.GetElement(firstChildCad.OwnerViewId) as Autodesk.Revit.DB.View;
-                    if (ownerView != null)
+                    vm.SelectedCadDetail = sheetItem;
+                }
+                else
+                {
+                    var allCad = GetAllChildCadItems(selectedNode);
+                    var firstWithSheet = allCad.FirstOrDefault(x => x.SheetId != null && x.SheetId != Autodesk.Revit.DB.ElementId.InvalidElementId)
+                                         ?? allCad.FirstOrDefault(x => !string.IsNullOrWhiteSpace(x.SheetName));
+                    if (firstWithSheet != null && firstWithSheet.SourceDocument is Autodesk.Revit.DB.Document sDoc)
                     {
-                        var viewCadItem = new Models.CadDetailItemModel
+                        Autodesk.Revit.DB.Element? sheetElem = null;
+                        if (firstWithSheet.SheetId != null && firstWithSheet.SheetId != Autodesk.Revit.DB.ElementId.InvalidElementId)
                         {
-                            Name = ownerView.Name,
-                            ViewName = ownerView.Name,
-                            SheetName = firstChildCad.SheetName,
-                            Category = "Drafting Views",
-                            IsDraftingView = ownerView.ViewType == Autodesk.Revit.DB.ViewType.DraftingView,
-                            IsLinked = false,
-                            CadCount = 0,
-                            ElementId = ownerView.Id,
-                            OwnerViewId = ownerView.Id,
-                            NativeElement = ownerView,
-                            SourceDocument = sDoc,
-                            SourceDocumentName = sDoc.Title
-                        };
-                        vm.SelectedCadDetail = viewCadItem;
+                            sheetElem = sDoc.GetElement(firstWithSheet.SheetId);
+                        }
+
+                        if (sheetElem == null && !string.IsNullOrWhiteSpace(selectedNode.Name))
+                        {
+                            sheetElem = new Autodesk.Revit.DB.FilteredElementCollector(sDoc)
+                                .OfClass(typeof(Autodesk.Revit.DB.ViewSheet))
+                                .Cast<Autodesk.Revit.DB.ViewSheet>()
+                                .FirstOrDefault(s => $"{s.SheetNumber} - {s.Name}" == selectedNode.Name || s.Name == selectedNode.Name || s.SheetNumber == selectedNode.Name);
+                        }
+
+                        if (sheetElem is Autodesk.Revit.DB.ViewSheet vs)
+                        {
+                            var sheetCadItem = new Models.CadDetailItemModel
+                            {
+                                Name = $"{vs.SheetNumber} - {vs.Name}",
+                                ViewName = vs.Name,
+                                SheetName = $"{vs.SheetNumber} - {vs.Name}",
+                                SheetId = vs.Id,
+                                Category = "Sheet",
+                                IsDraftingView = false,
+                                IsLinked = false,
+                                CadCount = 0,
+                                ElementId = vs.Id,
+                                OwnerViewId = vs.Id,
+                                NativeElement = vs,
+                                SourceDocument = sDoc,
+                                SourceDocumentName = sDoc.Title
+                            };
+                            vm.SelectedCadDetail = sheetCadItem;
+                        }
+                        else
+                        {
+                            vm.SelectedCadDetail = firstWithSheet;
+                        }
                     }
-                    else
+                }
+            }
+            else if (selectedNode.Category == "View")
+            {
+                if (selectedNode.Item is Models.CadDetailItemModel viewItem)
+                {
+                    vm.SelectedCadDetail = viewItem;
+                }
+                else
+                {
+                    var allCad = GetAllChildCadItems(selectedNode);
+                    var firstChildCad = allCad.FirstOrDefault(c => c.OwnerViewId != null && c.OwnerViewId != Autodesk.Revit.DB.ElementId.InvalidElementId);
+                    if (firstChildCad != null && firstChildCad.OwnerViewId != null && firstChildCad.SourceDocument is Autodesk.Revit.DB.Document sDoc)
+                    {
+                        var ownerView = sDoc.GetElement(firstChildCad.OwnerViewId) as Autodesk.Revit.DB.View;
+                        if (ownerView != null)
+                        {
+                            var viewCadItem = new Models.CadDetailItemModel
+                            {
+                                Name = ownerView.Name,
+                                ViewName = ownerView.Name,
+                                SheetName = firstChildCad.SheetName,
+                                SheetId = firstChildCad.SheetId,
+                                Category = "Drafting Views",
+                                IsDraftingView = ownerView.ViewType == Autodesk.Revit.DB.ViewType.DraftingView,
+                                IsLinked = false,
+                                CadCount = 0,
+                                ElementId = ownerView.Id,
+                                OwnerViewId = ownerView.Id,
+                                NativeElement = ownerView,
+                                SourceDocument = sDoc,
+                                SourceDocumentName = sDoc.Title
+                            };
+                            vm.SelectedCadDetail = viewCadItem;
+                        }
+                        else
+                        {
+                            vm.SelectedCadDetail = firstChildCad;
+                        }
+                    }
+                    else if (firstChildCad != null)
                     {
                         vm.SelectedCadDetail = firstChildCad;
                     }
                 }
-                else if (firstChildCad != null)
-                {
-                    vm.SelectedCadDetail = firstChildCad;
-                }
             }
-            else if (selectedNode.Children.Any(c => c.Item is Models.CadDetailItemModel))
+            else
             {
-                var firstChildCad = selectedNode.Children.FirstOrDefault(c => c.Item is Models.CadDetailItemModel)?.Item as Models.CadDetailItemModel;
+                var allCad = GetAllChildCadItems(selectedNode);
+                var firstChildCad = allCad.FirstOrDefault();
                 if (firstChildCad != null)
                 {
                     vm.SelectedCadDetail = firstChildCad;
                 }
-            }
-            else
-            {
-                vm.SelectedFamily = null;
-                vm.SelectedSymbol = null;
+                else
+                {
+                    vm.SelectedFamily = null;
+                    vm.SelectedSymbol = null;
+                }
             }
         }
+    }
+
+    private static System.Collections.Generic.List<Models.CadDetailItemModel> GetAllChildCadItems(TreeItemViewModel node)
+    {
+        var list = new System.Collections.Generic.List<Models.CadDetailItemModel>();
+        if (node.Item is Models.CadDetailItemModel item)
+        {
+            list.Add(item);
+        }
+        foreach (var child in node.Children)
+        {
+            list.AddRange(GetAllChildCadItems(child));
+        }
+        return list;
     }
 
     private void CloseDatePopup(object sender, RoutedEventArgs e)
