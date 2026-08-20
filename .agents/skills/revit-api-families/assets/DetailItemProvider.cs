@@ -10,14 +10,14 @@ namespace RevitAddin.FamilyAssets
     /// </summary>
     public static class DetailItemProvider
     {
-        public static List<FamilyInstance> GetDetailComponentInstances(Document doc)
+        public static List<Element> GetDetailComponentElements(Document doc)
         {
-            if (doc == null || !doc.IsValidObject) return new List<FamilyInstance>();
+            if (doc == null || !doc.IsValidObject) return new List<Element>();
 
             return new FilteredElementCollector(doc)
                 .OfCategory(BuiltInCategory.OST_DetailComponents)
                 .WhereElementIsNotElementType()
-                .Cast<FamilyInstance>()
+                .ToElements()
                 .ToList();
         }
     }

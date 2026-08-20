@@ -39,23 +39,45 @@ namespace TransferPlus.Services.Providers
                     catch { }
                 }
 
-                // 2. Recolectar instancias de Componentes de Detalle 2D
-                var detailInstances = new FilteredElementCollector(doc)
+                // 2. Recolectar instancias de Componentes de Detalle 2D (FamilyInstances, FilledRegions, etc.)
+                var detailElements = new FilteredElementCollector(doc)
                     .OfCategory(BuiltInCategory.OST_DetailComponents)
                     .WhereElementIsNotElementType()
-                    .Cast<FamilyInstance>()
-                    .ToList();
+                    .ToElements();
 
-                foreach (var inst in detailInstances)
+                foreach (var elem in detailElements)
                 {
-                    string familyName = inst.Symbol?.FamilyName ?? "Detail Component";
-                    string typeName = inst.Name;
-                    string displayName = !string.IsNullOrWhiteSpace(familyName) ? $"{familyName} : {typeName}" : typeName;
+                    string displayName;
+                    if (elem is FamilyInstance inst)
+                    {
+                        string familyName = inst.Symbol?.FamilyName ?? "Detail Component";
+                        string typeName = inst.Name;
+                        displayName = !string.IsNullOrWhiteSpace(familyName) ? $"{familyName} : {typeName}" : typeName;
+                    }
+                    else if (elem is FilledRegion filledRegion)
+                    {
+                        var frType = doc.GetElement(filledRegion.GetTypeId());
+                        string typeName = frType != null && !string.IsNullOrWhiteSpace(frType.Name) ? frType.Name : filledRegion.Name;
+                        displayName = $"Filled Region : {typeName}";
+                    }
+                    else
+                    {
+                        string typeName = string.Empty;
+                        if (elem.GetTypeId() != ElementId.InvalidElementId && doc.GetElement(elem.GetTypeId()) is Element typeElem && !string.IsNullOrWhiteSpace(typeElem.Name))
+                        {
+                            typeName = typeElem.Name;
+                        }
+                        else
+                        {
+                            typeName = elem.Name;
+                        }
+                        displayName = !string.IsNullOrWhiteSpace(typeName) ? typeName : $"Detail Item ({elem.Id.Value})";
+                    }
 
                     string viewName = "Model / Unassigned View";
                     string sheetName = string.Empty;
 
-                    if (inst.OwnerViewId != ElementId.InvalidElementId && doc.GetElement(inst.OwnerViewId) is View ownerView)
+                    if (elem.OwnerViewId != ElementId.InvalidElementId && doc.GetElement(elem.OwnerViewId) is View ownerView)
                     {
                         viewName = ownerView.Name;
                         if (viewToSheetMap.TryGetValue(ownerView.Id, out var sName))
@@ -73,9 +95,9 @@ namespace TransferPlus.Services.Providers
                         IsDraftingView = false,
                         IsLinked = false,
                         CadCount = 0,
-                        ElementId = inst.Id,
-                        OwnerViewId = inst.OwnerViewId,
-                        NativeElement = inst,
+                        ElementId = elem.Id,
+                        OwnerViewId = elem.OwnerViewId,
+                        NativeElement = elem,
                         SourceDocument = doc,
                         SourceDocumentName = doc.Title
                     };
