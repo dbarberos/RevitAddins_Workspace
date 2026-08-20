@@ -1033,12 +1033,12 @@
                                     
                                     <!-- Left Column: Origin -->
                                     <StackPanel Grid.Column="0" Margin="0,0,10,0">
-                                        <TextBlock Text="Origin:" FontWeight="Bold" FontSize="11.5" Foreground="#999" Margin="0,0,0,6"/>
-                                        <RadioButton Content="CAD Links / CAD Imports" GroupName="CadDetailsOriginGroup" IsChecked="{Binding CadOriginLinksAndImports}" Margin="0,3"/>
-                                        <RadioButton Content="Drafting Views" GroupName="CadDetailsOriginGroup" IsChecked="{Binding CadOriginDraftingViews}" Margin="0,3"/>
-                                        <RadioButton Content="Details Views / Detail Callouts" GroupName="CadDetailsOriginGroup" IsChecked="{Binding CadOriginDetailViewsAndCallouts}" Margin="0,3"/>
-                                        <RadioButton Content="Details Groups" GroupName="CadDetailsOriginGroup" IsChecked="{Binding CadOriginDetailGroups}" Margin="0,3"/>
-                                        <RadioButton Content="Details Items" GroupName="CadDetailsOriginGroup" IsChecked="{Binding CadOriginDetailItems}" Margin="0,3"/>
+                                        <TextBlock Text="ORIGIN" FontSize="9" FontWeight="SemiBold" Foreground="#999" Margin="0,0,0,5"/>
+                                        <RadioButton Content="CAD Links / CAD Imports" GroupName="CadDetailsOriginGroup" IsChecked="{Binding CadOriginLinksAndImports}" FontSize="11" Margin="0,0,0,6"/>
+                                        <RadioButton Content="Drafting Views" GroupName="CadDetailsOriginGroup" IsChecked="{Binding CadOriginDraftingViews}" FontSize="11" Margin="0,0,0,6"/>
+                                        <RadioButton Content="Details Views / Detail Callouts" GroupName="CadDetailsOriginGroup" IsChecked="{Binding CadOriginDetailViewsAndCallouts}" FontSize="11" Margin="0,0,0,6"/>
+                                        <RadioButton Content="Details Groups" GroupName="CadDetailsOriginGroup" IsChecked="{Binding CadOriginDetailGroups}" FontSize="11" Margin="0,0,0,6"/>
+                                        <RadioButton Content="Details Items" GroupName="CadDetailsOriginGroup" IsChecked="{Binding CadOriginDetailItems}" FontSize="11" Margin="0,0,0,0"/>
                                     </StackPanel>
 
                                     <!-- Vertical Separator -->
@@ -1046,10 +1046,10 @@
 
                                     <!-- Right Column: Organize -->
                                     <StackPanel Grid.Column="2" Margin="10,0,0,0">
-                                        <TextBlock Text="Organize:" FontWeight="Bold" FontSize="11.5" Foreground="#999" Margin="0,0,0,6"/>
-                                        <CheckBox Content="Sort by Sheet" IsChecked="{Binding CadSortBySheet}" Style="{StaticResource SwitchStyle}" Margin="0,3"/>
-                                        <CheckBox Content="Sort by View" IsChecked="{Binding CadSortByView}" Style="{StaticResource SwitchStyle}" Margin="0,3"/>
-                                        <CheckBox Content="Sort by Name" IsChecked="{Binding CadSortByName}" Style="{StaticResource SwitchStyle}" Margin="0,3"/>
+                                        <TextBlock Text="ORGANIZE" FontSize="9" FontWeight="SemiBold" Foreground="#999" Margin="0,0,0,5"/>
+                                        <CheckBox Content="Sort by Sheet" IsChecked="{Binding CadSortBySheet}" Style="{StaticResource SwitchStyle}" FontSize="11" Margin="0,0,0,6"/>
+                                        <CheckBox Content="Sort by View" IsChecked="{Binding CadSortByView}" Style="{StaticResource SwitchStyle}" FontSize="11" Margin="0,0,0,6"/>
+                                        <CheckBox Content="Sort by Name" IsChecked="{Binding CadSortByName}" Style="{StaticResource SwitchStyle}" FontSize="11" Margin="0,0,0,0"/>
                                     </StackPanel>
                                 </Grid>
 
