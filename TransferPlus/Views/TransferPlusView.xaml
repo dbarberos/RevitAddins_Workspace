@@ -1036,7 +1036,7 @@
                                         <TextBlock Text="ORIGIN" FontSize="9" FontWeight="SemiBold" Foreground="#999" Margin="0,0,0,5"/>
                                         <RadioButton Content="CAD Links / CAD Imports" GroupName="CadDetailsOriginGroup" IsChecked="{Binding CadOriginLinksAndImports}" FontSize="11" Margin="0,0,0,6">
                                             <RadioButton.ToolTip>
-                                                <ToolTip MaxWidth="260">
+                                                <ToolTip MaxWidth="225">
                                                     <TextBlock TextWrapping="Wrap" FontSize="11.5" LineHeight="15" Foreground="#333333">
                                                         <Bold>CAD Links / CAD Imports</Bold><LineBreak/>
                                                         Collects external DWG, DXF, DGN, and SAT vector files imported or linked into the source model.<LineBreak/><LineBreak/>
@@ -1049,7 +1049,7 @@
 
                                         <RadioButton Content="Drafting Views" GroupName="CadDetailsOriginGroup" IsChecked="{Binding CadOriginDraftingViews}" FontSize="11" Margin="0,0,0,6">
                                             <RadioButton.ToolTip>
-                                                <ToolTip MaxWidth="260">
+                                                <ToolTip MaxWidth="225">
                                                     <TextBlock TextWrapping="Wrap" FontSize="11.5" LineHeight="15" Foreground="#333333">
                                                         <Bold>Drafting Views</Bold><LineBreak/>
                                                         Collects 2D drafting views containing detail sketches, standard construction details, notes, and embedded CAD drawings.<LineBreak/><LineBreak/>
@@ -1062,7 +1062,7 @@
 
                                         <RadioButton Content="Details Views / Detail Callouts" GroupName="CadDetailsOriginGroup" IsChecked="{Binding CadOriginDetailViewsAndCallouts}" FontSize="11" Margin="0,0,0,6">
                                             <RadioButton.ToolTip>
-                                                <ToolTip MaxWidth="260">
+                                                <ToolTip MaxWidth="225">
                                                     <TextBlock TextWrapping="Wrap" FontSize="11.5" LineHeight="15" Foreground="#333333">
                                                         <Bold>Details Views / Detail Callouts</Bold><LineBreak/>
                                                         Collects dedicated 2D/3D detail section cuts and callout views generated from parent model views.<LineBreak/><LineBreak/>
@@ -1075,7 +1075,7 @@
 
                                         <RadioButton Content="Details Groups" GroupName="CadDetailsOriginGroup" IsChecked="{Binding CadOriginDetailGroups}" FontSize="11" Margin="0,0,0,6">
                                             <RadioButton.ToolTip>
-                                                <ToolTip MaxWidth="260">
+                                                <ToolTip MaxWidth="225">
                                                     <TextBlock TextWrapping="Wrap" FontSize="11.5" LineHeight="15" Foreground="#333333">
                                                         <Bold>Details Groups</Bold><LineBreak/>
                                                         Collects 2D Detail Groups composed of lines, text notes, regions, and detail components grouped together.<LineBreak/><LineBreak/>
@@ -1088,7 +1088,7 @@
 
                                         <RadioButton Content="Details Items" GroupName="CadDetailsOriginGroup" IsChecked="{Binding CadOriginDetailItems}" FontSize="11" Margin="0,0,0,0">
                                             <RadioButton.ToolTip>
-                                                <ToolTip MaxWidth="260">
+                                                <ToolTip MaxWidth="225">
                                                     <TextBlock TextWrapping="Wrap" FontSize="11.5" LineHeight="15" Foreground="#333333">
                                                         <Bold>Details Items</Bold><LineBreak/>
                                                         Collects 2D parametric Detail Component families, Filled Regions, and Masking Regions used for construction detailing.<LineBreak/><LineBreak/>
@@ -1108,7 +1108,7 @@
                                         <TextBlock Text="ORGANIZE" FontSize="9" FontWeight="SemiBold" Foreground="#999" Margin="0,0,0,5"/>
                                         <CheckBox Content="Sort by Sheet" IsChecked="{Binding CadSortBySheet}" Style="{StaticResource SwitchStyle}" FontSize="11" Margin="0,0,0,6">
                                             <CheckBox.ToolTip>
-                                                <ToolTip MaxWidth="260">
+                                                <ToolTip MaxWidth="225">
                                                     <TextBlock TextWrapping="Wrap" FontSize="11.5" LineHeight="15" Foreground="#333333">
                                                         <Bold>Sort by Sheet</Bold><LineBreak/>
                                                         Organizes elements into a 3-level tree hierarchy: Sheet (Number - Name) -> View -> Item.<LineBreak/><LineBreak/>
@@ -1120,7 +1120,7 @@
 
                                         <CheckBox Content="Sort by View" IsChecked="{Binding CadSortByView}" Style="{StaticResource SwitchStyle}" FontSize="11" Margin="0,0,0,6">
                                             <CheckBox.ToolTip>
-                                                <ToolTip MaxWidth="260">
+                                                <ToolTip MaxWidth="225">
                                                     <TextBlock TextWrapping="Wrap" FontSize="11.5" LineHeight="15" Foreground="#333333">
                                                         <Bold>Sort by View</Bold><LineBreak/>
                                                         Organizes elements into a 2-level tree hierarchy: View -> Item.<LineBreak/><LineBreak/>
@@ -1132,7 +1132,7 @@
 
                                         <CheckBox Content="Sort by Name" IsChecked="{Binding CadSortByName}" Style="{StaticResource SwitchStyle}" FontSize="11" Margin="0,0,0,0">
                                             <CheckBox.ToolTip>
-                                                <ToolTip MaxWidth="260">
+                                                <ToolTip MaxWidth="225">
                                                     <TextBlock TextWrapping="Wrap" FontSize="11.5" LineHeight="15" Foreground="#333333">
                                                         <Bold>Sort by Name</Bold><LineBreak/>
                                                         Displays all collected elements in a flat alphabetical list sorted from A to Z.<LineBreak/><LineBreak/>
