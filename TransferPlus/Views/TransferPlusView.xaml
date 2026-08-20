@@ -53,17 +53,8 @@
             <local:NegativeConverter x:Key="NegativeConverter"/>
             
             <HierarchicalDataTemplate x:Key="CheckboxTreeTemplate" DataType="{x:Type viewmodels:TreeItemViewModel}" ItemsSource="{Binding Children}">
-                <Grid Margin="2,3">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="60"/>
-                    </Grid.ColumnDefinitions>
-                    
-                    <CheckBox Grid.Column="0" IsChecked="{Binding IsChecked}" IsThreeState="True" VerticalAlignment="Center" Margin="0,0,6,0"/>
-                    <TextBlock x:Name="NodeNameText" Grid.Column="1" Text="{Binding Name}" FontWeight="Normal" Foreground="#333333" VerticalAlignment="Center" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" ToolTip="{Binding Name}"/>
-                    <TextBlock Grid.Column="2" Text="{Binding Count}" Foreground="#888888" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,10,0"/>
-                </Grid>
+                <TextBlock x:Name="NodeNameText" Text="{Binding Name}" FontWeight="Normal" Foreground="#333333" 
+                           VerticalAlignment="Center" Margin="2,3" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" ToolTip="{Binding Name}"/>
                 <HierarchicalDataTemplate.Triggers>
                     <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=TreeViewItem}, Path=IsMouseOver}" Value="True">
                         <Setter TargetName="NodeNameText" Property="Foreground" Value="#007ACC"/>
@@ -237,10 +228,12 @@
                 <Border Grid.Row="3" Background="#f0f0f0" BorderBrush="#ddd" BorderThickness="1,1,1,0" Padding="5,6">
                     <Grid>
                         <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="26"/>
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="60"/>
                         </Grid.ColumnDefinitions>
-                        <StackPanel Orientation="Horizontal" Grid.Column="0" VerticalAlignment="Center" Margin="0">
+                        <Border Grid.Column="0"/>
+                        <StackPanel Orientation="Horizontal" Grid.Column="1" VerticalAlignment="Center" Margin="2,0,0,0">
                             <TextBlock Text="Elements" FontWeight="SemiBold" FontSize="11" Foreground="#555" Margin="0,0,8,0" VerticalAlignment="Center"/>
                             <Button Command="{Binding ExpandAllCommand}" Style="{StaticResource HeaderIconButtonStyle}" ToolTip="Expand All" VerticalAlignment="Center">
                                 <Path Data="M0,0 L10,0 L5,8 Z" Fill="#666" HorizontalAlignment="Center" VerticalAlignment="Center"/>
@@ -249,7 +242,7 @@
                                 <Path Data="M5,0 L10,8 L0,8 Z" Fill="#666" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                             </Button>
                         </StackPanel>
-                        <TextBlock Grid.Column="1" Text="Count" FontWeight="SemiBold" FontSize="11" Foreground="#555" HorizontalAlignment="Right" Margin="0,0,10,0"/>
+                        <TextBlock Grid.Column="2" Text="Count" FontWeight="SemiBold" FontSize="11" Foreground="#555" HorizontalAlignment="Right" Margin="0,0,10,0"/>
                     </Grid>
                 </Border>
 
@@ -285,26 +278,42 @@
                                                 <Border Name="Bd" Background="{TemplateBinding Background}" BorderBrush="White" BorderThickness="0,0,0,1" SnapsToDevicePixels="true">
                                                     <Grid>
                                                          <Grid.ColumnDefinitions>
-                                                             <ColumnDefinition Width="Auto"/>
+                                                             <ColumnDefinition Width="26"/>
                                                              <ColumnDefinition Width="*"/>
+                                                             <ColumnDefinition Width="60"/>
                                                          </Grid.ColumnDefinitions>
-                                                         <!-- Expander Toggle -->
-                                                         <ToggleButton x:Name="Expander" Grid.Column="0" Margin="{Binding IndentMargin}" IsChecked="{Binding IsExpanded, RelativeSource={RelativeSource TemplatedParent}}" ClickMode="Press">
-                                                             <ToggleButton.Template>
-                                                                 <ControlTemplate TargetType="ToggleButton">
-                                                                     <Border Width="20" Height="20" Background="Transparent" Cursor="Hand">
-                                                                         <TextBlock x:Name="ExpanderText" Text="▶" VerticalAlignment="Center" HorizontalAlignment="Center" FontSize="10" Foreground="Gray"/>
-                                                                     </Border>
-                                                                     <ControlTemplate.Triggers>
-                                                                         <Trigger Property="IsChecked" Value="True">
-                                                                             <Setter TargetName="ExpanderText" Property="Text" Value="▼"/>
-                                                                         </Trigger>
-                                                                     </ControlTemplate.Triggers>
-                                                                 </ControlTemplate>
-                                                             </ToggleButton.Template>
-                                                         </ToggleButton>
-                                                         <!-- Content Row -->
-                                                         <ContentPresenter x:Name="PART_Header" Grid.Column="1" ContentSource="Header" HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"/>
+                                                         <!-- 1. CheckBox at far left (before expander, vertically aligned) -->
+                                                         <CheckBox Grid.Column="0" IsChecked="{Binding IsChecked}" IsThreeState="True" 
+                                                                   VerticalAlignment="Center" HorizontalAlignment="Center" Margin="4,0,2,0"/>
+                                                         <!-- 2. Expander + Content (indented by level) -->
+                                                         <Grid Grid.Column="1">
+                                                             <Grid.ColumnDefinitions>
+                                                                 <ColumnDefinition Width="Auto"/>
+                                                                 <ColumnDefinition Width="*"/>
+                                                             </Grid.ColumnDefinitions>
+                                                             <!-- Expander Toggle -->
+                                                             <ToggleButton x:Name="Expander" Grid.Column="0" Margin="{Binding IndentMargin}" IsChecked="{Binding IsExpanded, RelativeSource={RelativeSource TemplatedParent}}" ClickMode="Press">
+                                                                 <ToggleButton.Template>
+                                                                     <ControlTemplate TargetType="ToggleButton">
+                                                                         <Border Width="18" Height="20" Background="Transparent" Cursor="Hand">
+                                                                             <TextBlock x:Name="ExpanderText" Text="▶" VerticalAlignment="Center" HorizontalAlignment="Center" FontSize="10" Foreground="Gray"/>
+                                                                         </Border>
+                                                                         <ControlTemplate.Triggers>
+                                                                             <Trigger Property="IsChecked" Value="True">
+                                                                                 <Setter TargetName="ExpanderText" Property="Text" Value="▼"/>
+                                                                             </Trigger>
+                                                                         </ControlTemplate.Triggers>
+                                                                     </ControlTemplate>
+                                                                 </ToggleButton.Template>
+                                                             </ToggleButton>
+                                                             <!-- Content Row (Node Name) -->
+                                                             <ContentPresenter x:Name="PART_Header" Grid.Column="1" ContentSource="Header" 
+                                                                               HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                                                               VerticalAlignment="Center"/>
+                                                         </Grid>
+                                                         <!-- 3. Count TextBlock (far right, vertically aligned) -->
+                                                         <TextBlock Grid.Column="2" Text="{Binding Count}" Foreground="#888888" 
+                                                                    HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,10,0"/>
                                                     </Grid>
                                                 </Border>
                                                 <!-- No margin on ItemsHost to avoid WPF default indentation cutting off Backgrounds -->
