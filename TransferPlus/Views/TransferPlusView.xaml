@@ -282,7 +282,7 @@
                                                         <RowDefinition/>
                                                     </Grid.RowDefinitions>
                                                     <!-- Header row acts as background for whole line. Border is White for gap -->
-                                                    <Border Name="Bd" Background="{TemplateBinding Background}" BorderBrush="White" BorderThickness="0,0,0,1" SnapsToDevicePixels="true">
+                                                    <Border Name="Bd" Background="{TemplateBinding Background}" BorderBrush="White" BorderThickness="0,0,0,1" SnapsToDevicePixels="true" MinHeight="24">
                                                         <Grid>
                                                              <Grid.ColumnDefinitions>
                                                                  <ColumnDefinition Width="26"/>
@@ -293,30 +293,32 @@
                                                              <CheckBox Grid.Column="0" IsChecked="{Binding IsChecked}" IsThreeState="True" 
                                                                        VerticalAlignment="Center" HorizontalAlignment="Center" Margin="4,0,2,0"/>
                                                              <!-- 2. Expander + Content (indented by level, scrollable via TreeHScrollBar) -->
-                                                             <Grid Grid.Column="1" ClipToBounds="True">
-                                                                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                                                     <StackPanel.RenderTransform>
-                                                                         <TranslateTransform X="{Binding Value, ElementName=TreeHScrollBar, Converter={StaticResource NegativeConverter}}"/>
-                                                                     </StackPanel.RenderTransform>
-                                                                     <!-- Expander Toggle -->
-                                                                     <ToggleButton x:Name="Expander" Margin="{Binding IndentMargin}" IsChecked="{Binding IsExpanded, RelativeSource={RelativeSource TemplatedParent}}" ClickMode="Press" VerticalAlignment="Center">
-                                                                         <ToggleButton.Template>
-                                                                             <ControlTemplate TargetType="ToggleButton">
-                                                                                 <Border Width="18" Height="20" Background="Transparent" Cursor="Hand">
-                                                                                     <TextBlock x:Name="ExpanderText" Text="▶" VerticalAlignment="Center" HorizontalAlignment="Center" FontSize="10" Foreground="Gray"/>
-                                                                                 </Border>
-                                                                                 <ControlTemplate.Triggers>
-                                                                                     <Trigger Property="IsChecked" Value="True">
-                                                                                         <Setter TargetName="ExpanderText" Property="Text" Value="▼"/>
-                                                                                     </Trigger>
-                                                                                 </ControlTemplate.Triggers>
-                                                                             </ControlTemplate>
-                                                                         </ToggleButton.Template>
-                                                                     </ToggleButton>
-                                                                     <!-- Content Row (Node Name) -->
-                                                                     <ContentPresenter x:Name="PART_Header" ContentSource="Header" 
-                                                                                       VerticalAlignment="Center"/>
-                                                                 </StackPanel>
+                                                             <Grid Grid.Column="1" ClipToBounds="True" Height="24">
+                                                                 <Canvas Height="24" HorizontalAlignment="Stretch" VerticalAlignment="Center">
+                                                                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Height="24">
+                                                                         <StackPanel.RenderTransform>
+                                                                             <TranslateTransform X="{Binding Value, ElementName=TreeHScrollBar, Converter={StaticResource NegativeConverter}}"/>
+                                                                         </StackPanel.RenderTransform>
+                                                                         <!-- Expander Toggle -->
+                                                                         <ToggleButton x:Name="Expander" Margin="{Binding IndentMargin}" IsChecked="{Binding IsExpanded, RelativeSource={RelativeSource TemplatedParent}}" ClickMode="Press" VerticalAlignment="Center">
+                                                                             <ToggleButton.Template>
+                                                                                 <ControlTemplate TargetType="ToggleButton">
+                                                                                     <Border Width="18" Height="20" Background="Transparent" Cursor="Hand">
+                                                                                         <TextBlock x:Name="ExpanderText" Text="▶" VerticalAlignment="Center" HorizontalAlignment="Center" FontSize="10" Foreground="Gray"/>
+                                                                                     </Border>
+                                                                                     <ControlTemplate.Triggers>
+                                                                                         <Trigger Property="IsChecked" Value="True">
+                                                                                             <Setter TargetName="ExpanderText" Property="Text" Value="▼"/>
+                                                                                         </Trigger>
+                                                                                     </ControlTemplate.Triggers>
+                                                                                 </ControlTemplate>
+                                                                             </ToggleButton.Template>
+                                                                         </ToggleButton>
+                                                                         <!-- Content Row (Node Name) -->
+                                                                         <ContentPresenter x:Name="PART_Header" ContentSource="Header" 
+                                                                                           VerticalAlignment="Center"/>
+                                                                     </StackPanel>
+                                                                 </Canvas>
                                                              </Grid>
                                                              <!-- 3. Count TextBlock (far right, vertically aligned) -->
                                                              <TextBlock Grid.Column="2" Text="{Binding Count}" Foreground="#888888" 
@@ -361,7 +363,7 @@
                                 <ColumnDefinition Width="60"/>
                             </Grid.ColumnDefinitions>
                             <Border Grid.Column="0" Background="#f0f0f0" BorderBrush="#e0e0e0" BorderThickness="0,1,1,0"/>
-                            <ScrollBar x:Name="TreeHScrollBar" Grid.Column="1" Orientation="Horizontal" Minimum="0" Maximum="1000" SmallChange="20" LargeChange="100" ViewportSize="200"/>
+                            <ScrollBar x:Name="TreeHScrollBar" Grid.Column="1" Orientation="Horizontal" Minimum="0" Maximum="1500" SmallChange="20" LargeChange="100" ViewportSize="200"/>
                             <Border Grid.Column="2" Background="#f0f0f0" BorderBrush="#e0e0e0" BorderThickness="1,1,0,0"/>
                         </Grid>
                     </Grid>
