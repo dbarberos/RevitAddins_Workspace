@@ -1225,8 +1225,8 @@ namespace TransferPlus.Services
 
         /// <summary>
         /// Genera una previsualización renderizada real para una familia (2D o 3D) en memoria,
-        /// creando una vista temporal (3D o DraftingView), instanciando el símbolo, exportándola a PNG en %TEMP%
-        /// y revirtiendo (RollBack) la transacción inmediatamente.
+        /// probando primero la edición en memoria sin modificar documento (EditFamily) o creando una vista
+        /// temporal (ViewSheet para cuadros de rotulación, DraftingView o 3D) con RollBack.
         /// </summary>
         public string? GenerateFamilyRenderedPreview(Family nativeFam, Document? targetDoc = null)
         {
@@ -1234,13 +1234,6 @@ namespace TransferPlus.Services
 
             Document? doc = nativeFam.Document ?? targetDoc;
             if (doc == null) return null;
-
-            var symIds = nativeFam.GetFamilySymbolIds();
-            if (symIds.Count == 0) return null;
-
-            var symId = symIds.First();
-            var symbol = doc.GetElement(symId) as FamilySymbol;
-            if (symbol == null) return null;
 
             try
             {
@@ -1255,27 +1248,105 @@ namespace TransferPlus.Services
                 string baseFilePath = Path.Combine(tempDir, "preview");
                 baseFilePath = Path.GetFullPath(baseFilePath);
 
+                // --- ESTRATEGIA 1: Abrir el documento de familia en memoria (EditFamily) ---
+                // Funciona para TODO tipo de familias editables (Cuadros de rotulación, perfiles, anotaciones, 3D) sin problemas de hospedaje
+                if (nativeFam.IsEditable)
+                {
+                    Document? famDoc = null;
+                    try
+                    {
+                        famDoc = doc.EditFamily(nativeFam);
+                        if (famDoc != null)
+                        {
+                            View? exportView = new FilteredElementCollector(famDoc)
+                                .OfClass(typeof(View3D))
+                                .Cast<View3D>()
+                                .FirstOrDefault(v => !v.IsTemplate && !v.IsPerspective);
+
+                            exportView ??= new FilteredElementCollector(famDoc)
+                                .OfClass(typeof(ViewPlan))
+                                .Cast<ViewPlan>()
+                                .FirstOrDefault(v => !v.IsTemplate);
+
+                            exportView ??= new FilteredElementCollector(famDoc)
+                                .OfClass(typeof(ViewDrafting))
+                                .Cast<ViewDrafting>()
+                                .FirstOrDefault(v => !v.IsTemplate);
+
+                            exportView ??= new FilteredElementCollector(famDoc)
+                                .OfClass(typeof(View))
+                                .Cast<View>()
+                                .FirstOrDefault(v => !v.IsTemplate && v.ViewType != ViewType.Internal);
+
+                            exportView ??= famDoc.ActiveView;
+
+                            if (exportView != null)
+                            {
+                                var options = new ImageExportOptions
+                                {
+                                    ExportRange = ExportRange.SetOfViews,
+                                    ZoomType = ZoomFitType.FitToPage,
+                                    PixelSize = 512,
+                                    ImageResolution = ImageResolution.DPI_72,
+                                    ShadowViewsFileType = ImageFileType.PNG,
+                                    HLRandWFViewsFileType = ImageFileType.PNG,
+                                    FilePath = baseFilePath,
+                                    FitDirection = FitDirectionType.Horizontal
+                                };
+
+                                options.SetViewsAndSheets(new List<ElementId> { exportView.Id });
+                                famDoc.ExportImage(options);
+
+                                var files = Directory.GetFiles(tempDir, "*.png");
+                                if (files.Length > 0)
+                                {
+                                    TelemetryLogger.LogInfo($"[GenerateFamilyRenderedPreview] EditFamily vista previa generada con éxito para '{nativeFam.Name}': {files[0]}");
+                                    return files[0];
+                                }
+                            }
+                        }
+                    }
+                    catch (Exception exEdit)
+                    {
+                        TelemetryLogger.LogWarning($"[GenerateFamilyRenderedPreview] EditFamily no disponible o falló para '{nativeFam.Name}': {exEdit.Message}");
+                    }
+                    finally
+                    {
+                        try
+                        {
+                            famDoc?.Close(false);
+                        }
+                        catch { }
+                    }
+                }
+
+                // --- ESTRATEGIA 2: Instanciar en vista temporal con transacción RollBack ---
+                var symIds = nativeFam.GetFamilySymbolIds();
+                if (symIds.Count == 0) return null;
+
+                var symId = symIds.First();
+                var symbol = doc.GetElement(symId) as FamilySymbol;
+                if (symbol == null) return null;
+
+                bool isTitleBlock = false;
                 bool isAnnotationOr2D = false;
                 try
                 {
-                    if (nativeFam.FamilyCategory != null && nativeFam.FamilyCategory.CategoryType == CategoryType.Annotation)
+                    BuiltInCategory bic = BuiltInCategory.INVALID;
+                    if (nativeFam.FamilyCategory != null) bic = (BuiltInCategory)nativeFam.FamilyCategory.Id.Value;
+                    else if (symbol.Category != null) bic = (BuiltInCategory)symbol.Category.Id.Value;
+
+                    if (bic == BuiltInCategory.OST_TitleBlocks)
+                    {
+                        isTitleBlock = true;
+                    }
+                    else if (bic == BuiltInCategory.OST_DetailComponents ||
+                             bic == BuiltInCategory.OST_ProfileFamilies ||
+                             bic == BuiltInCategory.OST_GenericAnnotation ||
+                             (nativeFam.FamilyCategory != null && nativeFam.FamilyCategory.CategoryType == CategoryType.Annotation) ||
+                             (symbol.Category != null && symbol.Category.CategoryType == CategoryType.Annotation))
                     {
                         isAnnotationOr2D = true;
-                    }
-                    else if (symbol.Category != null && symbol.Category.CategoryType == CategoryType.Annotation)
-                    {
-                        isAnnotationOr2D = true;
-                    }
-                    else if (nativeFam.FamilyCategory != null)
-                    {
-                        var bic = (BuiltInCategory)nativeFam.FamilyCategory.Id.Value;
-                        if (bic == BuiltInCategory.OST_DetailComponents ||
-                            bic == BuiltInCategory.OST_ProfileFamilies ||
-                            bic == BuiltInCategory.OST_GenericAnnotation ||
-                            bic == BuiltInCategory.OST_TitleBlocks)
-                        {
-                            isAnnotationOr2D = true;
-                        }
                     }
                 }
                 catch { }
@@ -1295,7 +1366,31 @@ namespace TransferPlus.Services
                     {
                         View? tempView = null;
 
-                        if (isAnnotationOr2D)
+                        if (isTitleBlock)
+                        {
+                            // Los cuadros de rotulación (TitleBlocks) SOLO pueden colocarse sobre un ViewSheet
+                            var tempSheet = ViewSheet.Create(workDoc, ElementId.InvalidElementId);
+                            tempSheet.Name = $"_TransferPlus_TempSheet_{Guid.NewGuid():N}";
+                            tempSheet.SheetNumber = $"ZZ_{Guid.NewGuid():N}".Substring(0, 8);
+                            tempView = tempSheet;
+
+                            FamilySymbol workSym = symbol;
+                            if (workDoc != doc)
+                            {
+                                var copiedIds = ElementTransformUtils.CopyElements(doc, new List<ElementId> { symbol.Id }, workDoc, Transform.Identity, new CopyPasteOptions());
+                                if (copiedIds.Count > 0 && workDoc.GetElement(copiedIds.First()) is FamilySymbol cs)
+                                {
+                                    workSym = cs;
+                                }
+                            }
+
+                            if (!workSym.IsActive)
+                            {
+                                workSym.Activate();
+                            }
+                            workDoc.Create.NewFamilyInstance(XYZ.Zero, workSym, tempSheet);
+                        }
+                        else if (isAnnotationOr2D)
                         {
                             var draftingType = new FilteredElementCollector(workDoc)
                                 .OfClass(typeof(ViewFamilyType))
