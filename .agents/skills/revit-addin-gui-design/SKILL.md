@@ -36,6 +36,7 @@ Consult these documents inside `references/` for detailed guidelines:
 *   **Debugging Family Thumbnail Project Cover Fallback**: [debugging_family_thumbnail_rvt_project_cover_fallback_2026-08-13.md](file:///c:/Users/david.barbero/Documents/DOCUMENTOS/ALTEN/Workbench/RevitAddins_Workspace/RevitAddins_Workspace/.agents/skills/revit-addin-gui-design/references/debugging_family_thumbnail_rvt_project_cover_fallback_2026-08-13.md)
 *   **Standardized WPF ToolTip Design System**: [tooltip_field_specifications_and_maxwidth_2026-08-13.md](file:///c:/Users/david.barbero/Documents/DOCUMENTOS/ALTEN/Workbench/RevitAddins_Workspace/RevitAddins_Workspace/.agents/skills/revit-addin-gui-design/references/tooltip_field_specifications_and_maxwidth_2026-08-13.md)
 *   **WPF BitmapImage Freezing & Thumbnail Caching**: [wpf_bitmapimage_freeze_and_thumbnail_caching_guide.md](file:///c:/Users/david.barbero/Documents/DOCUMENTOS/ALTEN/Workbench/RevitAddins_Workspace/RevitAddins_Workspace/.agents/skills/revit-addin-gui-design/references/wpf_bitmapimage_freeze_and_thumbnail_caching_guide.md)
+*   **Debugging WPF TreeView Layout Clip in Horizontal Scroll**: [debugging_wpf_treeview_layout_clip_horizontal_scroll_2026-08-20.md](file:///c:/Users/david.barbero/Documents/DOCUMENTOS/ALTEN/Workbench/RevitAddins_Workspace/RevitAddins_Workspace/.agents/skills/revit-addin-gui-design/references/debugging_wpf_treeview_layout_clip_horizontal_scroll_2026-08-20.md)
 
 ## 4. Asset Mapping (Code & Layout Templates)
 Copy, adapt, or inject the code templates located in the `assets/` directory:
