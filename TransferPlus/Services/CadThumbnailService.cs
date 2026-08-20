@@ -46,88 +46,73 @@ namespace TransferPlus.Services
 
             try
             {
-                // CASO A: Elemento de Detalle individual (FamilyInstance, FamilySymbol o Category == "Detail Items")
-                // -> Extraer la miniatura aislada del símbolo/tipo 2D directamente con GetPreviewImage
-                if (cadItem.NativeElement is FamilyInstance fi)
+                Document? doc = cadItem.SourceDocument as Document;
+                if (doc == null && cadItem.NativeElement is Element ne && ne.Document != null)
                 {
-                    result = ExtractNativeElementThumbnail(fi, cancellationToken);
-                }
-                else if (cadItem.NativeElement is ElementType elemType)
-                {
-                    result = ExtractNativeElementThumbnail(elemType, cancellationToken);
-                }
-                else if (cadItem.Category == "Detail Items" && cadItem.NativeElement is Element detailElem)
-                {
-                    result = ExtractNativeElementThumbnail(detailElem, cancellationToken);
+                    doc = ne.Document;
                 }
 
-                // CASO B: Vista Completa (View, ViewDrafting, Detail View, Detail Callout) o ImportInstance
-                if (result == null)
+                // 1. CASO A: Elemento de Detalle individual 2D (FamilyInstance / FamilySymbol / Group)
+                // -> Renderizar exclusivamente el elemento aislado en vista temporal con ImageExportOptions
+                if (cadItem.Category == "Detail Items" || cadItem.Category == "Details Groups" ||
+                    cadItem.NativeElement is FamilyInstance || cadItem.NativeElement is FamilySymbol || cadItem.NativeElement is Group)
                 {
-                    Document? doc = null;
+                    if (doc != null && cadItem.ElementId != null && cadItem.ElementId != ElementId.InvalidElementId)
+                    {
+                        var revitService = new FamilyRevitService();
+                        string? previewPath = revitService.GenerateElementPreview(doc, cadItem.ElementId, cadItem.OwnerViewId);
+                        if (!string.IsNullOrWhiteSpace(previewPath) && System.IO.File.Exists(previewPath))
+                        {
+                            result = LoadBitmapFromPath(previewPath);
+                        }
+                    }
+
+                    // Fallback: Si no se pudo generar con vista temporal, intentar GetPreviewImage nativo de Revit
+                    if (result == null && cadItem.NativeElement is Element elem)
+                    {
+                        result = ExtractNativeElementThumbnail(elem, cancellationToken);
+                    }
+                }
+                // 2. CASO B: Vista Completa (View, ViewDrafting, Detail View, Detail Callout) o ImportInstance CAD
+                else
+                {
                     ElementId? viewId = null;
 
-                    if (cadItem.NativeElement is View v && v.Document != null)
+                    if (cadItem.NativeElement is View v)
                     {
-                        doc = v.Document;
                         viewId = v.Id;
                     }
-                    else if (cadItem.NativeElement is ImportInstance cadInst && cadInst.Document != null)
+                    else if (cadItem.NativeElement is ImportInstance cadInst)
                     {
-                        doc = cadInst.Document;
                         viewId = cadInst.OwnerViewId;
                     }
-
-                    if (doc == null && cadItem.SourceDocument is Document sDoc)
+                    else if (cadItem.IsDraftingView && cadItem.ElementId != null)
                     {
-                        doc = sDoc;
+                        viewId = cadItem.ElementId;
                     }
-
-                    if (viewId == null || viewId == ElementId.InvalidElementId)
+                    else if (cadItem.OwnerViewId != null && cadItem.OwnerViewId != ElementId.InvalidElementId)
                     {
-                        if (cadItem.IsDraftingView && cadItem.ElementId != null)
-                        {
-                            viewId = cadItem.ElementId;
-                        }
-                        else if (cadItem.Category != "Detail Items" && cadItem.OwnerViewId != null && cadItem.OwnerViewId != ElementId.InvalidElementId)
-                        {
-                            viewId = cadItem.OwnerViewId;
-                        }
+                        viewId = cadItem.OwnerViewId;
                     }
 
                     if (doc != null && viewId != null && viewId != ElementId.InvalidElementId)
                     {
                         var revitService = new FamilyRevitService();
                         string? previewPath = revitService.GenerateViewPreview(doc, viewId);
-
                         if (!string.IsNullOrWhiteSpace(previewPath) && System.IO.File.Exists(previewPath))
                         {
-                            try
-                            {
-                                var bitmapImage = new BitmapImage();
-                                bitmapImage.BeginInit();
-                                bitmapImage.CacheOption = BitmapCacheOption.OnLoad;
-                                bitmapImage.CreateOptions = BitmapCreateOptions.IgnoreImageCache;
-                                bitmapImage.UriSource = new Uri(previewPath, UriKind.Absolute);
-                                bitmapImage.EndInit();
-                                bitmapImage.Freeze();
-                                result = bitmapImage;
-                            }
-                            catch (Exception loadEx)
-                            {
-                                LoggerService.LogWarning($"[CadThumbnailService] Error cargando BitmapImage desde '{previewPath}': {loadEx.Message}");
-                            }
+                            result = LoadBitmapFromPath(previewPath);
                         }
                     }
                 }
 
-                // CASO C: Si aún es nulo y tenemos un Element nativo, intentar extracción nativa
+                // 3. CASO C: Si aún es nulo y tenemos un Element nativo, intentar extracción nativa
                 if (result == null && cadItem.NativeElement is Element genericElem && genericElem.Document != null)
                 {
                     result = ExtractNativeElementThumbnail(genericElem, cancellationToken);
                 }
 
-                // CASO D: Fallback visual: Generar icono gráfico vectorial 2D informativo
+                // 4. CASO D: Fallback visual: Generar icono gráfico vectorial 2D informativo
                 if (result == null && !cancellationToken.IsCancellationRequested)
                 {
                     result = CreateFallbackCadIcon(cadItem.Name, cadItem.DisplayCategory, cadItem.ViewName);
@@ -145,6 +130,26 @@ namespace TransferPlus.Services
             }
 
             return result;
+        }
+
+        private static BitmapSource? LoadBitmapFromPath(string previewPath)
+        {
+            try
+            {
+                var bitmapImage = new BitmapImage();
+                bitmapImage.BeginInit();
+                bitmapImage.CacheOption = BitmapCacheOption.OnLoad;
+                bitmapImage.CreateOptions = BitmapCreateOptions.IgnoreImageCache;
+                bitmapImage.UriSource = new Uri(previewPath, UriKind.Absolute);
+                bitmapImage.EndInit();
+                bitmapImage.Freeze();
+                return bitmapImage;
+            }
+            catch (Exception loadEx)
+            {
+                LoggerService.LogWarning($"[CadThumbnailService] Error cargando BitmapImage desde '{previewPath}': {loadEx.Message}");
+                return null;
+            }
         }
 
         private static BitmapSource? ExtractNativeElementThumbnail(Element elem, CancellationToken ct)

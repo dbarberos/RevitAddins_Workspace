@@ -1100,5 +1100,127 @@ namespace TransferPlus.Services
 
             return null;
         }
+
+        /// <summary>
+        /// Genera una imagen de previsualización (PNG) renderizada exclusivamente para un elemento 2D aislado (Detail Item, Group, CAD)
+        /// creando una vista de diseño temporal (DraftingView), instanciando/copiando únicamente el elemento, exportándola a %TEMP%
+        /// y revirtiendo la transacción (RollBack) inmediatamente para no modificar el documento.
+        /// </summary>
+        public string? GenerateElementPreview(Document doc, ElementId elementId, ElementId? ownerViewId = null)
+        {
+            if (doc == null || elementId == null || elementId == ElementId.InvalidElementId)
+            {
+                return null;
+            }
+
+            try
+            {
+                var elem = doc.GetElement(elementId);
+                if (elem == null) return null;
+
+                // Crear carpeta temporal sanitizada bajo %TEMP%\TransferPlus_Previews
+                string tempDir = Path.Combine(Path.GetTempPath(), "TransferPlus_Previews", Guid.NewGuid().ToString("N"));
+                tempDir = Path.GetFullPath(tempDir);
+                if (!Directory.Exists(tempDir))
+                {
+                    Directory.CreateDirectory(tempDir);
+                }
+
+                string baseFilePath = Path.Combine(tempDir, "preview");
+                baseFilePath = Path.GetFullPath(baseFilePath);
+
+                // Buscar el ViewFamilyType para DraftingView
+                var draftingType = new FilteredElementCollector(doc)
+                    .OfClass(typeof(ViewFamilyType))
+                    .Cast<ViewFamilyType>()
+                    .FirstOrDefault(vft => vft.ViewFamily == ViewFamily.Drafting);
+
+                if (draftingType == null) return null;
+
+                string? resultPath = null;
+
+                using (var tx = new Transaction(doc, "Generate Isolated Element Preview"))
+                {
+                    WarningSwallower.AttachToTransaction(tx);
+                    tx.Start();
+
+                    try
+                    {
+                        // 1. Crear una vista de diseño (Drafting View) temporal en blanco
+                        var tempView = ViewDrafting.Create(doc, draftingType.Id);
+                        tempView.Name = $"_TransferPlus_TempPreview_{Guid.NewGuid():N}";
+                        tempView.Scale = 1;
+
+                        // 2. Colocar o copiar el elemento aislado en la vista temporal
+                        if (elem is FamilyInstance fi && fi.Symbol != null)
+                        {
+                            if (!fi.Symbol.IsActive)
+                            {
+                                fi.Symbol.Activate();
+                            }
+                            doc.Create.NewFamilyInstance(XYZ.Zero, fi.Symbol, tempView);
+                        }
+                        else if (elem is FamilySymbol sym)
+                        {
+                            if (!sym.IsActive)
+                            {
+                                sym.Activate();
+                            }
+                            doc.Create.NewFamilyInstance(XYZ.Zero, sym, tempView);
+                        }
+                        else if (ownerViewId != null && ownerViewId != ElementId.InvalidElementId && doc.GetElement(ownerViewId) is View srcView)
+                        {
+                            ElementTransformUtils.CopyElements(srcView, new List<ElementId> { elem.Id }, tempView, Transform.Identity, new CopyPasteOptions());
+                        }
+
+                        doc.Regenerate();
+
+                        // 3. Exportar la vista temporal que contiene ÚNICAMENTE este elemento aislado
+                        var options = new ImageExportOptions
+                        {
+                            ExportRange = ExportRange.SetOfViews,
+                            ZoomType = ZoomFitType.FitToPage,
+                            PixelSize = 512,
+                            ImageResolution = ImageResolution.DPI_72,
+                            ShadowViewsFileType = ImageFileType.PNG,
+                            HLRandWFViewsFileType = ImageFileType.PNG,
+                            FilePath = baseFilePath,
+                            FitDirection = FitDirectionType.Horizontal
+                        };
+
+                        options.SetViewsAndSheets(new List<ElementId> { tempView.Id });
+
+                        doc.ExportImage(options);
+
+                        var generatedFiles = Directory.GetFiles(tempDir, "*.png");
+                        if (generatedFiles.Length > 0)
+                        {
+                            resultPath = generatedFiles[0];
+                            TelemetryLogger.LogInfo($"[GenerateElementPreview] Vista previa aislada generada exitosamente para '{elem.Name}': {resultPath}");
+                        }
+                    }
+                    catch (Exception exInner)
+                    {
+                        TelemetryLogger.LogWarning($"[GenerateElementPreview] Excepción interna al crear vista temporal para '{elem.Name}': {exInner.Message}");
+                    }
+                    finally
+                    {
+                        // SIEMPRE revertir la transacción para que el documento no sea modificado
+                        if (tx.HasStarted() && !tx.HasEnded())
+                        {
+                            tx.RollBack();
+                        }
+                    }
+                }
+
+                return resultPath;
+            }
+            catch (Exception ex)
+            {
+                TelemetryLogger.LogExceptionSilently($"[GenerateElementPreview] Error exportando vista previa para ElementId={elementId.Value}", ex);
+            }
+
+            return null;
+        }
     }
 }
