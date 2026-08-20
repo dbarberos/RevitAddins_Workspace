@@ -248,103 +248,128 @@
 
                 <!-- TreeView container -->
                 <Border Grid.Row="4" BorderBrush="#ddd" BorderThickness="1" Background="White">
-                    <TreeView FlowDirection="LeftToRight" 
-                              ItemsSource="{Binding RootNodes}" 
-                              ItemTemplate="{StaticResource CheckboxTreeTemplate}"
-                              SelectedItemChanged="TreeView_SelectedItemChanged"
-                              VirtualizingStackPanel.IsVirtualizing="True"
-                              VirtualizingStackPanel.VirtualizationMode="Recycling"
-                              ScrollViewer.VerticalScrollBarVisibility="Auto"
-                              ScrollViewer.HorizontalScrollBarVisibility="Disabled"
-                              BorderThickness="0" Background="Transparent">
-                        <TreeView.ItemContainerStyle>
-                            <Style TargetType="TreeViewItem">
-                                <Setter Property="Visibility" Value="{Binding IsVisible, Converter={StaticResource BoolToVis}}"/>
-                                <Setter Property="Background" Value="#f9f9f9"/>
-                                <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
-                                <Setter Property="IsExpanded" Value="{Binding IsExpanded, Mode=TwoWay}" />
-                                <Setter Property="Padding" Value="0"/>
-                                <Setter Property="Margin" Value="0"/>
-                                <Setter Property="BorderThickness" Value="0"/>
-                                <Setter Property="Template">
-                                    <Setter.Value>
-                                        <ControlTemplate TargetType="TreeViewItem">
-                                            <Grid>
-                                                <Grid.RowDefinitions>
-                                                    <RowDefinition Height="Auto"/>
-                                                    <RowDefinition/>
-                                                </Grid.RowDefinitions>
-                                                <!-- Header row acts as background for whole line. Border is White for gap -->
-                                                <Border Name="Bd" Background="{TemplateBinding Background}" BorderBrush="White" BorderThickness="0,0,0,1" SnapsToDevicePixels="true">
-                                                    <Grid>
-                                                         <Grid.ColumnDefinitions>
-                                                             <ColumnDefinition Width="26"/>
-                                                             <ColumnDefinition Width="*"/>
-                                                             <ColumnDefinition Width="60"/>
-                                                         </Grid.ColumnDefinitions>
-                                                         <!-- 1. CheckBox at far left (before expander, vertically aligned) -->
-                                                         <CheckBox Grid.Column="0" IsChecked="{Binding IsChecked}" IsThreeState="True" 
-                                                                   VerticalAlignment="Center" HorizontalAlignment="Center" Margin="4,0,2,0"/>
-                                                         <!-- 2. Expander + Content (indented by level) -->
-                                                         <Grid Grid.Column="1">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+
+                        <TreeView Grid.Row="0"
+                                  FlowDirection="LeftToRight" 
+                                  ItemsSource="{Binding RootNodes}" 
+                                  ItemTemplate="{StaticResource CheckboxTreeTemplate}"
+                                  SelectedItemChanged="TreeView_SelectedItemChanged"
+                                  VirtualizingStackPanel.IsVirtualizing="True"
+                                  VirtualizingStackPanel.VirtualizationMode="Recycling"
+                                  ScrollViewer.VerticalScrollBarVisibility="Auto"
+                                  ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                                  BorderThickness="0" Background="Transparent">
+                            <TreeView.ItemContainerStyle>
+                                <Style TargetType="TreeViewItem">
+                                    <Setter Property="Visibility" Value="{Binding IsVisible, Converter={StaticResource BoolToVis}}"/>
+                                    <Setter Property="Background" Value="#f9f9f9"/>
+                                    <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                                    <Setter Property="IsExpanded" Value="{Binding IsExpanded, Mode=TwoWay}" />
+                                    <Setter Property="Padding" Value="0"/>
+                                    <Setter Property="Margin" Value="0"/>
+                                    <Setter Property="BorderThickness" Value="0"/>
+                                    <Setter Property="Template">
+                                        <Setter.Value>
+                                            <ControlTemplate TargetType="TreeViewItem">
+                                                <Grid>
+                                                    <Grid.RowDefinitions>
+                                                        <RowDefinition Height="Auto"/>
+                                                        <RowDefinition/>
+                                                    </Grid.RowDefinitions>
+                                                    <!-- Header row acts as background for whole line. Border is White for gap -->
+                                                    <Border Name="Bd" Background="{TemplateBinding Background}" BorderBrush="White" BorderThickness="0,0,0,1" SnapsToDevicePixels="true">
+                                                        <Grid>
                                                              <Grid.ColumnDefinitions>
-                                                                 <ColumnDefinition Width="Auto"/>
+                                                                 <ColumnDefinition Width="26"/>
                                                                  <ColumnDefinition Width="*"/>
+                                                                 <ColumnDefinition Width="60"/>
                                                              </Grid.ColumnDefinitions>
-                                                             <!-- Expander Toggle -->
-                                                             <ToggleButton x:Name="Expander" Grid.Column="0" Margin="{Binding IndentMargin}" IsChecked="{Binding IsExpanded, RelativeSource={RelativeSource TemplatedParent}}" ClickMode="Press">
-                                                                 <ToggleButton.Template>
-                                                                     <ControlTemplate TargetType="ToggleButton">
-                                                                         <Border Width="18" Height="20" Background="Transparent" Cursor="Hand">
-                                                                             <TextBlock x:Name="ExpanderText" Text="▶" VerticalAlignment="Center" HorizontalAlignment="Center" FontSize="10" Foreground="Gray"/>
-                                                                         </Border>
-                                                                         <ControlTemplate.Triggers>
-                                                                             <Trigger Property="IsChecked" Value="True">
-                                                                                 <Setter TargetName="ExpanderText" Property="Text" Value="▼"/>
-                                                                             </Trigger>
-                                                                         </ControlTemplate.Triggers>
-                                                                     </ControlTemplate>
-                                                                 </ToggleButton.Template>
-                                                             </ToggleButton>
-                                                             <!-- Content Row (Node Name) -->
-                                                             <ContentPresenter x:Name="PART_Header" Grid.Column="1" ContentSource="Header" 
-                                                                               HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
-                                                                               VerticalAlignment="Center"/>
-                                                         </Grid>
-                                                         <!-- 3. Count TextBlock (far right, vertically aligned) -->
-                                                         <TextBlock Grid.Column="2" Text="{Binding Count}" Foreground="#888888" 
-                                                                    HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,10,0"/>
-                                                    </Grid>
-                                                </Border>
-                                                <!-- No margin on ItemsHost to avoid WPF default indentation cutting off Backgrounds -->
-                                                <ItemsPresenter x:Name="ItemsHost" Grid.Row="1" />
-                                            </Grid>
-                                            <ControlTemplate.Triggers>
-                                                <Trigger Property="IsExpanded" Value="false">
-                                                    <Setter TargetName="ItemsHost" Property="Visibility" Value="Collapsed"/>
-                                                </Trigger>
-                                                <Trigger Property="HasItems" Value="false">
-                                                    <Setter TargetName="Expander" Property="Visibility" Value="Hidden"/>
-                                                </Trigger>
-                                                <Trigger Property="IsSelected" Value="true">
-                                                    <Setter TargetName="Bd" Property="BorderBrush" Value="#007ACC"/>
-                                                    <Setter TargetName="Bd" Property="BorderThickness" Value="1.5"/>
-                                                </Trigger>
-                                            </ControlTemplate.Triggers>
-                                        </ControlTemplate>
-                                    </Setter.Value>
-                                </Setter>
-                                <Style.Triggers>
-                                    <DataTrigger Binding="{Binding IsChecked}" Value="True">
-                                        <Setter Property="Background" Value="#e8f5e9"/>
-                                    </DataTrigger>
-                                    <DataTrigger Binding="{Binding IsChecked}" Value="{x:Null}">
-                                        <Setter Property="Background" Value="#fff8e1"/>
-                                    </DataTrigger>
-                                </Style.Triggers>
-                            </Style>
-                        </TreeView.ItemContainerStyle>
-                    </TreeView>
+                                                             <!-- 1. CheckBox at far left (before expander, vertically aligned) -->
+                                                             <CheckBox Grid.Column="0" IsChecked="{Binding IsChecked}" IsThreeState="True" 
+                                                                       VerticalAlignment="Center" HorizontalAlignment="Center" Margin="4,0,2,0"/>
+                                                             <!-- 2. Expander + Content (indented by level, scrollable via TreeHScrollBar) -->
+                                                             <Grid Grid.Column="1" ClipToBounds="True">
+                                                                 <Grid>
+                                                                     <Grid.RenderTransform>
+                                                                         <TranslateTransform X="{Binding Value, ElementName=TreeHScrollBar, Converter={StaticResource NegativeConverter}}"/>
+                                                                     </Grid.RenderTransform>
+                                                                     <Grid.ColumnDefinitions>
+                                                                         <ColumnDefinition Width="Auto"/>
+                                                                         <ColumnDefinition Width="Auto"/>
+                                                                     </Grid.ColumnDefinitions>
+                                                                     <!-- Expander Toggle -->
+                                                                     <ToggleButton x:Name="Expander" Grid.Column="0" Margin="{Binding IndentMargin}" IsChecked="{Binding IsExpanded, RelativeSource={RelativeSource TemplatedParent}}" ClickMode="Press">
+                                                                         <ToggleButton.Template>
+                                                                             <ControlTemplate TargetType="ToggleButton">
+                                                                                 <Border Width="18" Height="20" Background="Transparent" Cursor="Hand">
+                                                                                     <TextBlock x:Name="ExpanderText" Text="▶" VerticalAlignment="Center" HorizontalAlignment="Center" FontSize="10" Foreground="Gray"/>
+                                                                                 </Border>
+                                                                                 <ControlTemplate.Triggers>
+                                                                                     <Trigger Property="IsChecked" Value="True">
+                                                                                         <Setter TargetName="ExpanderText" Property="Text" Value="▼"/>
+                                                                                     </Trigger>
+                                                                                 </ControlTemplate.Triggers>
+                                                                             </ControlTemplate>
+                                                                         </ToggleButton.Template>
+                                                                     </ToggleButton>
+                                                                     <!-- Content Row (Node Name) -->
+                                                                     <ContentPresenter x:Name="PART_Header" Grid.Column="1" ContentSource="Header" 
+                                                                                       HorizontalAlignment="Left" 
+                                                                                       VerticalAlignment="Center"/>
+                                                                 </Grid>
+                                                             </Grid>
+                                                             <!-- 3. Count TextBlock (far right, vertically aligned) -->
+                                                             <TextBlock Grid.Column="2" Text="{Binding Count}" Foreground="#888888" 
+                                                                        HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                                                        </Grid>
+                                                    </Border>
+                                                    <!-- No margin on ItemsHost to avoid WPF default indentation cutting off Backgrounds -->
+                                                    <ItemsPresenter x:Name="ItemsHost" Grid.Row="1" />
+                                                </Grid>
+                                                <ControlTemplate.Triggers>
+                                                    <Trigger Property="IsExpanded" Value="false">
+                                                        <Setter TargetName="ItemsHost" Property="Visibility" Value="Collapsed"/>
+                                                    </Trigger>
+                                                    <Trigger Property="HasItems" Value="false">
+                                                        <Setter TargetName="Expander" Property="Visibility" Value="Hidden"/>
+                                                    </Trigger>
+                                                    <Trigger Property="IsSelected" Value="true">
+                                                        <Setter TargetName="Bd" Property="BorderBrush" Value="#007ACC"/>
+                                                        <Setter TargetName="Bd" Property="BorderThickness" Value="1.5"/>
+                                                    </Trigger>
+                                                </ControlTemplate.Triggers>
+                                            </ControlTemplate>
+                                        </Setter.Value>
+                                    </Setter>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsChecked}" Value="True">
+                                            <Setter Property="Background" Value="#e8f5e9"/>
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding IsChecked}" Value="{x:Null}">
+                                            <Setter Property="Background" Value="#fff8e1"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TreeView.ItemContainerStyle>
+                        </TreeView>
+
+                        <!-- Pinned Horizontal ScrollBar for Middle Column (Title/Name) -->
+                        <Grid Grid.Row="1" Background="#f7f7f7" Height="15">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="26"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="60"/>
+                            </Grid.ColumnDefinitions>
+                            <Border Grid.Column="0" Background="#f0f0f0" BorderBrush="#e0e0e0" BorderThickness="0,1,1,0"/>
+                            <ScrollBar x:Name="TreeHScrollBar" Grid.Column="1" Orientation="Horizontal" Minimum="0" Maximum="600" SmallChange="20" LargeChange="100" ViewportSize="200"/>
+                            <Border Grid.Column="2" Background="#f0f0f0" BorderBrush="#e0e0e0" BorderThickness="1,1,0,0"/>
+                        </Grid>
+                    </Grid>
                 </Border>
             </Grid>
 
