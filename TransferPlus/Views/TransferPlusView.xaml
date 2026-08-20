@@ -6,7 +6,7 @@
         xmlns:local="clr-namespace:TransferPlus.Views"
         xmlns:viewmodels="clr-namespace:TransferPlus.ViewModels"
         mc:Ignorable="d"
-        Title="TransferPlus" Height="880"
+        Title="TransferPlus" Height="894"
         Icon="pack://application:,,,/TransferPlus;component/Resources/Icons/TransferPlus32x32.png"
         WindowStartupLocation="CenterScreen"
         Background="#FAFAFA">
@@ -764,7 +764,7 @@
                             </StackPanel>
                         </Border>
                         <!-- Family Details Card -->
-                        <Border Style="{StaticResource FamiliesManagerCardStyle}" Height="315">
+                        <Border Style="{StaticResource FamiliesManagerCardStyle}" Height="316">
                             <Grid>
                                 <Grid.RowDefinitions>
                                     <RowDefinition Height="Auto"/>
@@ -1018,6 +1018,27 @@
                             </Grid>
                         </Border>
 
+                        <!-- Select Details/CAD Origin Card -->
+                        <Border Style="{StaticResource CadDetailsManagerCardStyle}">
+                            <StackPanel>
+                                <TextBlock Text="Select Details/CAD Origin:" FontWeight="Bold" FontSize="12" Foreground="#999" Margin="0,0,0,8"/>
+                                
+                                <RadioButton Content="CAD Links / CAD Imports" GroupName="CadDetailsOriginGroup" IsChecked="{Binding CadOriginLinksAndImports}" Margin="0,4"/>
+                                <RadioButton Content="Drafting Views" GroupName="CadDetailsOriginGroup" IsChecked="{Binding CadOriginDraftingViews}" Margin="0,4"/>
+                                <RadioButton Content="Details Views / Detail Callouts" GroupName="CadDetailsOriginGroup" IsChecked="{Binding CadOriginDetailViewsAndCallouts}" Margin="0,4"/>
+                                <RadioButton Content="Details Groups" GroupName="CadDetailsOriginGroup" IsChecked="{Binding CadOriginDetailGroups}" Margin="0,4"/>
+                                <RadioButton Content="Details Items" GroupName="CadDetailsOriginGroup" IsChecked="{Binding CadOriginDetailItems}" Margin="0,4"/>
+
+                                <Border BorderBrush="#E0E0E0" BorderThickness="0,1,0,0" Margin="0,10,0,10"/>
+
+                                <TextBlock Text="Organize Elements:" FontWeight="Bold" FontSize="12" Foreground="#999" Margin="0,0,0,8"/>
+
+                                <CheckBox Content="Sort by Sheet" IsChecked="{Binding CadSortBySheet}" Style="{StaticResource SwitchStyle}" Margin="0,4"/>
+                                <CheckBox Content="Sort by View" IsChecked="{Binding CadSortByView}" Style="{StaticResource SwitchStyle}" Margin="0,4"/>
+                                <CheckBox Content="Sort by Name" IsChecked="{Binding CadSortByName}" Style="{StaticResource SwitchStyle}" Margin="0,4"/>
+                            </StackPanel>
+                        </Border>
+
                         <!-- Rename Card -->
                         <Border Style="{StaticResource CardBorderStyle}">
                             <StackPanel>
@@ -1051,7 +1072,18 @@
                         <!-- Families Manager Card -->
                         <Border Style="{StaticResource CardBorderStyle}">
                             <StackPanel>
-                                <TextBlock Text="Families Manager:" FontWeight="Bold" FontSize="12" Foreground="#999" Margin="0,0,0,8"/>
+                                <TextBlock Text="Families Manager:" FontWeight="Bold" FontSize="12" Margin="0,0,0,8">
+                                    <TextBlock.Style>
+                                        <Style TargetType="TextBlock">
+                                            <Setter Property="Foreground" Value="#999"/>
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding IsFamiliesManagerActive}" Value="True">
+                                                    <Setter Property="Foreground" Value="#007ACC"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
                                 <Grid>
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="*"/>
@@ -1163,7 +1195,18 @@
                         <!-- CAD Details Manager Card -->
                         <Border Style="{StaticResource CardBorderStyle}">
                             <StackPanel>
-                                <TextBlock Text="CAD Details Manager:" FontWeight="Bold" FontSize="12" Foreground="#999" Margin="0,0,0,8"/>
+                                <TextBlock Text="CAD Details Manager:" FontWeight="Bold" FontSize="12" Margin="0,0,0,8">
+                                    <TextBlock.Style>
+                                        <Style TargetType="TextBlock">
+                                            <Setter Property="Foreground" Value="#999"/>
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding IsCadDetailsManagerActive}" Value="True">
+                                                    <Setter Property="Foreground" Value="#007ACC"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
                                 <Grid>
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="*"/>

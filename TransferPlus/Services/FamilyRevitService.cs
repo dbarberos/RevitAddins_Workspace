@@ -864,5 +864,179 @@ namespace TransferPlus.Services
 
             return success;
         }
+
+        /// <summary>
+        /// Transfiere una lista de Vistas de Diseño (Drafting Views) desde un documento origen hacia un documento destino de forma silenciosa.
+        /// </summary>
+        public int TransferDraftingViews(Document sourceDoc, Document targetDoc, List<ElementId> viewIds)
+        {
+            if (sourceDoc == null || targetDoc == null || viewIds == null || !viewIds.Any()) return 0;
+
+            int transferredCount = 0;
+
+            ExecuteWithWarningSuppression(targetDoc, () =>
+            {
+                using (var t = new Transaction(targetDoc, "Transfer Drafting Views"))
+                {
+                    var options = t.GetFailureHandlingOptions();
+                    options.SetFailuresPreprocessor(new WarningSwallower());
+                    options.SetClearAfterRollback(true);
+                    t.SetFailureHandlingOptions(options);
+
+                    t.Start();
+
+                    try
+                    {
+                        var copyOptions = new CopyPasteOptions();
+                        var copiedIds = ElementTransformUtils.CopyElements(sourceDoc, viewIds, targetDoc, Transform.Identity, copyOptions);
+
+                        transferredCount = copiedIds.Count;
+                        t.Commit();
+                        TelemetryLogger.LogInfo($"[TransferDraftingViews] Transferidas {transferredCount} vistas de diseño con éxito a '{targetDoc.Title}'.");
+                    }
+                    catch (Exception ex)
+                    {
+                        TelemetryLogger.LogExceptionSilently($"[TransferDraftingViews] Error transfiriendo vistas de diseño a '{targetDoc.Title}'", ex);
+                        if (t.GetStatus() == TransactionStatus.Started)
+                        {
+                            t.RollBack();
+                        }
+                    }
+                }
+            });
+
+            return transferredCount;
+        }
+
+        /// <summary>
+        /// Transfiere instancias CAD (DWG Links / Imports) incrustadas o vinculadas en vistas de modelo a nuevas Vistas de Diseño (Drafting Views) en el documento destino.
+        /// </summary>
+        public int TransferCadInstancesToDraftingViews(Document sourceDoc, Document targetDoc, List<ElementId> cadInstanceIds)
+        {
+            if (sourceDoc == null || targetDoc == null || cadInstanceIds == null || !cadInstanceIds.Any()) return 0;
+
+            int transferredCount = 0;
+
+            ExecuteWithWarningSuppression(targetDoc, () =>
+            {
+                using (var t = new Transaction(targetDoc, "Transfer CAD Instances to Drafting Views"))
+                {
+                    var options = t.GetFailureHandlingOptions();
+                    options.SetFailuresPreprocessor(new WarningSwallower());
+                    options.SetClearAfterRollback(true);
+                    t.SetFailureHandlingOptions(options);
+
+                    t.Start();
+
+                    try
+                    {
+                        // 1. Obtener el tipo de familia de vista para Vistas de Diseño (Drafting)
+                        var draftingVft = new FilteredElementCollector(targetDoc)
+                            .OfClass(typeof(ViewFamilyType))
+                            .Cast<ViewFamilyType>()
+                            .FirstOrDefault(vft => vft.ViewFamily == ViewFamily.Drafting);
+
+                        if (draftingVft == null)
+                        {
+                            TelemetryLogger.LogWarning($"[TransferCadInstances] No se encontró ViewFamilyType para Drafting en '{targetDoc.Title}'.");
+                            t.RollBack();
+                            return;
+                        }
+
+                        // Obtener nombres de vistas existentes en destino para evitar colisiones
+                        var existingViewNames = new FilteredElementCollector(targetDoc)
+                            .OfClass(typeof(View))
+                            .Cast<View>()
+                            .Select(v => v.Name)
+                            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+                        var copyOptions = new CopyPasteOptions();
+
+                        foreach (var cadId in cadInstanceIds)
+                        {
+                            if (sourceDoc.GetElement(cadId) is not ImportInstance cadInst) continue;
+
+                            string cadName = string.Empty;
+                            if (cadInst.GetTypeId() != ElementId.InvalidElementId && sourceDoc.GetElement(cadInst.GetTypeId()) is Element typeElem && !string.IsNullOrWhiteSpace(typeElem.Name))
+                            {
+                                cadName = typeElem.Name;
+                            }
+                            else if (cadInst.Category != null && !string.IsNullOrWhiteSpace(cadInst.Category.Name))
+                            {
+                                cadName = cadInst.Category.Name;
+                            }
+                            else
+                            {
+                                cadName = $"CAD_{cadInst.Id.Value}";
+                            }
+
+                            string sourceViewName = "Model";
+                            View? sourceOwnerView = null;
+                            if (cadInst.OwnerViewId != ElementId.InvalidElementId && sourceDoc.GetElement(cadInst.OwnerViewId) is View ownerView)
+                            {
+                                sourceOwnerView = ownerView;
+                                sourceViewName = ownerView.Name;
+                            }
+
+                            // a. Crear una nueva ViewDrafting
+                            var newDraftingView = ViewDrafting.Create(targetDoc, draftingVft.Id);
+                            if (newDraftingView == null) continue;
+
+                            // Nombrar la vista de diseño
+                            string baseViewName = $"CAD - {cadName} ({sourceViewName})";
+                            string uniqueViewName = baseViewName;
+                            int suffix = 1;
+                            while (existingViewNames.Contains(uniqueViewName))
+                            {
+                                uniqueViewName = $"{baseViewName}_{suffix++}";
+                            }
+                            newDraftingView.Name = uniqueViewName;
+                            existingViewNames.Add(uniqueViewName);
+
+                            // b. Copiar el elemento CAD en la nueva Vista de Diseño
+                            try
+                            {
+                                if (cadInst.ViewSpecific && sourceOwnerView != null)
+                                {
+                                    ElementTransformUtils.CopyElements(
+                                        sourceOwnerView,
+                                        new List<ElementId> { cadId },
+                                        newDraftingView,
+                                        Transform.Identity,
+                                        copyOptions);
+                                }
+                                else
+                                {
+                                    ElementTransformUtils.CopyElements(
+                                        sourceDoc,
+                                        new List<ElementId> { cadId },
+                                        targetDoc,
+                                        Transform.Identity,
+                                        copyOptions);
+                                }
+                                transferredCount++;
+                            }
+                            catch (Exception copyEx)
+                            {
+                                TelemetryLogger.LogWarning($"[TransferCadInstances] Error copiando elemento CAD '{cadName}' a vista de diseño '{uniqueViewName}': {copyEx.Message}");
+                            }
+                        }
+
+                        t.Commit();
+                        TelemetryLogger.LogInfo($"[TransferCadInstances] Creadas y transferidas {transferredCount} vistas de diseño CAD con éxito en '{targetDoc.Title}'.");
+                    }
+                    catch (Exception ex)
+                    {
+                        TelemetryLogger.LogExceptionSilently($"[TransferCadInstances] Error general creando vistas de diseño CAD en '{targetDoc.Title}'", ex);
+                        if (t.GetStatus() == TransactionStatus.Started)
+                        {
+                            t.RollBack();
+                        }
+                    }
+                }
+            });
+
+            return transferredCount;
+        }
     }
 }

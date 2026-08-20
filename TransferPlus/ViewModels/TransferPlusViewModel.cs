@@ -179,7 +179,151 @@ public partial class TransferPlusViewModel : ObservableObject
     [ObservableProperty]
     private bool _forceLevelInLevelBaseViews;
 
+    // CAD Details Origin Radio Options
+    [ObservableProperty]
+    private bool _cadOriginLinksAndImports;
+
+    [ObservableProperty]
+    private bool _cadOriginDraftingViews = true;
+
+    [ObservableProperty]
+    private bool _cadOriginDetailViewsAndCallouts;
+
+    [ObservableProperty]
+    private bool _cadOriginDetailGroups;
+
+    [ObservableProperty]
+    private bool _cadOriginDetailItems;
+
+    partial void OnCadOriginLinksAndImportsChanged(bool value)
+    {
+        if (value)
+        {
+            CadOriginDraftingViews = false;
+            CadOriginDetailViewsAndCallouts = false;
+            CadOriginDetailGroups = false;
+            CadOriginDetailItems = false;
+            if (IsCadDetailsManagerActive && SelectedSourceDocument?.Adoc != null)
+            {
+                LoadCadItemsFromSource(SelectedSourceDocument.Adoc);
+            }
+        }
+    }
+
+    partial void OnCadOriginDraftingViewsChanged(bool value)
+    {
+        if (value)
+        {
+            CadOriginLinksAndImports = false;
+            CadOriginDetailViewsAndCallouts = false;
+            CadOriginDetailGroups = false;
+            CadOriginDetailItems = false;
+            if (IsCadDetailsManagerActive && SelectedSourceDocument?.Adoc != null)
+            {
+                LoadCadItemsFromSource(SelectedSourceDocument.Adoc);
+            }
+        }
+    }
+
+    partial void OnCadOriginDetailViewsAndCalloutsChanged(bool value)
+    {
+        if (value)
+        {
+            CadOriginLinksAndImports = false;
+            CadOriginDraftingViews = false;
+            CadOriginDetailGroups = false;
+            CadOriginDetailItems = false;
+            if (IsCadDetailsManagerActive && SelectedSourceDocument?.Adoc != null)
+            {
+                LoadCadItemsFromSource(SelectedSourceDocument.Adoc);
+            }
+        }
+    }
+
+    partial void OnCadOriginDetailGroupsChanged(bool value)
+    {
+        if (value)
+        {
+            CadOriginLinksAndImports = false;
+            CadOriginDraftingViews = false;
+            CadOriginDetailViewsAndCallouts = false;
+            CadOriginDetailItems = false;
+            if (IsCadDetailsManagerActive && SelectedSourceDocument?.Adoc != null)
+            {
+                LoadCadItemsFromSource(SelectedSourceDocument.Adoc);
+            }
+        }
+    }
+
+    partial void OnCadOriginDetailItemsChanged(bool value)
+    {
+        if (value)
+        {
+            CadOriginLinksAndImports = false;
+            CadOriginDraftingViews = false;
+            CadOriginDetailViewsAndCallouts = false;
+            CadOriginDetailGroups = false;
+            if (IsCadDetailsManagerActive && SelectedSourceDocument?.Adoc != null)
+            {
+                LoadCadItemsFromSource(SelectedSourceDocument.Adoc);
+            }
+        }
+    }
+
+    // CAD Details Tree Grouping / Sorting Switches
+    [ObservableProperty]
+    private bool _cadSortBySheet;
+
+    [ObservableProperty]
+    private bool _cadSortByView = true;
+
+    [ObservableProperty]
+    private bool _cadSortByName;
+
+    partial void OnCadSortBySheetChanged(bool value)
+    {
+        if (value)
+        {
+            CadSortByView = false;
+            CadSortByName = false;
+            if (IsCadDetailsManagerActive)
+            {
+                BuildCadTree();
+                UpdateCheckedCount();
+            }
+        }
+    }
+
+    partial void OnCadSortByViewChanged(bool value)
+    {
+        if (value)
+        {
+            CadSortBySheet = false;
+            CadSortByName = false;
+            if (IsCadDetailsManagerActive)
+            {
+                BuildCadTree();
+                UpdateCheckedCount();
+            }
+        }
+    }
+
+    partial void OnCadSortByNameChanged(bool value)
+    {
+        if (value)
+        {
+            CadSortBySheet = false;
+            CadSortByView = false;
+            if (IsCadDetailsManagerActive)
+            {
+                BuildCadTree();
+                UpdateCheckedCount();
+            }
+        }
+    }
+
     private List<Elemento> _allSourceItems = new();
+    private List<CadDetailItemModel> _cadItems = new();
     private Configuraciones _config = new();
 
     // Families Manager State Properties
@@ -508,6 +652,11 @@ public partial class TransferPlusViewModel : ObservableObject
                     // Families Manager active: Load families from the standard document
                     _ = LoadFamiliesFromSourceAsync(value.Nombre);
                 }
+                else if (IsCadDetailsManagerActive)
+                {
+                    // CAD Details Manager active: Load CAD details & drafting views
+                    LoadCadItemsFromSource(value.Adoc);
+                }
                 else
                 {
                     // Standard Revit Document source
@@ -525,6 +674,7 @@ public partial class TransferPlusViewModel : ObservableObject
                 {
                     RootNodes.Clear();
                     _allSourceItems.Clear();
+                    _cadItems.Clear();
                     CheckedElementsCount = 0;
                     TransferPlus.Services.LoggerService.LogInfo($"OnSelectedSourceDocumentChanged: Selected family source '{value.Nombre}'. Use 'Activate' button in Families Manager panel to load and transfer families.");
                 }
@@ -550,6 +700,7 @@ public partial class TransferPlusViewModel : ObservableObject
             RootNodes.Clear();
             _allSourceItems.Clear();
             _familyItems.Clear();
+            _cadItems.Clear();
             CheckedElementsCount = 0;
             DestinationDocuments.Clear();
         }
@@ -749,6 +900,182 @@ public partial class TransferPlusViewModel : ObservableObject
         allNode.SetCheckedState(false);
         RootNodes.Add(allNode);
         TransferPlus.Services.LoggerService.LogInfo($"BuildFamilyTree: Tree built successfully. Total nodes grouped in root: {allNode.Count}");
+    }
+
+    private void LoadCadItemsFromSource(Document sourceDoc)
+    {
+        if (sourceDoc == null) return;
+
+        TransferPlus.Services.LoggerService.LogInfo($"LoadCadItemsFromSource: Starting CAD/Drafting view collection from '{sourceDoc.Title}'...");
+        IsBusy = true;
+        StatusMessage = "Collecting CAD details...";
+        ProgressPercentage = 0;
+
+        try
+        {
+            if (CadOriginDraftingViews)
+            {
+                _cadItems = TransferPlus.Services.Providers.DraftingViewProvider.GetDraftingViews(sourceDoc);
+            }
+            else if (CadOriginLinksAndImports)
+            {
+                _cadItems = TransferPlus.Services.Providers.CadInstanceProvider.GetCadInstances(sourceDoc);
+            }
+            else
+            {
+                _cadItems = TransferPlus.Services.Providers.DraftingViewProvider.GetDraftingViews(sourceDoc);
+            }
+
+            CounterValue = _cadItems.Count;
+            CounterLabelText = _cadItems.Count == 1 ? "CAD item loaded" : "CAD items loaded";
+
+            TransferPlus.Services.LoggerService.LogInfo($"LoadCadItemsFromSource: Collection complete. Collected {_cadItems.Count} items. Initiating tree build...");
+
+            BuildCadTree();
+        }
+        catch (Exception ex)
+        {
+            TransferPlus.Services.LoggerService.LogError("LoadCadItemsFromSource", ex);
+        }
+        finally
+        {
+            IsBusy = false;
+            StatusMessage = "Ready";
+            ProgressPercentage = 0;
+            UpdateCheckedCount();
+        }
+    }
+
+    private void BuildCadTree()
+    {
+        TransferPlus.Services.LoggerService.LogInfo("BuildCadTree: Generating TreeView nodes from collected CAD details...");
+        RootNodes.Clear();
+        if (!_cadItems.Any()) return;
+
+        // Level 0: All (Root Node)
+        var allNode = new TreeItemViewModel("All", "Root", null, null, 0)
+        {
+            Count = _cadItems.Count,
+            IsExpanded = true
+        };
+
+        if (CadSortBySheet)
+        {
+            // Group by Sheet -> View -> Item
+            var sheetGroups = _cadItems
+                .GroupBy(x => string.IsNullOrWhiteSpace(x.SheetName) ? "(No Sheet / Standalone)" : x.SheetName)
+                .OrderBy(g => g.Key);
+
+            foreach (var sheetGroup in sheetGroups)
+            {
+                var sheetNode = new TreeItemViewModel(sheetGroup.Key, "Sheet", null, allNode, 1)
+                {
+                    Count = sheetGroup.Count(),
+                    IsExpanded = true
+                };
+
+                var viewGroups = sheetGroup
+                    .GroupBy(x => string.IsNullOrWhiteSpace(x.ViewName) ? "(Unassigned View)" : x.ViewName)
+                    .OrderBy(g => g.Key);
+
+                foreach (var viewGroup in viewGroups)
+                {
+                    var viewNode = new TreeItemViewModel(viewGroup.Key, "View", null, sheetNode, 2)
+                    {
+                        Count = viewGroup.Count(),
+                        IsExpanded = false
+                    };
+
+                    foreach (var cadItem in viewGroup.OrderBy(x => x.Name))
+                    {
+                        var itemNode = new TreeItemViewModel(cadItem.Name, cadItem.DisplayCategory, cadItem, viewNode, 3)
+                        {
+                            Count = 1,
+                            IsChecked = false
+                        };
+                        viewNode.Children.Add(itemNode);
+                    }
+
+                    sheetNode.Children.Add(viewNode);
+                }
+
+                allNode.Children.Add(sheetNode);
+            }
+        }
+        else if (CadSortByView)
+        {
+            // Group by View -> Item
+            var viewGroups = _cadItems
+                .GroupBy(x => string.IsNullOrWhiteSpace(x.ViewName) ? "(Unassigned View)" : x.ViewName)
+                .OrderBy(g => g.Key);
+
+            foreach (var viewGroup in viewGroups)
+            {
+                string viewDisplayName = viewGroup.Key;
+                var firstWithSheet = viewGroup.FirstOrDefault(x => !string.IsNullOrWhiteSpace(x.SheetName));
+                if (firstWithSheet != null && !string.IsNullOrWhiteSpace(firstWithSheet.SheetName))
+                {
+                    viewDisplayName = $"{viewGroup.Key} [{firstWithSheet.SheetName}]";
+                }
+
+                var viewNode = new TreeItemViewModel(viewDisplayName, "View", null, allNode, 1)
+                {
+                    Count = viewGroup.Count(),
+                    IsExpanded = false
+                };
+
+                foreach (var cadItem in viewGroup.OrderBy(x => x.Name))
+                {
+                    var itemNode = new TreeItemViewModel(cadItem.Name, cadItem.DisplayCategory, cadItem, viewNode, 2)
+                    {
+                        Count = 1,
+                        IsChecked = false
+                    };
+                    viewNode.Children.Add(itemNode);
+                }
+
+                allNode.Children.Add(viewNode);
+            }
+        }
+        else // CadSortByName
+        {
+            // Group by Category (Drafting Views / CAD Links / CAD Imports) -> Item
+            var catGroups = _cadItems
+                .GroupBy(x => x.DisplayCategory)
+                .OrderBy(g => g.Key);
+
+            foreach (var catGroup in catGroups)
+            {
+                var catNode = new TreeItemViewModel(catGroup.Key, "Category", null, allNode, 1)
+                {
+                    Count = catGroup.Count(),
+                    IsExpanded = true
+                };
+
+                foreach (var cadItem in catGroup.OrderBy(x => x.Name))
+                {
+                    string itemLabel = cadItem.Name;
+                    if (!string.IsNullOrWhiteSpace(cadItem.ViewName) && !cadItem.IsDraftingView)
+                    {
+                        itemLabel = $"{cadItem.Name} ({cadItem.ViewName})";
+                    }
+
+                    var itemNode = new TreeItemViewModel(itemLabel, cadItem.DisplayCategory, cadItem, catNode, 2)
+                    {
+                        Count = 1,
+                        IsChecked = false
+                    };
+                    catNode.Children.Add(itemNode);
+                }
+
+                allNode.Children.Add(catNode);
+            }
+        }
+
+        allNode.UpdateRecursiveCounts();
+        allNode.SetCheckedState(false);
+        RootNodes.Add(allNode);
+        TransferPlus.Services.LoggerService.LogInfo($"BuildCadTree: CAD tree built successfully. Total nodes grouped in root: {allNode.Count}");
     }
 
     private void BuildTree()
@@ -953,6 +1280,12 @@ public partial class TransferPlusViewModel : ObservableObject
                                 if (symItem.Name != null) match = searchRegex.IsMatch(symItem.Name);
                                 if (!match && symItem.FamilyName != null) match = searchRegex.IsMatch(symItem.FamilyName);
                             }
+                            else if (node.Item is CadDetailItemModel cadItem)
+                            {
+                                if (cadItem.Name != null) match = searchRegex.IsMatch(cadItem.Name);
+                                if (!match && cadItem.ViewName != null) match = searchRegex.IsMatch(cadItem.ViewName);
+                                if (!match && cadItem.SheetName != null) match = searchRegex.IsMatch(cadItem.SheetName);
+                            }
                         }
                     }
                 }
@@ -986,6 +1319,12 @@ public partial class TransferPlusViewModel : ObservableObject
                             {
                                 if (symItem.Name != null) match = symItem.Name.ToLowerInvariant().Contains(searchText);
                                 if (!match && symItem.FamilyName != null) match = symItem.FamilyName.ToLowerInvariant().Contains(searchText);
+                            }
+                            else if (node.Item is CadDetailItemModel cadItem)
+                            {
+                                if (cadItem.Name != null) match = cadItem.Name.ToLowerInvariant().Contains(searchText);
+                                if (!match && cadItem.ViewName != null) match = cadItem.ViewName.ToLowerInvariant().Contains(searchText);
+                                if (!match && cadItem.SheetName != null) match = cadItem.SheetName.ToLowerInvariant().Contains(searchText);
                             }
                         }
                     }
@@ -1379,6 +1718,82 @@ public partial class TransferPlusViewModel : ObservableObject
             return;
         }
 
+        if (IsCadDetailsManagerActive)
+        {
+            var checkedCadItems = new List<CadDetailItemModel>();
+            CollectCheckedCadItems(RootNodes, checkedCadItems);
+
+            if (!checkedCadItems.Any())
+            {
+                TransferPlus.Services.LoggerService.LogInfo("Transfer: Operation aborted. No CAD details / drafting views are checked for transfer.");
+                TaskDialog.Show("TransferPlus", "No items selected to transfer. Please check the checkbox of the CAD details or drafting views you wish to transfer.");
+                return;
+            }
+
+            var targetDestinations = DestinationDocuments.Where(d => d.Checked && d.Adoc != null).ToList();
+            if (!targetDestinations.Any())
+            {
+                TaskDialog.Show("TransferPlus", "Please select at least one destination model.");
+                return;
+            }
+
+            if (SelectedSourceDocument?.Adoc == null)
+            {
+                TaskDialog.Show("TransferPlus", "Selected source document is invalid or not available.");
+                return;
+            }
+
+            IsBusy = true;
+            StatusMessage = "Transferring CAD details...";
+
+            try
+            {
+                int totalTransferred = 0;
+                var familyService = new FamilyRevitService();
+
+                var draftingViewIds = checkedCadItems
+                    .Where(x => x.IsDraftingView && x.ElementId != null)
+                    .Select(x => x.ElementId!)
+                    .ToList();
+
+                var cadInstanceIds = checkedCadItems
+                    .Where(x => !x.IsDraftingView && x.ElementId != null)
+                    .Select(x => x.ElementId!)
+                    .ToList();
+
+                foreach (var destDoc in targetDestinations)
+                {
+                    StatusMessage = $"Transferring to '{destDoc.Nombre}'...";
+
+                    if (draftingViewIds.Any())
+                    {
+                        int count = familyService.TransferDraftingViews(SelectedSourceDocument.Adoc, destDoc.Adoc, draftingViewIds);
+                        totalTransferred += count;
+                    }
+
+                    if (cadInstanceIds.Any())
+                    {
+                        int count = familyService.TransferCadInstancesToDraftingViews(SelectedSourceDocument.Adoc, destDoc.Adoc, cadInstanceIds);
+                        totalTransferred += count;
+                    }
+                }
+
+                TransferPlus.Services.LoggerService.LogInfo($"Transfer: Completed CAD details transfer. Transferred {totalTransferred} item(s).");
+                TaskDialog.Show("TransferPlus", $"CAD details transfer completed successfully! Transferred {totalTransferred} item(s) to destination model(s).");
+            }
+            catch (Exception ex)
+            {
+                TelemetryLogger.LogError("Error during CAD details transfer", ex);
+                TaskDialog.Show("TransferPlus Error", $"An error occurred during CAD details transfer: {ex.Message}");
+            }
+            finally
+            {
+                IsBusy = false;
+            }
+
+            return;
+        }
+
         var checkedItems = new List<Elemento>();
         CollectCheckedItems(RootNodes, checkedItems);
 
@@ -1639,6 +2054,21 @@ public partial class TransferPlusViewModel : ObservableObject
         }
     }
 
+    private void CollectCheckedCadItems(IEnumerable<TreeItemViewModel> nodes, List<CadDetailItemModel> list)
+    {
+        foreach (var node in nodes)
+        {
+            if (node.Item is CadDetailItemModel item && node.IsChecked == true)
+            {
+                if (!list.Any(c => c.ElementId == item.ElementId && c.Name == item.Name))
+                {
+                    list.Add(item);
+                }
+            }
+            CollectCheckedCadItems(node.Children, list);
+        }
+    }
+
     private void UpdateCheckedCount()
     {
         var checkedItems = new List<Elemento>();
@@ -1661,6 +2091,15 @@ public partial class TransferPlusViewModel : ObservableObject
                 categories.Add(fam.CategoryName);
             }
             SelectedCategoryCount = categories.Count;
+        }
+        else if (IsCadDetailsManagerActive)
+        {
+            var checkedCadItems = new List<CadDetailItemModel>();
+            CollectCheckedCadItems(RootNodes, checkedCadItems);
+
+            CheckedElementsCount = checkedCadItems.Count;
+            CounterValue = CheckedElementsCount;
+            CounterLabelText = CheckedElementsCount == 1 ? "CAD detail checked" : "CAD details checked";
         }
         else
         {
