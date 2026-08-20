@@ -1222,5 +1222,301 @@ namespace TransferPlus.Services
 
             return null;
         }
+
+        /// <summary>
+        /// Genera una previsualización renderizada real para una familia (2D o 3D) en memoria,
+        /// creando una vista temporal (3D o DraftingView), instanciando el símbolo, exportándola a PNG en %TEMP%
+        /// y revirtiendo (RollBack) la transacción inmediatamente.
+        /// </summary>
+        public string? GenerateFamilyRenderedPreview(Family nativeFam, Document? targetDoc = null)
+        {
+            if (nativeFam == null || !nativeFam.IsValidObject) return null;
+
+            Document? doc = nativeFam.Document ?? targetDoc;
+            if (doc == null) return null;
+
+            var symIds = nativeFam.GetFamilySymbolIds();
+            if (symIds.Count == 0) return null;
+
+            var symId = symIds.First();
+            var symbol = doc.GetElement(symId) as FamilySymbol;
+            if (symbol == null) return null;
+
+            try
+            {
+                // Sanitizar carpeta temporal bajo %TEMP%\TransferPlus_Previews
+                string tempDir = Path.Combine(Path.GetTempPath(), "TransferPlus_Previews", Guid.NewGuid().ToString("N"));
+                tempDir = Path.GetFullPath(tempDir);
+                if (!Directory.Exists(tempDir))
+                {
+                    Directory.CreateDirectory(tempDir);
+                }
+
+                string baseFilePath = Path.Combine(tempDir, "preview");
+                baseFilePath = Path.GetFullPath(baseFilePath);
+
+                bool isAnnotationOr2D = false;
+                try
+                {
+                    if (nativeFam.FamilyCategory != null && nativeFam.FamilyCategory.CategoryType == CategoryType.Annotation)
+                    {
+                        isAnnotationOr2D = true;
+                    }
+                    else if (symbol.Category != null && symbol.Category.CategoryType == CategoryType.Annotation)
+                    {
+                        isAnnotationOr2D = true;
+                    }
+                    else if (nativeFam.FamilyCategory != null)
+                    {
+                        var bic = (BuiltInCategory)nativeFam.FamilyCategory.Id.Value;
+                        if (bic == BuiltInCategory.OST_DetailComponents ||
+                            bic == BuiltInCategory.OST_ProfileFamilies ||
+                            bic == BuiltInCategory.OST_GenericAnnotation ||
+                            bic == BuiltInCategory.OST_TitleBlocks)
+                        {
+                            isAnnotationOr2D = true;
+                        }
+                    }
+                }
+                catch { }
+
+                string? resultPath = null;
+
+                // Si el documento es de solo lectura (ej. modelo vinculado), usar targetDoc si es modificable
+                Document workDoc = doc.IsReadOnly && targetDoc != null && !targetDoc.IsReadOnly ? targetDoc : doc;
+                if (workDoc.IsReadOnly) return null;
+
+                using (var tx = new Transaction(workDoc, "Generate Rendered Family Preview"))
+                {
+                    WarningSwallower.AttachToTransaction(tx);
+                    tx.Start();
+
+                    try
+                    {
+                        View? tempView = null;
+
+                        if (isAnnotationOr2D)
+                        {
+                            var draftingType = new FilteredElementCollector(workDoc)
+                                .OfClass(typeof(ViewFamilyType))
+                                .Cast<ViewFamilyType>()
+                                .FirstOrDefault(vft => vft.ViewFamily == ViewFamily.Drafting);
+
+                            if (draftingType != null)
+                            {
+                                var vDraft = ViewDrafting.Create(workDoc, draftingType.Id);
+                                vDraft.Name = $"_TransferPlus_Temp2D_{Guid.NewGuid():N}";
+                                vDraft.Scale = 1;
+                                tempView = vDraft;
+
+                                FamilySymbol workSym = symbol;
+                                if (workDoc != doc)
+                                {
+                                    var copiedIds = ElementTransformUtils.CopyElements(doc, new List<ElementId> { symbol.Id }, workDoc, Transform.Identity, new CopyPasteOptions());
+                                    if (copiedIds.Count > 0 && workDoc.GetElement(copiedIds.First()) is FamilySymbol cs)
+                                    {
+                                        workSym = cs;
+                                    }
+                                }
+
+                                if (!workSym.IsActive)
+                                {
+                                    workSym.Activate();
+                                }
+                                workDoc.Create.NewFamilyInstance(XYZ.Zero, workSym, vDraft);
+                            }
+                        }
+                        else
+                        {
+                            var vft3D = new FilteredElementCollector(workDoc)
+                                .OfClass(typeof(ViewFamilyType))
+                                .Cast<ViewFamilyType>()
+                                .FirstOrDefault(v => v.ViewFamily == ViewFamily.ThreeDimensional);
+
+                            if (vft3D != null)
+                            {
+                                var v3D = View3D.CreateIsometric(workDoc, vft3D.Id);
+                                v3D.Name = $"_TransferPlus_Temp3D_{Guid.NewGuid():N}";
+                                tempView = v3D;
+
+                                FamilySymbol workSym = symbol;
+                                if (workDoc != doc)
+                                {
+                                    var copiedIds = ElementTransformUtils.CopyElements(doc, new List<ElementId> { symbol.Id }, workDoc, Transform.Identity, new CopyPasteOptions());
+                                    if (copiedIds.Count > 0 && workDoc.GetElement(copiedIds.First()) is FamilySymbol cs)
+                                    {
+                                        workSym = cs;
+                                    }
+                                }
+
+                                if (!workSym.IsActive)
+                                {
+                                    workSym.Activate();
+                                }
+
+                                try
+                                {
+                                    workDoc.Create.NewFamilyInstance(XYZ.Zero, workSym, Autodesk.Revit.DB.Structure.StructuralType.NonStructural);
+                                }
+                                catch
+                                {
+                                    try
+                                    {
+                                        workDoc.Create.NewFamilyInstance(XYZ.Zero, workSym, v3D);
+                                    }
+                                    catch { }
+                                }
+                            }
+                        }
+
+                        if (tempView != null)
+                        {
+                            workDoc.Regenerate();
+
+                            var options = new ImageExportOptions
+                            {
+                                ExportRange = ExportRange.SetOfViews,
+                                ZoomType = ZoomFitType.FitToPage,
+                                PixelSize = 512,
+                                ImageResolution = ImageResolution.DPI_72,
+                                ShadowViewsFileType = ImageFileType.PNG,
+                                HLRandWFViewsFileType = ImageFileType.PNG,
+                                FilePath = baseFilePath,
+                                FitDirection = FitDirectionType.Horizontal
+                            };
+
+                            options.SetViewsAndSheets(new List<ElementId> { tempView.Id });
+                            workDoc.ExportImage(options);
+
+                            var files = Directory.GetFiles(tempDir, "*.png");
+                            if (files.Length > 0)
+                            {
+                                resultPath = files[0];
+                                TelemetryLogger.LogInfo($"[GenerateFamilyRenderedPreview] Vista previa renderizada generada exitosamente para '{nativeFam.Name}': {resultPath}");
+                            }
+                        }
+                    }
+                    catch (Exception exInner)
+                    {
+                        TelemetryLogger.LogWarning($"[GenerateFamilyRenderedPreview] Error interno renderizando familia '{nativeFam.Name}': {exInner.Message}");
+                    }
+                    finally
+                    {
+                        if (tx.HasStarted() && !tx.HasEnded())
+                        {
+                            tx.RollBack();
+                        }
+                    }
+                }
+
+                return resultPath;
+            }
+            catch (Exception ex)
+            {
+                TelemetryLogger.LogExceptionSilently($"[GenerateFamilyRenderedPreview] Error general para familia '{nativeFam.Name}'", ex);
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// Abre silenciosamente un archivo .rfa en memoria, localiza su mejor vista (3D o plano) y exporta
+        /// la imagen PNG a %TEMP% para usarla como miniatura cuando el archivo carece de thumbnail OLE embebido.
+        /// </summary>
+        public string? GenerateRfaFileRenderedPreview(string rfaPath, Autodesk.Revit.ApplicationServices.Application? app = null)
+        {
+            if (string.IsNullOrWhiteSpace(rfaPath) || !File.Exists(rfaPath)) return null;
+
+            app ??= RevitApp ?? FamilyThumbnailService.CurrentApplication;
+            if (app == null) return null;
+
+            string tempDir = Path.Combine(Path.GetTempPath(), "TransferPlus_Previews", Guid.NewGuid().ToString("N"));
+            tempDir = Path.GetFullPath(tempDir);
+            if (!Directory.Exists(tempDir))
+            {
+                Directory.CreateDirectory(tempDir);
+            }
+
+            string baseFilePath = Path.Combine(tempDir, "preview");
+            baseFilePath = Path.GetFullPath(baseFilePath);
+
+            Document? rfaDoc = null;
+            try
+            {
+                rfaDoc = app.OpenDocumentFile(rfaPath);
+                if (rfaDoc == null) return null;
+
+                View? exportView = new FilteredElementCollector(rfaDoc)
+                    .OfClass(typeof(View3D))
+                    .Cast<View3D>()
+                    .FirstOrDefault(v => !v.IsTemplate && !v.IsPerspective);
+
+                if (exportView == null)
+                {
+                    exportView = new FilteredElementCollector(rfaDoc)
+                        .OfClass(typeof(ViewPlan))
+                        .Cast<ViewPlan>()
+                        .FirstOrDefault(v => !v.IsTemplate);
+                }
+
+                if (exportView == null)
+                {
+                    exportView = new FilteredElementCollector(rfaDoc)
+                        .OfClass(typeof(ViewDrafting))
+                        .Cast<ViewDrafting>()
+                        .FirstOrDefault(v => !v.IsTemplate);
+                }
+
+                if (exportView == null)
+                {
+                    exportView = new FilteredElementCollector(rfaDoc)
+                        .OfClass(typeof(View))
+                        .Cast<View>()
+                        .FirstOrDefault(v => !v.IsTemplate && v.ViewType != ViewType.Internal);
+                }
+
+                exportView ??= rfaDoc.ActiveView;
+
+                if (exportView != null)
+                {
+                    var options = new ImageExportOptions
+                    {
+                        ExportRange = ExportRange.SetOfViews,
+                        ZoomType = ZoomFitType.FitToPage,
+                        PixelSize = 512,
+                        ImageResolution = ImageResolution.DPI_72,
+                        ShadowViewsFileType = ImageFileType.PNG,
+                        HLRandWFViewsFileType = ImageFileType.PNG,
+                        FilePath = baseFilePath,
+                        FitDirection = FitDirectionType.Horizontal
+                    };
+
+                    options.SetViewsAndSheets(new List<ElementId> { exportView.Id });
+                    rfaDoc.ExportImage(options);
+
+                    var generatedFiles = Directory.GetFiles(tempDir, "*.png");
+                    if (generatedFiles.Length > 0)
+                    {
+                        string result = generatedFiles[0];
+                        TelemetryLogger.LogInfo($"[GenerateRfaFileRenderedPreview] Miniatura extraída exitosamente de '{Path.GetFileName(rfaPath)}': {result}");
+                        return result;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                TelemetryLogger.LogWarning($"[GenerateRfaFileRenderedPreview] Error abriendo y exportando '{rfaPath}': {ex.Message}");
+            }
+            finally
+            {
+                try
+                {
+                    rfaDoc?.Close(false);
+                }
+                catch { }
+            }
+
+            return null;
+        }
     }
 }
