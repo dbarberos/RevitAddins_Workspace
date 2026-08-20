@@ -54,7 +54,7 @@
             
             <HierarchicalDataTemplate x:Key="CheckboxTreeTemplate" DataType="{x:Type viewmodels:TreeItemViewModel}" ItemsSource="{Binding Children}">
                 <TextBlock x:Name="NodeNameText" Text="{Binding Name}" FontWeight="Normal" Foreground="#333333" 
-                           VerticalAlignment="Center" Margin="2,3" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" ToolTip="{Binding Name}"/>
+                           VerticalAlignment="Center" Margin="2,3" TextWrapping="NoWrap" ToolTip="{Binding Name}"/>
                 <HierarchicalDataTemplate.Triggers>
                     <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=TreeViewItem}, Path=IsMouseOver}" Value="True">
                         <Setter TargetName="NodeNameText" Property="Foreground" Value="#007ACC"/>
@@ -294,16 +294,12 @@
                                                                        VerticalAlignment="Center" HorizontalAlignment="Center" Margin="4,0,2,0"/>
                                                              <!-- 2. Expander + Content (indented by level, scrollable via TreeHScrollBar) -->
                                                              <Grid Grid.Column="1" ClipToBounds="True">
-                                                                 <Grid>
-                                                                     <Grid.RenderTransform>
+                                                                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                                                     <StackPanel.RenderTransform>
                                                                          <TranslateTransform X="{Binding Value, ElementName=TreeHScrollBar, Converter={StaticResource NegativeConverter}}"/>
-                                                                     </Grid.RenderTransform>
-                                                                     <Grid.ColumnDefinitions>
-                                                                         <ColumnDefinition Width="Auto"/>
-                                                                         <ColumnDefinition Width="Auto"/>
-                                                                     </Grid.ColumnDefinitions>
+                                                                     </StackPanel.RenderTransform>
                                                                      <!-- Expander Toggle -->
-                                                                     <ToggleButton x:Name="Expander" Grid.Column="0" Margin="{Binding IndentMargin}" IsChecked="{Binding IsExpanded, RelativeSource={RelativeSource TemplatedParent}}" ClickMode="Press">
+                                                                     <ToggleButton x:Name="Expander" Margin="{Binding IndentMargin}" IsChecked="{Binding IsExpanded, RelativeSource={RelativeSource TemplatedParent}}" ClickMode="Press" VerticalAlignment="Center">
                                                                          <ToggleButton.Template>
                                                                              <ControlTemplate TargetType="ToggleButton">
                                                                                  <Border Width="18" Height="20" Background="Transparent" Cursor="Hand">
@@ -318,10 +314,9 @@
                                                                          </ToggleButton.Template>
                                                                      </ToggleButton>
                                                                      <!-- Content Row (Node Name) -->
-                                                                     <ContentPresenter x:Name="PART_Header" Grid.Column="1" ContentSource="Header" 
-                                                                                       HorizontalAlignment="Left" 
+                                                                     <ContentPresenter x:Name="PART_Header" ContentSource="Header" 
                                                                                        VerticalAlignment="Center"/>
-                                                                 </Grid>
+                                                                 </StackPanel>
                                                              </Grid>
                                                              <!-- 3. Count TextBlock (far right, vertically aligned) -->
                                                              <TextBlock Grid.Column="2" Text="{Binding Count}" Foreground="#888888" 
@@ -366,7 +361,7 @@
                                 <ColumnDefinition Width="60"/>
                             </Grid.ColumnDefinitions>
                             <Border Grid.Column="0" Background="#f0f0f0" BorderBrush="#e0e0e0" BorderThickness="0,1,1,0"/>
-                            <ScrollBar x:Name="TreeHScrollBar" Grid.Column="1" Orientation="Horizontal" Minimum="0" Maximum="600" SmallChange="20" LargeChange="100" ViewportSize="200"/>
+                            <ScrollBar x:Name="TreeHScrollBar" Grid.Column="1" Orientation="Horizontal" Minimum="0" Maximum="1000" SmallChange="20" LargeChange="100" ViewportSize="200"/>
                             <Border Grid.Column="2" Background="#f0f0f0" BorderBrush="#e0e0e0" BorderThickness="1,1,0,0"/>
                         </Grid>
                     </Grid>
