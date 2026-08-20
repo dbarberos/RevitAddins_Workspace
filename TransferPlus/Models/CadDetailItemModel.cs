@@ -33,6 +33,12 @@ namespace TransferPlus.Models
         [ObservableProperty]
         private string _sourceDocumentName = string.Empty;
 
+        [ObservableProperty]
+        private object? _thumbnail;
+
+        [ObservableProperty]
+        private bool _isLoadingThumbnail;
+
         public ElementId? ElementId { get; set; }
         public ElementId? OwnerViewId { get; set; }
 

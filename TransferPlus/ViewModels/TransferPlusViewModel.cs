@@ -492,6 +492,80 @@ public partial class TransferPlusViewModel : ObservableObject
         }
     }
 
+    [ObservableProperty]
+    private CadDetailItemModel? _selectedCadDetail;
+
+    [ObservableProperty]
+    private object? _selectedCadThumbnail;
+
+    [ObservableProperty]
+    private bool _isLoadingCadThumbnail;
+
+    public bool HasSelectedCadThumbnail => SelectedCadThumbnail != null;
+
+    private System.Threading.CancellationTokenSource? _cadThumbnailCts;
+
+    partial void OnSelectedCadDetailChanged(CadDetailItemModel? value)
+    {
+        _cadThumbnailCts?.Cancel();
+
+        if (value != null)
+        {
+            if (value.Thumbnail != null)
+            {
+                SelectedCadThumbnail = value.Thumbnail;
+                IsLoadingCadThumbnail = false;
+            }
+            else
+            {
+                SelectedCadThumbnail = null;
+                IsLoadingCadThumbnail = true;
+                _cadThumbnailCts = new System.Threading.CancellationTokenSource();
+                _ = LoadSelectedCadThumbnailAsync(value, _cadThumbnailCts.Token);
+            }
+        }
+        else
+        {
+            SelectedCadThumbnail = null;
+            IsLoadingCadThumbnail = false;
+        }
+
+        OnPropertyChanged(nameof(HasSelectedCadThumbnail));
+    }
+
+    partial void OnSelectedCadThumbnailChanged(object? value)
+    {
+        OnPropertyChanged(nameof(HasSelectedCadThumbnail));
+    }
+
+    private async System.Threading.Tasks.Task LoadSelectedCadThumbnailAsync(CadDetailItemModel cadItem, System.Threading.CancellationToken token)
+    {
+        IsLoadingCadThumbnail = true;
+        try
+        {
+            var thumbnail = await CadThumbnailService.GetPreviewImageAsync(cadItem, token);
+            if (!token.IsCancellationRequested && thumbnail != null)
+            {
+                cadItem.Thumbnail = thumbnail;
+                if (SelectedCadDetail == cadItem)
+                {
+                    SelectedCadThumbnail = thumbnail;
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            LoggerService.LogError($"Error loading CAD thumbnail for '{cadItem.Name}'", ex);
+        }
+        finally
+        {
+            if (!token.IsCancellationRequested)
+            {
+                IsLoadingCadThumbnail = false;
+            }
+        }
+    }
+
     partial void OnIncludeSheetsWithViewsChanged(bool oldValue, bool newValue)
     {
         if (newValue)
@@ -2100,6 +2174,18 @@ public partial class TransferPlusViewModel : ObservableObject
             CheckedElementsCount = checkedCadItems.Count;
             CounterValue = CheckedElementsCount;
             CounterLabelText = CheckedElementsCount == 1 ? "CAD detail checked" : "CAD details checked";
+
+            if (checkedCadItems.Count == 1)
+            {
+                SelectedCadDetail = checkedCadItems.First();
+            }
+            else if (checkedCadItems.Count > 1)
+            {
+                if (SelectedCadDetail == null || !checkedCadItems.Contains(SelectedCadDetail))
+                {
+                    SelectedCadDetail = checkedCadItems.Last();
+                }
+            }
         }
         else
         {

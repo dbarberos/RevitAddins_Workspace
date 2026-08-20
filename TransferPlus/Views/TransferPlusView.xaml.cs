@@ -131,6 +131,18 @@ public partial class TransferPlusView : Window
                 vm.SelectedFamily = parentFam;
                 vm.SelectedSymbol = symItem;
             }
+            else if (selectedNode.Item is Models.CadDetailItemModel cadItem)
+            {
+                vm.SelectedCadDetail = cadItem;
+            }
+            else if (selectedNode.Children.Any(c => c.Item is Models.CadDetailItemModel))
+            {
+                var firstChildCad = selectedNode.Children.FirstOrDefault(c => c.Item is Models.CadDetailItemModel)?.Item as Models.CadDetailItemModel;
+                if (firstChildCad != null)
+                {
+                    vm.SelectedCadDetail = firstChildCad;
+                }
+            }
             else
             {
                 vm.SelectedFamily = null;
