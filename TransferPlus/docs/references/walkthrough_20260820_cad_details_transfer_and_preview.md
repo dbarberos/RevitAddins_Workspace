@@ -40,9 +40,10 @@ This release extends **TransferPlus** with full support for transferring **Draft
   - Divided into 2 clear columns:
     - **`ORIGIN`** (Left): Radio buttons for `CAD Links / CAD Imports`, `Drafting Views`, `Details Views / Detail Callouts`, `Details Groups`, `Details Items`.
     - **`ORGANIZE`** (Right): Switches for `Sort by Sheet`, `Sort by View`, `Sort by Name`.
+  - **Standardized ToolTips**: Informative 3-part structured tooltips on hover for every option, describing the concept, elements collected, and where to find them in Revit.
   - Typography aligned with *FilterPlus* (`FontSize="9" FontWeight="SemiBold" Foreground="#999"`, `FontSize="11"` for rows, and `Margin="0,0,0,6"` spacing).
   - Horizontal separator line.
-  - **Centered 200x200 px Thumbnail**: Rounded border with responsive loading spinner, placeholder prompt, and live preview rendering.
+  - **Full Column Width 200px Height Thumbnail**: Responsive container (`HorizontalAlignment="Stretch"`, `Height="200"`) with lateral margins, loading spinner, and uniform proportional image scaling (`Stretch="Uniform"`).
 
 ---
 
