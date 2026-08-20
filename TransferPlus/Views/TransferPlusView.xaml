@@ -1026,7 +1026,7 @@
                                 <!-- 2 Columns: Origin (Left) & Organize (Right) -->
                                 <Grid>
                                     <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
                                         <ColumnDefinition Width="1"/>
                                         <ColumnDefinition Width="*"/>
                                     </Grid.ColumnDefinitions>
