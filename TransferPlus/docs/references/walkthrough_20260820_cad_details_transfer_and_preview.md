@@ -24,16 +24,11 @@ This release extends **TransferPlus** with full support for transferring **Draft
 - **`TransferCadInstancesToDraftingViews`**: Automatically locates or retrieves the `ViewFamily.Drafting` type in the target document, constructs unique drafting view containers (e.g. `CAD - filename.dwg (ViewName)`), and copies the CAD instances into them.
 
 ### 2.3. Native Revit Preview Rendering (`ImageExportOptions`)
-- **`GenerateViewPreview` in `FamilyRevitService`**: Eliminates any dependency on 3rd party DWG parsing libraries by invoking Revit's native `doc.ExportImage(ImageExportOptions)`:
-  - `ExportRange = ExportRange.SetOfViews`
-  - `ZoomType = ZoomFitType.FitToPage`
-  - `PixelSize = 512`
-  - `ImageResolution = ImageResolution.DPI_72`
-  - File format: `PNG`
-  - Output path: Sanitized temporary folder in `%TEMP%\TransferPlus_Previews`
+- **`GenerateViewPreview` in `FamilyRevitService`**: Renders complete views (Drafting Views, Detail Views, Callouts) via `doc.ExportImage(ImageExportOptions)`.
+- **`GenerateElementPreview` in `FamilyRevitService`**: Renders isolated 2D detail components (`FamilyInstance` / `FamilySymbol`) and detail groups by instantiating them inside an in-memory scratch `ViewDrafting` in a silent transaction with `WarningSwallower`, exporting tightly framed with `ZoomFitType.FitToPage`, and immediately performing `tx.RollBack()` to preserve 100% document purity.
 - **`CadThumbnailService`**:
-  - Resolves view targets, manages in-memory caching (`_thumbnailCache`), and safely loads images into `BitmapImage` with `BitmapCacheOption.OnLoad` and `BitmapImage.Freeze()` to ensure cross-thread safety on the WPF UI thread.
-  - Multi-tier fallback hierarchy: `doc.ExportImage()` -> `ElementType.GetPreviewImage()` -> 2D schematic vector CAD fallback card.
+  - Resolves view vs isolated element targets, manages in-memory caching (`_thumbnailCache`), and safely loads images into `BitmapImage` with `BitmapCacheOption.OnLoad` and `BitmapImage.Freeze()` to ensure cross-thread safety on the WPF UI thread.
+  - Multi-tier hierarchy: Isolated `GenerateElementPreview` -> `GenerateViewPreview` -> `ElementType.GetPreviewImage()` -> 2D schematic vector CAD fallback card.
 
 ### 2.4. UI / UX Modernization (`TransferPlusView.xaml`)
 - **Card "Select Details/CAD"**:
