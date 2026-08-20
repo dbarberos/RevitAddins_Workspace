@@ -46,13 +46,70 @@ namespace TransferPlus.Services
 
             try
             {
-                // 1. Intentar extraer vista previa nativa de Revit
-                if (cadItem.NativeElement is Element elem && elem.Document != null)
+                // 1. Intentar renderizar la vista nativa con ImageExportOptions (Revit API)
+                Document? doc = null;
+                ElementId? viewId = null;
+
+                if (cadItem.NativeElement is View v && v.Document != null)
+                {
+                    doc = v.Document;
+                    viewId = v.Id;
+                }
+                else if (cadItem.NativeElement is ImportInstance cadInst && cadInst.Document != null)
+                {
+                    doc = cadInst.Document;
+                    viewId = cadInst.OwnerViewId;
+                }
+
+                if (doc == null && cadItem.SourceDocument is Document sDoc)
+                {
+                    doc = sDoc;
+                }
+
+                if (viewId == null || viewId == ElementId.InvalidElementId)
+                {
+                    if (cadItem.OwnerViewId != null && cadItem.OwnerViewId != ElementId.InvalidElementId)
+                    {
+                        viewId = cadItem.OwnerViewId;
+                    }
+                    else if (cadItem.IsDraftingView && cadItem.ElementId != null)
+                    {
+                        viewId = cadItem.ElementId;
+                    }
+                }
+
+                if (doc != null && viewId != null && viewId != ElementId.InvalidElementId)
+                {
+                    var revitService = new FamilyRevitService();
+                    string? previewPath = revitService.GenerateViewPreview(doc, viewId);
+
+                    if (!string.IsNullOrWhiteSpace(previewPath) && System.IO.File.Exists(previewPath))
+                    {
+                        try
+                        {
+                            var bitmapImage = new BitmapImage();
+                            bitmapImage.BeginInit();
+                            bitmapImage.CacheOption = BitmapCacheOption.OnLoad;
+                            bitmapImage.CreateOptions = BitmapCreateOptions.IgnoreImageCache;
+                            bitmapImage.UriSource = new Uri(previewPath, UriKind.Absolute);
+                            bitmapImage.EndInit();
+                            bitmapImage.Freeze();
+                            result = bitmapImage;
+                        }
+                        catch (Exception loadEx)
+                        {
+                            LoggerService.LogWarning($"[CadThumbnailService] Error cargando BitmapImage desde '{previewPath}': {loadEx.Message}");
+                        }
+                    }
+                }
+
+                // 2. Si no se pudo generar con ExportImage, intentar extraer vista previa nativa de Revit
+                if (result == null && cadItem.NativeElement is Element elem && elem.Document != null)
                 {
                     result = ExtractNativeElementThumbnail(elem, cancellationToken);
                 }
 
-                // 2. Fallback visual: Generar icono gráfico vectorial 2D informativo
+                // 3. Fallback visual: Generar icono gráfico vectorial 2D informativo
                 if (result == null && !cancellationToken.IsCancellationRequested)
                 {
                     result = CreateFallbackCadIcon(cadItem.Name, cadItem.DisplayCategory, cadItem.ViewName);

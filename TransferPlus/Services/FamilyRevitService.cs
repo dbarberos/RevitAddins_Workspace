@@ -1038,5 +1038,67 @@ namespace TransferPlus.Services
 
             return transferredCount;
         }
+
+        /// <summary>
+        /// Genera una imagen de previsualización (PNG) de una vista de Revit o detalle CAD utilizando ImageExportOptions de la API nativa.
+        /// Exporta la imagen a una carpeta temporal sanitizada en %TEMP% y devuelve la ruta absoluta del archivo generado.
+        /// </summary>
+        public string? GenerateViewPreview(Document doc, ElementId viewId)
+        {
+            if (doc == null || viewId == null || viewId == ElementId.InvalidElementId)
+            {
+                return null;
+            }
+
+            try
+            {
+                var view = doc.GetElement(viewId) as View;
+                if (view == null || view.IsTemplate)
+                {
+                    return null;
+                }
+
+                // Crear carpeta temporal sanitizada bajo %TEMP%\TransferPlus_Previews
+                string tempDir = Path.Combine(Path.GetTempPath(), "TransferPlus_Previews", Guid.NewGuid().ToString("N"));
+                tempDir = Path.GetFullPath(tempDir);
+                if (!Directory.Exists(tempDir))
+                {
+                    Directory.CreateDirectory(tempDir);
+                }
+
+                string baseFilePath = Path.Combine(tempDir, "preview");
+                baseFilePath = Path.GetFullPath(baseFilePath);
+
+                var options = new ImageExportOptions
+                {
+                    ExportRange = ExportRange.SetOfViews,
+                    ZoomType = ZoomFitType.FitToPage,
+                    PixelSize = 512,
+                    ImageResolution = ImageResolution.DPI_72,
+                    ShadowViewsFileType = ImageFileType.PNG,
+                    HLRandWFViewsFileType = ImageFileType.PNG,
+                    FilePath = baseFilePath,
+                    FitDirection = FitDirectionType.Horizontal
+                };
+
+                options.SetViewsAndSheets(new List<ElementId> { viewId });
+
+                doc.ExportImage(options);
+
+                var generatedFiles = Directory.GetFiles(tempDir, "*.png");
+                if (generatedFiles.Length > 0)
+                {
+                    string targetFile = generatedFiles[0];
+                    TelemetryLogger.LogInfo($"[GenerateViewPreview] Vista previa generada exitosamente para '{view.Name}': {targetFile}");
+                    return targetFile;
+                }
+            }
+            catch (Exception ex)
+            {
+                TelemetryLogger.LogExceptionSilently($"[GenerateViewPreview] Error exportando vista previa para ViewId={viewId.Value}", ex);
+            }
+
+            return null;
+        }
     }
 }

@@ -499,9 +499,12 @@ public partial class TransferPlusViewModel : ObservableObject
     private object? _selectedCadThumbnail;
 
     [ObservableProperty]
+    private System.Windows.Media.Imaging.BitmapImage? _previewImageSource;
+
+    [ObservableProperty]
     private bool _isLoadingCadThumbnail;
 
-    public bool HasSelectedCadThumbnail => SelectedCadThumbnail != null;
+    public bool HasSelectedCadThumbnail => SelectedCadThumbnail != null || PreviewImageSource != null;
 
     private System.Threading.CancellationTokenSource? _cadThumbnailCts;
 
@@ -514,11 +517,13 @@ public partial class TransferPlusViewModel : ObservableObject
             if (value.Thumbnail != null)
             {
                 SelectedCadThumbnail = value.Thumbnail;
+                PreviewImageSource = value.Thumbnail as System.Windows.Media.Imaging.BitmapImage;
                 IsLoadingCadThumbnail = false;
             }
             else
             {
                 SelectedCadThumbnail = null;
+                PreviewImageSource = null;
                 IsLoadingCadThumbnail = true;
                 _cadThumbnailCts = new System.Threading.CancellationTokenSource();
                 _ = LoadSelectedCadThumbnailAsync(value, _cadThumbnailCts.Token);
@@ -527,6 +532,7 @@ public partial class TransferPlusViewModel : ObservableObject
         else
         {
             SelectedCadThumbnail = null;
+            PreviewImageSource = null;
             IsLoadingCadThumbnail = false;
         }
 
@@ -535,6 +541,19 @@ public partial class TransferPlusViewModel : ObservableObject
 
     partial void OnSelectedCadThumbnailChanged(object? value)
     {
+        if (value is System.Windows.Media.Imaging.BitmapImage bmp)
+        {
+            PreviewImageSource = bmp;
+        }
+        OnPropertyChanged(nameof(HasSelectedCadThumbnail));
+    }
+
+    partial void OnPreviewImageSourceChanged(System.Windows.Media.Imaging.BitmapImage? value)
+    {
+        if (value != null && SelectedCadThumbnail != value)
+        {
+            SelectedCadThumbnail = value;
+        }
         OnPropertyChanged(nameof(HasSelectedCadThumbnail));
     }
 
@@ -550,6 +569,10 @@ public partial class TransferPlusViewModel : ObservableObject
                 if (SelectedCadDetail == cadItem)
                 {
                     SelectedCadThumbnail = thumbnail;
+                    if (thumbnail is System.Windows.Media.Imaging.BitmapImage bmp)
+                    {
+                        PreviewImageSource = bmp;
+                    }
                 }
             }
         }
