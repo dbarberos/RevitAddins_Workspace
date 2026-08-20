@@ -46,70 +46,88 @@ namespace TransferPlus.Services
 
             try
             {
-                // 1. Intentar renderizar la vista nativa con ImageExportOptions (Revit API)
-                Document? doc = null;
-                ElementId? viewId = null;
-
-                if (cadItem.NativeElement is View v && v.Document != null)
+                // CASO A: Elemento de Detalle individual (FamilyInstance, FamilySymbol o Category == "Detail Items")
+                // -> Extraer la miniatura aislada del símbolo/tipo 2D directamente con GetPreviewImage
+                if (cadItem.NativeElement is FamilyInstance fi)
                 {
-                    doc = v.Document;
-                    viewId = v.Id;
+                    result = ExtractNativeElementThumbnail(fi, cancellationToken);
                 }
-                else if (cadItem.NativeElement is ImportInstance cadInst && cadInst.Document != null)
+                else if (cadItem.NativeElement is ElementType elemType)
                 {
-                    doc = cadInst.Document;
-                    viewId = cadInst.OwnerViewId;
+                    result = ExtractNativeElementThumbnail(elemType, cancellationToken);
                 }
-
-                if (doc == null && cadItem.SourceDocument is Document sDoc)
+                else if (cadItem.Category == "Detail Items" && cadItem.NativeElement is Element detailElem)
                 {
-                    doc = sDoc;
+                    result = ExtractNativeElementThumbnail(detailElem, cancellationToken);
                 }
 
-                if (viewId == null || viewId == ElementId.InvalidElementId)
+                // CASO B: Vista Completa (View, ViewDrafting, Detail View, Detail Callout) o ImportInstance
+                if (result == null)
                 {
-                    if (cadItem.OwnerViewId != null && cadItem.OwnerViewId != ElementId.InvalidElementId)
+                    Document? doc = null;
+                    ElementId? viewId = null;
+
+                    if (cadItem.NativeElement is View v && v.Document != null)
                     {
-                        viewId = cadItem.OwnerViewId;
+                        doc = v.Document;
+                        viewId = v.Id;
                     }
-                    else if (cadItem.IsDraftingView && cadItem.ElementId != null)
+                    else if (cadItem.NativeElement is ImportInstance cadInst && cadInst.Document != null)
                     {
-                        viewId = cadItem.ElementId;
+                        doc = cadInst.Document;
+                        viewId = cadInst.OwnerViewId;
                     }
-                }
 
-                if (doc != null && viewId != null && viewId != ElementId.InvalidElementId)
-                {
-                    var revitService = new FamilyRevitService();
-                    string? previewPath = revitService.GenerateViewPreview(doc, viewId);
-
-                    if (!string.IsNullOrWhiteSpace(previewPath) && System.IO.File.Exists(previewPath))
+                    if (doc == null && cadItem.SourceDocument is Document sDoc)
                     {
-                        try
+                        doc = sDoc;
+                    }
+
+                    if (viewId == null || viewId == ElementId.InvalidElementId)
+                    {
+                        if (cadItem.IsDraftingView && cadItem.ElementId != null)
                         {
-                            var bitmapImage = new BitmapImage();
-                            bitmapImage.BeginInit();
-                            bitmapImage.CacheOption = BitmapCacheOption.OnLoad;
-                            bitmapImage.CreateOptions = BitmapCreateOptions.IgnoreImageCache;
-                            bitmapImage.UriSource = new Uri(previewPath, UriKind.Absolute);
-                            bitmapImage.EndInit();
-                            bitmapImage.Freeze();
-                            result = bitmapImage;
+                            viewId = cadItem.ElementId;
                         }
-                        catch (Exception loadEx)
+                        else if (cadItem.Category != "Detail Items" && cadItem.OwnerViewId != null && cadItem.OwnerViewId != ElementId.InvalidElementId)
                         {
-                            LoggerService.LogWarning($"[CadThumbnailService] Error cargando BitmapImage desde '{previewPath}': {loadEx.Message}");
+                            viewId = cadItem.OwnerViewId;
                         }
                     }
+
+                    if (doc != null && viewId != null && viewId != ElementId.InvalidElementId)
+                    {
+                        var revitService = new FamilyRevitService();
+                        string? previewPath = revitService.GenerateViewPreview(doc, viewId);
+
+                        if (!string.IsNullOrWhiteSpace(previewPath) && System.IO.File.Exists(previewPath))
+                        {
+                            try
+                            {
+                                var bitmapImage = new BitmapImage();
+                                bitmapImage.BeginInit();
+                                bitmapImage.CacheOption = BitmapCacheOption.OnLoad;
+                                bitmapImage.CreateOptions = BitmapCreateOptions.IgnoreImageCache;
+                                bitmapImage.UriSource = new Uri(previewPath, UriKind.Absolute);
+                                bitmapImage.EndInit();
+                                bitmapImage.Freeze();
+                                result = bitmapImage;
+                            }
+                            catch (Exception loadEx)
+                            {
+                                LoggerService.LogWarning($"[CadThumbnailService] Error cargando BitmapImage desde '{previewPath}': {loadEx.Message}");
+                            }
+                        }
+                    }
                 }
 
-                // 2. Si no se pudo generar con ExportImage, intentar extraer vista previa nativa de Revit
-                if (result == null && cadItem.NativeElement is Element elem && elem.Document != null)
+                // CASO C: Si aún es nulo y tenemos un Element nativo, intentar extracción nativa
+                if (result == null && cadItem.NativeElement is Element genericElem && genericElem.Document != null)
                 {
-                    result = ExtractNativeElementThumbnail(elem, cancellationToken);
+                    result = ExtractNativeElementThumbnail(genericElem, cancellationToken);
                 }
 
-                // 3. Fallback visual: Generar icono gráfico vectorial 2D informativo
+                // CASO D: Fallback visual: Generar icono gráfico vectorial 2D informativo
                 if (result == null && !cancellationToken.IsCancellationRequested)
                 {
                     result = CreateFallbackCadIcon(cadItem.Name, cadItem.DisplayCategory, cadItem.ViewName);
@@ -133,28 +151,69 @@ namespace TransferPlus.Services
         {
             try
             {
-                if (ct.IsCancellationRequested) return null;
+                if (ct.IsCancellationRequested || elem == null || !elem.IsValidObject) return null;
 
                 Bitmap? bmp = null;
 
-                // 1. Si elem es directamente ElementType
-                if (elem is ElementType directType)
+                // 1. Si elem es FamilyInstance, obtener el preview de su FamilySymbol (ElementType)
+                if (elem is FamilyInstance fi)
+                {
+                    ElementType? symbol = fi.Symbol;
+                    if (symbol == null && fi.GetTypeId() != ElementId.InvalidElementId && fi.Document != null)
+                    {
+                        symbol = fi.Document.GetElement(fi.GetTypeId()) as ElementType;
+                    }
+
+                    if (symbol != null && symbol.IsValidObject)
+                    {
+                        try
+                        {
+                            bmp = symbol.GetPreviewImage(new System.Drawing.Size(512, 512));
+                        }
+                        catch { }
+
+                        if (bmp == null)
+                        {
+                            try
+                            {
+                                bmp = symbol.GetPreviewImage(new System.Drawing.Size(256, 256));
+                            }
+                            catch { }
+                        }
+                    }
+                }
+
+                // 2. Si elem es directamente ElementType
+                if (bmp == null && elem is ElementType directType && directType.IsValidObject)
                 {
                     try
                     {
-                        bmp = directType.GetPreviewImage(new System.Drawing.Size(256, 256));
+                        bmp = directType.GetPreviewImage(new System.Drawing.Size(512, 512));
                     }
                     catch { }
+
+                    if (bmp == null)
+                    {
+                        try
+                        {
+                            bmp = directType.GetPreviewImage(new System.Drawing.Size(256, 256));
+                        }
+                        catch { }
+                    }
                 }
 
-                // 2. Si elem es una instancia (ImportInstance) y tiene tipo asociado
+                // 3. Si elem es una instancia genérica con TypeId asociado
                 if (bmp == null && elem.GetTypeId() != ElementId.InvalidElementId && elem.Document != null)
                 {
                     try
                     {
-                        if (elem.Document.GetElement(elem.GetTypeId()) is ElementType typeObj)
+                        if (elem.Document.GetElement(elem.GetTypeId()) is ElementType typeObj && typeObj.IsValidObject)
                         {
-                            bmp = typeObj.GetPreviewImage(new System.Drawing.Size(256, 256));
+                            bmp = typeObj.GetPreviewImage(new System.Drawing.Size(512, 512));
+                            if (bmp == null)
+                            {
+                                bmp = typeObj.GetPreviewImage(new System.Drawing.Size(256, 256));
+                            }
                         }
                     }
                     catch { }

@@ -135,6 +135,41 @@ public partial class TransferPlusView : Window
             {
                 vm.SelectedCadDetail = cadItem;
             }
+            else if (selectedNode.Category == "View" && selectedNode.Children.Any(c => c.Item is Models.CadDetailItemModel))
+            {
+                var firstChildCad = selectedNode.Children.FirstOrDefault(c => c.Item is Models.CadDetailItemModel)?.Item as Models.CadDetailItemModel;
+                if (firstChildCad != null && firstChildCad.OwnerViewId != null && firstChildCad.SourceDocument is Autodesk.Revit.DB.Document sDoc)
+                {
+                    var ownerView = sDoc.GetElement(firstChildCad.OwnerViewId) as Autodesk.Revit.DB.View;
+                    if (ownerView != null)
+                    {
+                        var viewCadItem = new Models.CadDetailItemModel
+                        {
+                            Name = ownerView.Name,
+                            ViewName = ownerView.Name,
+                            SheetName = firstChildCad.SheetName,
+                            Category = "Drafting Views",
+                            IsDraftingView = ownerView.ViewType == Autodesk.Revit.DB.ViewType.DraftingView,
+                            IsLinked = false,
+                            CadCount = 0,
+                            ElementId = ownerView.Id,
+                            OwnerViewId = ownerView.Id,
+                            NativeElement = ownerView,
+                            SourceDocument = sDoc,
+                            SourceDocumentName = sDoc.Title
+                        };
+                        vm.SelectedCadDetail = viewCadItem;
+                    }
+                    else
+                    {
+                        vm.SelectedCadDetail = firstChildCad;
+                    }
+                }
+                else if (firstChildCad != null)
+                {
+                    vm.SelectedCadDetail = firstChildCad;
+                }
+            }
             else if (selectedNode.Children.Any(c => c.Item is Models.CadDetailItemModel))
             {
                 var firstChildCad = selectedNode.Children.FirstOrDefault(c => c.Item is Models.CadDetailItemModel)?.Item as Models.CadDetailItemModel;
