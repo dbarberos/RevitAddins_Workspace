@@ -1091,9 +1091,9 @@
                                                 <ToolTip MaxWidth="225">
                                                     <TextBlock TextWrapping="Wrap" FontSize="11.5" LineHeight="15" Foreground="#333333">
                                                         <Bold>Details Items</Bold><LineBreak/>
-                                                        Collects 2D parametric Detail Component families, Filled Regions, and Masking Regions used for construction detailing.<LineBreak/><LineBreak/>
-                                                        <Bold>Elements shown:</Bold> Detail Item FamilyInstances (OST_DetailComponents), FilledRegion, and MaskingRegion elements.<LineBreak/><LineBreak/>
-                                                        <Bold>Where to find:</Bold> Placed in 2D views via Annotate tab -> Detail panel -> Component, Filled Region, or Masking Region.
+                                                        Collects 2D parametric Detail Component families (FamilyInstances) placed in views for construction detailing.<LineBreak/><LineBreak/>
+                                                        <Bold>Elements shown:</Bold> Detail Item FamilyInstances (OST_DetailComponents), excluding system filled regions.<LineBreak/><LineBreak/>
+                                                        <Bold>Where to find:</Bold> Placed in 2D views via Annotate tab -> Detail panel -> Component.
                                                     </TextBlock>
                                                 </ToolTip>
                                             </RadioButton.ToolTip>
