@@ -39,6 +39,9 @@ namespace TransferPlus.Models
         [ObservableProperty]
         private bool _isLoadingThumbnail;
 
+        [ObservableProperty]
+        private string _category = string.Empty;
+
         public ElementId? ElementId { get; set; }
         public ElementId? OwnerViewId { get; set; }
 
@@ -52,7 +55,7 @@ namespace TransferPlus.Models
         /// </summary>
         public object? SourceDocument { get; set; }
 
-        public string DisplayCategory => IsDraftingView ? "Drafting Views" : (IsLinked ? "CAD Links" : "CAD Imports");
+        public string DisplayCategory => !string.IsNullOrWhiteSpace(Category) ? Category : (IsDraftingView ? "Drafting Views" : (IsLinked ? "CAD Links" : "CAD Imports"));
         public string LocationSummary => !string.IsNullOrWhiteSpace(SheetName) ? $"{ViewName} [Sheet: {SheetName}]" : ViewName;
     }
 }

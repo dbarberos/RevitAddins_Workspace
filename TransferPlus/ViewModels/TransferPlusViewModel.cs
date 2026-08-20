@@ -1018,9 +1018,21 @@ public partial class TransferPlusViewModel : ObservableObject
             {
                 _cadItems = TransferPlus.Services.Providers.CadInstanceProvider.GetCadInstances(sourceDoc);
             }
+            else if (CadOriginDetailViewsAndCallouts)
+            {
+                _cadItems = TransferPlus.Services.Providers.DetailViewProvider.GetDetailViews(sourceDoc);
+            }
+            else if (CadOriginDetailGroups)
+            {
+                _cadItems = TransferPlus.Services.Providers.DetailGroupProvider.GetDetailGroups(sourceDoc);
+            }
+            else if (CadOriginDetailItems)
+            {
+                _cadItems = TransferPlus.Services.Providers.DetailItemProvider.GetDetailItems(sourceDoc);
+            }
             else
             {
-                _cadItems = TransferPlus.Services.Providers.DraftingViewProvider.GetDraftingViews(sourceDoc);
+                _cadItems = new List<CadDetailItemModel>();
             }
 
             CounterValue = _cadItems.Count;
@@ -1849,12 +1861,17 @@ public partial class TransferPlusViewModel : ObservableObject
                 var familyService = new FamilyRevitService();
 
                 var draftingViewIds = checkedCadItems
-                    .Where(x => x.IsDraftingView && x.ElementId != null)
+                    .Where(x => (x.IsDraftingView || x.NativeElement is View) && x.ElementId != null)
                     .Select(x => x.ElementId!)
                     .ToList();
 
                 var cadInstanceIds = checkedCadItems
-                    .Where(x => !x.IsDraftingView && x.ElementId != null)
+                    .Where(x => !x.IsDraftingView && x.NativeElement is ImportInstance && x.ElementId != null)
+                    .Select(x => x.ElementId!)
+                    .ToList();
+
+                var otherElementIds = checkedCadItems
+                    .Where(x => !draftingViewIds.Contains(x.ElementId!) && !cadInstanceIds.Contains(x.ElementId!) && x.ElementId != null)
                     .Select(x => x.ElementId!)
                     .ToList();
 
@@ -1871,6 +1888,12 @@ public partial class TransferPlusViewModel : ObservableObject
                     if (cadInstanceIds.Any())
                     {
                         int count = familyService.TransferCadInstancesToDraftingViews(SelectedSourceDocument.Adoc, destDoc.Adoc, cadInstanceIds);
+                        totalTransferred += count;
+                    }
+
+                    if (otherElementIds.Any())
+                    {
+                        int count = familyService.TransferDraftingViews(SelectedSourceDocument.Adoc, destDoc.Adoc, otherElementIds);
                         totalTransferred += count;
                     }
                 }
