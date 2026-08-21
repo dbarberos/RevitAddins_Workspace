@@ -1317,7 +1317,7 @@ namespace TransferPlus.Services
 
                             if (exportView != null)
                             {
-                                HideReferencePlanesAndAnnotations(famDoc, exportView);
+                                PrepareViewForPreview(famDoc, exportView);
 
                                 var options = new ImageExportOptions
                                 {
@@ -1639,7 +1639,7 @@ namespace TransferPlus.Services
 
                 if (exportView != null)
                 {
-                    HideReferencePlanesAndAnnotations(rfaDoc, exportView);
+                    PrepareViewForPreview(rfaDoc, exportView);
 
                     var options = new ImageExportOptions
                     {
@@ -1682,31 +1682,119 @@ namespace TransferPlus.Services
             return null;
         }
 
-        private static void HideReferencePlanesAndAnnotations(Document doc, View view)
+        private static void PrepareViewForPreview(Document doc, View view)
         {
             if (doc == null || view == null) return;
             try
             {
-                var categoriesToHide = new[]
+                using (var tx = new Transaction(doc, "Prepare View For Preview"))
                 {
-                    BuiltInCategory.OST_CLines,
-                    BuiltInCategory.OST_ReferenceLines,
-                    BuiltInCategory.OST_Dimensions,
-                    BuiltInCategory.OST_Grids,
-                    BuiltInCategory.OST_Levels
-                };
+                    WarningSwallower.AttachToTransaction(tx);
+                    tx.Start();
 
-                foreach (var bic in categoriesToHide)
-                {
+                    // 1. Ocultar categorías de anotación que deforman la extensión
+                    var categoriesToHide = new[]
+                    {
+                        BuiltInCategory.OST_CLines,
+                        BuiltInCategory.OST_ReferenceLines,
+                        BuiltInCategory.OST_Dimensions,
+                        BuiltInCategory.OST_Constraints,
+                        BuiltInCategory.OST_WeakDims,
+                        BuiltInCategory.OST_Grids,
+                        BuiltInCategory.OST_Levels
+                    };
+
+                    foreach (var bic in categoriesToHide)
+                    {
+                        try
+                        {
+                            var cat = doc.Settings.Categories.get_Item(bic);
+                            if (cat != null && view.CanCategoryBeHidden(cat.Id))
+                            {
+                                view.SetCategoryHidden(cat.Id, true);
+                            }
+                        }
+                        catch { }
+                    }
+
+                    // 2. Ocultar explícitamente instancias de Planos de Referencia, Cotas y Puntos de Referencia
                     try
                     {
-                        var cat = doc.Settings.Categories.get_Item(bic);
-                        if (cat != null && view.CanEnableTemporaryViewPropertiesMode())
+                        var elementsToHide = new FilteredElementCollector(doc, view.Id)
+                            .WherePasses(new ElementMulticlassFilter(new List<Type>
+                            {
+                                typeof(ReferencePlane),
+                                typeof(Dimension),
+                                typeof(ReferencePoint)
+                            }))
+                            .ToElementIds();
+
+                        if (elementsToHide.Count > 0)
                         {
-                            view.SetCategoryHidden(cat.Id, true);
+                            view.HideElements(elementsToHide);
                         }
                     }
                     catch { }
+
+                    // 3. Ajustar caja de recorte (CropBox) en vistas 2D
+                    if (view is ViewDrafting || view is ViewPlan)
+                    {
+                        try
+                        {
+                            var remainingElements = new FilteredElementCollector(doc, view.Id)
+                                .WhereElementIsNotElementType()
+                                .ToElements();
+
+                            BoundingBoxXYZ? totalBbox = null;
+                            foreach (var elem in remainingElements)
+                            {
+                                if (elem is ReferencePlane || elem is Dimension || elem is ReferencePoint) continue;
+                                if (elem.Category != null)
+                                {
+                                    var bic = (BuiltInCategory)elem.Category.Id.Value;
+                                    if (bic == BuiltInCategory.OST_CLines ||
+                                        bic == BuiltInCategory.OST_ReferenceLines ||
+                                        bic == BuiltInCategory.OST_Dimensions ||
+                                        bic == BuiltInCategory.OST_Constraints ||
+                                        bic == BuiltInCategory.OST_WeakDims)
+                                        continue;
+                                }
+
+                                var bbox = elem.get_BoundingBox(view);
+                                if (bbox != null && Math.Abs(bbox.Max.X - bbox.Min.X) > 1e-4 && Math.Abs(bbox.Max.Y - bbox.Min.Y) > 1e-4)
+                                {
+                                    if (totalBbox == null)
+                                    {
+                                        totalBbox = new BoundingBoxXYZ { Min = bbox.Min, Max = bbox.Max };
+                                    }
+                                    else
+                                    {
+                                        totalBbox.Min = new XYZ(Math.Min(totalBbox.Min.X, bbox.Min.X), Math.Min(totalBbox.Min.Y, bbox.Min.Y), Math.Min(totalBbox.Min.Z, bbox.Min.Z));
+                                        totalBbox.Max = new XYZ(Math.Max(totalBbox.Max.X, bbox.Max.X), Math.Max(totalBbox.Max.Y, bbox.Max.Y), Math.Max(totalBbox.Max.Z, bbox.Max.Z));
+                                    }
+                                }
+                            }
+
+                            if (totalBbox != null)
+                            {
+                                double width = totalBbox.Max.X - totalBbox.Min.X;
+                                double height = totalBbox.Max.Y - totalBbox.Min.Y;
+                                double marginX = Math.Max(width * 0.08, 0.02);
+                                double marginY = Math.Max(height * 0.08, 0.02);
+
+                                var crop = view.CropBox;
+                                crop.Min = new XYZ(totalBbox.Min.X - marginX, totalBbox.Min.Y - marginY, crop.Min.Z);
+                                crop.Max = new XYZ(totalBbox.Max.X + marginX, totalBbox.Max.Y + marginY, crop.Max.Z);
+                                view.CropBox = crop;
+                                view.CropBoxActive = true;
+                                view.CropBoxVisible = false;
+                            }
+                        }
+                        catch { }
+                    }
+
+                    doc.Regenerate();
+                    tx.Commit();
                 }
             }
             catch { }
@@ -1740,14 +1828,20 @@ namespace TransferPlus.Services
                         for (int x = 0; x < width; x++)
                         {
                             var pixel = original.GetPixel(x, y);
-                            // Si el píxel tiene opacidad y no es blanco de fondo
-                            if (pixel.A > 20 && (pixel.R < 248 || pixel.G < 248 || pixel.B < 248))
+                            // Ignorar fondo blanco / casi blanco y transparente
+                            if (pixel.A > 20 && (pixel.R < 245 || pixel.G < 245 || pixel.B < 245))
                             {
-                                if (x < minX) minX = x;
-                                if (x > maxX) maxX = x;
-                                if (y < minY) minY = y;
-                                if (y > maxY) maxY = y;
-                                foundContent = true;
+                                // Comprobar si el pixel no es una línea de referencia verde pura o cian puro de fondo
+                                bool isRefLineColor = (pixel.G > 200 && pixel.R < 100 && pixel.B < 100) ||
+                                                      (pixel.B > 200 && pixel.G > 200 && pixel.R < 100);
+                                if (!isRefLineColor)
+                                {
+                                    if (x < minX) minX = x;
+                                    if (x > maxX) maxX = x;
+                                    if (y < minY) minY = y;
+                                    if (y > maxY) maxY = y;
+                                    foundContent = true;
+                                }
                             }
                         }
                     }
@@ -1757,10 +1851,11 @@ namespace TransferPlus.Services
                     int contentWidth = (maxX - minX) + 1;
                     int contentHeight = (maxY - minY) + 1;
 
-                    // Si el contenido ya ocupa más del 85% en ancho y alto, la escala ya es adecuada
-                    if (contentWidth >= width * 0.85 && contentHeight >= height * 0.85) return;
+                    if (contentWidth <= 2 || contentHeight <= 2) return;
 
-                    // Si el contenido es pequeño o está encuadrado con márgenes excesivos, re-encuadrar y centrar
+                    // Si el contenido ya ocupa casi todo el lienzo (>= 88%), no requiere re-encuadre
+                    if (contentWidth >= width * 0.88 && contentHeight >= height * 0.88) return;
+
                     using (var cropped = new System.Drawing.Bitmap(contentWidth, contentHeight))
                     {
                         using (var gCrop = System.Drawing.Graphics.FromImage(cropped))

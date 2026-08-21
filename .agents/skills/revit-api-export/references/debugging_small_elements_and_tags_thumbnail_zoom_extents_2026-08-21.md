@@ -10,66 +10,143 @@
 
 When generating dynamic thumbnails for small elements (such as **Annotation Tags**, **Generic Annotations**, or small **Detail Components**):
 - The rendered PNG displayed the element as a tiny, barely visible dot in the center of the image.
-- Standard `ImageExportOptions` with `ZoomType = ZoomFitType.FitToPage` did not zoom in tightly onto the element.
+- Calling `view.SetCategoryHidden()` or attempting view modifications on `famDoc` (via `EditFamily`) or `rfaDoc` (via `OpenDocumentFile`) silently failed because Revit requires an open **Transaction** to modify view properties, even on in-memory family documents.
+- Default **Reference Planes (`OST_CLines`)**, **Reference Lines (`OST_ReferenceLines`)**, and **Dimensions (`OST_Dimensions`)** remained visible and spanned thousands of millimeters, forcing Revit's `FitToPage` to capture a massive bounding area.
 
 ---
 
-## 2. Root Cause
+## 2. Root Cause & Architectural Insight
 
-1. **Interference of Extended Datum & Reference Elements**:
-   - In Family Editor documents (`famDoc` or `.rfa`) and project views, default **Reference Planes (`OST_CLines`)**, **Reference Lines (`OST_ReferenceLines`)**, and **Dimensions (`OST_Dimensions`)** span hundreds or thousands of millimeters across.
-   - Revit's `FitToPage` calculates view extents from **all visible elements**. If reference planes are visible, the camera fits a 1000mm canvas instead of the 10mm tag.
-2. **Unconstrained View Extents**:
-   - Creating a `ViewDrafting` without setting `CropBox` leaves view extents at the template's default dimensions.
+1. **Transaction Requirement on In-Memory Documents**:
+   - `famDoc` (from `doc.EditFamily`) and `rfaDoc` (from `app.OpenDocumentFile`) are standalone `Document` instances.
+   - `view.SetCategoryHidden()`, `view.HideElements()`, and `view.CropBox = crop` are document state modifications. Without an active `Transaction`, they throw `InvalidOperationException` or are ignored.
+2. **Category vs. Instance Hiding**:
+   - Some reference planes belong to subcategories or template definitions that might bypass general category suppression.
+   - Using `view.HideElements()` with a multiclass filter (`typeof(ReferencePlane)`, `typeof(Dimension)`, `typeof(ReferencePoint)`) guarantees 100% suppression of all datum geometry.
 
 ---
 
-## 3. Optimal Resolution Pattern
+## 3. Optimal Resolution Pattern: `PrepareViewForPreview`
 
-### A. Hide Reference & Datum Categories in Export View
 ```csharp
-private static void HideReferencePlanesAndAnnotations(Document doc, View view)
+private static void PrepareViewForPreview(Document doc, View view)
 {
-    var categoriesToHide = new[]
+    if (doc == null || view == null) return;
+    try
     {
-        BuiltInCategory.OST_CLines,
-        BuiltInCategory.OST_ReferenceLines,
-        BuiltInCategory.OST_Dimensions,
-        BuiltInCategory.OST_Grids,
-        BuiltInCategory.OST_Levels
-    };
-
-    foreach (var bic in categoriesToHide)
-    {
-        try
+        using (var tx = new Transaction(doc, "Prepare View For Preview"))
         {
-            var cat = doc.Settings.Categories.get_Item(bic);
-            if (cat != null && view.CanEnableTemporaryViewPropertiesMode())
+            WarningSwallower.AttachToTransaction(tx);
+            tx.Start();
+
+            // 1. Hide Reference Categories
+            var categoriesToHide = new[]
             {
-                view.SetCategoryHidden(cat.Id, true);
+                BuiltInCategory.OST_CLines,
+                BuiltInCategory.OST_ReferenceLines,
+                BuiltInCategory.OST_Dimensions,
+                BuiltInCategory.OST_Constraints,
+                BuiltInCategory.OST_WeakDims,
+                BuiltInCategory.OST_Grids,
+                BuiltInCategory.OST_Levels
+            };
+
+            foreach (var bic in categoriesToHide)
+            {
+                try
+                {
+                    var cat = doc.Settings.Categories.get_Item(bic);
+                    if (cat != null && view.CanCategoryBeHidden(cat.Id))
+                    {
+                        view.SetCategoryHidden(cat.Id, true);
+                    }
+                }
+                catch { }
             }
+
+            // 2. Hide explicit ReferencePlane, Dimension, ReferencePoint elements
+            try
+            {
+                var elementsToHide = new FilteredElementCollector(doc, view.Id)
+                    .WherePasses(new ElementMulticlassFilter(new List<Type>
+                    {
+                        typeof(ReferencePlane),
+                        typeof(Dimension),
+                        typeof(ReferencePoint)
+                    }))
+                    .ToElementIds();
+
+                if (elementsToHide.Count > 0)
+                {
+                    view.HideElements(elementsToHide);
+                }
+            }
+            catch { }
+
+            // 3. Set tight CropBox on 2D views
+            if (view is ViewDrafting || view is ViewPlan)
+            {
+                try
+                {
+                    var remainingElements = new FilteredElementCollector(doc, view.Id)
+                        .WhereElementIsNotElementType()
+                        .ToElements();
+
+                    BoundingBoxXYZ? totalBbox = null;
+                    foreach (var elem in remainingElements)
+                    {
+                        if (elem is ReferencePlane || elem is Dimension || elem is ReferencePoint) continue;
+                        if (elem.Category != null)
+                        {
+                            var bic = (BuiltInCategory)elem.Category.Id.Value;
+                            if (bic == BuiltInCategory.OST_CLines ||
+                                bic == BuiltInCategory.OST_ReferenceLines ||
+                                bic == BuiltInCategory.OST_Dimensions ||
+                                bic == BuiltInCategory.OST_Constraints ||
+                                bic == BuiltInCategory.OST_WeakDims)
+                                continue;
+                        }
+
+                        var bbox = elem.get_BoundingBox(view);
+                        if (bbox != null && Math.Abs(bbox.Max.X - bbox.Min.X) > 1e-4 && Math.Abs(bbox.Max.Y - bbox.Min.Y) > 1e-4)
+                        {
+                            if (totalBbox == null)
+                            {
+                                totalBbox = new BoundingBoxXYZ { Min = bbox.Min, Max = bbox.Max };
+                            }
+                            else
+                            {
+                                totalBbox.Min = new XYZ(Math.Min(totalBbox.Min.X, bbox.Min.X), Math.Min(totalBbox.Min.Y, bbox.Min.Y), Math.Min(totalBbox.Min.Z, bbox.Min.Z));
+                                totalBbox.Max = new XYZ(Math.Max(totalBbox.Max.X, bbox.Max.X), Math.Max(totalBbox.Max.Y, bbox.Max.Y), Math.Max(totalBbox.Max.Z, bbox.Max.Z));
+                            }
+                        }
+                    }
+
+                    if (totalBbox != null)
+                    {
+                        double width = totalBbox.Max.X - totalBbox.Min.X;
+                        double height = totalBbox.Max.Y - totalBbox.Min.Y;
+                        double marginX = Math.Max(width * 0.08, 0.02);
+                        double marginY = Math.Max(height * 0.08, 0.02);
+
+                        var crop = view.CropBox;
+                        crop.Min = new XYZ(totalBbox.Min.X - marginX, totalBbox.Min.Y - marginY, crop.Min.Z);
+                        crop.Max = new XYZ(totalBbox.Max.X + marginX, totalBbox.Max.Y + marginY, crop.Max.Z);
+                        view.CropBox = crop;
+                        view.CropBoxActive = true;
+                        view.CropBoxVisible = false;
+                    }
+                }
+                catch { }
+            }
+
+            doc.Regenerate();
+            tx.Commit();
         }
-        catch { }
     }
+    catch { }
 }
 ```
 
-### B. Tight BoundingBox CropBox on 2D Views
-```csharp
-var bbox = placedElem.get_BoundingBox(tempView);
-if (bbox != null && Math.Abs(bbox.Max.X - bbox.Min.X) > 1e-4)
-{
-    double marginX = Math.Max((bbox.Max.X - bbox.Min.X) * 0.08, 0.02);
-    double marginY = Math.Max((bbox.Max.Y - bbox.Min.Y) * 0.08, 0.02);
-
-    var crop = tempView.CropBox;
-    crop.Min = new XYZ(bbox.Min.X - marginX, bbox.Min.Y - marginY, crop.Min.Z);
-    crop.Max = new XYZ(bbox.Max.X + marginX, bbox.Max.Y + marginY, crop.Max.Z);
-    tempView.CropBox = crop;
-    tempView.CropBoxActive = true;
-    tempView.CropBoxVisible = false;
-}
-```
-
-### C. Pixel-Level Auto-Crop Post-Processing (`OptimizeImageFraming`)
-Scan the exported PNG for content pixels, crop the bounding box, and scale it centered onto a clean 512x512 canvas with high-quality bicubic interpolation and an 8% padding margin.
+### 4. Pixel-Level Auto-Crop Post-Processing (`OptimizeImageFraming`)
+Scans the exported PNG, ignores any residual reference line artifacts, and crops the bounding box of genuine content to scale and center it onto a 512x512 canvas with high-quality bicubic interpolation and an 8% padding margin.

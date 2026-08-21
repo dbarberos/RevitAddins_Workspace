@@ -14,7 +14,8 @@ namespace RevitAddin.ExportHelpers
     /// Features:
     /// - In-memory EditFamily inspection.
     /// - Dedicated ViewSheet hosting for Title Blocks.
-    /// - Reference plane & dimension suppression to prevent excessive zoom extents.
+    /// - Transaction-backed Reference Plane and Dimension suppression (via SetCategoryHidden and HideElements).
+    /// - Tight BoundingBox CropBox fitting on 2D views.
     /// - Automatic pixel-level Auto-Crop and Zoom-to-Extents framing (OptimizeImageFraming).
     /// </summary>
     public static class FamilyPreviewRenderer
@@ -48,7 +49,7 @@ namespace RevitAddin.ExportHelpers
 
                         if (exportView != null)
                         {
-                            HideReferencePlanesAndAnnotations(famDoc, exportView);
+                            PrepareViewForPreview(famDoc, exportView);
 
                             var options = new ImageExportOptions
                             {
@@ -218,7 +219,7 @@ namespace RevitAddin.ExportHelpers
 
                 if (exportView != null)
                 {
-                    HideReferencePlanesAndAnnotations(rfaDoc, exportView);
+                    PrepareViewForPreview(rfaDoc, exportView);
 
                     var options = new ImageExportOptions
                     {
@@ -250,31 +251,118 @@ namespace RevitAddin.ExportHelpers
             return null;
         }
 
-        public static void HideReferencePlanesAndAnnotations(Document doc, View view)
+        public static void PrepareViewForPreview(Document doc, View view)
         {
             if (doc == null || view == null) return;
             try
             {
-                var categoriesToHide = new[]
+                using (var tx = new Transaction(doc, "Prepare View For Preview"))
                 {
-                    BuiltInCategory.OST_CLines,
-                    BuiltInCategory.OST_ReferenceLines,
-                    BuiltInCategory.OST_Dimensions,
-                    BuiltInCategory.OST_Grids,
-                    BuiltInCategory.OST_Levels
-                };
+                    tx.Start();
 
-                foreach (var bic in categoriesToHide)
-                {
+                    // 1. Hide Reference Categories
+                    var categoriesToHide = new[]
+                    {
+                        BuiltInCategory.OST_CLines,
+                        BuiltInCategory.OST_ReferenceLines,
+                        BuiltInCategory.OST_Dimensions,
+                        BuiltInCategory.OST_Constraints,
+                        BuiltInCategory.OST_WeakDims,
+                        BuiltInCategory.OST_Grids,
+                        BuiltInCategory.OST_Levels
+                    };
+
+                    foreach (var bic in categoriesToHide)
+                    {
+                        try
+                        {
+                            var cat = doc.Settings.Categories.get_Item(bic);
+                            if (cat != null && view.CanCategoryBeHidden(cat.Id))
+                            {
+                                view.SetCategoryHidden(cat.Id, true);
+                            }
+                        }
+                        catch { }
+                    }
+
+                    // 2. Hide explicit ReferencePlane, Dimension, ReferencePoint elements
                     try
                     {
-                        var cat = doc.Settings.Categories.get_Item(bic);
-                        if (cat != null && view.CanEnableTemporaryViewPropertiesMode())
+                        var elementsToHide = new FilteredElementCollector(doc, view.Id)
+                            .WherePasses(new ElementMulticlassFilter(new List<Type>
+                            {
+                                typeof(ReferencePlane),
+                                typeof(Dimension),
+                                typeof(ReferencePoint)
+                            }))
+                            .ToElementIds();
+
+                        if (elementsToHide.Count > 0)
                         {
-                            view.SetCategoryHidden(cat.Id, true);
+                            view.HideElements(elementsToHide);
                         }
                     }
                     catch { }
+
+                    // 3. Set tight CropBox on 2D views
+                    if (view is ViewDrafting || view is ViewPlan)
+                    {
+                        try
+                        {
+                            var remainingElements = new FilteredElementCollector(doc, view.Id)
+                                .WhereElementIsNotElementType()
+                                .ToElements();
+
+                            BoundingBoxXYZ? totalBbox = null;
+                            foreach (var elem in remainingElements)
+                            {
+                                if (elem is ReferencePlane || elem is Dimension || elem is ReferencePoint) continue;
+                                if (elem.Category != null)
+                                {
+                                    var bic = (BuiltInCategory)elem.Category.Id.Value;
+                                    if (bic == BuiltInCategory.OST_CLines ||
+                                        bic == BuiltInCategory.OST_ReferenceLines ||
+                                        bic == BuiltInCategory.OST_Dimensions ||
+                                        bic == BuiltInCategory.OST_Constraints ||
+                                        bic == BuiltInCategory.OST_WeakDims)
+                                        continue;
+                                }
+
+                                var bbox = elem.get_BoundingBox(view);
+                                if (bbox != null && Math.Abs(bbox.Max.X - bbox.Min.X) > 1e-4 && Math.Abs(bbox.Max.Y - bbox.Min.Y) > 1e-4)
+                                {
+                                    if (totalBbox == null)
+                                    {
+                                        totalBbox = new BoundingBoxXYZ { Min = bbox.Min, Max = bbox.Max };
+                                    }
+                                    else
+                                    {
+                                        totalBbox.Min = new XYZ(Math.Min(totalBbox.Min.X, bbox.Min.X), Math.Min(totalBbox.Min.Y, bbox.Min.Y), Math.Min(totalBbox.Min.Z, bbox.Min.Z));
+                                        totalBbox.Max = new XYZ(Math.Max(totalBbox.Max.X, bbox.Max.X), Math.Max(totalBbox.Max.Y, bbox.Max.Y), Math.Max(totalBbox.Max.Z, bbox.Max.Z));
+                                    }
+                                }
+                            }
+
+                            if (totalBbox != null)
+                            {
+                                double width = totalBbox.Max.X - totalBbox.Min.X;
+                                double height = totalBbox.Max.Y - totalBbox.Min.Y;
+                                double marginX = Math.Max(width * 0.08, 0.02);
+                                double marginY = Math.Max(height * 0.08, 0.02);
+
+                                var crop = view.CropBox;
+                                crop.Min = new XYZ(totalBbox.Min.X - marginX, totalBbox.Min.Y - marginY, crop.Min.Z);
+                                crop.Max = new XYZ(totalBbox.Max.X + marginX, totalBbox.Max.Y + marginY, crop.Max.Z);
+                                view.CropBox = crop;
+                                view.CropBoxActive = true;
+                                view.CropBoxVisible = false;
+                            }
+                        }
+                        catch { }
+                    }
+
+                    doc.Regenerate();
+                    tx.Commit();
                 }
             }
             catch { }
@@ -300,13 +388,18 @@ namespace RevitAddin.ExportHelpers
                         for (int x = 0; x < width; x++)
                         {
                             var pixel = original.GetPixel(x, y);
-                            if (pixel.A > 20 && (pixel.R < 248 || pixel.G < 248 || pixel.B < 248))
+                            if (pixel.A > 20 && (pixel.R < 245 || pixel.G < 245 || pixel.B < 245))
                             {
-                                if (x < minX) minX = x;
-                                if (x > maxX) maxX = x;
-                                if (y < minY) minY = y;
-                                if (y > maxY) maxY = y;
-                                foundContent = true;
+                                bool isRefLineColor = (pixel.G > 200 && pixel.R < 100 && pixel.B < 100) ||
+                                                      (pixel.B > 200 && pixel.G > 200 && pixel.R < 100);
+                                if (!isRefLineColor)
+                                {
+                                    if (x < minX) minX = x;
+                                    if (x > maxX) maxX = x;
+                                    if (y < minY) minY = y;
+                                    if (y > maxY) maxY = y;
+                                    foundContent = true;
+                                }
                             }
                         }
                     }
@@ -316,7 +409,8 @@ namespace RevitAddin.ExportHelpers
                     int contentWidth = (maxX - minX) + 1;
                     int contentHeight = (maxY - minY) + 1;
 
-                    if (contentWidth >= width * 0.85 && contentHeight >= height * 0.85) return;
+                    if (contentWidth <= 2 || contentHeight <= 2) return;
+                    if (contentWidth >= width * 0.88 && contentHeight >= height * 0.88) return;
 
                     using (var cropped = new Bitmap(contentWidth, contentHeight))
                     {
