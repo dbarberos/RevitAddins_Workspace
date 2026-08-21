@@ -1089,6 +1089,10 @@ namespace TransferPlus.Services
                 if (generatedFiles.Length > 0)
                 {
                     string targetFile = generatedFiles[0];
+                    if (!(view is ViewSheet))
+                    {
+                        OptimizeImageFraming(targetFile);
+                    }
                     TelemetryLogger.LogInfo($"[GenerateViewPreview] Vista previa generada exitosamente para '{view.Name}': {targetFile}");
                     return targetFile;
                 }
@@ -1151,6 +1155,8 @@ namespace TransferPlus.Services
                         tempView.Name = $"_TransferPlus_TempPreview_{Guid.NewGuid():N}";
                         tempView.Scale = 1;
 
+                        Element? placedElem = null;
+
                         // 2. Colocar o copiar el elemento aislado en la vista temporal
                         if (elem is FamilyInstance fi && fi.Symbol != null)
                         {
@@ -1158,7 +1164,7 @@ namespace TransferPlus.Services
                             {
                                 fi.Symbol.Activate();
                             }
-                            doc.Create.NewFamilyInstance(XYZ.Zero, fi.Symbol, tempView);
+                            placedElem = doc.Create.NewFamilyInstance(XYZ.Zero, fi.Symbol, tempView);
                         }
                         else if (elem is FamilySymbol sym)
                         {
@@ -1166,16 +1172,44 @@ namespace TransferPlus.Services
                             {
                                 sym.Activate();
                             }
-                            doc.Create.NewFamilyInstance(XYZ.Zero, sym, tempView);
+                            placedElem = doc.Create.NewFamilyInstance(XYZ.Zero, sym, tempView);
                         }
                         else if (ownerViewId != null && ownerViewId != ElementId.InvalidElementId && doc.GetElement(ownerViewId) is View srcView)
                         {
-                            ElementTransformUtils.CopyElements(srcView, new List<ElementId> { elem.Id }, tempView, Transform.Identity, new CopyPasteOptions());
+                            var copied = ElementTransformUtils.CopyElements(srcView, new List<ElementId> { elem.Id }, tempView, Transform.Identity, new CopyPasteOptions());
+                            if (copied.Count > 0)
+                            {
+                                placedElem = doc.GetElement(copied.First());
+                            }
                         }
 
                         doc.Regenerate();
 
-                        // 3. Exportar la vista temporal que contiene ÚNICAMENTE este elemento aislado
+                        // 3. Ajustar CropBox ceñido al elemento si está disponible
+                        if (placedElem != null)
+                        {
+                            try
+                            {
+                                var bbox = placedElem.get_BoundingBox(tempView);
+                                if (bbox != null && Math.Abs(bbox.Max.X - bbox.Min.X) > 1e-4 && Math.Abs(bbox.Max.Y - bbox.Min.Y) > 1e-4)
+                                {
+                                    double width = bbox.Max.X - bbox.Min.X;
+                                    double height = bbox.Max.Y - bbox.Min.Y;
+                                    double marginX = Math.Max(width * 0.08, 0.02);
+                                    double marginY = Math.Max(height * 0.08, 0.02);
+
+                                    var crop = tempView.CropBox;
+                                    crop.Min = new XYZ(bbox.Min.X - marginX, bbox.Min.Y - marginY, crop.Min.Z);
+                                    crop.Max = new XYZ(bbox.Max.X + marginX, bbox.Max.Y + marginY, crop.Max.Z);
+                                    tempView.CropBox = crop;
+                                    tempView.CropBoxActive = true;
+                                    tempView.CropBoxVisible = false;
+                                }
+                            }
+                            catch { }
+                        }
+
+                        // 4. Exportar la vista temporal que contiene ÚNICAMENTE este elemento aislado
                         var options = new ImageExportOptions
                         {
                             ExportRange = ExportRange.SetOfViews,
@@ -1196,6 +1230,7 @@ namespace TransferPlus.Services
                         if (generatedFiles.Length > 0)
                         {
                             resultPath = generatedFiles[0];
+                            OptimizeImageFraming(resultPath);
                             TelemetryLogger.LogInfo($"[GenerateElementPreview] Vista previa aislada generada exitosamente para '{elem.Name}': {resultPath}");
                         }
                     }
@@ -1282,6 +1317,8 @@ namespace TransferPlus.Services
 
                             if (exportView != null)
                             {
+                                HideReferencePlanesAndAnnotations(famDoc, exportView);
+
                                 var options = new ImageExportOptions
                                 {
                                     ExportRange = ExportRange.SetOfViews,
@@ -1300,8 +1337,10 @@ namespace TransferPlus.Services
                                 var files = Directory.GetFiles(tempDir, "*.png");
                                 if (files.Length > 0)
                                 {
-                                    TelemetryLogger.LogInfo($"[GenerateFamilyRenderedPreview] EditFamily vista previa generada con éxito para '{nativeFam.Name}': {files[0]}");
-                                    return files[0];
+                                    string result = files[0];
+                                    OptimizeImageFraming(result);
+                                    TelemetryLogger.LogInfo($"[GenerateFamilyRenderedPreview] EditFamily vista previa generada con éxito para '{nativeFam.Name}': {result}");
+                                    return result;
                                 }
                             }
                         }
@@ -1365,6 +1404,7 @@ namespace TransferPlus.Services
                     try
                     {
                         View? tempView = null;
+                        Element? placedElem = null;
 
                         if (isTitleBlock)
                         {
@@ -1388,7 +1428,7 @@ namespace TransferPlus.Services
                             {
                                 workSym.Activate();
                             }
-                            workDoc.Create.NewFamilyInstance(XYZ.Zero, workSym, tempSheet);
+                            placedElem = workDoc.Create.NewFamilyInstance(XYZ.Zero, workSym, tempSheet);
                         }
                         else if (isAnnotationOr2D)
                         {
@@ -1418,7 +1458,7 @@ namespace TransferPlus.Services
                                 {
                                     workSym.Activate();
                                 }
-                                workDoc.Create.NewFamilyInstance(XYZ.Zero, workSym, vDraft);
+                                placedElem = workDoc.Create.NewFamilyInstance(XYZ.Zero, workSym, vDraft);
                             }
                         }
                         else
@@ -1451,13 +1491,13 @@ namespace TransferPlus.Services
 
                                 try
                                 {
-                                    workDoc.Create.NewFamilyInstance(XYZ.Zero, workSym, Autodesk.Revit.DB.Structure.StructuralType.NonStructural);
+                                    placedElem = workDoc.Create.NewFamilyInstance(XYZ.Zero, workSym, Autodesk.Revit.DB.Structure.StructuralType.NonStructural);
                                 }
                                 catch
                                 {
                                     try
                                     {
-                                        workDoc.Create.NewFamilyInstance(XYZ.Zero, workSym, v3D);
+                                        placedElem = workDoc.Create.NewFamilyInstance(XYZ.Zero, workSym, v3D);
                                     }
                                     catch { }
                                 }
@@ -1467,6 +1507,30 @@ namespace TransferPlus.Services
                         if (tempView != null)
                         {
                             workDoc.Regenerate();
+
+                            // Ceñir CropBox en vistas 2D
+                            if (placedElem != null && (tempView is ViewDrafting || tempView is ViewPlan))
+                            {
+                                try
+                                {
+                                    var bbox = placedElem.get_BoundingBox(tempView);
+                                    if (bbox != null && Math.Abs(bbox.Max.X - bbox.Min.X) > 1e-4 && Math.Abs(bbox.Max.Y - bbox.Min.Y) > 1e-4)
+                                    {
+                                        double width = bbox.Max.X - bbox.Min.X;
+                                        double height = bbox.Max.Y - bbox.Min.Y;
+                                        double marginX = Math.Max(width * 0.08, 0.02);
+                                        double marginY = Math.Max(height * 0.08, 0.02);
+
+                                        var crop = tempView.CropBox;
+                                        crop.Min = new XYZ(bbox.Min.X - marginX, bbox.Min.Y - marginY, crop.Min.Z);
+                                        crop.Max = new XYZ(bbox.Max.X + marginX, bbox.Max.Y + marginY, crop.Max.Z);
+                                        tempView.CropBox = crop;
+                                        tempView.CropBoxActive = true;
+                                        tempView.CropBoxVisible = false;
+                                    }
+                                }
+                                catch { }
+                            }
 
                             var options = new ImageExportOptions
                             {
@@ -1487,6 +1551,7 @@ namespace TransferPlus.Services
                             if (files.Length > 0)
                             {
                                 resultPath = files[0];
+                                OptimizeImageFraming(resultPath);
                                 TelemetryLogger.LogInfo($"[GenerateFamilyRenderedPreview] Vista previa renderizada generada exitosamente para '{nativeFam.Name}': {resultPath}");
                             }
                         }
@@ -1574,6 +1639,8 @@ namespace TransferPlus.Services
 
                 if (exportView != null)
                 {
+                    HideReferencePlanesAndAnnotations(rfaDoc, exportView);
+
                     var options = new ImageExportOptions
                     {
                         ExportRange = ExportRange.SetOfViews,
@@ -1593,6 +1660,7 @@ namespace TransferPlus.Services
                     if (generatedFiles.Length > 0)
                     {
                         string result = generatedFiles[0];
+                        OptimizeImageFraming(result);
                         TelemetryLogger.LogInfo($"[GenerateRfaFileRenderedPreview] Miniatura extraída exitosamente de '{Path.GetFileName(rfaPath)}': {result}");
                         return result;
                     }
@@ -1612,6 +1680,130 @@ namespace TransferPlus.Services
             }
 
             return null;
+        }
+
+        private static void HideReferencePlanesAndAnnotations(Document doc, View view)
+        {
+            if (doc == null || view == null) return;
+            try
+            {
+                var categoriesToHide = new[]
+                {
+                    BuiltInCategory.OST_CLines,
+                    BuiltInCategory.OST_ReferenceLines,
+                    BuiltInCategory.OST_Dimensions,
+                    BuiltInCategory.OST_Grids,
+                    BuiltInCategory.OST_Levels
+                };
+
+                foreach (var bic in categoriesToHide)
+                {
+                    try
+                    {
+                        var cat = doc.Settings.Categories.get_Item(bic);
+                        if (cat != null && view.CanEnableTemporaryViewPropertiesMode())
+                        {
+                            view.SetCategoryHidden(cat.Id, true);
+                        }
+                    }
+                    catch { }
+                }
+            }
+            catch { }
+        }
+
+        /// <summary>
+        /// Ajusta y encuadra la imagen generada eliminando el exceso de espacio en blanco periférico (Auto-Crop / Zoom to Extents)
+        /// y reescalando el contenido centrado sobre un lienzo cuadrado de 512x512 px con un margen limpio del 8%.
+        /// </summary>
+        public static void OptimizeImageFraming(string imagePath, int targetSize = 512, double paddingFactor = 0.08)
+        {
+            if (string.IsNullOrWhiteSpace(imagePath) || !File.Exists(imagePath)) return;
+
+            try
+            {
+                using (var original = new System.Drawing.Bitmap(imagePath))
+                {
+                    int width = original.Width;
+                    int height = original.Height;
+                    if (width <= 10 || height <= 10) return;
+
+                    int minX = width;
+                    int minY = height;
+                    int maxX = 0;
+                    int maxY = 0;
+                    bool foundContent = false;
+
+                    // Escanear píxeles para encontrar el área de contenido (píxeles no blancos y no transparentes)
+                    for (int y = 0; y < height; y++)
+                    {
+                        for (int x = 0; x < width; x++)
+                        {
+                            var pixel = original.GetPixel(x, y);
+                            // Si el píxel tiene opacidad y no es blanco de fondo
+                            if (pixel.A > 20 && (pixel.R < 248 || pixel.G < 248 || pixel.B < 248))
+                            {
+                                if (x < minX) minX = x;
+                                if (x > maxX) maxX = x;
+                                if (y < minY) minY = y;
+                                if (y > maxY) maxY = y;
+                                foundContent = true;
+                            }
+                        }
+                    }
+
+                    if (!foundContent) return;
+
+                    int contentWidth = (maxX - minX) + 1;
+                    int contentHeight = (maxY - minY) + 1;
+
+                    // Si el contenido ya ocupa más del 85% en ancho y alto, la escala ya es adecuada
+                    if (contentWidth >= width * 0.85 && contentHeight >= height * 0.85) return;
+
+                    // Si el contenido es pequeño o está encuadrado con márgenes excesivos, re-encuadrar y centrar
+                    using (var cropped = new System.Drawing.Bitmap(contentWidth, contentHeight))
+                    {
+                        using (var gCrop = System.Drawing.Graphics.FromImage(cropped))
+                        {
+                            gCrop.DrawImage(original, new System.Drawing.Rectangle(0, 0, contentWidth, contentHeight),
+                                new System.Drawing.Rectangle(minX, minY, contentWidth, contentHeight),
+                                System.Drawing.GraphicsUnit.Pixel);
+                        }
+
+                        using (var final = new System.Drawing.Bitmap(targetSize, targetSize))
+                        {
+                            using (var gFinal = System.Drawing.Graphics.FromImage(final))
+                            {
+                                gFinal.Clear(System.Drawing.Color.White);
+                                gFinal.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.HighQualityBicubic;
+                                gFinal.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.HighQuality;
+                                gFinal.PixelOffsetMode = System.Drawing.Drawing2D.PixelOffsetMode.HighQuality;
+
+                                int padding = (int)(targetSize * paddingFactor);
+                                int availSize = targetSize - (padding * 2);
+
+                                double scale = Math.Min((double)availSize / contentWidth, (double)availSize / contentHeight);
+                                int destWidth = Math.Max(1, (int)(contentWidth * scale));
+                                int destHeight = Math.Max(1, (int)(contentHeight * scale));
+
+                                int destX = padding + (availSize - destWidth) / 2;
+                                int destY = padding + (availSize - destHeight) / 2;
+
+                                gFinal.DrawImage(cropped, new System.Drawing.Rectangle(destX, destY, destWidth, destHeight));
+                            }
+
+                            string tempSave = imagePath + ".tmp.png";
+                            final.Save(tempSave, System.Drawing.Imaging.ImageFormat.Png);
+                            File.Copy(tempSave, imagePath, true);
+                            try { File.Delete(tempSave); } catch { }
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                TelemetryLogger.LogWarning($"[OptimizeImageFraming] Excepción al auto-encuadrar '{imagePath}': {ex.Message}");
+            }
         }
     }
 }
