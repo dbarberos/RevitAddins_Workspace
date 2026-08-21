@@ -11,6 +11,11 @@ public static class S3ClientFactory
         return Create(model.EndpointUrl, model.Region, model.AccessKey, model.SecretKey);
     }
 
+    public static IAmazonS3 Create(CadSourceItemModel model)
+    {
+        return Create(model.EndpointUrl, model.Region, model.AccessKey, model.SecretKey);
+    }
+
     public static IAmazonS3 Create(string endpointUrl, string regionName, string accessKey, string secretKey)
     {
         string endpoint = string.IsNullOrWhiteSpace(endpointUrl) ? "https://s3.amazonaws.com" : endpointUrl.Trim();

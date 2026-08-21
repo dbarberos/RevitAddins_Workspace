@@ -1040,6 +1040,136 @@ namespace TransferPlus.Services
         }
 
         /// <summary>
+        /// Importa o vincula un archivo de dibujo CAD externo (.dwg, .dxf, .sat, etc.) en una nueva Vista de Diseño (Drafting View) en el documento destino.
+        /// </summary>
+        public bool TransferExternalCadToDraftingView(Document targetDoc, string filePath, string? overrideViewName, bool isLinkMode)
+        {
+            if (targetDoc == null || string.IsNullOrWhiteSpace(filePath) || !System.IO.File.Exists(filePath)) return false;
+
+            bool success = false;
+
+            ExecuteWithWarningSuppression(targetDoc, () =>
+            {
+                using (var t = new Transaction(targetDoc, isLinkMode ? "Link External CAD to Drafting View" : "Import External CAD to Drafting View"))
+                {
+                    var options = t.GetFailureHandlingOptions();
+                    options.SetFailuresPreprocessor(new WarningSwallower());
+                    options.SetClearAfterRollback(true);
+                    t.SetFailureHandlingOptions(options);
+
+                    t.Start();
+
+                    try
+                    {
+                        // 1. Obtener el tipo de familia de vista para Vistas de Diseño (Drafting)
+                        var draftingVft = new FilteredElementCollector(targetDoc)
+                            .OfClass(typeof(ViewFamilyType))
+                            .Cast<ViewFamilyType>()
+                            .FirstOrDefault(vft => vft.ViewFamily == ViewFamily.Drafting);
+
+                        if (draftingVft == null)
+                        {
+                            TelemetryLogger.LogWarning($"[TransferExternalCad] No se encontró ViewFamilyType para Drafting en '{targetDoc.Title}'.");
+                            t.RollBack();
+                            return;
+                        }
+
+                        // Obtener nombres de vistas existentes en destino para evitar colisiones
+                        var existingViewNames = new FilteredElementCollector(targetDoc)
+                            .OfClass(typeof(View))
+                            .Cast<View>()
+                            .Select(v => v.Name)
+                            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+                        // Crear una nueva ViewDrafting
+                        var newDraftingView = ViewDrafting.Create(targetDoc, draftingVft.Id);
+                        if (newDraftingView == null)
+                        {
+                            t.RollBack();
+                            return;
+                        }
+
+                        string fileName = System.IO.Path.GetFileNameWithoutExtension(filePath);
+                        string baseViewName = !string.IsNullOrWhiteSpace(overrideViewName) ? overrideViewName : $"CAD - {fileName}";
+                        string uniqueViewName = baseViewName;
+                        int suffix = 1;
+                        while (existingViewNames.Contains(uniqueViewName))
+                        {
+                            uniqueViewName = $"{baseViewName}_{suffix++}";
+                        }
+                        newDraftingView.Name = uniqueViewName;
+                        existingViewNames.Add(uniqueViewName);
+
+                        string ext = System.IO.Path.GetExtension(filePath).ToLowerInvariant();
+
+                        if (isLinkMode)
+                        {
+                            // Link mode (Revit API doc.Link)
+                            if (ext == ".dwg" || ext == ".dxf")
+                            {
+                                var linkOpt = new DWGImportOptions { ThisViewOnly = true, Placement = ImportPlacement.Origin };
+                                targetDoc.Link(filePath, linkOpt, newDraftingView, out _);
+                            }
+                            else if (ext == ".dgn")
+                            {
+                                var linkOpt = new DGNImportOptions { ThisViewOnly = true, Placement = ImportPlacement.Origin };
+                                targetDoc.Link(filePath, linkOpt, newDraftingView, out _);
+                            }
+                            else
+                            {
+                                var linkOpt = new DWGImportOptions { ThisViewOnly = true, Placement = ImportPlacement.Origin };
+                                targetDoc.Link(filePath, linkOpt, newDraftingView, out _);
+                            }
+                        }
+                        else
+                        {
+                            // Import mode (Revit API doc.Import)
+                            if (ext == ".dwg" || ext == ".dxf")
+                            {
+                                var impOpt = new DWGImportOptions { ThisViewOnly = true, Placement = ImportPlacement.Origin };
+                                targetDoc.Import(filePath, impOpt, newDraftingView, out _);
+                            }
+                            else if (ext == ".sat")
+                            {
+                                var impOpt = new SATImportOptions { Placement = ImportPlacement.Origin };
+                                targetDoc.Import(filePath, impOpt, newDraftingView);
+                            }
+                            else if (ext == ".dgn")
+                            {
+                                var impOpt = new DGNImportOptions { ThisViewOnly = true, Placement = ImportPlacement.Origin };
+                                targetDoc.Import(filePath, impOpt, newDraftingView, out _);
+                            }
+                            else if (ext == ".skp")
+                            {
+                                var impOpt = new SKPImportOptions { Placement = ImportPlacement.Origin };
+                                targetDoc.Import(filePath, impOpt, newDraftingView);
+                            }
+                            else
+                            {
+                                var impOpt = new DWGImportOptions { ThisViewOnly = true, Placement = ImportPlacement.Origin };
+                                targetDoc.Import(filePath, impOpt, newDraftingView, out _);
+                            }
+                        }
+
+                        t.Commit();
+                        success = true;
+                        TelemetryLogger.LogInfo($"[TransferExternalCad] {(isLinkMode ? "Vinculado" : "Importado")} '{filePath}' con éxito en vista de diseño '{uniqueViewName}' en '{targetDoc.Title}'.");
+                    }
+                    catch (Exception ex)
+                    {
+                        TelemetryLogger.LogError($"[TransferExternalCad] Error al transferir CAD '{filePath}' a '{targetDoc.Title}'", ex);
+                        if (t.GetStatus() == TransactionStatus.Started)
+                        {
+                            t.RollBack();
+                        }
+                    }
+                }
+            });
+
+            return success;
+        }
+
+        /// <summary>
         /// Genera una imagen de previsualización (PNG) de una vista de Revit o detalle CAD utilizando ImageExportOptions de la API nativa.
         /// Exporta la imagen a una carpeta temporal sanitizada en %TEMP% y devuelve la ruta absoluta del archivo generado.
         /// </summary>

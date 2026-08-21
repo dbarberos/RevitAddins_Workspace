@@ -1172,6 +1172,31 @@
                                                 </ToolTip>
                                             </CheckBox.ToolTip>
                                         </CheckBox>
+
+                                        <!-- CAD Transfer Mode (Import vs Link) -->
+                                        <TextBlock Text="TRANSFER MODE" FontSize="9" FontWeight="SemiBold" Foreground="#999" Margin="0,8,0,4"/>
+                                        <RadioButton Content="Import CAD" GroupName="CadTransferModeGroup" IsChecked="{Binding CadTransferModeImport}" FontSize="11" Margin="0,0,0,4">
+                                            <RadioButton.ToolTip>
+                                                <ToolTip MaxWidth="225">
+                                                    <TextBlock TextWrapping="Wrap" FontSize="11.5" LineHeight="15" Foreground="#333333">
+                                                        <Bold>Import CAD</Bold><LineBreak/>
+                                                        Directly imports and embeds the CAD drawing into the target Drafting View without external link dependencies.
+                                                    </TextBlock>
+                                                </ToolTip>
+                                            </RadioButton.ToolTip>
+                                        </RadioButton>
+
+                                        <RadioButton Content="Link CAD" GroupName="CadTransferModeGroup" IsChecked="{Binding CadTransferModeLink}" IsEnabled="{Binding CanSelectCadLinkMode}" FontSize="11" Margin="0,0,0,0">
+                                            <RadioButton.ToolTip>
+                                                <ToolTip MaxWidth="225">
+                                                    <TextBlock TextWrapping="Wrap" FontSize="11.5" LineHeight="15" Foreground="#333333">
+                                                        <Bold>Link CAD</Bold><LineBreak/>
+                                                        Inserts the CAD drawing as a linked reference in the Drafting View.<LineBreak/><LineBreak/>
+                                                        <Italic>Note: Only available when the source is a Local Directory or Autodesk Docs.</Italic>
+                                                    </TextBlock>
+                                                </ToolTip>
+                                            </RadioButton.ToolTip>
+                                        </RadioButton>
                                     </StackPanel>
                                 </Grid>
 
@@ -1393,6 +1418,8 @@
                                         <ColumnDefinition Width="*"/>
                                         <ColumnDefinition Width="6"/>
                                         <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="6"/>
+                                        <ColumnDefinition Width="*"/>
                                     </Grid.ColumnDefinitions>
 
                                     <!-- Activate Button -->
@@ -1443,6 +1470,42 @@
                                                 <Style.Triggers>
                                                     <Trigger Property="IsMouseOver" Value="True">
                                                         <Setter Property="Background" Value="#005999"/>
+                                                    </Trigger>
+                                                    <Trigger Property="IsEnabled" Value="False">
+                                                        <Setter Property="Background" Value="#F3F3F3"/>
+                                                        <Setter Property="Foreground" Value="#B0B0B0"/>
+                                                        <Setter Property="BorderBrush" Value="Transparent"/>
+                                                        <Setter Property="BorderThickness" Value="0"/>
+                                                    </Trigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Button.Style>
+                                    </Button>
+
+                                    <!-- Sources Button -->
+                                    <Button Grid.Column="4" Content="Sources" Command="{Binding OpenCadSourcesWindowCommand}" IsEnabled="{Binding IsCadDetailsManagerActive}" Height="28" Padding="4,4">
+                                        <Button.Style>
+                                            <Style TargetType="Button">
+                                                <Setter Property="Background" Value="#E1E1E1"/>
+                                                <Setter Property="BorderBrush" Value="#707070"/>
+                                                <Setter Property="BorderThickness" Value="1"/>
+                                                <Setter Property="Foreground" Value="Black"/>
+                                                <Setter Property="FontWeight" Value="Normal"/>
+                                                <Setter Property="FontSize" Value="11.5"/>
+                                                <Setter Property="Cursor" Value="Hand"/>
+                                                <Style.Resources>
+                                                    <Style TargetType="Border">
+                                                        <Setter Property="CornerRadius" Value="4"/>
+                                                    </Style>
+                                                </Style.Resources>
+                                                <Style.Triggers>
+                                                    <Trigger Property="IsMouseOver" Value="True">
+                                                        <Setter Property="Background" Value="#D5D5D5"/>
+                                                        <Setter Property="BorderBrush" Value="#505050"/>
+                                                    </Trigger>
+                                                    <Trigger Property="IsPressed" Value="True">
+                                                        <Setter Property="Background" Value="#C5C5C5"/>
+                                                        <Setter Property="BorderBrush" Value="#303030"/>
                                                     </Trigger>
                                                     <Trigger Property="IsEnabled" Value="False">
                                                         <Setter Property="Background" Value="#F3F3F3"/>

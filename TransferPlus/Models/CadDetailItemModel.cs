@@ -42,6 +42,24 @@ namespace TransferPlus.Models
         [ObservableProperty]
         private string _category = string.Empty;
 
+        [ObservableProperty]
+        private string _filePath = string.Empty;
+
+        [ObservableProperty]
+        private long _fileSizeBytes;
+
+        [ObservableProperty]
+        private DateTime? _lastModified;
+
+        [ObservableProperty]
+        private string _format = string.Empty;
+
+        [ObservableProperty]
+        private bool _isExternalFile;
+
+        [ObservableProperty]
+        private CadSourceType? _sourceType;
+
         public ElementId? ElementId { get; set; }
         public ElementId? OwnerViewId { get; set; }
         public ElementId? SheetId { get; set; }
@@ -56,7 +74,20 @@ namespace TransferPlus.Models
         /// </summary>
         public object? SourceDocument { get; set; }
 
-        public string DisplayCategory => !string.IsNullOrWhiteSpace(Category) ? Category : (IsDraftingView ? "Drafting Views" : (IsLinked ? "CAD Links" : "CAD Imports"));
-        public string LocationSummary => !string.IsNullOrWhiteSpace(SheetName) ? $"{ViewName} [Sheet: {SheetName}]" : ViewName;
+        public string DisplayCategory => !string.IsNullOrWhiteSpace(Category) ? Category : (IsExternalFile ? (!string.IsNullOrWhiteSpace(Format) ? $"{Format.ToUpperInvariant()} File" : "CAD File") : (IsDraftingView ? "Drafting Views" : (IsLinked ? "CAD Links" : "CAD Imports")));
+        public string LocationSummary => IsExternalFile ? (!string.IsNullOrWhiteSpace(FilePath) ? FilePath : SourceDocumentName) : (!string.IsNullOrWhiteSpace(SheetName) ? $"{ViewName} [Sheet: {SheetName}]" : ViewName);
+
+        public string DisplaySize
+        {
+            get
+            {
+                if (FileSizeBytes <= 0) return string.Empty;
+                if (FileSizeBytes < 1024) return $"{FileSizeBytes} B";
+                if (FileSizeBytes < 1024 * 1024) return $"{FileSizeBytes / 1024.0:F1} KB";
+                return $"{FileSizeBytes / (1024.0 * 1024.0):F1} MB";
+            }
+        }
+
+        public string DisplayDate => LastModified.HasValue ? LastModified.Value.ToString("yyyy-MM-dd HH:mm") : string.Empty;
     }
 }

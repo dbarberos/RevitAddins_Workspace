@@ -26,6 +26,17 @@ namespace TransferPlus.Models
             this._nombre = nombre;
             this._checked = false;
             this._esFamilySource = isFamilySource;
+            this._esCadSource = false;
+        }
+
+        public Archivo(string nombre, bool isFamilySource, bool isCadSource, CadSourceType? cadSourceType = null)
+        {
+            this._adoc = null!;
+            this._nombre = nombre;
+            this._checked = false;
+            this._esFamilySource = isFamilySource;
+            this._esCadSource = isCadSource;
+            this._cadSourceType = cadSourceType;
         }
 
         private string _nombre = string.Empty;
@@ -67,6 +78,20 @@ namespace TransferPlus.Models
         {
             get => _esFamilySource;
             set => SetProperty(ref _esFamilySource, value);
+        }
+
+        private bool _esCadSource;
+        public bool EsCadSource
+        {
+            get => _esCadSource;
+            set => SetProperty(ref _esCadSource, value);
+        }
+
+        private CadSourceType? _cadSourceType;
+        public CadSourceType? CadSourceType
+        {
+            get => _cadSourceType;
+            set => SetProperty(ref _cadSourceType, value);
         }
 
         public Action? OnCheckedPropertyChanged { get; set; }

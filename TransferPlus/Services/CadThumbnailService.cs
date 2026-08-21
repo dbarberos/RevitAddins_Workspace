@@ -52,9 +52,15 @@ namespace TransferPlus.Services
                     doc = ne.Document;
                 }
 
+                // 0. CASO EXTERNO: Archivo CAD externo de disco o nube (.dwg, .dxf, .sat, etc.)
+                if (cadItem.IsExternalFile)
+                {
+                    string info = !string.IsNullOrWhiteSpace(cadItem.SourceDocumentName) ? cadItem.SourceDocumentName : cadItem.Format.ToUpperInvariant();
+                    result = CreateFallbackCadIcon(cadItem.Name, cadItem.DisplayCategory, info);
+                }
                 // 1. CASO A: Elemento de Detalle individual 2D (FamilyInstance / FamilySymbol / Group)
                 // -> Renderizar exclusivamente el elemento aislado en vista temporal con ImageExportOptions
-                if ((cadItem.Category == "Detail Items" || cadItem.Category == "Details Groups" ||
+                else if ((cadItem.Category == "Detail Items" || cadItem.Category == "Details Groups" ||
                      cadItem.NativeElement is FamilyInstance || cadItem.NativeElement is FamilySymbol || cadItem.NativeElement is Group) &&
                     !(cadItem.NativeElement is ViewSheet) && !(cadItem.NativeElement is View) && cadItem.Category != "Sheet")
                 {

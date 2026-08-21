@@ -179,6 +179,32 @@ public partial class TransferPlusViewModel : ObservableObject
     [ObservableProperty]
     private bool _forceLevelInLevelBaseViews;
 
+    // CAD Transfer Mode (Import vs Link)
+    [ObservableProperty]
+    private bool _cadTransferModeImport = true;
+
+    [ObservableProperty]
+    private bool _cadTransferModeLink;
+
+    [ObservableProperty]
+    private bool _canSelectCadLinkMode;
+
+    partial void OnCadTransferModeImportChanged(bool value)
+    {
+        if (value)
+        {
+            CadTransferModeLink = false;
+        }
+    }
+
+    partial void OnCadTransferModeLinkChanged(bool value)
+    {
+        if (value)
+        {
+            CadTransferModeImport = false;
+        }
+    }
+
     // CAD Details Origin Radio Options
     [ObservableProperty]
     private bool _cadOriginLinksAndImports;
@@ -731,6 +757,26 @@ public partial class TransferPlusViewModel : ObservableObject
             }
         }
 
+        // 4. Load active configured CAD sources ONLY IF CAD Details Manager is ACTIVATED
+        if (IsCadDetailsManagerActive)
+        {
+            try
+            {
+                var activeCadSources = CadSourceConfigService.LoadSources().Where(s => s.IsActive).ToList();
+                foreach (var cadSource in activeCadSources)
+                {
+                    string displayName = string.IsNullOrWhiteSpace(cadSource.Name) ? cadSource.Path : cadSource.Name;
+                    var arch = new Archivo(displayName, isFamilySource: false, isCadSource: true, cadSource.SourceType);
+                    SourceDocuments.Add(arch);
+                    TransferPlus.Services.LoggerService.LogInfo($"LoadDocuments: Added active CAD source '{displayName}' ({cadSource.SourceDescription}) to dropdown list.");
+                }
+            }
+            catch (Exception ex)
+            {
+                TransferPlus.Services.LoggerService.LogError("LoadDocuments: Error loading saved CAD sources", ex);
+            }
+        }
+
         // Default selection to the active target document
         SelectedSourceDocument = SourceDocuments.FirstOrDefault(d => d.Adoc != null && d.Adoc.PathName.Equals(_targetDoc.PathName, StringComparison.OrdinalIgnoreCase))
                                  ?? SourceDocuments.FirstOrDefault();
@@ -741,7 +787,16 @@ public partial class TransferPlusViewModel : ObservableObject
 
     partial void OnSelectedSourceDocumentChanged(Archivo? value)
     {
-        TransferPlus.Services.LoggerService.LogInfo($"OnSelectedSourceDocumentChanged: Selected source changed to '{value?.Nombre ?? "null"}' (EsFamilySource={value?.EsFamilySource ?? false})");
+        TransferPlus.Services.LoggerService.LogInfo($"OnSelectedSourceDocumentChanged: Selected source changed to '{value?.Nombre ?? "null"}' (EsFamilySource={value?.EsFamilySource ?? false}, EsCadSource={value?.EsCadSource ?? false})");
+
+        // Link mode is enabled ONLY if the selected source is a Local Folder or Autodesk Docs
+        CanSelectCadLinkMode = value != null && value.EsCadSource && (value.CadSourceType == CadSourceType.Directory || value.CadSourceType == CadSourceType.AutodeskDocs);
+        if (!CanSelectCadLinkMode)
+        {
+            CadTransferModeImport = true;
+            CadTransferModeLink = false;
+        }
+
         if (value != null)
         {
             if (value.Adoc != null)
@@ -760,6 +815,22 @@ public partial class TransferPlusViewModel : ObservableObject
                 {
                     // Standard Revit Document source
                     LoadSourceItems(value.Adoc);
+                }
+            }
+            else if (value.EsCadSource)
+            {
+                // External CAD Source (Local Folder, Autodesk Docs, Azure Storage, AWS S3)
+                if (IsCadDetailsManagerActive)
+                {
+                    _ = LoadCadFilesFromSourceAsync(value.Nombre);
+                }
+                else
+                {
+                    RootNodes.Clear();
+                    _allSourceItems.Clear();
+                    _cadItems.Clear();
+                    CheckedElementsCount = 0;
+                    TransferPlus.Services.LoggerService.LogInfo($"OnSelectedSourceDocumentChanged: Selected CAD source '{value.Nombre}'. Use 'Activate' button in CAD Details Manager panel to load and transfer CAD files.");
                 }
             }
             else
@@ -913,6 +984,42 @@ public partial class TransferPlusViewModel : ObservableObject
         catch (Exception ex)
         {
             TransferPlus.Services.LoggerService.LogError("LoadFamiliesFromSourceAsync", ex);
+        }
+        finally
+        {
+            IsBusy = false;
+            StatusMessage = "Ready";
+            ProgressPercentage = 0;
+            UpdateCheckedCount();
+        }
+    }
+
+    private async Task LoadCadFilesFromSourceAsync(string sourceName)
+    {
+        TransferPlus.Services.LoggerService.LogInfo($"LoadCadFilesFromSourceAsync: Starting CAD collection from '{sourceName}'...");
+        IsBusy = true;
+        StatusMessage = "Collecting CAD files & details...";
+        ProgressPercentage = 0;
+
+        try
+        {
+            var provider = TransferPlus.Services.Providers.CadProviderFactory.CreateProvider(sourceName, _targetDoc, _familyRevitService);
+            var cadItems = await provider.GetCadItemsAsync();
+            _cadItems = cadItems.ToList();
+
+            CounterValue = _cadItems.Count;
+            CounterLabelText = _cadItems.Count == 1 ? "CAD item loaded" : "CAD items loaded";
+
+            TransferPlus.Services.LoggerService.LogInfo($"LoadCadFilesFromSourceAsync: Collection complete. Collected {_cadItems.Count} items. Initiating tree build...");
+
+            System.Windows.Threading.Dispatcher.CurrentDispatcher.Invoke(() =>
+            {
+                BuildCadTree();
+            });
+        }
+        catch (Exception ex)
+        {
+            TransferPlus.Services.LoggerService.LogError("LoadCadFilesFromSourceAsync", ex);
         }
         finally
         {
@@ -1914,6 +2021,42 @@ public partial class TransferPlusViewModel : ObservableObject
                 return;
             }
 
+            if (SelectedSourceDocument?.EsCadSource == true)
+            {
+                IsBusy = true;
+                StatusMessage = "Transferring CAD files...";
+
+                try
+                {
+                    int totalTransferred = 0;
+                    var provider = TransferPlus.Services.Providers.CadProviderFactory.CreateProvider(SelectedSourceDocument.Nombre, _targetDoc, _familyRevitService);
+
+                    foreach (var destDoc in targetDestinations)
+                    {
+                        foreach (var cadItem in checkedCadItems)
+                        {
+                            StatusMessage = $"Transferring CAD '{cadItem.Name}' to '{destDoc.Nombre}'...";
+                            bool ok = provider.TransferCadItemAsync(cadItem, destDoc.Adoc, isLinkMode: CadTransferModeLink).GetAwaiter().GetResult();
+                            if (ok) totalTransferred++;
+                        }
+                    }
+
+                    TransferPlus.Services.LoggerService.LogInfo($"Transfer: Completed external CAD transfer. Transferred {totalTransferred} item(s).");
+                    TaskDialog.Show("TransferPlus", $"CAD files transfer completed successfully! Transferred {totalTransferred} item(s) to destination model(s).");
+                }
+                catch (Exception ex)
+                {
+                    TelemetryLogger.LogError("Error during external CAD transfer", ex);
+                    TaskDialog.Show("TransferPlus Error", $"An error occurred during external CAD transfer: {ex.Message}");
+                }
+                finally
+                {
+                    IsBusy = false;
+                }
+
+                return;
+            }
+
             if (SelectedSourceDocument?.Adoc == null)
             {
                 TaskDialog.Show("TransferPlus", "Selected source document is invalid or not available.");
@@ -2783,6 +2926,25 @@ public partial class TransferPlusViewModel : ObservableObject
         catch (Exception ex)
         {
             TransferPlus.Services.LoggerService.LogError("OpenSourcesWindow", ex);
+        }
+    }
+
+    [RelayCommand]
+    private void OpenCadSourcesWindow()
+    {
+        try
+        {
+            var vm = new CadSourcesViewModel();
+            var view = new Views.CadSourcesWindow { DataContext = vm };
+            if (view.ShowDialog() == true)
+            {
+                LoadDocuments();
+                TransferPlus.Services.LoggerService.LogInfo("OpenCadSourcesWindow: Configuración de fuentes CAD guardada. Desplegable 'Apply transfer from' actualizado.");
+            }
+        }
+        catch (Exception ex)
+        {
+            TransferPlus.Services.LoggerService.LogError("OpenCadSourcesWindow", ex);
         }
     }
 
