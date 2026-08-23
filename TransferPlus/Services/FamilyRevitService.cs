@@ -1252,6 +1252,44 @@ namespace TransferPlus.Services
                 var elem = doc.GetElement(elementId);
                 if (elem == null) return null;
 
+                // 1. Si el elemento es un FamilySymbol o FamilyInstance con Family accesible, intentar renderizado de familia directo
+                if (elem is FamilySymbol fs && fs.Family != null)
+                {
+                    try
+                    {
+                        string? famPreview = GenerateFamilyRenderedPreview(fs.Family, CadThumbnailService.ActiveDocument);
+                        if (!string.IsNullOrWhiteSpace(famPreview) && File.Exists(famPreview))
+                        {
+                            return famPreview;
+                        }
+                    }
+                    catch { }
+                }
+                else if (elem is FamilyInstance fi && fi.Symbol != null && fi.Symbol.Family != null)
+                {
+                    try
+                    {
+                        string? famPreview = GenerateFamilyRenderedPreview(fi.Symbol.Family, CadThumbnailService.ActiveDocument);
+                        if (!string.IsNullOrWhiteSpace(famPreview) && File.Exists(famPreview))
+                        {
+                            return famPreview;
+                        }
+                    }
+                    catch { }
+                }
+
+                // 2. Determinar documento de trabajo modificable (workDoc).
+                // Si doc es de solo lectura / vinculado, usamos CadThumbnailService.ActiveDocument como anfitrión temporal para la transacción y vista temporal.
+                Document? workDoc = (doc.IsLinked || doc.IsReadOnly) ? (CadThumbnailService.ActiveDocument ?? doc) : doc;
+                if (workDoc == null || workDoc.IsLinked || workDoc.IsReadOnly)
+                {
+                    if (ownerViewId != null && ownerViewId != ElementId.InvalidElementId)
+                    {
+                        return GenerateViewPreview(doc, ownerViewId);
+                    }
+                    return null;
+                }
+
                 // Crear carpeta temporal sanitizada bajo %TEMP%\TransferPlus_Previews
                 string tempDir = Path.Combine(Path.GetTempPath(), "TransferPlus_Previews", Guid.NewGuid().ToString("N"));
                 tempDir = Path.GetFullPath(tempDir);
@@ -1263,8 +1301,8 @@ namespace TransferPlus.Services
                 string baseFilePath = Path.Combine(tempDir, "preview");
                 baseFilePath = Path.GetFullPath(baseFilePath);
 
-                // Buscar el ViewFamilyType para DraftingView
-                var draftingType = new FilteredElementCollector(doc)
+                // Buscar el ViewFamilyType para DraftingView en workDoc
+                var draftingType = new FilteredElementCollector(workDoc)
                     .OfClass(typeof(ViewFamilyType))
                     .Cast<ViewFamilyType>()
                     .FirstOrDefault(vft => vft.ViewFamily == ViewFamily.Drafting);
@@ -1273,47 +1311,103 @@ namespace TransferPlus.Services
 
                 string? resultPath = null;
 
-                using (var tx = new Transaction(doc, "Generate Isolated Element Preview"))
+                using (var tx = new Transaction(workDoc, "Generate Isolated Element Preview"))
                 {
                     WarningSwallower.AttachToTransaction(tx);
                     tx.Start();
 
                     try
                     {
-                        // 1. Crear una vista de diseño (Drafting View) temporal en blanco
-                        var tempView = ViewDrafting.Create(doc, draftingType.Id);
+                        // 1. Crear una vista de diseño (Drafting View) temporal en blanco en workDoc
+                        var tempView = ViewDrafting.Create(workDoc, draftingType.Id);
                         tempView.Name = $"_TransferPlus_TempPreview_{Guid.NewGuid():N}";
                         tempView.Scale = 1;
 
                         Element? placedElem = null;
 
                         // 2. Colocar o copiar el elemento aislado en la vista temporal
-                        if (elem is FamilyInstance fi && fi.Symbol != null)
+                        if (workDoc == doc)
                         {
-                            if (!fi.Symbol.IsActive)
+                            // Caso A: El elemento está en el mismo documento de trabajo activo
+                            if (elem is FamilyInstance localFi && localFi.Symbol != null)
                             {
-                                fi.Symbol.Activate();
+                                if (!localFi.Symbol.IsActive)
+                                {
+                                    localFi.Symbol.Activate();
+                                }
+                                placedElem = workDoc.Create.NewFamilyInstance(XYZ.Zero, localFi.Symbol, tempView);
                             }
-                            placedElem = doc.Create.NewFamilyInstance(XYZ.Zero, fi.Symbol, tempView);
-                        }
-                        else if (elem is FamilySymbol sym)
-                        {
-                            if (!sym.IsActive)
+                            else if (elem is FamilySymbol localSym)
                             {
-                                sym.Activate();
+                                if (!localSym.IsActive)
+                                {
+                                    localSym.Activate();
+                                }
+                                placedElem = workDoc.Create.NewFamilyInstance(XYZ.Zero, localSym, tempView);
                             }
-                            placedElem = doc.Create.NewFamilyInstance(XYZ.Zero, sym, tempView);
-                        }
-                        else if (ownerViewId != null && ownerViewId != ElementId.InvalidElementId && doc.GetElement(ownerViewId) is View srcView)
-                        {
-                            var copied = ElementTransformUtils.CopyElements(srcView, new List<ElementId> { elem.Id }, tempView, Transform.Identity, new CopyPasteOptions());
-                            if (copied.Count > 0)
+                            else if (ownerViewId != null && ownerViewId != ElementId.InvalidElementId && doc.GetElement(ownerViewId) is View srcView)
                             {
-                                placedElem = doc.GetElement(copied.First());
+                                var copied = ElementTransformUtils.CopyElements(srcView, new List<ElementId> { elem.Id }, tempView, Transform.Identity, new CopyPasteOptions());
+                                if (copied.Count > 0)
+                                {
+                                    placedElem = workDoc.GetElement(copied.First());
+                                }
+                            }
+                            else
+                            {
+                                var copied = ElementTransformUtils.CopyElements(doc, new List<ElementId> { elem.Id }, tempView.Document, Transform.Identity, new CopyPasteOptions());
+                                if (copied.Count > 0)
+                                {
+                                    placedElem = workDoc.GetElement(copied.First());
+                                }
+                            }
+                        }
+                        else
+                        {
+                            // Caso B: El elemento está en un documento vinculado (doc != workDoc)
+                            if (elem is FamilySymbol linkedSym)
+                            {
+                                var copiedIds = ElementTransformUtils.CopyElements(doc, new List<ElementId> { linkedSym.Id }, workDoc, Transform.Identity, new CopyPasteOptions());
+                                if (copiedIds.Count > 0 && workDoc.GetElement(copiedIds.First()) is FamilySymbol workSym)
+                                {
+                                    if (!workSym.IsActive)
+                                    {
+                                        workSym.Activate();
+                                    }
+                                    placedElem = workDoc.Create.NewFamilyInstance(XYZ.Zero, workSym, tempView);
+                                }
+                            }
+                            else if (elem is FamilyInstance linkedFi && linkedFi.Symbol != null)
+                            {
+                                var copiedIds = ElementTransformUtils.CopyElements(doc, new List<ElementId> { linkedFi.Symbol.Id }, workDoc, Transform.Identity, new CopyPasteOptions());
+                                if (copiedIds.Count > 0 && workDoc.GetElement(copiedIds.First()) is FamilySymbol workSym)
+                                {
+                                    if (!workSym.IsActive)
+                                    {
+                                        workSym.Activate();
+                                    }
+                                    placedElem = workDoc.Create.NewFamilyInstance(XYZ.Zero, workSym, tempView);
+                                }
+                            }
+                            else if (ownerViewId != null && ownerViewId != ElementId.InvalidElementId && doc.GetElement(ownerViewId) is View linkedSrcView)
+                            {
+                                var copied = ElementTransformUtils.CopyElements(linkedSrcView, new List<ElementId> { elem.Id }, tempView, Transform.Identity, new CopyPasteOptions());
+                                if (copied.Count > 0)
+                                {
+                                    placedElem = workDoc.GetElement(copied.First());
+                                }
+                            }
+                            else
+                            {
+                                var copied = ElementTransformUtils.CopyElements(doc, new List<ElementId> { elem.Id }, workDoc, Transform.Identity, new CopyPasteOptions());
+                                if (copied.Count > 0)
+                                {
+                                    placedElem = workDoc.GetElement(copied.First());
+                                }
                             }
                         }
 
-                        doc.Regenerate();
+                        workDoc.Regenerate();
 
                         // 3. Ajustar CropBox ceñido al elemento si está disponible
                         if (placedElem != null)
@@ -1354,14 +1448,14 @@ namespace TransferPlus.Services
 
                         options.SetViewsAndSheets(new List<ElementId> { tempView.Id });
 
-                        doc.ExportImage(options);
+                        workDoc.ExportImage(options);
 
                         var generatedFiles = Directory.GetFiles(tempDir, "*.png");
                         if (generatedFiles.Length > 0)
                         {
                             resultPath = generatedFiles[0];
                             OptimizeImageFraming(resultPath);
-                            TelemetryLogger.LogInfo($"[GenerateElementPreview] Vista previa aislada generada exitosamente para '{elem.Name}': {resultPath}");
+                            TelemetryLogger.LogInfo($"[GenerateElementPreview] Vista previa aislada generada exitosamente para '{elem.Name}' (workDoc='{workDoc.Title}'): {resultPath}");
                         }
                     }
                     catch (Exception exInner)
@@ -1807,6 +1901,131 @@ namespace TransferPlus.Services
                     rfaDoc?.Close(false);
                 }
                 catch { }
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// Genera una imagen de previsualización (PNG) renderizada para un archivo CAD externo (.dwg, .dxf, .sat, .dgn, .skp, etc.)
+        /// creando una vista de diseño temporal (DraftingView), importando el archivo en la vista, exportándola con ImageExportOptions
+        /// y revirtiendo la transacción (RollBack) inmediatamente para no modificar el documento.
+        /// </summary>
+        public string? GenerateExternalCadPreview(Document doc, string filePath)
+        {
+            if (doc == null || string.IsNullOrWhiteSpace(filePath) || !File.Exists(filePath))
+            {
+                return null;
+            }
+
+            if (doc.IsLinked || doc.IsReadOnly)
+            {
+                doc = CadThumbnailService.ActiveDocument ?? doc;
+            }
+
+            if (doc == null || doc.IsLinked || doc.IsReadOnly)
+            {
+                return null;
+            }
+
+            try
+            {
+                string tempDir = Path.Combine(Path.GetTempPath(), "TransferPlus_Previews", Guid.NewGuid().ToString("N"));
+                tempDir = Path.GetFullPath(tempDir);
+                if (!Directory.Exists(tempDir))
+                {
+                    Directory.CreateDirectory(tempDir);
+                }
+
+                string baseFilePath = Path.Combine(tempDir, "preview");
+                baseFilePath = Path.GetFullPath(baseFilePath);
+
+                var draftingType = new FilteredElementCollector(doc)
+                    .OfClass(typeof(ViewFamilyType))
+                    .Cast<ViewFamilyType>()
+                    .FirstOrDefault(vft => vft.ViewFamily == ViewFamily.Drafting);
+
+                if (draftingType == null) return null;
+
+                string? resultPath = null;
+
+                using (var tx = new Transaction(doc, "Generate External CAD Preview"))
+                {
+                    WarningSwallower.AttachToTransaction(tx);
+                    tx.Start();
+
+                    try
+                    {
+                        var tempView = ViewDrafting.Create(doc, draftingType.Id);
+                        tempView.Name = $"_TransferPlus_TempCad_{Guid.NewGuid():N}";
+                        tempView.Scale = 1;
+
+                        string ext = Path.GetExtension(filePath).ToLowerInvariant();
+
+                        if (ext == ".sat")
+                        {
+                            var impOpt = new SATImportOptions { Placement = ImportPlacement.Origin };
+                            doc.Import(filePath, impOpt, tempView);
+                        }
+                        else if (ext == ".skp")
+                        {
+                            var impOpt = new SKPImportOptions { Placement = ImportPlacement.Origin };
+                            doc.Import(filePath, impOpt, tempView);
+                        }
+                        else if (ext == ".dgn")
+                        {
+                            var impOpt = new DGNImportOptions { ThisViewOnly = true, Placement = ImportPlacement.Origin };
+                            doc.Import(filePath, impOpt, tempView, out _);
+                        }
+                        else
+                        {
+                            var impOpt = new DWGImportOptions { ThisViewOnly = true, Placement = ImportPlacement.Origin };
+                            doc.Import(filePath, impOpt, tempView, out _);
+                        }
+
+                        doc.Regenerate();
+
+                        var options = new ImageExportOptions
+                        {
+                            ExportRange = ExportRange.SetOfViews,
+                            ZoomType = ZoomFitType.FitToPage,
+                            PixelSize = 512,
+                            ImageResolution = ImageResolution.DPI_72,
+                            ShadowViewsFileType = ImageFileType.PNG,
+                            HLRandWFViewsFileType = ImageFileType.PNG,
+                            FilePath = baseFilePath,
+                            FitDirection = FitDirectionType.Horizontal
+                        };
+
+                        options.SetViewsAndSheets(new List<ElementId> { tempView.Id });
+                        doc.ExportImage(options);
+
+                        var generatedFiles = Directory.GetFiles(tempDir, "*.png");
+                        if (generatedFiles.Length > 0)
+                        {
+                            resultPath = generatedFiles[0];
+                            OptimizeImageFraming(resultPath);
+                            TelemetryLogger.LogInfo($"[GenerateExternalCadPreview] Vista previa CAD renderizada exitosamente para '{Path.GetFileName(filePath)}': {resultPath}");
+                        }
+                    }
+                    catch (Exception exInner)
+                    {
+                        TelemetryLogger.LogWarning($"[GenerateExternalCadPreview] Excepción importando vista previa temporal para '{filePath}': {exInner.Message}");
+                    }
+                    finally
+                    {
+                        if (tx.HasStarted() && !tx.HasEnded())
+                        {
+                            tx.RollBack();
+                        }
+                    }
+                }
+
+                return resultPath;
+            }
+            catch (Exception ex)
+            {
+                TelemetryLogger.LogExceptionSilently($"[GenerateExternalCadPreview] Error generando vista previa para '{filePath}'", ex);
             }
 
             return null;

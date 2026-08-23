@@ -34,12 +34,15 @@ public class OpenDocumentCadProvider : ICadProvider
 
         try
         {
-            TelemetryLogger.LogInfo($"OpenDocumentCadProvider: Recolectando instancias CAD y vistas de diseño en modelo abierto '{_sourceDoc.Title}'...");
+            TelemetryLogger.LogInfo($"OpenDocumentCadProvider: Recolectando todos los detalles y CADs en modelo abierto '{_sourceDoc.Title}'...");
             
-            var cadInstances = CadInstanceProvider.GetCadInstances(_sourceDoc);
-            result.AddRange(cadInstances);
+            result.AddRange(DraftingViewProvider.GetDraftingViews(_sourceDoc));
+            result.AddRange(CadInstanceProvider.GetCadInstances(_sourceDoc));
+            result.AddRange(DetailViewProvider.GetDetailViews(_sourceDoc));
+            result.AddRange(DetailGroupProvider.GetDetailGroups(_sourceDoc));
+            result.AddRange(DetailItemProvider.GetDetailItems(_sourceDoc));
 
-            TelemetryLogger.LogInfo($"OpenDocumentCadProvider: Se obtuvieron {result.Count} elementos CAD en modelo abierto '{_sourceDoc.Title}'.");
+            TelemetryLogger.LogInfo($"OpenDocumentCadProvider: Se obtuvieron {result.Count} elementos CAD/detalles en modelo abierto '{_sourceDoc.Title}'.");
         }
         catch (Exception ex)
         {
@@ -55,8 +58,21 @@ public class OpenDocumentCadProvider : ICadProvider
 
         if (cadItem.ElementId != null && cadItem.ElementId != ElementId.InvalidElementId)
         {
-            int count = _familyRevitService.TransferCadInstancesToDraftingViews(_sourceDoc, destinationDoc, new List<ElementId> { cadItem.ElementId });
-            return Task.FromResult(count > 0);
+            if (cadItem.IsDraftingView || cadItem.NativeElement is View)
+            {
+                int count = _familyRevitService.TransferDraftingViews(_sourceDoc, destinationDoc, new List<ElementId> { cadItem.ElementId });
+                return Task.FromResult(count > 0);
+            }
+            else if (cadItem.NativeElement is ImportInstance)
+            {
+                int count = _familyRevitService.TransferCadInstancesToDraftingViews(_sourceDoc, destinationDoc, new List<ElementId> { cadItem.ElementId });
+                return Task.FromResult(count > 0);
+            }
+            else
+            {
+                int count = _familyRevitService.TransferDraftingViews(_sourceDoc, destinationDoc, new List<ElementId> { cadItem.ElementId });
+                return Task.FromResult(count > 0);
+            }
         }
 
         return Task.FromResult(false);

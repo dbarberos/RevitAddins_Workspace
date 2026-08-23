@@ -1187,6 +1187,16 @@
                                         </RadioButton>
 
                                         <RadioButton Content="Link CAD" GroupName="CadTransferModeGroup" IsChecked="{Binding CadTransferModeLink}" IsEnabled="{Binding CanSelectCadLinkMode}" FontSize="11" Margin="0,0,0,0">
+                                            <RadioButton.Style>
+                                                <Style TargetType="RadioButton">
+                                                    <Setter Property="Foreground" Value="#333333"/>
+                                                    <Style.Triggers>
+                                                        <Trigger Property="IsEnabled" Value="False">
+                                                            <Setter Property="Foreground" Value="#B0B0B0"/>
+                                                        </Trigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </RadioButton.Style>
                                             <RadioButton.ToolTip>
                                                 <ToolTip MaxWidth="225">
                                                     <TextBlock TextWrapping="Wrap" FontSize="11.5" LineHeight="15" Foreground="#333333">

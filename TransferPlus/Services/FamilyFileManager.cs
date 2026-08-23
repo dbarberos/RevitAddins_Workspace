@@ -64,6 +64,45 @@ namespace TransferPlus.Services
             return fullPath;
         }
 
+        private static readonly string BaseCadTempDirectory = Path.GetFullPath(Path.Combine(Path.GetTempPath(), "TransferPlus_CADCache"));
+
+        /// <summary>
+        /// Crea un archivo CAD local temporal (.dwg, .dxf, .sat, etc.) a partir de un Stream de datos,
+        /// preservando su extensión original y aplicando validación estricta de Path Traversal.
+        /// </summary>
+        public static string CreateCadLocalFile(Stream cadStream, string rawCadFileName)
+        {
+            if (cadStream == null) throw new ArgumentNullException(nameof(cadStream));
+            if (string.IsNullOrWhiteSpace(rawCadFileName)) throw new ArgumentException("Nombre de archivo CAD no válido.", nameof(rawCadFileName));
+
+            if (!Directory.Exists(BaseCadTempDirectory))
+            {
+                Directory.CreateDirectory(BaseCadTempDirectory);
+            }
+
+            // Sanitizar el nombre del archivo eliminando caracteres no válidos
+            string safeFileName = string.Join("_", rawCadFileName.Split(Path.GetInvalidFileNameChars()));
+
+            // Construir y resolver la ruta absoluta estricta
+            string combinedPath = Path.Combine(BaseCadTempDirectory, safeFileName);
+            string fullPath = Path.GetFullPath(combinedPath);
+
+            // Validación estricta de Path Traversal: la ruta completa debe residir dentro del directorio base
+            if (!fullPath.StartsWith(BaseCadTempDirectory, StringComparison.OrdinalIgnoreCase))
+            {
+                TelemetryLogger.LogWarning($"Intento de Path Traversal interceptado para la ruta CAD: '{fullPath}'");
+                throw new SecurityException("Acceso Denegado: Se ha detectado una violación de Path Traversal al intentar escribir el archivo CAD temporal.");
+            }
+
+            using (var fileStream = new FileStream(fullPath, FileMode.Create, FileAccess.Write, FileShare.None))
+            {
+                cadStream.CopyTo(fileStream);
+            }
+
+            TelemetryLogger.LogInfo($"Archivo local CAD creado de forma segura en: {fullPath}");
+            return fullPath;
+        }
+
         /// <summary>
         /// Copia un archivo .rfa local existente a la carpeta de trabajo temporal de forma segura.
         /// </summary>

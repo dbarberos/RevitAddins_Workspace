@@ -232,11 +232,18 @@ public static class AwsS3StorageService
         }
     }
 
-    public static async Task<string> DownloadCadBlobAsync(CadSourceItemModel model, string objectKey, string localTempDir)
+    public static async Task<string> DownloadCadBlobAsync(CadSourceItemModel model, string objectKey, string? localTempDir = null)
     {
+        localTempDir ??= Path.Combine(Path.GetTempPath(), "TransferPlus_CADCache");
         Directory.CreateDirectory(localTempDir);
         string fileName = Path.GetFileName(objectKey);
-        string localTempFilePath = Path.Combine(localTempDir, fileName);
+        string safeFileName = string.Join("_", fileName.Split(Path.GetInvalidFileNameChars()));
+        string localTempFilePath = Path.Combine(localTempDir, safeFileName);
+
+        if (File.Exists(localTempFilePath) && new FileInfo(localTempFilePath).Length > 0)
+        {
+            return localTempFilePath;
+        }
 
         using var s3 = S3ClientFactory.Create(model);
         var getRequest = new GetObjectRequest

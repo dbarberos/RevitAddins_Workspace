@@ -7,7 +7,7 @@ using TransferPlus.Models;
 namespace TransferPlus.Services.Providers
 {
     /// <summary>
-    /// Proveedor de datos para recolectar Grupos de Detalle 2D (Detail Groups) de un documento de Revit.
+    /// Proveedor de datos para recolectar Grupos de Detalle 2D (Detail Groups) de un documento de Revit (incluidos modelos vinculados).
     /// </summary>
     public class DetailGroupProvider
     {
@@ -18,107 +18,181 @@ namespace TransferPlus.Services.Providers
 
             try
             {
-                // 1. Mapeo de Vistas colocadas en Planos (ViewId -> SheetNumber / Name y SheetId)
+                // 1. Mapeo seguro de Vistas colocadas en Planos (ViewId -> SheetNumber / Name y SheetId)
                 var viewToSheetMap = new Dictionary<ElementId, (ElementId SheetId, string SheetName)>();
-                var viewports = new FilteredElementCollector(doc)
-                    .OfClass(typeof(Viewport))
-                    .Cast<Viewport>()
-                    .ToList();
-
-                foreach (var vp in viewports)
+                try
                 {
-                    try
-                    {
-                        var viewId = vp.ViewId;
-                        var sheetId = vp.SheetId;
-                        if (sheetId != ElementId.InvalidElementId && doc.GetElement(sheetId) is ViewSheet sheet)
-                        {
-                            viewToSheetMap[viewId] = (sheet.Id, $"{sheet.SheetNumber} - {sheet.Name}");
-                        }
-                    }
-                    catch { }
-                }
+                    var viewports = new FilteredElementCollector(doc)
+                        .OfClass(typeof(Viewport))
+                        .Cast<Viewport>()
+                        .ToList();
 
-                // 2. Recolectar instancias de Grupos de Detalle colocadas en vistas
-                var placedGroups = new FilteredElementCollector(doc)
-                    .OfClass(typeof(Group))
-                    .WhereElementIsNotElementType()
-                    .Cast<Group>()
-                    .Where(g => (g.GroupType != null && g.GroupType.Category != null && g.GroupType.Category.Id.Value == (int)BuiltInCategory.OST_IOSDetailGroups) ||
-                                (g.Category != null && g.Category.Id.Value == (int)BuiltInCategory.OST_IOSDetailGroups))
-                    .ToList();
+                    foreach (var vp in viewports)
+                    {
+                        try
+                        {
+                            var viewId = vp.ViewId;
+                            var sheetId = vp.SheetId;
+                            if (sheetId != ElementId.InvalidElementId && doc.GetElement(sheetId) is ViewSheet sheet)
+                            {
+                                viewToSheetMap[viewId] = (sheet.Id, $"{sheet.SheetNumber} - {sheet.Name}");
+                            }
+                        }
+                        catch { }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    LoggerService.LogWarning($"DetailGroupProvider: No se pudieron mapear viewports en '{doc.Title}': {ex.Message}");
+                }
 
                 var processedTypeIds = new HashSet<ElementId>();
 
-                foreach (var group in placedGroups)
+                // 2. Recolectar instancias de Grupos de Detalle colocadas en vistas
+                try
                 {
-                    string groupName = !string.IsNullOrWhiteSpace(group.Name) ? group.Name : (group.GroupType?.Name ?? $"Group_{group.Id.Value}");
-                    string viewName = "Model / Unassigned View";
-                    string sheetName = string.Empty;
-                    ElementId? sheetId = null;
+                    var allGroups = new FilteredElementCollector(doc)
+                        .OfClass(typeof(Group))
+                        .WhereElementIsNotElementType()
+                        .Cast<Group>()
+                        .ToList();
 
-                    if (group.OwnerViewId != ElementId.InvalidElementId && doc.GetElement(group.OwnerViewId) is View ownerView)
+                    foreach (var group in allGroups)
                     {
-                        viewName = ownerView.Name;
-                        if (viewToSheetMap.TryGetValue(ownerView.Id, out var sInfo))
+                        try
                         {
-                            sheetName = sInfo.SheetName;
-                            sheetId = sInfo.SheetId;
+                            if (!group.IsValidObject) continue;
+
+                            bool isDetailGroup = false;
+                            try
+                            {
+                                if (group.Category != null && group.Category.Id.Value == (long)BuiltInCategory.OST_IOSDetailGroups)
+                                {
+                                    isDetailGroup = true;
+                                }
+                            }
+                            catch { }
+
+                            if (!isDetailGroup && group.GroupType != null)
+                            {
+                                try
+                                {
+                                    if (group.GroupType.Category != null && group.GroupType.Category.Id.Value == (long)BuiltInCategory.OST_IOSDetailGroups)
+                                    {
+                                        isDetailGroup = true;
+                                    }
+                                }
+                                catch { }
+                            }
+
+                            // Si el grupo está en una vista específica (OwnerViewId), es un grupo 2D de detalle
+                            if (!isDetailGroup && group.OwnerViewId != ElementId.InvalidElementId)
+                            {
+                                isDetailGroup = true;
+                            }
+
+                            if (!isDetailGroup) continue;
+
+                            string groupName = !string.IsNullOrWhiteSpace(group.Name) ? group.Name : (group.GroupType?.Name ?? $"Group_{group.Id.Value}");
+                            string viewName = "Model / Unassigned View";
+                            string sheetName = string.Empty;
+                            ElementId? sheetId = null;
+
+                            if (group.OwnerViewId != ElementId.InvalidElementId && doc.GetElement(group.OwnerViewId) is View ownerView)
+                            {
+                                viewName = ownerView.Name;
+                                if (viewToSheetMap.TryGetValue(ownerView.Id, out var sInfo))
+                                {
+                                    sheetName = sInfo.SheetName;
+                                    sheetId = sInfo.SheetId;
+                                }
+                            }
+
+                            if (group.GetTypeId() != ElementId.InvalidElementId)
+                            {
+                                processedTypeIds.Add(group.GetTypeId());
+                            }
+
+                            var item = new CadDetailItemModel
+                            {
+                                Name = groupName,
+                                ViewName = viewName,
+                                SheetName = sheetName,
+                                SheetId = sheetId,
+                                Category = "Detail Groups",
+                                IsDraftingView = false,
+                                IsLinked = doc.IsLinked,
+                                CadCount = 0,
+                                ElementId = group.Id,
+                                OwnerViewId = group.OwnerViewId,
+                                NativeElement = group,
+                                SourceDocument = doc,
+                                SourceDocumentName = doc.Title
+                            };
+
+                            results.Add(item);
+                        }
+                        catch (Exception ex)
+                        {
+                            LoggerService.LogWarning($"DetailGroupProvider: Error procesando Group individual: {ex.Message}");
                         }
                     }
-
-                    if (group.GetTypeId() != ElementId.InvalidElementId)
-                    {
-                        processedTypeIds.Add(group.GetTypeId());
-                    }
-
-                    var item = new CadDetailItemModel
-                    {
-                        Name = groupName,
-                        ViewName = viewName,
-                        SheetName = sheetName,
-                        SheetId = sheetId,
-                        Category = "Detail Groups",
-                        IsDraftingView = false,
-                        IsLinked = false,
-                        CadCount = 0,
-                        ElementId = group.Id,
-                        OwnerViewId = group.OwnerViewId,
-                        NativeElement = group,
-                        SourceDocument = doc,
-                        SourceDocumentName = doc.Title
-                    };
-
-                    results.Add(item);
+                }
+                catch (Exception ex)
+                {
+                    LoggerService.LogWarning($"DetailGroupProvider: Error recolectando Group instances en '{doc.Title}': {ex.Message}");
                 }
 
                 // 3. Recolectar Tipos de Grupos de Detalle no instanciados en el modelo
-                var groupTypes = new FilteredElementCollector(doc)
-                    .OfClass(typeof(GroupType))
-                    .Cast<GroupType>()
-                    .Where(gt => gt.Category != null && gt.Category.Id.Value == (int)BuiltInCategory.OST_IOSDetailGroups && !processedTypeIds.Contains(gt.Id))
-                    .OrderBy(gt => gt.Name)
-                    .ToList();
-
-                foreach (var gt in groupTypes)
+                try
                 {
-                    var item = new CadDetailItemModel
-                    {
-                        Name = gt.Name,
-                        ViewName = "(Group Definition / Unplaced)",
-                        SheetName = string.Empty,
-                        Category = "Detail Groups",
-                        IsDraftingView = false,
-                        IsLinked = false,
-                        CadCount = 0,
-                        ElementId = gt.Id,
-                        OwnerViewId = ElementId.InvalidElementId,
-                        NativeElement = gt,
-                        SourceDocument = doc,
-                        SourceDocumentName = doc.Title
-                    };
+                    var groupTypes = new FilteredElementCollector(doc)
+                        .OfClass(typeof(GroupType))
+                        .Cast<GroupType>()
+                        .ToList();
 
-                    results.Add(item);
+                    foreach (var gt in groupTypes)
+                    {
+                        try
+                        {
+                            if (!gt.IsValidObject || processedTypeIds.Contains(gt.Id)) continue;
+
+                            bool isDetailType = false;
+                            try
+                            {
+                                if (gt.Category != null && gt.Category.Id.Value == (long)BuiltInCategory.OST_IOSDetailGroups)
+                                {
+                                    isDetailType = true;
+                                }
+                            }
+                            catch { }
+
+                            if (!isDetailType) continue;
+
+                            var item = new CadDetailItemModel
+                            {
+                                Name = gt.Name,
+                                ViewName = "(Group Definition / Unplaced)",
+                                SheetName = string.Empty,
+                                Category = "Detail Groups",
+                                IsDraftingView = false,
+                                IsLinked = doc.IsLinked,
+                                CadCount = 0,
+                                ElementId = gt.Id,
+                                OwnerViewId = ElementId.InvalidElementId,
+                                NativeElement = gt,
+                                SourceDocument = doc,
+                                SourceDocumentName = doc.Title
+                            };
+
+                            results.Add(item);
+                        }
+                        catch { }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    LoggerService.LogWarning($"DetailGroupProvider: Error recolectando GroupTypes en '{doc.Title}': {ex.Message}");
                 }
 
                 LoggerService.LogInfo($"DetailGroupProvider: Recolectados {results.Count} grupos de detalle en '{doc.Title}'.");

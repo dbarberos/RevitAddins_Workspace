@@ -653,6 +653,8 @@ public partial class TransferPlusViewModel : ObservableObject
         _familyRevitService = new FamilyRevitService { RevitApp = app?.Application };
         FamilyThumbnailService.ActiveDocument = targetDoc;
         FamilyThumbnailService.CurrentApplication = app?.Application;
+        CadThumbnailService.ActiveDocument = targetDoc;
+        CadThumbnailService.CurrentApplication = app?.Application;
         LoadDocuments();
 
         // Register to receive messages when elements check state changes

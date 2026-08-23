@@ -241,6 +241,14 @@ public static class AzureStorageService
         if (string.IsNullOrWhiteSpace(containerName)) throw new ArgumentException("Container name is required.", nameof(containerName));
         if (string.IsNullOrWhiteSpace(blobName)) throw new ArgumentException("Blob name is required.", nameof(blobName));
 
+        string cadFileName = Path.GetFileName(blobName);
+        string safeFileName = string.Join("_", cadFileName.Split(Path.GetInvalidFileNameChars()));
+        string expectedPath = Path.Combine(Path.GetTempPath(), "TransferPlus_CADCache", safeFileName);
+        if (File.Exists(expectedPath) && new FileInfo(expectedPath).Length > 0)
+        {
+            return expectedPath;
+        }
+
         var containerClient = new BlobContainerClient(connectionString, containerName);
         var blobClient = containerClient.GetBlobClient(blobName);
 
@@ -248,8 +256,7 @@ public static class AzureStorageService
         blobClient.DownloadTo(memoryStream);
         memoryStream.Position = 0;
 
-        string cadFileName = Path.GetFileName(blobName);
-        string localTempFilePath = FamilyFileManager.CreateFamilyLocalFile(memoryStream, cadFileName);
+        string localTempFilePath = FamilyFileManager.CreateCadLocalFile(memoryStream, cadFileName);
 
         TelemetryLogger.LogInfo($"Archivo CAD de Azure '{blobName}' descargado en: {localTempFilePath}");
         return localTempFilePath;

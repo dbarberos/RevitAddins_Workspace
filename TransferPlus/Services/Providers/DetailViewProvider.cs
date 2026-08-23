@@ -7,7 +7,7 @@ using TransferPlus.Models;
 namespace TransferPlus.Services.Providers
 {
     /// <summary>
-    /// Proveedor de datos para recolectar Vistas de Detalle (Detail Views y Detail Callouts) de un documento de Revit.
+    /// Proveedor de datos para recolectar Vistas de Detalle (Detail Views, Detail Sections y Detail Callouts) de un documento de Revit (incluidos modelos vinculados).
     /// </summary>
     public class DetailViewProvider
     {
@@ -18,87 +18,148 @@ namespace TransferPlus.Services.Providers
 
             try
             {
-                // 1. Mapeo de Vistas colocadas en Planos (ViewId -> SheetNumber / Name y SheetId)
+                // 1. Mapeo seguro de Vistas colocadas en Planos (ViewId -> SheetNumber / Name y SheetId)
                 var viewToSheetMap = new Dictionary<ElementId, (ElementId SheetId, string SheetName)>();
-                var viewports = new FilteredElementCollector(doc)
-                    .OfClass(typeof(Viewport))
-                    .Cast<Viewport>()
+                try
+                {
+                    var viewports = new FilteredElementCollector(doc)
+                        .OfClass(typeof(Viewport))
+                        .Cast<Viewport>()
+                        .ToList();
+
+                    foreach (var vp in viewports)
+                    {
+                        try
+                        {
+                            var viewId = vp.ViewId;
+                            var sheetId = vp.SheetId;
+                            if (sheetId != ElementId.InvalidElementId && doc.GetElement(sheetId) is ViewSheet sheet)
+                            {
+                                viewToSheetMap[viewId] = (sheet.Id, $"{sheet.SheetNumber} - {sheet.Name}");
+                            }
+                        }
+                        catch { }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    LoggerService.LogWarning($"DetailViewProvider: No se pudieron mapear viewports en '{doc.Title}': {ex.Message}");
+                }
+
+                // 2. Mapeo seguro de CADs (ImportInstance) por Vista anfitriona
+                var viewCadCountMap = new Dictionary<ElementId, int>();
+                try
+                {
+                    var importInstances = new FilteredElementCollector(doc)
+                        .OfClass(typeof(ImportInstance))
+                        .WhereElementIsNotElementType()
+                        .Cast<ImportInstance>()
+                        .ToList();
+
+                    foreach (var imp in importInstances)
+                    {
+                        try
+                        {
+                            if (imp.OwnerViewId != ElementId.InvalidElementId)
+                            {
+                                if (!viewCadCountMap.ContainsKey(imp.OwnerViewId))
+                                {
+                                    viewCadCountMap[imp.OwnerViewId] = 0;
+                                }
+                                viewCadCountMap[imp.OwnerViewId]++;
+                            }
+                        }
+                        catch { }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    LoggerService.LogWarning($"DetailViewProvider: No se pudieron mapear import instances en '{doc.Title}': {ex.Message}");
+                }
+
+                // 3. Recolectar todas las Vistas de Detalle, Secciones de Detalle y Callouts
+                var allViews = new FilteredElementCollector(doc)
+                    .OfClass(typeof(View))
+                    .WhereElementIsNotElementType()
+                    .Cast<View>()
                     .ToList();
 
-                foreach (var vp in viewports)
+                foreach (var v in allViews)
                 {
                     try
                     {
-                        var viewId = vp.ViewId;
-                        var sheetId = vp.SheetId;
-                        if (sheetId != ElementId.InvalidElementId && doc.GetElement(sheetId) is ViewSheet sheet)
+                        if (!v.IsValidObject || v.IsTemplate) continue;
+
+                        bool isDetail = false;
+                        bool isCallout = false;
+
+                        try
                         {
-                            viewToSheetMap[viewId] = (sheet.Id, $"{sheet.SheetNumber} - {sheet.Name}");
+                            if (v.ViewType == ViewType.Detail)
+                            {
+                                isDetail = true;
+                            }
                         }
-                    }
-                    catch { }
-                }
+                        catch { }
 
-                // 2. Mapeo de CADs (ImportInstance) por Vista anfitriona
-                var viewCadCountMap = new Dictionary<ElementId, int>();
-                var importInstances = new FilteredElementCollector(doc)
-                    .OfClass(typeof(ImportInstance))
-                    .WhereElementIsNotElementType()
-                    .Cast<ImportInstance>()
-                    .ToList();
-
-                foreach (var imp in importInstances)
-                {
-                    if (imp.OwnerViewId != ElementId.InvalidElementId)
-                    {
-                        if (!viewCadCountMap.ContainsKey(imp.OwnerViewId))
+                        try
                         {
-                            viewCadCountMap[imp.OwnerViewId] = 0;
+                            if (v.IsCallout)
+                            {
+                                isCallout = true;
+                            }
                         }
-                        viewCadCountMap[imp.OwnerViewId]++;
+                        catch { }
+
+                        // Verificar si es una sección de detalle
+                        if (!isDetail && !isCallout && v is ViewSection vs)
+                        {
+                            try
+                            {
+                                if (v.ViewType == ViewType.Section && (v.Name.IndexOf("Detail", StringComparison.OrdinalIgnoreCase) >= 0 || v.Name.IndexOf("Detalle", StringComparison.OrdinalIgnoreCase) >= 0))
+                                {
+                                    isDetail = true;
+                                }
+                            }
+                            catch { }
+                        }
+
+                        if (!isDetail && !isCallout) continue;
+
+                        string sheetInfo = string.Empty;
+                        ElementId? sheetId = null;
+                        if (viewToSheetMap.TryGetValue(v.Id, out var sInfo))
+                        {
+                            sheetInfo = sInfo.SheetName;
+                            sheetId = sInfo.SheetId;
+                        }
+
+                        int cadCount = viewCadCountMap.TryGetValue(v.Id, out var count) ? count : 0;
+                        string displayCat = isCallout ? "Detail Callouts" : "Detail Views";
+
+                        var item = new CadDetailItemModel
+                        {
+                            Name = v.Name,
+                            ViewName = v.Name,
+                            SheetName = sheetInfo,
+                            SheetId = sheetId,
+                            Category = displayCat,
+                            IsDraftingView = false,
+                            IsLinked = doc.IsLinked,
+                            CadCount = cadCount,
+                            ElementId = v.Id,
+                            OwnerViewId = v.Id,
+                            NativeElement = v,
+                            SourceDocument = doc,
+                            SourceDocumentName = doc.Title
+                        };
+
+                        results.Add(item);
                     }
-                }
-
-                // 3. Recolectar todas las Vistas de Detalle y Callouts de Detalle
-                var detailViews = new FilteredElementCollector(doc)
-                    .OfClass(typeof(View))
-                    .Cast<View>()
-                    .Where(v => !v.IsTemplate && (v.ViewType == ViewType.Detail || v.IsCallout))
-                    .OrderBy(v => v.Name)
-                    .ToList();
-
-                foreach (var dv in detailViews)
-                {
-                    string sheetInfo = string.Empty;
-                    ElementId? sheetId = null;
-                    if (viewToSheetMap.TryGetValue(dv.Id, out var sInfo))
+                    catch (Exception ex)
                     {
-                        sheetInfo = sInfo.SheetName;
-                        sheetId = sInfo.SheetId;
+                        LoggerService.LogWarning($"DetailViewProvider: Error procesando vista individual: {ex.Message}");
                     }
-
-                    int cadCount = viewCadCountMap.TryGetValue(dv.Id, out var count) ? count : 0;
-
-                    string displayCat = dv.IsCallout ? "Detail Callouts" : "Detail Views";
-
-                    var item = new CadDetailItemModel
-                    {
-                        Name = dv.Name,
-                        ViewName = dv.Name,
-                        SheetName = sheetInfo,
-                        SheetId = sheetId,
-                        Category = displayCat,
-                        IsDraftingView = false,
-                        IsLinked = false,
-                        CadCount = cadCount,
-                        ElementId = dv.Id,
-                        OwnerViewId = dv.Id,
-                        NativeElement = dv,
-                        SourceDocument = doc,
-                        SourceDocumentName = doc.Title
-                    };
-
-                    results.Add(item);
                 }
 
                 LoggerService.LogInfo($"DetailViewProvider: Recolectadas {results.Count} vistas de detalle/callouts en '{doc.Title}'.");

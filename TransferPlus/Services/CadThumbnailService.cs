@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Concurrent;
 using System.Drawing;
+using System.IO;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -21,7 +23,60 @@ namespace TransferPlus.Services
         [return: MarshalAs(UnmanagedType.Bool)]
         private static extern bool DeleteObject(IntPtr hObject);
 
+        [DllImport("shell32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        private static extern int SHCreateItemFromParsingName(
+            [MarshalAs(UnmanagedType.LPWStr)] string pszPath,
+            IntPtr pbc,
+            ref Guid riid,
+            [MarshalAs(UnmanagedType.Interface)] out IShellItem ppv);
+
+        [ComImport]
+        [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+        [Guid("43826d1e-e718-42ee-bc55-a1e261c37bfe")]
+        private interface IShellItem
+        {
+            void BindToHandler(IntPtr pbc, ref Guid bhid, ref Guid riid, out IntPtr ppv);
+            void GetParent(out IShellItem ppsi);
+            void GetDisplayName(uint sigdnName, out IntPtr ppszName);
+            void GetAttributes(uint sfgaoMask, out uint psfgaoAttribs);
+            void Compare(IShellItem psi, uint hint, out int piOrder);
+        }
+
+        [ComImport]
+        [Guid("bcc18b79-ba16-442f-80c4-8a59c30c463b")]
+        [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+        private interface IShellItemImageFactory
+        {
+            [PreserveSig]
+            int GetImage([In, MarshalAs(UnmanagedType.Struct)] SIZE size, [In] SIIGBF flags, [Out] out IntPtr phbm);
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct SIZE
+        {
+            public int cx;
+            public int cy;
+        }
+
+        [Flags]
+        private enum SIIGBF
+        {
+            SIIGBF_RESIZETOFIT = 0x00,
+            SIIGBF_BIGGERSIZEOK = 0x01,
+            SIIGBF_MEMORYONLY = 0x02,
+            SIIGBF_ICONONLY = 0x04,
+            SIIGBF_THUMBNAILONLY = 0x08,
+            SIIGBF_INCACHEONLY = 0x10,
+            SIIGBF_CROPTOSQUARE = 0x20,
+            SIIGBF_WIDEOK = 0x40,
+            SIIGBF_ICONBACKGROUND = 0x80,
+            SIIGBF_SCALEUP = 0x100
+        }
+
         private static readonly ConcurrentDictionary<string, BitmapSource> _thumbnailCache = new();
+
+        public static Autodesk.Revit.ApplicationServices.Application? CurrentApplication { get; set; }
+        public static Document? ActiveDocument { get; set; }
 
         /// <summary>
         /// Obtiene la imagen en miniatura (thumbnail) de un elemento CAD o Vista de Diseño de manera asíncrona.
@@ -46,7 +101,7 @@ namespace TransferPlus.Services
 
             try
             {
-                Document? doc = cadItem.SourceDocument as Document;
+                Document? doc = cadItem.SourceDocument as Document ?? ActiveDocument;
                 if (doc == null && cadItem.NativeElement is Element ne && ne.Document != null)
                 {
                     doc = ne.Document;
@@ -55,13 +110,42 @@ namespace TransferPlus.Services
                 // 0. CASO EXTERNO: Archivo CAD externo de disco o nube (.dwg, .dxf, .sat, etc.)
                 if (cadItem.IsExternalFile)
                 {
-                    string info = !string.IsNullOrWhiteSpace(cadItem.SourceDocumentName) ? cadItem.SourceDocumentName : cadItem.Format.ToUpperInvariant();
-                    result = CreateFallbackCadIcon(cadItem.Name, cadItem.DisplayCategory, info);
+                    string? diskPath = await EnsureLocalCadFileAsync(cadItem, cancellationToken);
+                    if (!string.IsNullOrWhiteSpace(diskPath) && System.IO.File.Exists(diskPath))
+                    {
+                        // Estrategia A: Renderizado en memoria en DraftingView temporal de Revit (RollBack)
+                        if (doc != null)
+                        {
+                            var revitService = new FamilyRevitService();
+                            string? previewPath = revitService.GenerateExternalCadPreview(doc, diskPath);
+                            if (!string.IsNullOrWhiteSpace(previewPath) && System.IO.File.Exists(previewPath))
+                            {
+                                result = LoadBitmapFromPath(previewPath);
+                            }
+                        }
+
+                        // Estrategia B: Extracción nativa de thumbnail por Windows Shell (DWG / SKP shell extension)
+                        if (result == null && !cancellationToken.IsCancellationRequested)
+                        {
+                            result = await Task.Run(() =>
+                            {
+                                if (cancellationToken.IsCancellationRequested) return null;
+                                return ExtractShellThumbnail(diskPath, 256);
+                            }, cancellationToken);
+                        }
+                    }
+
+                    // Estrategia C: Fallback gráfico informativo
+                    if (result == null && !cancellationToken.IsCancellationRequested)
+                    {
+                        string info = !string.IsNullOrWhiteSpace(cadItem.SourceDocumentName) ? cadItem.SourceDocumentName : cadItem.Format.ToUpperInvariant();
+                        result = CreateFallbackCadIcon(cadItem.Name, cadItem.DisplayCategory, info);
+                    }
                 }
-                // 1. CASO A: Elemento de Detalle individual 2D (FamilyInstance / FamilySymbol / Group)
-                // -> Renderizar exclusivamente el elemento aislado en vista temporal con ImageExportOptions
-                else if ((cadItem.Category == "Detail Items" || cadItem.Category == "Details Groups" ||
-                     cadItem.NativeElement is FamilyInstance || cadItem.NativeElement is FamilySymbol || cadItem.NativeElement is Group) &&
+                // 1. CASO A: Elemento de Detalle individual 2D (FamilyInstance / FamilySymbol / Group / GroupType / FilledRegion)
+                // -> Renderizar exclusivamente el elemento aislado en vista temporal con ImageExportOptions y RollBack
+                else if ((cadItem.Category == "Detail Items" || cadItem.Category == "Detail Groups" || cadItem.Category == "Details Groups" ||
+                     cadItem.NativeElement is FamilyInstance || cadItem.NativeElement is FamilySymbol || cadItem.NativeElement is Group || cadItem.NativeElement is GroupType || cadItem.NativeElement is FilledRegion) &&
                     !(cadItem.NativeElement is ViewSheet) && !(cadItem.NativeElement is View) && cadItem.Category != "Sheet")
                 {
                     if (doc != null && cadItem.ElementId != null && cadItem.ElementId != ElementId.InvalidElementId)
@@ -74,7 +158,29 @@ namespace TransferPlus.Services
                         }
                     }
 
-                    // Fallback: Si no se pudo generar con vista temporal, intentar GetPreviewImage nativo de Revit
+                    // Fallback A2: Si es una familia/símbolo, intentar renderizado directo de familia
+                    if (result == null && !cancellationToken.IsCancellationRequested)
+                    {
+                        var revitService = new FamilyRevitService();
+                        if (cadItem.NativeElement is FamilySymbol sym && sym.Family != null)
+                        {
+                            string? famPath = revitService.GenerateFamilyRenderedPreview(sym.Family, ActiveDocument);
+                            if (!string.IsNullOrWhiteSpace(famPath) && System.IO.File.Exists(famPath))
+                            {
+                                result = LoadBitmapFromPath(famPath);
+                            }
+                        }
+                        else if (cadItem.NativeElement is FamilyInstance fi && fi.Symbol != null && fi.Symbol.Family != null)
+                        {
+                            string? famPath = revitService.GenerateFamilyRenderedPreview(fi.Symbol.Family, ActiveDocument);
+                            if (!string.IsNullOrWhiteSpace(famPath) && System.IO.File.Exists(famPath))
+                            {
+                                result = LoadBitmapFromPath(famPath);
+                            }
+                        }
+                    }
+
+                    // Fallback A3: Si no se pudo generar con vista temporal, intentar GetPreviewImage nativo de Revit
                     if (result == null && cadItem.NativeElement is Element elem)
                     {
                         result = ExtractNativeElementThumbnail(elem, cancellationToken);
@@ -165,6 +271,115 @@ namespace TransferPlus.Services
                 LoggerService.LogWarning($"[CadThumbnailService] Error cargando BitmapImage desde '{previewPath}': {loadEx.Message}");
                 return null;
             }
+        }
+
+        private static async Task<string?> EnsureLocalCadFileAsync(CadDetailItemModel cadItem, CancellationToken ct)
+        {
+            if (cadItem == null) return null;
+
+            if (!string.IsNullOrWhiteSpace(cadItem.FilePath) && File.Exists(cadItem.FilePath))
+            {
+                return cadItem.FilePath;
+            }
+
+            try
+            {
+                var sources = CadSourceConfigService.LoadSources();
+                var source = sources.FirstOrDefault(s => s.Name.Equals(cadItem.SourceDocumentName, StringComparison.OrdinalIgnoreCase))
+                             ?? sources.FirstOrDefault(s => s.SourceType == cadItem.SourceType);
+
+                if (source == null) return null;
+
+                if (source.SourceType == CadSourceType.AzureStorage)
+                {
+                    string blobName = cadItem.FilePath;
+                    string downloaded = AzureStorageService.DownloadCadBlob(source.ConnectionString, source.ContainerName, blobName);
+                    if (File.Exists(downloaded))
+                    {
+                        cadItem.FilePath = downloaded;
+                        return downloaded;
+                    }
+                }
+                else if (source.SourceType == CadSourceType.AwsS3)
+                {
+                    string objectKey = cadItem.FilePath;
+                    string downloaded = await AwsS3StorageService.DownloadCadBlobAsync(source, objectKey);
+                    if (File.Exists(downloaded))
+                    {
+                        cadItem.FilePath = downloaded;
+                        return downloaded;
+                    }
+                }
+                else if (source.SourceType == CadSourceType.AutodeskDocs)
+                {
+                    string itemId = cadItem.FilePath;
+                    string accessToken = source.AccessToken;
+                    if (string.IsNullOrWhiteSpace(accessToken) && !string.IsNullOrWhiteSpace(source.RefreshToken))
+                    {
+                        var refreshRes = await AutodeskDocsService.RefreshTokenAsync(source.RefreshToken, source.ClientId, ct);
+                        if (refreshRes.Success)
+                        {
+                            accessToken = refreshRes.AccessToken;
+                            source.AccessToken = refreshRes.AccessToken;
+                            source.RefreshToken = refreshRes.RefreshToken;
+                        }
+                    }
+
+                    if (!string.IsNullOrWhiteSpace(accessToken))
+                    {
+                        string? downloadUrl = await AutodeskDocsService.GetLatestVersionDownloadUrlAsync(accessToken, source.ProjectId, itemId, ct);
+                        if (!string.IsNullOrWhiteSpace(downloadUrl))
+                        {
+                            string rawFileName = !string.IsNullOrWhiteSpace(cadItem.ViewName) ? cadItem.ViewName : $"{cadItem.Name}.{(string.IsNullOrWhiteSpace(cadItem.Format) ? "dwg" : cadItem.Format)}";
+                            string downloaded = await AutodeskDocsService.DownloadAccFamilyFileAsync(accessToken, downloadUrl, rawFileName, ct);
+                            if (File.Exists(downloaded))
+                            {
+                                cadItem.FilePath = downloaded;
+                                return downloaded;
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                LoggerService.LogWarning($"[CadThumbnailService] Error descargando archivo CAD en segundo plano para miniatura: {ex.Message}");
+            }
+
+            return null;
+        }
+
+        private static BitmapSource? ExtractShellThumbnail(string filePath, int size)
+        {
+            try
+            {
+                Guid itemGuid = new Guid("43826d1e-e718-42ee-bc55-a1e261c37bfe"); // IShellItem
+                SHCreateItemFromParsingName(filePath, IntPtr.Zero, ref itemGuid, out IShellItem shellItem);
+
+                if (shellItem is IShellItemImageFactory imageFactory)
+                {
+                    imageFactory.GetImage(new SIZE { cx = size, cy = size }, SIIGBF.SIIGBF_CROPTOSQUARE | SIIGBF.SIIGBF_SCALEUP, out IntPtr hBitmap);
+                    if (hBitmap != IntPtr.Zero)
+                    {
+                        try
+                        {
+                            var bmpSource = Imaging.CreateBitmapSourceFromHBitmap(
+                                hBitmap, IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions());
+                            bmpSource.Freeze();
+                            return bmpSource;
+                        }
+                        finally
+                        {
+                            DeleteObject(hBitmap);
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                LoggerService.LogInfo($"[CadThumbnailService] Shell thumbnail extraction falló para '{filePath}': {ex.Message}");
+            }
+            return null;
         }
 
         private static BitmapSource? ExtractNativeElementThumbnail(Element elem, CancellationToken ct)
