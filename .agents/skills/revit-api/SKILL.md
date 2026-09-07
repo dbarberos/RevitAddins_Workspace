@@ -102,6 +102,11 @@ You have structured expert knowledge in the following 30 domains. Use the concep
 * [debugging_linked_models_detail_item_dynamic_preview_rendering_2026-08-23.md](file:///c:/Users/david.barbero/Documents/DOCUMENTOS/ALTEN/Workbench/RevitAddins_Workspace/RevitAddins_Workspace/.agents/skills/revit-api/references/debugging_linked_models_detail_item_dynamic_preview_rendering_2026-08-23.md)
 * [guia_transferencia_familias_en_memoria.md](file:///c:/Users/david.barbero/Documents/DOCUMENTOS/ALTEN/Workbench/RevitAddins_Workspace/RevitAddins_Workspace/.agents/skills/revit-api/references/guia_transferencia_familias_en_memoria.md)
 
+### Reusable Assets
+* [LinkedModelPreviewAndElementCopier.cs](file:///c:/Users/david.barbero/Documents/DOCUMENTOS/ALTEN/Workbench/RevitAddins_Workspace/RevitAddins_Workspace/.agents/skills/revit-api/assets/LinkedModelPreviewAndElementCopier.cs)
+* [View2DElementTransferHelper.cs](file:///c:/Users/david.barbero/Documents/DOCUMENTOS/ALTEN/Workbench/RevitAddins_Workspace/RevitAddins_Workspace/.agents/skills/revit-api/assets/View2DElementTransferHelper.cs)
+* [RfaThumbnailExtractor.cs](file:///c:/Users/david.barbero/Documents/DOCUMENTOS/ALTEN/Workbench/RevitAddins_Workspace/RevitAddins_Workspace/.agents/skills/revit-api/assets/RfaThumbnailExtractor.cs)
+
 
 ## 4. RESPONSE FORMAT
 * Provides clean, structured and documented code in modern C#.

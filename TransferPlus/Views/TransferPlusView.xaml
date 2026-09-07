@@ -854,13 +854,6 @@
                                                          <DataTrigger Binding="{Binding IsSingleFamilyDetails}" Value="True">
                                                              <Setter Property="Visibility" Value="Visible"/>
                                                          </DataTrigger>
-                                                         <MultiDataTrigger>
-                                                             <MultiDataTrigger.Conditions>
-                                                                 <Condition Binding="{Binding IsSingleFamilyDetails}" Value="True"/>
-                                                                 <Condition Binding="{Binding SelectedFamily}" Value="{x:Null}" />
-                                                             </MultiDataTrigger.Conditions>
-                                                             <Setter Property="Visibility" Value="Collapsed"/>
-                                                         </MultiDataTrigger>
                                                      </Style.Triggers>
                                                  </Style>
                                              </Grid.Style>
@@ -881,7 +874,7 @@
                                                  </Border>
                                              </StackPanel>
                                              
-                                                                      <!-- Right Column: Family Name, Type, Category, Revit Version, Host, File size, Last modified (Title stacked above property value with 50% reduced uniform spacing) -->
+                                             <!-- Right Column: Family Name, Type, Category, Revit Version, Host, File size, Last modified (Title stacked above property value with 50% reduced uniform spacing) -->
                                              <StackPanel Grid.Column="1" VerticalAlignment="Top" Margin="0,0,0,0">
                                                  <!-- Family Name -->
                                                  <TextBlock Text="{Binding SelectedFamily.Name}" 
@@ -943,7 +936,7 @@
                                                 <Style TargetType="TextBlock">
                                                     <Setter Property="Visibility" Value="Collapsed"/>
                                                     <Style.Triggers>
-                                                        <DataTrigger Binding="{Binding IsSingleFamilyDetails}" Value="False">
+                                                        <DataTrigger Binding="{Binding ShowMultipleFamilyDetailsPlaceholder}" Value="True">
                                                             <Setter Property="Visibility" Value="Visible"/>
                                                         </DataTrigger>
                                                     </Style.Triggers>
@@ -1211,47 +1204,199 @@
                                 </Grid>
 
                                 <!-- Horizontal Separator Line -->
-                                <Border BorderBrush="#E0E0E0" BorderThickness="0,1,0,0" Margin="0,10,0,10"/>
+                                <Border BorderBrush="#E0E0E0" BorderThickness="0,1,0,0" Margin="0,8,0,8"/>
 
-                                <!-- Thumbnail Container: Full Column Width with 200px height and side gap -->
-                                <Border Height="200" HorizontalAlignment="Stretch" Margin="2,0,2,4" Background="#FAFAFA" BorderBrush="#E5E5E5" BorderThickness="1" CornerRadius="4">
-                                    <Grid>
-                                        <!-- Placeholder text when NO CAD detail is selected -->
-                                        <TextBlock Text="Select a detail or CAD item to view preview" 
-                                                   Foreground="#999" FontStyle="Italic" FontSize="11" TextWrapping="Wrap"
-                                                   TextAlignment="Center" Margin="16" VerticalAlignment="Center" HorizontalAlignment="Center">
+                                <!-- Placeholder text when NO CAD detail is selected or checked -->
+                                <TextBlock Text="Select or click a detail/CAD item in the tree to view details" 
+                                           Foreground="#999" FontStyle="Italic" FontSize="11" TextWrapping="Wrap"
+                                           TextAlignment="Center" Margin="14" MinHeight="50" VerticalAlignment="Center" HorizontalAlignment="Center">
+                                    <TextBlock.Style>
+                                        <Style TargetType="TextBlock">
+                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding HasCadDetails}" Value="False">
+                                                    <Setter Property="Visibility" Value="Visible"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
+
+                                <!-- Details Content: Visible when a CAD detail is selected or checked -->
+                                <Grid>
+                                    <Grid.Style>
+                                        <Style TargetType="Grid">
+                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding HasCadDetails}" Value="True">
+                                                    <Setter Property="Visibility" Value="Visible"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Grid.Style>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                    </Grid.RowDefinitions>
+
+                                    <!-- Row 0: Single Detail Preview (Thumbnail + Metadata) OR Multi-Selection Text (MinHeight 50px) -->
+                                    <Grid Grid.Row="0" MinHeight="50">
+                                        <!-- Single Detail Selected / Checked -->
+                                        <Grid>
+                                            <Grid.Style>
+                                                <Style TargetType="Grid">
+                                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding IsSingleCadDetails}" Value="True">
+                                                            <Setter Property="Visibility" Value="Visible"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </Grid.Style>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="Auto"/> <!-- Left: 128x128 Thumbnail -->
+                                                <ColumnDefinition Width="*"/>    <!-- Right: Name + Category + View/Sheet + Source -->
+                                            </Grid.ColumnDefinitions>
+
+                                            <!-- Left: 128x128 Thumbnail Container -->
+                                            <StackPanel Grid.Column="0" VerticalAlignment="Top" Margin="0,0,14,0">
+                                                <Border Width="128" Height="128" Background="#FAFAFA" BorderBrush="#E5E5E5" BorderThickness="1" CornerRadius="4" VerticalAlignment="Top">
+                                                    <Grid>
+                                                        <Image Source="{Binding SelectedCadThumbnail}" Stretch="Uniform" Margin="2"/>
+                                                        <ProgressBar IsIndeterminate="True" Width="24" Height="24" 
+                                                                     HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                                     Visibility="{Binding IsLoadingCadThumbnail, Converter={StaticResource BoolToVis}}"/>
+                                                    </Grid>
+                                                </Border>
+                                            </StackPanel>
+
+                                            <!-- Right: Detail metadata stacked -->
+                                            <StackPanel Grid.Column="1" VerticalAlignment="Top" Margin="0,0,0,0">
+                                                <!-- Detail Name -->
+                                                <TextBlock Text="{Binding SelectedCadDetail.Name}" 
+                                                           FontWeight="Bold" FontSize="12" Foreground="#111111"
+                                                           TextWrapping="NoWrap" TextTrimming="CharacterEllipsis"
+                                                           ToolTip="{Binding SelectedCadDetail.Name}" Margin="0,0,0,2"/>
+
+                                                <!-- Category / Origin -->
+                                                <StackPanel Margin="0,0,0,2">
+                                                    <TextBlock Text="Category" FontWeight="Bold" FontSize="10" Foreground="#111111" Margin="0,0,0,-2"/>
+                                                    <TextBlock Text="{Binding SelectedCadDetail.DisplayCategory}" FontSize="10" Foreground="#333333" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" ToolTip="{Binding SelectedCadDetail.DisplayCategory}" Margin="0,0,0,-1"/>
+                                                </StackPanel>
+
+                                                <!-- Host View / Sheet -->
+                                                <StackPanel Margin="0,0,0,2">
+                                                    <TextBlock Text="View / Sheet" FontWeight="Bold" FontSize="10" Foreground="#111111" Margin="0,0,0,-2"/>
+                                                    <TextBlock Text="{Binding SelectedCadDetail.LocationSummary}" FontSize="10" Foreground="#333333" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" ToolTip="{Binding SelectedCadDetail.LocationSummary}" Margin="0,0,0,-1"/>
+                                                </StackPanel>
+
+                                                <!-- Source Document / Location -->
+                                                <StackPanel Margin="0,0,0,0">
+                                                    <TextBlock Text="Source" FontWeight="Bold" FontSize="10" Foreground="#111111" Margin="0,0,0,-2"/>
+                                                    <TextBlock Text="{Binding SelectedCadDetail.SourceDocumentName}" FontSize="10" Foreground="#333333" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" ToolTip="{Binding SelectedCadDetail.SourceDocumentName}" Margin="0,0,0,0"/>
+                                                </StackPanel>
+                                            </StackPanel>
+                                        </Grid>
+
+                                        <!-- Multiple CAD Details Selected (MinHeight 50px) -->
+                                        <TextBlock Text="Multiple details/CAD selected" Foreground="#999" FontStyle="Italic" MinHeight="50" VerticalAlignment="Center" HorizontalAlignment="Center" Margin="14">
                                             <TextBlock.Style>
                                                 <Style TargetType="TextBlock">
                                                     <Setter Property="Visibility" Value="Collapsed"/>
                                                     <Style.Triggers>
-                                                        <DataTrigger Binding="{Binding HasSelectedCadThumbnail}" Value="False">
+                                                        <DataTrigger Binding="{Binding ShowMultipleCadDetailsPlaceholder}" Value="True">
                                                             <Setter Property="Visibility" Value="Visible"/>
                                                         </DataTrigger>
                                                     </Style.Triggers>
                                                 </Style>
                                             </TextBlock.Style>
                                         </TextBlock>
-
-                                        <!-- Image Preview: Scaled Uniformly to fit dynamic width & 200px height -->
-                                        <Image Source="{Binding SelectedCadThumbnail}" Stretch="Uniform" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="6">
-                                            <Image.Style>
-                                                <Style TargetType="Image">
-                                                    <Setter Property="Visibility" Value="Visible"/>
-                                                    <Style.Triggers>
-                                                        <DataTrigger Binding="{Binding HasSelectedCadThumbnail}" Value="False">
-                                                            <Setter Property="Visibility" Value="Collapsed"/>
-                                                        </DataTrigger>
-                                                    </Style.Triggers>
-                                                </Style>
-                                            </Image.Style>
-                                        </Image>
-
-                                        <!-- Loading Spinner -->
-                                        <ProgressBar IsIndeterminate="True" Width="28" Height="28" 
-                                                     HorizontalAlignment="Center" VerticalAlignment="Center"
-                                                     Visibility="{Binding IsLoadingCadThumbnail, Converter={StaticResource BoolToVis}}"/>
                                     </Grid>
-                                </Border>
+
+                                    <!-- Row 1: Separator Line -->
+                                    <Border Grid.Row="1" BorderBrush="#E0E0E0" BorderThickness="0,1,0,0" Margin="0,6,0,6"/>
+
+                                    <!-- Row 2: Action Buttons Row (Left-aligned: Delete, Download, and Stacked Option Switches) -->
+                                    <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="2,0,0,2">
+                                        <!-- Delete Button (Leftmost) -->
+                                        <Button Command="{Binding DeleteSelectedCadItemsCommand}" Width="28" Height="28" Margin="0,0,8,0" VerticalAlignment="Center" Cursor="Hand" ToolTip="Delete Selected Detail/CAD Items from Active Model">
+                                            <Button.Template>
+                                                <ControlTemplate TargetType="Button">
+                                                    <Border x:Name="border" Background="Transparent" CornerRadius="4" Padding="4">
+                                                        <Viewbox Width="18" Height="18">
+                                                            <Path Data="M16,9V19H8V9H16M14.5,3H9.5L8.5,4H5V6H19V4H15.5L14.5,3M18,7H6V19A2,2 0 0,0 8,21H16A2,2 0 0,0 18,19V7Z" Fill="#777" x:Name="iconPath"/>
+                                                        </Viewbox>
+                                                    </Border>
+                                                    <ControlTemplate.Triggers>
+                                                        <Trigger Property="IsMouseOver" Value="True">
+                                                            <Setter TargetName="border" Property="Background" Value="#eeeeee"/>
+                                                            <Setter TargetName="iconPath" Property="Fill" Value="#333"/>
+                                                        </Trigger>
+                                                        <Trigger Property="IsPressed" Value="True">
+                                                            <Setter TargetName="border" Property="Background" Value="#dddddd"/>
+                                                        </Trigger>
+                                                        <Trigger Property="IsEnabled" Value="False">
+                                                            <Setter TargetName="iconPath" Property="Fill" Value="#cccccc"/>
+                                                            <Setter TargetName="border" Property="Opacity" Value="0.4"/>
+                                                        </Trigger>
+                                                    </ControlTemplate.Triggers>
+                                                </ControlTemplate>
+                                            </Button.Template>
+                                        </Button>
+
+                                        <!-- Download Button (Right of Delete) -->
+                                        <Button Command="{Binding DownloadSelectedCadItemsCommand}" Width="28" Height="28" Margin="0,0,12,0" VerticalAlignment="Center" Cursor="Hand" ToolTip="Download / Export Selected Detail/CAD Items">
+                                            <Button.Template>
+                                                <ControlTemplate TargetType="Button">
+                                                    <Border x:Name="border" Background="Transparent" CornerRadius="4" Padding="4">
+                                                        <Viewbox Width="18" Height="18">
+                                                            <Path Data="M12,16L7,11H10V4H14V11H17L12,16M5,18H19V20H5V18Z" Fill="#777" x:Name="iconPath"/>
+                                                        </Viewbox>
+                                                    </Border>
+                                                    <ControlTemplate.Triggers>
+                                                        <Trigger Property="IsMouseOver" Value="True">
+                                                            <Setter TargetName="border" Property="Background" Value="#eeeeee"/>
+                                                            <Setter TargetName="iconPath" Property="Fill" Value="#333"/>
+                                                        </Trigger>
+                                                        <Trigger Property="IsPressed" Value="True">
+                                                            <Setter TargetName="border" Property="Background" Value="#dddddd"/>
+                                                        </Trigger>
+                                                        <Trigger Property="IsEnabled" Value="False">
+                                                            <Setter TargetName="iconPath" Property="Fill" Value="#cccccc"/>
+                                                            <Setter TargetName="border" Property="Opacity" Value="0.4"/>
+                                                        </Trigger>
+                                                    </ControlTemplate.Triggers>
+                                                </ControlTemplate>
+                                            </Button.Template>
+                                        </Button>
+
+                                        <!-- Stacked Option Switches (Right of Download) -->
+                                        <StackPanel VerticalAlignment="Center" Margin="0,0,0,0">
+                                            <!-- 1. Save Details/CAD as organized. -->
+                                            <CheckBox Content="Save Details/CAD as organized." 
+                                                      Style="{StaticResource SwitchStyle}"
+                                                      IsChecked="{Binding SaveCadDetailsAsOrganized}" 
+                                                      VerticalAlignment="Center" 
+                                                      FontSize="11.5" 
+                                                      Foreground="#333333" 
+                                                      Cursor="Hand"
+                                                      Margin="0,0,0,3"
+                                                      ToolTip="When enabled, saves files into folders and subfolders reproducing the exact hierarchy displayed in the tree explorer."/>
+
+                                            <!-- 2. Overwrite Duplicates -->
+                                            <CheckBox Content="Overwrite Duplicates" 
+                                                      Style="{StaticResource SwitchStyle}"
+                                                      IsChecked="{Binding OverwriteCadDuplicates}" 
+                                                      VerticalAlignment="Center" 
+                                                      FontSize="11.5" 
+                                                      Foreground="#333333" 
+                                                      Cursor="Hand"
+                                                      Margin="0,0,0,0"
+                                                      ToolTip="When enabled, existing files with the same name in the destination directory will be overwritten. When disabled, numerical duplicates are created without overwriting."/>
+                                        </StackPanel>
+                                    </StackPanel>
+                                </Grid>
                             </StackPanel>
                         </Border>
 
