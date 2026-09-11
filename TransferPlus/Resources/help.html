@@ -24,7 +24,7 @@
 
     <h1>TransferPlus</h1>
     <p>
-        <span class="badge">Version 1.1.0</span> &nbsp;
+        <span class="badge">Version 1.2.0</span> &nbsp;
         <strong>Add-in ID (GUID):</strong> <code>D1981E8C-1951-45C0-B24C-CA821B7288D2</code>
     </p>
 
@@ -123,7 +123,25 @@
         <li><strong>Single-Line Trimming</strong>: Ellipsis truncation and tooltips ensure clean display without clipping.</li>
     </ul>
 
+    <h3>5.8. CAD Details & 2D Drafting Views Transfer Mode</h3>
+    <ul>
+        <li><strong>Five Dedicated Origins</strong>: Supports CAD Formats (DWG, DXF, DGN), Drafting Views, Detail Views/Callouts, Detail Groups, and Detail Items.</li>
+        <li><strong>Real-time 2D Vector Previews</strong>: Dynamic 200x200 vector previews generated via scratch drafting views and native <code>ImageExportOptions</code>.</li>
+        <li><strong>Title Block & Family Dynamic Rendering</strong>: In-memory <code>EditFamily</code> and <code>ViewSheet</code> generation for responsive thumbnail previews.</li>
+        <li><strong>Smart Zoom-to-Extents Framing</strong>: Auto-crop with adaptive margins for small annotations and tags.</li>
+        <li><strong>Middle Column Horizontal Scrollbar</strong>: Dedicated scrolling for long names while keeping checkboxes and count columns fixed.</li>
+    </ul>
+
     <h2>6. Version History (Changelog)</h2>
+    <h3>v1.2.0</h3>
+    <ul>
+        <li><strong>CAD Details & 2D Drafting Mode</strong>: Dedicated transfer mode for CAD files (DWG, DXF, DGN), drafting views, detail views/callouts, detail groups, and detail component items.</li>
+        <li><strong>Dynamic 2D Vector Previews</strong>: In-memory vector preview generation using scratch drafting views, native Revit <code>ImageExportOptions</code>, and automated transaction rollbacks.</li>
+        <li><strong>Title Block & Family Dynamic Rendering</strong>: Dynamic preview rendering for title blocks and family types using in-memory <code>EditFamily</code> and <code>ViewSheet</code> generation.</li>
+        <li><strong>Auto-Crop & Zoom-to-Extents Framing</strong>: Automatic bounding box framing and margin calculations for small annotation elements, tags, and drafting items.</li>
+        <li><strong>Middle Column Horizontal Scrolling</strong>: Dedicated horizontal scrollbar in the asset tree allowing unconstrained reading of long family/view names while keeping checkboxes and element count badges stationary.</li>
+    </ul>
+
     <h3>v1.1.0</h3>
     <ul>
         <li><strong>Family Details Metadata</strong>: Dynamic extraction of <code>File size</code> (KB/MB) and <code>Last modified</code> date (yyyy-MM-dd).</li>

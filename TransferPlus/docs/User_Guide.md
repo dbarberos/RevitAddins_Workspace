@@ -1,6 +1,6 @@
 # TransferPlus
 
-> **Current Version:** v1.1.0  
+> **Current Version:** v1.2.0  
 > **Add-in ID (GUID):** `D1981E8C-1951-45C0-B24C-CA821B7288D2`  
 
 ---
@@ -110,7 +110,43 @@ When a family or family type is selected in Family Mode, the right-hand **Family
 
 ---
 
+### 5.8. CAD Details & 2D Drafting Views Transfer Mode
+TransferPlus provides a dedicated **CAD / Details Mode** tailored for migrating 2D drafting content, standard construction details, and external CAD imports across projects:
+* **Five Specialized Origin Categories**:
+  - **CAD Formats**: Linked and imported DWG, DXF, DGN, and SAT files.
+  - **Drafting Views**: Pure 2D drafting views containing text, lines, dimensions, and detail components.
+  - **Detail Views & Callouts**: Model-based detail sections and enlarged detail callouts.
+  - **Detail Groups**: Reusable 2D detail groups.
+  - **Detail Items**: 2D detail component families and instances.
+* **Real-time 2D Vector Preview & Zoom-to-Extents**:
+  - 200x200 pixel vector preview generated in real-time via scratch drafting views with automatic transaction rollback.
+  - Smart zoom-to-extents auto-framing with safety margins for small annotations, tags, and detail components.
+  - Dynamic Title Block rendering with in-memory family editing.
+* **Middle Column Horizontal Scrolling**:
+  - Dedicated horizontal scrollbar for long element names while keeping selection checkboxes and element counts fixed in place.
+
+---
+
 ## 6. Version History (Changelog)
+
+### v1.2.0 - 2026-09-11
+
+#### Added
+- **CAD Details & 2D Drafting Mode**: Dedicated transfer mode for CAD files (DWG, DXF, DGN), drafting views, detail views/callouts, detail groups, and detail component items.
+- **Dynamic 2D Vector Previews**: In-memory vector preview generation using scratch drafting views, native Revit `ImageExportOptions`, and automated transaction rollbacks (`CadThumbnailService`).
+- **Title Block & Family Dynamic Rendering**: Dynamic preview rendering for title blocks and family types using in-memory `EditFamily` and `ViewSheet` generation.
+- **Auto-Crop & Zoom-to-Extents Framing**: Automatic bounding box framing and margin calculations for small annotation elements, tags, and drafting items.
+- **Middle Column Horizontal Scrolling**: Dedicated horizontal scrollbar in the asset tree allowing unconstrained reading of long family/view names while keeping checkboxes and element count badges stationary.
+
+#### Changed
+- **CAD Mode UI Layout**: Standardized 2-column layout in the Select Details/CAD card with 200x200 thumbnail preview.
+- **Tooltip Standardization**: Standardized tooltip max-widths (`MaxWidth="225"`) across all CAD Mode ORIGIN and ORGANIZE toggles.
+- **Family Mode Segregation**: Loadable families are strictly isolated in Family Mode, keeping system families in the standard asset tree for optimal performance.
+
+#### Fixed
+- **Polymorphic Detail Item Handling**: Resolved `InvalidCastException` when collecting `OST_DetailComponents` by handling `FilledRegion` and `FamilyInstance` polymorphically.
+- **TreeView Layout Clipping**: Fixed text clipping in TreeView item templates using unconstrained Canvas containers.
+- **Reference Plane & Dimension Suppression**: Enforced transaction-backed `HideElements` on reference planes and dimensions during thumbnail rendering to produce clean presentation previews.
 
 ### v1.1.0 - 2026-08-19
 
