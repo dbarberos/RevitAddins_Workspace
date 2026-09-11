@@ -1,6 +1,6 @@
 param(
     [string]$AppName = "FilterPlus",
-    [string]$Version = "1.0.0",
+    [string]$Version = "",
     [string]$Author = "DBDev_dbarberos",
     [string]$Email = "dbarberos@outlook.com",
     [string[]]$TargetYears = @("2023", "2024", "2025", "2026", "2027"),
@@ -9,14 +9,29 @@ param(
 
 $ErrorActionPreference = "Stop"
 
+# Paths
+$resolvedProjectDir = (Resolve-Path $ProjectDir).Path
+
+# Dynamically resolve Version from .csproj if not provided
+if ([string]::IsNullOrWhiteSpace($Version) -or $Version -eq "1.0.0") {
+    $CsprojPath = Join-Path $resolvedProjectDir "$AppName.csproj"
+    if (Test-Path $CsprojPath) {
+        $csprojContent = Get-Content -Path $CsprojPath -Raw
+        if ($csprojContent -match "<Version>(.*?)</Version>") {
+            $Version = $matches[1].Trim()
+        }
+    }
+}
+if ([string]::IsNullOrWhiteSpace($Version)) {
+    $Version = "1.0.0"
+}
+
 Write-Host "================================================================" -ForegroundColor Cyan
 Write-Host " Building Autodesk App Store Bundle for $AppName v$Version" -ForegroundColor Cyan
 Write-Host " Publisher: $Author (DBDev Solutions)" -ForegroundColor Cyan
 Write-Host " Target Years: $([string]::Join(', ', $TargetYears))" -ForegroundColor Cyan
 Write-Host "================================================================" -ForegroundColor Cyan
 
-# Paths
-$resolvedProjectDir = (Resolve-Path $ProjectDir).Path
 $BundleName = "$AppName.bundle"
 $DeployDir = Join-Path $resolvedProjectDir "Deploy"
 $PublishPackageDir = Join-Path $resolvedProjectDir "$($AppName)PublishPackage"
@@ -71,14 +86,30 @@ $ComponentsXml = ""
 foreach ($Year in $TargetYears) {
     $ShortYear = $Year.Substring(2) # "24", "25", etc.
     $ConfigName = "Release.R$ShortYear"
-    $Candidates = @(
+    # Prioritize Release candidates strictly over Debug
+    $ReleaseCandidates = @(
         (Join-Path $BinDir "$ConfigName\publish\$AppName"),
         (Join-Path $BinDir "$ConfigName\publish"),
-        (Join-Path $BinDir "$ConfigName"),
+        (Join-Path $BinDir "$ConfigName")
+    )
+    $DebugCandidates = @(
         (Join-Path $BinDir "Debug.R$ShortYear\publish\$AppName"),
         (Join-Path $BinDir "Debug.R$ShortYear\publish"),
         (Join-Path $BinDir "Debug.R$ShortYear")
     )
+
+    $Candidates = @()
+    $ReleaseFound = $false
+    foreach ($cand in $ReleaseCandidates) {
+        if ((Test-Path $cand) -and (Test-Path (Join-Path $cand "$AppName.dll"))) {
+            $Candidates += $cand
+            $ReleaseFound = $true
+        }
+    }
+    if (-not $ReleaseFound) {
+        $Candidates = $DebugCandidates
+    }
+
 
     $PublishDir = $null
     $FoundDlls = @()

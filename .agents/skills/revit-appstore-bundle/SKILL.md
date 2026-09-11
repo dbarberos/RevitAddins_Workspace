@@ -17,6 +17,7 @@ Automates packaging multi-version Revit add-ins (2023–2027) into standardized 
    Never allow placeholder identities (e.g. `AI_CORP` / `AI Solutions`).
 3. **Valid XML Declaration**: `PackageContents.xml` must strictly start with `<?xml version="1.0" encoding="utf-8"?>`.
 4. **Contextual Help**: Associated `help.html` and icons must be present inside `Contents/Resources/`.
+5. **Monorepo Versioning & Dynamic Package Resolution**: In multi-project workspaces, the version declared in `PackageContents.xml` (`AppVersion`) and in the output archive (`[AppName]_v[Version].zip`) MUST strictly match the target add-in's `<Version>` tag from its `.csproj` (e.g., `FilterPlus.csproj`).
 
 ## 📚 Technical References
 - `references/debugging_appstore_bundle_missing_dependencies_and_identity_collision_2026-08-17.md`: Root cause analysis and resolution for AppStore bundle loading failures.
