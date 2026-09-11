@@ -32,7 +32,12 @@ To uninstall this plug-in, exit the Autodesk product if you are currently runnin
 ## 4. Commands and Features Guide
 
 ### 4.1. Ribbon Panel Integration
-The add-in integrates into Revit's Ribbon interface under the **DBDev** tab (or native **Manage** tab configuration).
+By default, in accordance with Autodesk App Store single-command guidelines, the **TransferPlus** ribbon panel is installed directly under Revit's native **"Add-Ins" (Complementos)** tab.
+
+Users can customize or relocate the ribbon panel at any time via the **Settings (Gear Icon)** dialog in the main TransferPlus window:
+* **Add-Ins Tab (Default)**: Loads the TransferPlus button under Revit's standard Add-Ins tab.
+* **Revit Manage Tab**: Integrates into the native **Manage (Gestionar)** tab, placed inside the **Settings (Configuración)** tool group immediately to the right of the **Additional Settings (Configuración adicional)** icon.
+* **Custom Tab**: Allows assigning a custom user-defined ribbon tab name (e.g. `DBDev`).
 
 | Command | Function | Technical Class |
 |---------|----------|-----------------|
@@ -137,13 +142,17 @@ TransferPlus provides a dedicated **CAD / Details Mode** tailored for migrating 
 - **Title Block & Family Dynamic Rendering**: Dynamic preview rendering for title blocks and family types using in-memory `EditFamily` and `ViewSheet` generation.
 - **Auto-Crop & Zoom-to-Extents Framing**: Automatic bounding box framing and margin calculations for small annotation elements, tags, and drafting items.
 - **Middle Column Horizontal Scrolling**: Dedicated horizontal scrollbar in the asset tree allowing unconstrained reading of long family/view names while keeping checkboxes and element count badges stationary.
+- **Ribbon Placement on Add-Ins Tab (Default)**: Aligned with Autodesk App Store single-command guidelines by placing the TransferPlus ribbon panel on Revit's native **Add-Ins (Complementos)** tab by default.
+- **Revit Manage Tab Placement (Settings Group)**: New placement option to insert the TransferPlus button directly into the native **Settings (Configuración)** panel of the **Manage (Gestionar)** tab, positioned immediately to the right of the *Additional Settings (Configuración adicional)* command.
 
 #### Changed
 - **CAD Mode UI Layout**: Standardized 2-column layout in the Select Details/CAD card with 200x200 thumbnail preview.
 - **Tooltip Standardization**: Standardized tooltip max-widths (`MaxWidth="225"`) across all CAD Mode ORIGIN and ORGANIZE toggles.
 - **Family Mode Segregation**: Loadable families are strictly isolated in Family Mode, keeping system families in the standard asset tree for optimal performance.
+- **Configuration Window Tab Options**: Updated the *Tab Option (*)* selection card in the Configuration window with clear, descriptive choices: *Place TransferPlus on Add-Ins tab (default)*, *Place on Revit Manage tab*, and *Place on tab named:*.
 
 #### Fixed
+- **XML Settings Deserialization Resilience**: Resolved startup deserialization errors caused by legacy `DBDevDefault` tab settings. Implemented backwards-compatible enum mapping (`[XmlEnum("DBDevDefault")]`), seamless in-memory auto-upgrade to `AddInsDefaultTab`, non-blocking warning logging, and safe fallback handling to prevent modal alert freezes during Revit initialization.
 - **Polymorphic Detail Item Handling**: Resolved `InvalidCastException` when collecting `OST_DetailComponents` by handling `FilledRegion` and `FamilyInstance` polymorphically.
 - **TreeView Layout Clipping**: Fixed text clipping in TreeView item templates using unconstrained Canvas containers.
 - **Reference Plane & Dimension Suppression**: Enforced transaction-backed `HideElements` on reference planes and dimensions during thumbnail rendering to produce clean presentation previews.

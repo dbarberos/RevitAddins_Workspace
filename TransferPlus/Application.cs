@@ -85,13 +85,9 @@ public class Application : ExternalApplication
                     }
                 }
             }
-            else
+            else if (settings.SelectedTabOption == TabOption.Custom && !string.IsNullOrWhiteSpace(settings.CustomTabName))
             {
-                string tabName = "DBDev";
-                if (settings.SelectedTabOption == TabOption.Custom && !string.IsNullOrWhiteSpace(settings.CustomTabName))
-                {
-                    tabName = settings.CustomTabName;
-                }
+                string tabName = settings.CustomTabName;
 
                 // Ensure custom tab exists in Revit ribbon
                 if (!tabName.Equals("Modify", StringComparison.OrdinalIgnoreCase) &&
@@ -129,6 +125,19 @@ public class Application : ExternalApplication
                     }
                 }
             }
+            else
+            {
+                // AddInsDefaultTab (Default): Place directly on Revit's native Add-Ins tab (Complementos)
+                try
+                {
+                    panel = Application.CreatePanel("TransferPlus");
+                    LoggerService.LogInfo("CreateRibbon: Created panel 'TransferPlus' on native Add-Ins tab.");
+                }
+                catch (Exception exPanel)
+                {
+                    LoggerService.LogError("CreateRibbon: CreatePanel 'TransferPlus' on Add-Ins tab failed", exPanel);
+                }
+            }
 
             if (panel != null)
             {
@@ -137,6 +146,42 @@ public class Application : ExternalApplication
                 pushButton.SetLargeImage("/TransferPlus;component/Resources/Icons/TransferPlus32x32.png");
                 pushButton.ToolTip = "TransferPlus Multi-Document & Cloud Transfer";
                 pushButton.LongDescription = "Advanced transfer of elements, views, sheets, phases, and standards across Revit models, local disks, Autodesk Docs, Azure, and AWS.";
+
+                // Configure Contextual F1 Help
+                string assemblyDir = System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location) ?? string.Empty;
+                string helpPath = System.IO.Path.Combine(assemblyDir, "Resources", "help.html");
+                if (!System.IO.File.Exists(helpPath))
+                {
+                    string helpCapitalized = System.IO.Path.Combine(assemblyDir, "Resources", "Help.html");
+                    if (System.IO.File.Exists(helpCapitalized))
+                    {
+                        helpPath = helpCapitalized;
+                    }
+                    else
+                    {
+                        string bundleRootHelp = System.IO.Path.GetFullPath(System.IO.Path.Combine(assemblyDir, "..", "Resources", "help.html"));
+                        string bundleRootHelpCap = System.IO.Path.GetFullPath(System.IO.Path.Combine(assemblyDir, "..", "Resources", "Help.html"));
+                        string singularResource = System.IO.Path.Combine(assemblyDir, "Resource", "help.html");
+                        if (System.IO.File.Exists(bundleRootHelp))
+                        {
+                            helpPath = bundleRootHelp;
+                        }
+                        else if (System.IO.File.Exists(bundleRootHelpCap))
+                        {
+                            helpPath = bundleRootHelpCap;
+                        }
+                        else if (System.IO.File.Exists(singularResource))
+                        {
+                            helpPath = singularResource;
+                        }
+                    }
+                }
+                if (System.IO.File.Exists(helpPath))
+                {
+                    ContextualHelp contextHelp = new ContextualHelp(ContextualHelpType.Url, helpPath);
+                    pushButton.SetContextualHelp(contextHelp);
+                }
+
                 LoggerService.LogInfo("CreateRibbon: PushButton 'TransferPlus' successfully registered on Ribbon.");
             }
             else
@@ -341,7 +386,43 @@ public class Application : ExternalApplication
                     var commandHandler = new TransferPlusRibbonCommandHandler();
                     ribbonButtonType.GetProperty("CommandHandler")?.SetValue(newButton, commandHandler);
 
-                    items.Add(newButton);
+                    // Locate "Additional Settings" / "Configuración adicional" to insert right next to it (to its right)
+                    int targetIndex = -1;
+                    for (int i = 0; i < items.Count; i++)
+                    {
+                        var it = items[i];
+                        if (it == null) continue;
+                        var itType = it.GetType();
+                        string? itemId = itType.GetProperty("Id")?.GetValue(it)?.ToString();
+                        string? itemText = itType.GetProperty("Text")?.GetValue(it)?.ToString();
+
+                        if (!string.IsNullOrEmpty(itemId) && (itemId.IndexOf("AdditionalSettings", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                                                             itemId.IndexOf("Additional_Settings", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                                                             itemId.IndexOf("MenuAdditionalSettings", StringComparison.OrdinalIgnoreCase) >= 0))
+                        {
+                            targetIndex = i;
+                            break;
+                        }
+                        if (!string.IsNullOrEmpty(itemText) && (itemText.IndexOf("Additional Settings", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                                                               itemText.IndexOf("Configuración adicional", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                                                               itemText.IndexOf("Configuracion adicional", StringComparison.OrdinalIgnoreCase) >= 0))
+                        {
+                            targetIndex = i;
+                            break;
+                        }
+                    }
+
+                    if (targetIndex >= 0 && targetIndex + 1 <= items.Count)
+                    {
+                        items.Insert(targetIndex + 1, newButton);
+                        LoggerService.LogInfo($"TryAddButtonToNativeSettingsPanel: Inserted button at index {targetIndex + 1} to the right of Additional Settings.");
+                    }
+                    else
+                    {
+                        items.Add(newButton);
+                        LoggerService.LogInfo("TryAddButtonToNativeSettingsPanel: Additional Settings not found, appended button to items collection.");
+                    }
+
                     return true;
                 }
             }

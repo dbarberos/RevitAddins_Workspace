@@ -45,6 +45,15 @@
     <p>To uninstall this plug-in, exit the Autodesk product if you are currently running it, simply rerun the installer by downloading it again from the Autodesk App Store, and select the 'Uninstall' button, or you can uninstall it from 'Control Panel\Programs\Programs and Features' (Windows 10/11), just as you would uninstall any other application from your system.</p>
 
     <h2>4. Commands and Features Guide</h2>
+    <h3>4.1. Ribbon Panel Integration</h3>
+    <p>By default, following Autodesk App Store single-command guidelines, the <strong>TransferPlus</strong> ribbon panel is placed under Revit's native <strong>Add-Ins (Complementos)</strong> tab.</p>
+    <p>Through the <strong>Settings (Gear Icon)</strong> dialog in TransferPlus, users can configure ribbon placement:</p>
+    <ul>
+        <li><strong>Add-Ins Tab (Default)</strong>: Places the button under the standard Add-Ins tab.</li>
+        <li><strong>Revit Manage Tab</strong>: Integrates into the <strong>Manage (Gestionar)</strong> tab within the <strong>Settings (Configuración)</strong> panel, immediately to the right of <em>Additional Settings (Configuración adicional)</em>.</li>
+        <li><strong>Custom Tab</strong>: Allows specifying a custom user-defined ribbon tab name.</li>
+    </ul>
+
     <table>
         <tr>
             <th>Command</th>
@@ -140,6 +149,10 @@
         <li><strong>Title Block & Family Dynamic Rendering</strong>: Dynamic preview rendering for title blocks and family types using in-memory <code>EditFamily</code> and <code>ViewSheet</code> generation.</li>
         <li><strong>Auto-Crop & Zoom-to-Extents Framing</strong>: Automatic bounding box framing and margin calculations for small annotation elements, tags, and drafting items.</li>
         <li><strong>Middle Column Horizontal Scrolling</strong>: Dedicated horizontal scrollbar in the asset tree allowing unconstrained reading of long family/view names while keeping checkboxes and element count badges stationary.</li>
+        <li><strong>Ribbon Placement on Add-Ins Tab (Default)</strong>: Aligned with Autodesk App Store single-command guidelines by placing the TransferPlus ribbon panel on Revit's native Add-Ins (Complementos) tab by default.</li>
+        <li><strong>Revit Manage Tab Placement (Settings Group)</strong>: Option to insert the TransferPlus button directly into the native Settings (Configuración) panel of the Manage tab, immediately to the right of Additional Settings.</li>
+        <li><strong>Configuration Window Tab Options</strong>: Updated Tab Option selection card with clear choices: Add-Ins tab (default), Revit Manage tab, and Custom tab name.</li>
+        <li><strong>XML Settings Deserialization Resilience</strong>: Resolved startup deserialization errors caused by legacy DBDevDefault settings. Seamless backwards-compatible auto-upgrade to Add-Ins default with non-blocking error handling.</li>
     </ul>
 
     <h3>v1.1.0</h3>
