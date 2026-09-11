@@ -22,7 +22,7 @@ To uninstall this plug-in, exit the Autodesk product if you are currently runnin
 ## Commands and Features Guide
 
 ### Ribbon Panel Integration
-The add-in creates a custom tab containing the FilterPlus panel.
+By default, in accordance with Autodesk App Store single-command guidelines, the **FilterPlus** ribbon panel is installed directly under Revit's native **"Add-Ins" (Complementos)** tab. Placement can also be customized via the Settings window (gear icon) to the Add-Ins tab, Revit contextual tab (Modify), or a custom tab.
 
 | Command | Function | Technical Class |
 |---------|----------|-----------------|
