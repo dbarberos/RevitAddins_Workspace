@@ -19,7 +19,7 @@ This skill allows the agent to autonomously manage the add-in's documentation li
 9. **Monorepo Versioning & Tag Traceability:** In repositories housing multiple add-ins, each add-in MUST have an independent versioning lifecycle:
    - **Git Tag Convention:** Tags MUST follow the format `[AddInName]-v[Major].[Minor].[Patch]` (e.g. `FilterPlus-v1.7.0`, `TransferPlus-v1.1.0`).
    - **Isolated History:** Inspect git logs filtered strictly by add-in path: `git log [AddInName]-v[Previous]..HEAD -- [AddInName]/` to avoid pulling commits from other tools in the monorepo.
-   - **Independent Technical Truth:** The canonical version of an add-in is defined within its own `[AddInName]/[AddInName].csproj` `<Version>` tag and its own `[AddInName]/docs/references/user_guide.md`.
+   - **Independent Technical Truth:** The canonical version of an add-in is defined within its own `[AddInName]/[AddInName].csproj` `<Version>` tag and its own `[AddInName]/docs/User_Guide.md`.
 
 ## 📚 Technical References (Knowledge Base)
 To obtain documentation inspection guides and procedures, consult the files in the `references/` folder:
