@@ -40,8 +40,8 @@ public class Application : ExternalApplication
             }
             else
             {
-                // DBDevDefault
-                panel = Application.CreatePanel("FilterPlus", "DBDev");
+                // AddInsDefaultTab: Place in native "Add-Ins" tab (Complementos)
+                panel = Application.CreatePanel("FilterPlus");
             }
         }
         catch (Exception ex)
@@ -59,7 +59,34 @@ public class Application : ExternalApplication
             pushButton.ToolTip = "FilterPlus Hierarchical Explorer";
             pushButton.LongDescription = "Advanced selection and filtering add-in for Revit. Allows asynchronous collection of elements, visualizing them in a Category/Family/Type/Instance tree, and refining selections through dynamic rules without freezing the UI.";
 
-            string helpPath = System.IO.Path.Combine(System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location), "Resources", "help.html");
+            string assemblyDir = System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location) ?? string.Empty;
+            string helpPath = System.IO.Path.Combine(assemblyDir, "Resources", "help.html");
+            if (!System.IO.File.Exists(helpPath))
+            {
+                string helpCapitalized = System.IO.Path.Combine(assemblyDir, "Resources", "Help.html");
+                if (System.IO.File.Exists(helpCapitalized))
+                {
+                    helpPath = helpCapitalized;
+                }
+                else
+                {
+                    string bundleRootHelp = System.IO.Path.GetFullPath(System.IO.Path.Combine(assemblyDir, "..", "Resources", "help.html"));
+                    string bundleRootHelpCap = System.IO.Path.GetFullPath(System.IO.Path.Combine(assemblyDir, "..", "Resources", "Help.html"));
+                    string singularResource = System.IO.Path.Combine(assemblyDir, "Resource", "help.html");
+                    if (System.IO.File.Exists(bundleRootHelp))
+                    {
+                        helpPath = bundleRootHelp;
+                    }
+                    else if (System.IO.File.Exists(bundleRootHelpCap))
+                    {
+                        helpPath = bundleRootHelpCap;
+                    }
+                    else if (System.IO.File.Exists(singularResource))
+                    {
+                        helpPath = singularResource;
+                    }
+                }
+            }
             ContextualHelp contextHelp = new ContextualHelp(ContextualHelpType.Url, helpPath);
             pushButton.SetContextualHelp(contextHelp);
         }

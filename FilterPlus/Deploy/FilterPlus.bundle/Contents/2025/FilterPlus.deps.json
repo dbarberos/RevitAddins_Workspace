@@ -10,7 +10,7 @@
         "dependencies": {
           "CommunityToolkit.Mvvm": "8.2.2",
           "JetBrains.Annotations": "2025.2.4",
-          "Nice3point.Revit.Extensions": "2025.2.2",
+          "Nice3point.Revit.Extensions": "2025.2.4",
           "Nice3point.Revit.Toolkit": "2025.2.0"
         },
         "runtime": {
@@ -33,11 +33,11 @@
           }
         }
       },
-      "Nice3point.Revit.Extensions/2025.2.2": {
+      "Nice3point.Revit.Extensions/2025.2.4": {
         "runtime": {
           "lib/net8.0-windows7.0/Nice3point.Revit.Extensions.dll": {
-            "assemblyVersion": "2025.2.2.0",
-            "fileVersion": "2025.2.2.0"
+            "assemblyVersion": "2025.2.4.0",
+            "fileVersion": "2025.2.4.0"
           }
         }
       },
@@ -71,12 +71,12 @@
       "path": "jetbrains.annotations/2025.2.4",
       "hashPath": "jetbrains.annotations.2025.2.4.nupkg.sha512"
     },
-    "Nice3point.Revit.Extensions/2025.2.2": {
+    "Nice3point.Revit.Extensions/2025.2.4": {
       "type": "package",
       "serviceable": true,
-      "sha512": "sha512-TNXBWvz6Z4r4Buk+K587KqaRCw2YXSeq2te6W15c7TgHL1e1w6nVtGYhypTyevqr/2FJ5bY0wsTshWLw6dunFQ==",
-      "path": "nice3point.revit.extensions/2025.2.2",
-      "hashPath": "nice3point.revit.extensions.2025.2.2.nupkg.sha512"
+      "sha512": "sha512-gjoaVDB16ePYV5hAitlVxbihUrwf7AMVWDUlmzsE7vLjeGlR4TKJ+ktWb08S+662xYFop1b1O7kVDP1s1XSzRw==",
+      "path": "nice3point.revit.extensions/2025.2.4",
+      "hashPath": "nice3point.revit.extensions.2025.2.4.nupkg.sha512"
     },
     "Nice3point.Revit.Toolkit/2025.2.0": {
       "type": "package",

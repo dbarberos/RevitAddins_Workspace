@@ -138,14 +138,20 @@ th { background-color: #f2f2f2; }
 <h3>v1.6.0</h3>
 <h4>Added</h4>
 <ul>
-<li><strong>Persistent Saved Selections:</strong> Save and recover selection sets persistently within active Revit projects.</li>
-<li><strong>Save Selection Window:</strong> A dedicated window to save new selections or overwrite existing ones.</li>
-<li><strong>Save Selection UI Polish:</strong> Standardized button widths and increased bottom spacing for improved visual alignment.</li>
-<li><strong>Dropdown Auto-Reset:</strong> Dropdowns reset to their default empty states and action buttons automatically disable after recovering or deleting selections.</li>
-<li><strong>WPF Window Custom Icons:</strong> Added custom title bar icons to all WPF windows.</li>
-<li><strong>Sort by Model Grouping:</strong> Group elements in the explorer tree by their host or link models, respecting the active grouping hierarchy.</li>
-<li><strong>100k Element Cache Warning:</strong> Integrates an orange warning icon and tooltip to signal when the combined elements exceed 100,000, triggering an automatic fallback to Active Model Only.</li>
-<li><strong>Isolated Selection Filters:</strong> Restricts host selection from picking <code>RevitLinkInstance</code> blocks, and restricts linked selection strictly to unchecked link models.</li>
+<li><strong>Persistent Saved Selections</strong>: Save and recover selection sets persistently within active Revit projects.</li>
+<li><strong>Save Selection Window</strong>: A dedicated window to save new selections or overwrite existing ones.</li>
+<li><strong>Save Selection UI Polish</strong>: Standardized button widths and increased bottom spacing for improved visual alignment.</li>
+<li><strong>Dropdown Auto-Reset</strong>: Dropdowns reset to their default empty states and action buttons automatically disable after recovering or deleting selections.</li>
+<li><strong>WPF Window Custom Icons</strong>: Added custom title bar icons to all WPF windows.</li>
+<li><strong>Sort by Model Grouping</strong>: Group elements in the explorer tree by their host or link models, respecting the active grouping hierarchy.</li>
+<li><strong>100k Element Cache Warning</strong>: Integrates an orange warning icon and tooltip to signal when the combined elements exceed 100,000, triggering an automatic fallback to Active Model Only to preserve performance.</li>
+<li><strong>Isolated Selection Filters</strong>: Introduces custom selection filters during "Select in Revit" to prevent selecting <code>RevitLinkInstance</code> blocks in Host phase and block selection of elements inside unchecked link models in Linked phase.</li>
+</ul>
+<h4>Fixed</h4>
+<ul>
+<li><strong>App Store Bundle Assembly Resolution</strong>: Bundled full runtime dependencies (<code>Nice3point.Revit.Toolkit.dll</code>, <code>Nice3point.Revit.Extensions.dll</code>, <code>CommunityToolkit.Mvvm.dll</code>, <code>System.Text.Json.dll</code>, etc.) inside all multi-version folders (Revit 2023–2027) preventing startup <code>System.IO.FileNotFoundException</code> crashes.</li>
+<li><strong>Publisher Identity Sanitization</strong>: Eliminated all legacy placeholder metadata across <code>.addin</code> manifests and <code>PackageContents.xml</code>, strictly unifying the identity under <code>DBDev Solutions</code> and <code>DBDev_dbarberos</code>.</li>
+<li><strong>W3C XML Conformance</strong>: Standardized XML declaration headers to <code>&lt;?xml version="1.0" encoding="utf-8"?&gt;</code> across all package manifests.</li>
 </ul>
 
 <h3>v1.5.0</h3>

@@ -3,7 +3,7 @@ param(
     [string]$Version = "1.0.0",
     [string]$Author = "DBDev_dbarberos",
     [string]$Email = "dbarberos@outlook.com",
-    [string[]]$TargetYears = @("2024", "2025", "2026", "2027"),
+    [string[]]$TargetYears = @("2023", "2024", "2025", "2026", "2027"),
     [string]$ProjectDir = "."
 )
 
@@ -73,32 +73,43 @@ foreach ($Year in $TargetYears) {
     $ConfigName = "Release.R$ShortYear"
     $Candidates = @(
         (Join-Path $BinDir "$ConfigName\publish\$AppName"),
+        (Join-Path $BinDir "$ConfigName\publish"),
         (Join-Path $BinDir "$ConfigName"),
         (Join-Path $BinDir "Debug.R$ShortYear\publish\$AppName"),
+        (Join-Path $BinDir "Debug.R$ShortYear\publish"),
         (Join-Path $BinDir "Debug.R$ShortYear")
     )
 
     $PublishDir = $null
+    $FoundDlls = @()
     foreach ($cand in $Candidates) {
-        if ((Test-Path $cand) -and (Test-Path (Join-Path $cand "$AppName.dll"))) {
-            $PublishDir = $cand
-            break
+        $candidateDll = Join-Path $cand "$AppName.dll"
+        if ((Test-Path $cand) -and (Test-Path $candidateDll)) {
+            $FoundDlls += (Get-Item $candidateDll)
         }
+    }
+
+    if ($FoundDlls.Count -gt 0) {
+        $PublishDir = ($FoundDlls | Sort-Object LastWriteTime -Descending | Select-Object -First 1).DirectoryName
     }
 
     if (-not $PublishDir) {
         Write-Warning "Publish directory not found for Revit $Year ($ConfigName). Attempting compilation..."
         $Csproj = Join-Path $resolvedProjectDir "$AppName.csproj"
         try {
-            dotnet build $Csproj -c $ConfigName /p:DeployAddin=false
+            dotnet publish $Csproj -c $ConfigName /p:DeployAddin=false
         } catch {
             Write-Warning "Compilation failed for $ConfigName. Skipping $Year."
         }
+        $FoundDlls = @()
         foreach ($cand in $Candidates) {
-            if ((Test-Path $cand) -and (Test-Path (Join-Path $cand "$AppName.dll"))) {
-                $PublishDir = $cand
-                break
+            $candidateDll = Join-Path $cand "$AppName.dll"
+            if ((Test-Path $cand) -and (Test-Path $candidateDll)) {
+                $FoundDlls += (Get-Item $candidateDll)
             }
+        }
+        if ($FoundDlls.Count -gt 0) {
+            $PublishDir = ($FoundDlls | Sort-Object LastWriteTime -Descending | Select-Object -First 1).DirectoryName
         }
     }
 
@@ -116,6 +127,25 @@ foreach ($Year in $TargetYears) {
     # 1. Copy ALL binaries and dependency DLLs (Nice3point, CommunityToolkit, System.*, etc.)
     $CopiedFiles = Copy-Item -Path "$PublishDir\*" -Destination $TargetVersionDir -Recurse -Force -PassThru
     Write-Host "  -> Copied $($CopiedFiles.Count) binaries/resources for $Year" -ForegroundColor Gray
+
+    # Guarantee that version-specific Resources folder and help.html are always present
+    $VerResourcesDir = Join-Path $TargetVersionDir "Resources"
+    if (-not (Test-Path $VerResourcesDir)) {
+        New-Item -ItemType Directory -Path $VerResourcesDir -Force | Out-Null
+    }
+    $ProjectHelp = Join-Path $resolvedProjectDir "Resources\help.html"
+    if (Test-Path $ProjectHelp) {
+        Copy-Item -Path $ProjectHelp -Destination (Join-Path $VerResourcesDir "help.html") -Force
+        Copy-Item -Path $ProjectHelp -Destination (Join-Path $VerResourcesDir "Help.html") -Force
+    }
+    # Extra compatibility alias for "Resource" singular
+    $VerResourceDirSingular = Join-Path $TargetVersionDir "Resource"
+    if (-not (Test-Path $VerResourceDirSingular)) {
+        New-Item -ItemType Directory -Path $VerResourceDirSingular -Force | Out-Null
+    }
+    if (Test-Path $ProjectHelp) {
+        Copy-Item -Path $ProjectHelp -Destination (Join-Path $VerResourceDirSingular "help.html") -Force
+    }
 
     # 2. Generate standardized .addin manifest with DBDev Solutions identity and correct GUID
     $AddinContent = @"
@@ -150,7 +180,8 @@ New-Item -ItemType Directory -Path $ResourcesDest -Force | Out-Null
 
 $HelpSrc = Join-Path $resolvedProjectDir "Resources\help.html"
 if (Test-Path $HelpSrc) {
-    Copy-Item -Path $HelpSrc -Destination $ResourcesDest -Force
+    Copy-Item -Path $HelpSrc -Destination (Join-Path $ResourcesDest "help.html") -Force
+    Copy-Item -Path $HelpSrc -Destination (Join-Path $ResourcesDest "Help.html") -Force
 }
 
 $IconsSrc = Join-Path $resolvedProjectDir "Resources\Icons"

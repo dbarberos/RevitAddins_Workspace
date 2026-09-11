@@ -1824,8 +1824,13 @@ public partial class SelectionFilterViewModel : ObservableObject
             UpdatePersistentCheckedIdsFromTree();
             var elementKeys = _persistentCheckedIds.Select(k => new SavedElementKey
             {
+#if REVIT2024_OR_GREATER
                 ElementIdValue = (int)k.ElementId.Value,
                 LinkInstanceIdValue = k.LinkInstanceId != ElementId.InvalidElementId ? (int)k.LinkInstanceId.Value : -1
+#else
+                ElementIdValue = k.ElementId.IntegerValue,
+                LinkInstanceIdValue = k.LinkInstanceId != ElementId.InvalidElementId ? k.LinkInstanceId.IntegerValue : -1
+#endif
             }).ToList();
             
             var modelNames = SelectedModels.Select(m => m.DisplayName).ToList();
@@ -1989,7 +1994,11 @@ public partial class SelectionFilterViewModel : ObservableObject
                 {
                     foreach (var savedKey in targetSelection.Elements)
                     {
+#if REVIT2024_OR_GREATER
                         ElementId elId = new ElementId((long)savedKey.ElementIdValue);
+#else
+                        ElementId elId = new ElementId(savedKey.ElementIdValue);
+#endif
                         if (savedKey.LinkInstanceIdValue == -1)
                         {
                             Element el = doc.GetElement(elId);
@@ -2005,7 +2014,11 @@ public partial class SelectionFilterViewModel : ObservableObject
                         }
                         else
                         {
+#if REVIT2024_OR_GREATER
                             ElementId linkInstanceId = new ElementId((long)savedKey.LinkInstanceIdValue);
+#else
+                            ElementId linkInstanceId = new ElementId(savedKey.LinkInstanceIdValue);
+#endif
                             var linkInstance = doc.GetElement(linkInstanceId) as RevitLinkInstance;
                             if (linkInstance != null)
                             {
@@ -2090,8 +2103,13 @@ public partial class SelectionFilterViewModel : ObservableObject
                         
                         foreach (var savedKey in targetSelection.Elements)
                         {
+#if REVIT2024_OR_GREATER
                             ElementId elId = new ElementId((long)savedKey.ElementIdValue);
                             ElementId linkId = savedKey.LinkInstanceIdValue != -1 ? new ElementId((long)savedKey.LinkInstanceIdValue) : ElementId.InvalidElementId;
+#else
+                            ElementId elId = new ElementId(savedKey.ElementIdValue);
+                            ElementId linkId = savedKey.LinkInstanceIdValue != -1 ? new ElementId(savedKey.LinkInstanceIdValue) : ElementId.InvalidElementId;
+#endif
                             _persistentCheckedIds.Add(new ElementSelectionKey(elId, linkId));
                         }
                         
@@ -2277,12 +2295,16 @@ public class ElementIdEqualityComparer : IEqualityComparer<Autodesk.Revit.DB.Ele
     {
         if (x == null && y == null) return true;
         if (x == null || y == null) return false;
-        return x.Value == y.Value;
+        return x == y;
     }
 
     public int GetHashCode(Autodesk.Revit.DB.ElementId obj)
     {
         if (obj == null) return 0;
+#if REVIT2024_OR_GREATER
         return obj.Value.GetHashCode();
+#else
+        return obj.IntegerValue.GetHashCode();
+#endif
     }
 }

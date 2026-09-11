@@ -33,16 +33,35 @@ public static class SettingsService
                 XmlResolver = null
             };
 
+            FilterPlusSettings loaded = null;
             using (var stream = new FileStream(SettingsFilePath, FileMode.Open, FileAccess.Read))
             using (var xmlReader = System.Xml.XmlReader.Create(stream, settings))
             {
-                return (FilterPlusSettings)serializer.Deserialize(xmlReader);
+                loaded = (FilterPlusSettings)serializer.Deserialize(xmlReader);
             }
+
+            if (loaded != null)
+            {
+                if (loaded.SelectedTabOption == TabOption.DBDevDefault)
+                {
+                    loaded.SelectedTabOption = TabOption.AddInsDefaultTab;
+                    Save(loaded);
+                }
+                return loaded;
+            }
+
+            return new FilterPlusSettings();
         }
         catch (Exception ex)
         {
-            LoggerService.LogError("Loading Settings", ex);
-            return new FilterPlusSettings();
+            LoggerService.LogWarning($"Failed to load settings from '{SettingsFilePath}': {ex.Message}. Falling back to default settings.");
+            var fallback = new FilterPlusSettings();
+            try
+            {
+                Save(fallback);
+            }
+            catch { }
+            return fallback;
         }
     }
 
@@ -68,7 +87,7 @@ public static class SettingsService
         }
         catch (Exception ex)
         {
-            LoggerService.LogError("Saving Settings", ex);
+            LoggerService.LogWarning($"Failed to save settings to '{SettingsFilePath}': {ex.Message}");
         }
     }
 }
