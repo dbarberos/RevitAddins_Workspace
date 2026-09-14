@@ -2508,7 +2508,9 @@ public partial class TransferPlusViewModel : ObservableObject
     {
         foreach (var node in nodes)
         {
-            if (node.Item is CadDetailItemModel item && node.IsChecked == true)
+            // Only collect true leaf items: ignore structural grouping nodes like "Sheet", "View", "Root"
+            bool isGroupingNode = node.Children.Count > 0 || node.Category == "Sheet" || node.Category == "View" || node.Category == "Root";
+            if (!isGroupingNode && node.Item is CadDetailItemModel item && node.IsChecked == true)
             {
                 if (!list.Any(c => c.ElementId == item.ElementId && c.Name == item.Name))
                 {
@@ -4157,7 +4159,13 @@ public partial class TransferPlusViewModel : ObservableObject
 
         var checkedCadItems = new List<CadDetailItemModel>();
         CollectCheckedCadItems(RootNodes, checkedCadItems);
-        return checkedCadItems.Any();
+        if (checkedCadItems.Any()) return true;
+
+        return SelectedCadDetail != null &&
+               SelectedCadDetail.ElementId != null &&
+               SelectedCadDetail.ElementId != ElementId.InvalidElementId &&
+               SelectedCadDetail.Category != "Sheet" &&
+               SelectedCadDetail.Category != "Root";
     }
 
     [RelayCommand(CanExecute = nameof(CanDeleteSelectedCadItems))]
@@ -4172,23 +4180,67 @@ public partial class TransferPlusViewModel : ObservableObject
         var itemsToDelete = new List<CadDetailItemModel>();
         CollectCheckedCadItems(RootNodes, itemsToDelete);
 
+        // If no leaf checkboxes are ticked, fallback to the single item actively selected in the card
+        if (!itemsToDelete.Any() && SelectedCadDetail != null &&
+            SelectedCadDetail.ElementId != null &&
+            SelectedCadDetail.ElementId != ElementId.InvalidElementId &&
+            SelectedCadDetail.Category != "Sheet" &&
+            SelectedCadDetail.Category != "Root")
+        {
+            itemsToDelete.Add(SelectedCadDetail);
+        }
+
         if (!itemsToDelete.Any())
         {
-            TaskDialog.Show("TransferPlus", "No CAD details or views checked in the active model to delete.");
+            TaskDialog.Show("TransferPlus", "No CAD details or elements selected in the active model to delete.");
             return;
         }
 
-        string warningMessage = $"You are about to delete {itemsToDelete.Count} detail/CAD element(s) from the active model.\n\n" +
-                                "Warning: Deleting views, drafting elements, or CAD imports will permanently remove them from the active document.\n\n" +
-                                "Do you want to proceed with the deletion?";
+        // Build hierarchical confirmation tree following explorer nomenclature (Sheet -> View -> Item)
+        // Parent Sheets and Views are strictly preserved and never deleted
+        var sheetGroups = itemsToDelete
+            .GroupBy(x => string.IsNullOrWhiteSpace(x.SheetName) ? "(No Sheet / Standalone)" : x.SheetName)
+            .OrderBy(g => g.Key);
 
-        var confirmResult = System.Windows.MessageBox.Show(
-            warningMessage,
-            "Confirm Element Deletion",
-            System.Windows.MessageBoxButton.YesNo,
-            System.Windows.MessageBoxImage.Warning);
+        var confirmationTree = new List<CadDeleteSheetGroup>();
 
-        if (confirmResult != System.Windows.MessageBoxResult.Yes)
+        foreach (var sGroup in sheetGroups)
+        {
+            var sheetGroup = new CadDeleteSheetGroup
+            {
+                SheetName = sGroup.Key
+            };
+
+            var viewGroups = sGroup
+                .GroupBy(x => string.IsNullOrWhiteSpace(x.ViewName) ? "(Unassigned View)" : x.ViewName)
+                .OrderBy(g => g.Key);
+
+            foreach (var vGroup in viewGroups)
+            {
+                var viewGroup = new CadDeleteViewGroup
+                {
+                    ViewName = vGroup.Key
+                };
+
+                foreach (var item in vGroup.OrderBy(x => x.Name))
+                {
+                    viewGroup.Items.Add(new CadDeleteItemNode
+                    {
+                        Name = item.Name,
+                        Category = item.DisplayCategory,
+                        ElementId = item.ElementId
+                    });
+                }
+
+                sheetGroup.Views.Add(viewGroup);
+            }
+
+            confirmationTree.Add(sheetGroup);
+        }
+
+        // Show styled confirmation window matching TransferPlus visual theme
+        var confirmWindow = new ConfirmCadDeleteWindow(confirmationTree, itemsToDelete.Count);
+        if (confirmWindow.ShowDialog() != true)
         {
             return;
         }
@@ -4200,7 +4252,7 @@ public partial class TransferPlusViewModel : ObservableObject
 
         try
         {
-            using (var t = new Transaction(doc, "Delete CAD Details and Views"))
+            using (var t = new Transaction(doc, "Delete CAD Details"))
             {
                 t.Start();
 
@@ -4219,7 +4271,7 @@ public partial class TransferPlusViewModel : ObservableObject
                         }
                         catch (Exception ex)
                         {
-                            LoggerService.LogError($"Error deleting CAD detail element '{item.Name}' (ID: {item.ElementId})", ex);
+                            LoggerService.LogError($"Error deleting CAD detail element '{item.Name}' (ID: {item.ElementId.Value})", ex);
                         }
                     }
                 }
@@ -4227,9 +4279,10 @@ public partial class TransferPlusViewModel : ObservableObject
                 t.Commit();
             }
 
-            LoggerService.LogInfo($"[Delete] Deleted {deletedCount} detail/CAD element(s) from model '{SelectedSourceDocument.Nombre}'.");
+            LoggerService.LogInfo($"[Delete] Deleted {deletedCount} detail/CAD element(s) from model '{SelectedSourceDocument.Nombre}'. Parent Sheets and Views preserved.");
             StatusMessage = $"Deleted {deletedCount} element(s).";
 
+            SelectedCadDetail = null;
             LoadCadItemsFromSource(doc);
         }
         catch (Exception ex)
@@ -4267,7 +4320,13 @@ public partial class TransferPlusViewModel : ObservableObject
         var allNodes = GetAllDescendantNodes(RootNodes).ToList();
         var itemsToDownload = new List<(TreeItemViewModel? node, CadDetailItemModel item)>();
 
-        var checkedNodes = allNodes.Where(n => (n.IsChecked == true || n.IsChecked == null) && n.Item is CadDetailItemModel).ToList();
+        var checkedNodes = allNodes.Where(n => 
+            (n.IsChecked == true || n.IsChecked == null) && 
+            n.Item is CadDetailItemModel &&
+            n.Children.Count == 0 &&
+            n.Category != "Sheet" && 
+            n.Category != "View" && 
+            n.Category != "Root").ToList();
 
         foreach (var node in checkedNodes)
         {

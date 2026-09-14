@@ -129,6 +129,10 @@ TransferPlus provides a dedicated **CAD / Details Mode** tailored for migrating 
   - Dynamic Title Block rendering with in-memory family editing.
 * **Middle Column Horizontal Scrolling**:
   - Dedicated horizontal scrollbar for long element names while keeping selection checkboxes and element counts fixed in place.
+* **Leaf-Only CAD Deletion & Hierarchical Safety Confirmation**:
+  - When managing CAD/detail elements in the active project, clicking the Delete button strictly confines deletion to leaf-level elements (CAD links, imports, detail components, groups).
+  - Parent hierarchical containers (Sheets and Views) are **never** deleted, keeping them intact in the project for future reuse with new content.
+  - An interactive, styled confirmation dialog (`ConfirmCadDeleteWindow`) displays the hierarchical tree structure (Sheet -> View -> Items), explicitly highlighting parent containers as preserved and leaf elements as scheduled for deletion.
 
 ---
 
@@ -142,6 +146,7 @@ TransferPlus provides a dedicated **CAD / Details Mode** tailored for migrating 
 - **Title Block & Family Dynamic Rendering**: Dynamic preview rendering for title blocks and family types using in-memory `EditFamily` and `ViewSheet` generation.
 - **Auto-Crop & Zoom-to-Extents Framing**: Automatic bounding box framing and margin calculations for small annotation elements, tags, and drafting items.
 - **Middle Column Horizontal Scrolling**: Dedicated horizontal scrollbar in the asset tree allowing unconstrained reading of long family/view names while keeping checkboxes and element count badges stationary.
+- **Leaf-Only CAD Deletion with Hierarchical Confirmation Dialog**: Interactive safety confirmation window before deleting CAD details from active models. Displays the hierarchy with clear visual indicators that parent Sheets and Views are preserved while only the selected leaf CAD/detail elements are deleted.
 - **Ribbon Placement on Add-Ins Tab (Default)**: Aligned with Autodesk App Store single-command guidelines by placing the TransferPlus ribbon panel on Revit's native **Add-Ins (Complementos)** tab by default.
 - **Revit Manage Tab Placement (Settings Group)**: New placement option to insert the TransferPlus button directly into the native **Settings (Configuración)** panel of the **Manage (Gestionar)** tab, positioned immediately to the right of the *Additional Settings (Configuración adicional)* command.
 
@@ -152,6 +157,7 @@ TransferPlus provides a dedicated **CAD / Details Mode** tailored for migrating 
 - **Configuration Window Tab Options**: Updated the *Tab Option (*)* selection card in the Configuration window with clear, descriptive choices: *Place TransferPlus on Add-Ins tab (default)*, *Place on Revit Manage tab*, and *Place on tab named:*.
 
 #### Fixed
+- **Parent Sheet & View Deletion Prevention in CAD Mode**: Fixed an issue where tri-state checkbox bubbling or parent node resolution in `Sort by Sheet` mode could cause parent `ViewSheet` or `View` containers to be deleted along with CAD details. Deletion is now strictly confined to leaf elements.
 - **XML Settings Deserialization Resilience**: Resolved startup deserialization errors caused by legacy `DBDevDefault` tab settings. Implemented backwards-compatible enum mapping (`[XmlEnum("DBDevDefault")]`), seamless in-memory auto-upgrade to `AddInsDefaultTab`, non-blocking warning logging, and safe fallback handling to prevent modal alert freezes during Revit initialization.
 - **Polymorphic Detail Item Handling**: Resolved `InvalidCastException` when collecting `OST_DetailComponents` by handling `FilledRegion` and `FamilyInstance` polymorphically.
 - **TreeView Layout Clipping**: Fixed text clipping in TreeView item templates using unconstrained Canvas containers.

@@ -139,6 +139,7 @@
         <li><strong>Title Block & Family Dynamic Rendering</strong>: In-memory <code>EditFamily</code> and <code>ViewSheet</code> generation for responsive thumbnail previews.</li>
         <li><strong>Smart Zoom-to-Extents Framing</strong>: Auto-crop with adaptive margins for small annotations and tags.</li>
         <li><strong>Middle Column Horizontal Scrollbar</strong>: Dedicated scrolling for long names while keeping checkboxes and count columns fixed.</li>
+        <li><strong>Leaf-Only CAD Deletion & Safety Confirmation</strong>: Deletion is strictly confined to lowest-level CAD/detail elements (links, imports, components). Parent Sheets and Views are never deleted and remain in the project for future reuse. Includes a hierarchical preview confirmation dialog.</li>
     </ul>
 
     <h2>6. Version History (Changelog)</h2>
@@ -149,9 +150,11 @@
         <li><strong>Title Block & Family Dynamic Rendering</strong>: Dynamic preview rendering for title blocks and family types using in-memory <code>EditFamily</code> and <code>ViewSheet</code> generation.</li>
         <li><strong>Auto-Crop & Zoom-to-Extents Framing</strong>: Automatic bounding box framing and margin calculations for small annotation elements, tags, and drafting items.</li>
         <li><strong>Middle Column Horizontal Scrolling</strong>: Dedicated horizontal scrollbar in the asset tree allowing unconstrained reading of long family/view names while keeping checkboxes and element count badges stationary.</li>
+        <li><strong>Leaf-Only CAD Deletion with Hierarchical Confirmation Dialog</strong>: Interactive safety confirmation window before deleting CAD details from active models. Displays the hierarchy with clear visual indicators that parent Sheets and Views are preserved while only the selected leaf CAD/detail elements are deleted.</li>
         <li><strong>Ribbon Placement on Add-Ins Tab (Default)</strong>: Aligned with Autodesk App Store single-command guidelines by placing the TransferPlus ribbon panel on Revit's native Add-Ins (Complementos) tab by default.</li>
         <li><strong>Revit Manage Tab Placement (Settings Group)</strong>: Option to insert the TransferPlus button directly into the native Settings (Configuración) panel of the Manage tab, immediately to the right of Additional Settings.</li>
         <li><strong>Configuration Window Tab Options</strong>: Updated Tab Option selection card with clear choices: Add-Ins tab (default), Revit Manage tab, and Custom tab name.</li>
+        <li><strong>Parent Sheet & View Deletion Prevention in CAD Mode</strong>: Fixed an issue where tri-state checkbox bubbling or parent node resolution in <code>Sort by Sheet</code> mode could cause parent <code>ViewSheet</code> or <code>View</code> containers to be deleted along with CAD details. Deletion is now strictly confined to leaf elements.</li>
         <li><strong>XML Settings Deserialization Resilience</strong>: Resolved startup deserialization errors caused by legacy DBDevDefault settings. Seamless backwards-compatible auto-upgrade to Add-Ins default with non-blocking error handling.</li>
     </ul>
 
