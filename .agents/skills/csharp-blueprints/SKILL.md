@@ -28,6 +28,7 @@ This directory contains the "technical memory" of the most complex C# components
 - [provider_pattern_family_manager_guide](references/provider_pattern_family_manager_guide.md): Provider Pattern architecture for multi-source family management across Local Folders, Azure Cloud, Open Models, and Linked Models.
 - [provider_pattern_cad_manager_guide](references/provider_pattern_cad_manager_guide.md): Provider Pattern architecture for multi-source CAD management across Local Folders, Autodesk Docs, Azure Storage, AWS S3, and Revit models with Import/Link conditional handling.
 - [debugging_cad_mode_rename_panel_empty_selection_2026-09-15](references/debugging_cad_mode_rename_panel_empty_selection_2026-09-15.md): Root cause analysis and multi-mode segregation pattern for CAD mode Rename panel empty selection failure.
+- [debugging_cad_download_rename_and_iterative_chaining_2026-09-15](references/debugging_cad_download_rename_and_iterative_chaining_2026-09-15.md): Root cause analysis for iterative rename regex matching against WorkingName and integration of renamed file targets in CAD download/export operations.
 
 ## 🔧 Assets (Reusable Code)
 

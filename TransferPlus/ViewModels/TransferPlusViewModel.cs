@@ -3276,15 +3276,16 @@ public partial class TransferPlusViewModel : ObservableObject
         int selectedItemIndex = 0;
         foreach (var item in RenamePreviewItems)
         {
-            // First, calculate if it matches the Find text (strictly against OriginalName)
+            // First, calculate if it matches the Find text against current WorkingName
             bool isMatch = false;
             if (!string.IsNullOrEmpty(RenameSearchText))
             {
+                string matchTarget = !string.IsNullOrEmpty(item.WorkingName) ? item.WorkingName : item.OriginalName;
                 if (RenameUseRegex && regex != null)
                 {
                     try
                     {
-                        isMatch = regex.IsMatch(item.OriginalName);
+                        isMatch = regex.IsMatch(matchTarget);
                     }
                     catch { }
                 }
@@ -3292,7 +3293,7 @@ public partial class TransferPlusViewModel : ObservableObject
                 {
                     string literalPattern = Regex.Escape(RenameSearchText);
                     var re = new Regex(literalPattern, options, TimeSpan.FromMilliseconds(500));
-                    isMatch = re.IsMatch(item.OriginalName);
+                    isMatch = re.IsMatch(matchTarget);
                 }
             }
             item.IsMatchingFilter = isMatch;
@@ -4496,6 +4497,46 @@ public partial class TransferPlusViewModel : ObservableObject
         int total = itemsToDownload.Count;
         int countSuccess = 0;
 
+        var cadRenameMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        var cadCustomNames = new Dictionary<ElementId, string>();
+
+        if (IsRenamePanelOpen || RenamePreviewItems.Any())
+        {
+            foreach (var pItem in RenamePreviewItems)
+            {
+                if (pItem.IsSelected && !string.IsNullOrWhiteSpace(pItem.NewName) && !pItem.NewName.Equals(pItem.OriginalName, StringComparison.OrdinalIgnoreCase))
+                {
+                    if (pItem.SourceId != null && pItem.SourceId != ElementId.InvalidElementId)
+                    {
+                        cadCustomNames[pItem.SourceId] = pItem.NewName;
+                    }
+                    if (!string.IsNullOrWhiteSpace(pItem.OriginalName))
+                    {
+                        cadRenameMap[pItem.OriginalName] = pItem.NewName;
+                    }
+                    if (!string.IsNullOrWhiteSpace(pItem.CadIdentifier))
+                    {
+                        cadRenameMap[pItem.CadIdentifier] = pItem.NewName;
+                    }
+                    if (pItem.CadItem != null)
+                    {
+                        if (!string.IsNullOrWhiteSpace(pItem.CadItem.FilePath))
+                        {
+                            cadRenameMap[pItem.CadItem.FilePath] = pItem.NewName;
+                        }
+                        if (!string.IsNullOrWhiteSpace(pItem.CadItem.Name))
+                        {
+                            cadRenameMap[pItem.CadItem.Name] = pItem.NewName;
+                        }
+                        if (!string.IsNullOrWhiteSpace(pItem.CadItem.ViewName))
+                        {
+                            cadRenameMap[pItem.CadItem.ViewName] = pItem.NewName;
+                        }
+                    }
+                }
+            }
+        }
+
         try
         {
             var uiApp = _app;
@@ -4504,7 +4545,31 @@ public partial class TransferPlusViewModel : ObservableObject
             for (int i = 0; i < itemsToDownload.Count; i++)
             {
                 var (node, cadItem) = itemsToDownload[i];
-                string currentStatusText = $"Downloading ({i + 1}/{total}): {cadItem.Name}...";
+
+                string effectiveCadName = cadItem.Name;
+                string cadId = GetCadIdentifier(cadItem);
+                if (cadRenameMap.TryGetValue(cadId, out var rnById) && !string.IsNullOrWhiteSpace(rnById))
+                {
+                    effectiveCadName = rnById;
+                }
+                else if (cadItem.ElementId != null && cadCustomNames.TryGetValue(cadItem.ElementId, out var rnByElemId) && !string.IsNullOrWhiteSpace(rnByElemId))
+                {
+                    effectiveCadName = rnByElemId;
+                }
+                else if (!string.IsNullOrWhiteSpace(cadItem.FilePath) && cadRenameMap.TryGetValue(cadItem.FilePath, out var rnByPath) && !string.IsNullOrWhiteSpace(rnByPath))
+                {
+                    effectiveCadName = Path.GetFileNameWithoutExtension(rnByPath);
+                }
+                else if (!string.IsNullOrWhiteSpace(cadItem.Name) && cadRenameMap.TryGetValue(cadItem.Name, out var rnByName) && !string.IsNullOrWhiteSpace(rnByName))
+                {
+                    effectiveCadName = rnByName;
+                }
+                else if (!string.IsNullOrWhiteSpace(cadItem.ViewName) && cadRenameMap.TryGetValue(cadItem.ViewName, out var rnByView) && !string.IsNullOrWhiteSpace(rnByView))
+                {
+                    effectiveCadName = rnByView;
+                }
+
+                string currentStatusText = $"Downloading ({i + 1}/{total}): {effectiveCadName}...";
                 StatusMessage = currentStatusText;
                 ProgressPercentage = (int)(((double)(i + 1) / total) * 100);
 
@@ -4541,7 +4606,17 @@ public partial class TransferPlusViewModel : ObservableObject
 
                 if (family != null && sourceDoc != null)
                 {
-                    string famKey = $"{targetSubFolder}___{family.UniqueId ?? family.Name}";
+                    string rfaBaseName = family.Name;
+                    if (cadRenameMap.TryGetValue(family.Name, out var rnFam) && !string.IsNullOrWhiteSpace(rnFam))
+                    {
+                        rfaBaseName = rnFam;
+                    }
+                    else if (!string.IsNullOrWhiteSpace(effectiveCadName) && effectiveCadName != cadItem.Name)
+                    {
+                        rfaBaseName = effectiveCadName;
+                    }
+
+                    string famKey = $"{targetSubFolder}___{family.UniqueId ?? rfaBaseName}";
                     if (processedFamilies.Contains(famKey))
                     {
                         countSuccess++;
@@ -4579,13 +4654,13 @@ public partial class TransferPlusViewModel : ObservableObject
 
                     var famItem = new FamilyItemModel
                     {
-                        Name = family.Name,
+                        Name = rfaBaseName,
                         CategoryName = family.FamilyCategory?.Name ?? "Detail Items",
                         NativeFamily = family,
                         SourceName = sourceDoc.Title
                     };
 
-                    string targetRfaPath = ResolveNonCollidingFilePath(targetSubFolder, family.Name, ".rfa");
+                    string targetRfaPath = ResolveNonCollidingFilePath(targetSubFolder, rfaBaseName, ".rfa");
                     string folder = Path.GetDirectoryName(targetRfaPath)!;
                     string rfaWithoutExt = Path.GetFileNameWithoutExtension(targetRfaPath);
 
@@ -4602,7 +4677,7 @@ public partial class TransferPlusViewModel : ObservableObject
                 }
                 else
                 {
-                    bool ok = await ExportOrDownloadCadItemAsync(uiApp, cadItem, targetSubFolder);
+                    bool ok = await ExportOrDownloadCadItemAsync(uiApp, cadItem, targetSubFolder, effectiveCadName);
                     if (ok) countSuccess++;
                 }
             }
@@ -4694,7 +4769,7 @@ public partial class TransferPlusViewModel : ObservableObject
         }
     }
 
-    private async Task<bool> ExportOrDownloadCadItemAsync(Autodesk.Revit.UI.UIApplication? uiApp, CadDetailItemModel cadItem, string targetFolder)
+    private async Task<bool> ExportOrDownloadCadItemAsync(Autodesk.Revit.UI.UIApplication? uiApp, CadDetailItemModel cadItem, string targetFolder, string? overrideFileName = null)
     {
         try
         {
@@ -4702,6 +4777,10 @@ public partial class TransferPlusViewModel : ObservableObject
             {
                 Directory.CreateDirectory(targetFolder);
             }
+
+            string baseFileName = !string.IsNullOrWhiteSpace(overrideFileName)
+                ? overrideFileName
+                : (!string.IsNullOrWhiteSpace(cadItem.Name) ? cadItem.Name : "CAD_Detail");
 
             // Case 1: External CAD file (Local Directory, Azure Storage, AWS S3, Autodesk Docs)
             if (cadItem.IsExternalFile || cadItem.SourceType != null || !string.IsNullOrWhiteSpace(cadItem.FilePath))
@@ -4713,7 +4792,7 @@ public partial class TransferPlusViewModel : ObservableObject
                 {
                     string ext = Path.GetExtension(srcPath);
                     if (string.IsNullOrWhiteSpace(ext)) ext = !string.IsNullOrWhiteSpace(cadItem.Format) ? $".{cadItem.Format}" : ".dwg";
-                    string targetFilePath = ResolveNonCollidingFilePath(targetFolder, cadItem.Name, ext);
+                    string targetFilePath = ResolveNonCollidingFilePath(targetFolder, baseFileName, ext);
                     File.Copy(srcPath, targetFilePath, OverwriteCadDuplicates);
                     TelemetryLogger.LogInfo($"[Download] Copiado archivo CAD local '{srcPath}' -> '{targetFilePath}'");
                     return true;
@@ -4738,7 +4817,7 @@ public partial class TransferPlusViewModel : ObservableObject
                         {
                             string ext = Path.GetExtension(tempLocal);
                             if (string.IsNullOrWhiteSpace(ext)) ext = !string.IsNullOrWhiteSpace(cadItem.Format) ? $".{cadItem.Format}" : ".dwg";
-                            string targetFilePath = ResolveNonCollidingFilePath(targetFolder, cadItem.Name, ext);
+                            string targetFilePath = ResolveNonCollidingFilePath(targetFolder, baseFileName, ext);
                             File.Copy(tempLocal, targetFilePath, OverwriteCadDuplicates);
                             TelemetryLogger.LogInfo($"[Download] Descargado y copiado con éxito blob Azure a '{targetFilePath}'");
                             return true;
@@ -4757,7 +4836,7 @@ public partial class TransferPlusViewModel : ObservableObject
                         {
                             string ext = Path.GetExtension(tempLocal);
                             if (string.IsNullOrWhiteSpace(ext)) ext = !string.IsNullOrWhiteSpace(cadItem.Format) ? $".{cadItem.Format}" : ".dwg";
-                            string targetFilePath = ResolveNonCollidingFilePath(targetFolder, cadItem.Name, ext);
+                            string targetFilePath = ResolveNonCollidingFilePath(targetFolder, baseFileName, ext);
                             File.Copy(tempLocal, targetFilePath, OverwriteCadDuplicates);
                             TelemetryLogger.LogInfo($"[Download] Descargado y copiado con éxito objeto AWS S3 a '{targetFilePath}'");
                             return true;
@@ -4779,7 +4858,7 @@ public partial class TransferPlusViewModel : ObservableObject
 
                         if (!string.IsNullOrWhiteSpace(accessToken))
                         {
-                            string rawFileName = !string.IsNullOrWhiteSpace(cadItem.Format) ? $"{cadItem.Name}.{cadItem.Format}" : $"{cadItem.Name}.dwg";
+                            string rawFileName = !string.IsNullOrWhiteSpace(cadItem.Format) ? $"{baseFileName}.{cadItem.Format}" : $"{baseFileName}.dwg";
                             string? downloadUrl = await AutodeskDocsService.GetLatestVersionDownloadUrlAsync(accessToken, source.ProjectId, cadItem.FilePath);
                             if (!string.IsNullOrWhiteSpace(downloadUrl))
                             {
@@ -4788,7 +4867,7 @@ public partial class TransferPlusViewModel : ObservableObject
                                 {
                                     string ext = Path.GetExtension(tempLocal);
                                     if (string.IsNullOrWhiteSpace(ext)) ext = !string.IsNullOrWhiteSpace(cadItem.Format) ? $".{cadItem.Format}" : ".dwg";
-                                    string targetFilePath = ResolveNonCollidingFilePath(targetFolder, cadItem.Name, ext);
+                                    string targetFilePath = ResolveNonCollidingFilePath(targetFolder, baseFileName, ext);
                                     File.Copy(tempLocal, targetFilePath, OverwriteCadDuplicates);
                                     TelemetryLogger.LogInfo($"[Download] Descargado y copiado con éxito archivo ACC a '{targetFilePath}'");
                                     return true;
@@ -4813,7 +4892,7 @@ public partial class TransferPlusViewModel : ObservableObject
                     {
                         string ext = Path.GetExtension(srcPath);
                         if (string.IsNullOrWhiteSpace(ext)) ext = !string.IsNullOrWhiteSpace(cadItem.Format) ? $".{cadItem.Format}" : ".dwg";
-                        string targetFilePath = ResolveNonCollidingFilePath(targetFolder, cadItem.Name, ext);
+                        string targetFilePath = ResolveNonCollidingFilePath(targetFolder, baseFileName, ext);
                         File.Copy(srcPath, targetFilePath, OverwriteCadDuplicates);
                         return true;
                     }
@@ -4838,7 +4917,7 @@ public partial class TransferPlusViewModel : ObservableObject
                     {
                         MergedViews = true
                     };
-                    string targetDwgPath = ResolveNonCollidingFilePath(targetFolder, cadItem.Name, ".dwg");
+                    string targetDwgPath = ResolveNonCollidingFilePath(targetFolder, baseFileName, ".dwg");
                     string folder = Path.GetDirectoryName(targetDwgPath)!;
                     string fileWithoutExt = Path.GetFileNameWithoutExtension(targetDwgPath);
 
@@ -4857,7 +4936,7 @@ public partial class TransferPlusViewModel : ObservableObject
                         NativeFamily = fam,
                         SourceName = sourceDoc.Title
                     };
-                    string targetRfaPath = ResolveNonCollidingFilePath(targetFolder, fam.Name, ".rfa");
+                    string targetRfaPath = ResolveNonCollidingFilePath(targetFolder, baseFileName, ".rfa");
                     string folder = Path.GetDirectoryName(targetRfaPath)!;
                     string rfaWithoutExt = Path.GetFileNameWithoutExtension(targetRfaPath);
 
@@ -4881,7 +4960,7 @@ public partial class TransferPlusViewModel : ObservableObject
                         NativeFamily = fam,
                         SourceName = sourceDoc.Title
                     };
-                    string targetRfaPath = ResolveNonCollidingFilePath(targetFolder, fam.Name, ".rfa");
+                    string targetRfaPath = ResolveNonCollidingFilePath(targetFolder, baseFileName, ".rfa");
                     string folder = Path.GetDirectoryName(targetRfaPath)!;
                     string rfaWithoutExt = Path.GetFileNameWithoutExtension(targetRfaPath);
 
@@ -4900,7 +4979,7 @@ public partial class TransferPlusViewModel : ObservableObject
                     if (cadItem.OwnerViewId != null && sourceDoc.GetElement(cadItem.OwnerViewId) is View hostView)
                     {
                         var dwgOptions = new DWGExportOptions { MergedViews = true };
-                        string targetDwgPath = ResolveNonCollidingFilePath(targetFolder, cadItem.Name, ".dwg");
+                        string targetDwgPath = ResolveNonCollidingFilePath(targetFolder, baseFileName, ".dwg");
                         string folder = Path.GetDirectoryName(targetDwgPath)!;
                         string fileWithoutExt = Path.GetFileNameWithoutExtension(targetDwgPath);
                         return sourceDoc.Export(folder, fileWithoutExt, new List<ElementId> { hostView.Id }, dwgOptions);
@@ -4914,7 +4993,7 @@ public partial class TransferPlusViewModel : ObservableObject
                     if (ownerView != null)
                     {
                         var dwgOptions = new DWGExportOptions { MergedViews = true };
-                        string targetDwgPath = ResolveNonCollidingFilePath(targetFolder, cadItem.Name, ".dwg");
+                        string targetDwgPath = ResolveNonCollidingFilePath(targetFolder, baseFileName, ".dwg");
                         string folder = Path.GetDirectoryName(targetDwgPath)!;
                         string fileWithoutExt = Path.GetFileNameWithoutExtension(targetDwgPath);
                         return sourceDoc.Export(folder, fileWithoutExt, new List<ElementId> { ownerView.Id }, dwgOptions);
@@ -4925,7 +5004,7 @@ public partial class TransferPlusViewModel : ObservableObject
                 if (cadItem.OwnerViewId != null && sourceDoc.GetElement(cadItem.OwnerViewId) is View ownerV)
                 {
                     var dwgOptions = new DWGExportOptions { MergedViews = true };
-                    string targetDwgPath = ResolveNonCollidingFilePath(targetFolder, cadItem.Name, ".dwg");
+                    string targetDwgPath = ResolveNonCollidingFilePath(targetFolder, baseFileName, ".dwg");
                     string folder = Path.GetDirectoryName(targetDwgPath)!;
                     string fileWithoutExt = Path.GetFileNameWithoutExtension(targetDwgPath);
                     return sourceDoc.Export(folder, fileWithoutExt, new List<ElementId> { ownerV.Id }, dwgOptions);
