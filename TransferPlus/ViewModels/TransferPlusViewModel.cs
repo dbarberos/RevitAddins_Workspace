@@ -2140,6 +2140,47 @@ public partial class TransferPlusViewModel : ObservableObject
                 return;
             }
 
+            Dictionary<ElementId, string>? cadCustomNames = null;
+            Dictionary<string, string>? cadRenameMap = null;
+            if (IsRenamePanelOpen || RenamePreviewItems.Any())
+            {
+                cadCustomNames = new Dictionary<ElementId, string>();
+                cadRenameMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+                foreach (var pItem in RenamePreviewItems)
+                {
+                    if (pItem.IsSelected && !string.IsNullOrWhiteSpace(pItem.NewName) && !pItem.NewName.Equals(pItem.OriginalName, StringComparison.OrdinalIgnoreCase))
+                    {
+                        if (pItem.SourceId != null && pItem.SourceId != ElementId.InvalidElementId)
+                        {
+                            cadCustomNames[pItem.SourceId] = pItem.NewName;
+                        }
+                        if (!string.IsNullOrWhiteSpace(pItem.OriginalName))
+                        {
+                            cadRenameMap[pItem.OriginalName] = pItem.NewName;
+                        }
+                        if (pItem.CadItem != null)
+                        {
+                            if (!string.IsNullOrWhiteSpace(pItem.CadItem.FilePath))
+                            {
+                                cadRenameMap[pItem.CadItem.FilePath] = pItem.NewName;
+                            }
+                            if (!string.IsNullOrWhiteSpace(pItem.CadItem.Name))
+                            {
+                                cadRenameMap[pItem.CadItem.Name] = pItem.NewName;
+                            }
+                            if (!string.IsNullOrWhiteSpace(pItem.CadItem.ViewName))
+                            {
+                                cadRenameMap[pItem.CadItem.ViewName] = pItem.NewName;
+                            }
+                        }
+                    }
+                }
+
+                if (!cadCustomNames.Any()) cadCustomNames = null;
+                if (!cadRenameMap.Any()) cadRenameMap = null;
+            }
+
             if (SelectedSourceDocument?.EsCadSource == true)
             {
                 IsBusy = true;
@@ -2155,7 +2196,23 @@ public partial class TransferPlusViewModel : ObservableObject
                         foreach (var cadItem in checkedCadItems)
                         {
                             StatusMessage = $"Transferring CAD '{cadItem.Name}' to '{destDoc.Nombre}'...";
-                            bool ok = provider.TransferCadItemAsync(cadItem, destDoc.Adoc, isLinkMode: CadTransferModeLink).GetAwaiter().GetResult();
+                            string? overrideViewName = null;
+                            if (cadRenameMap != null)
+                            {
+                                if (!string.IsNullOrWhiteSpace(cadItem.FilePath) && cadRenameMap.TryGetValue(cadItem.FilePath, out var rnPath))
+                                {
+                                    overrideViewName = rnPath;
+                                }
+                                else if (!string.IsNullOrWhiteSpace(cadItem.Name) && cadRenameMap.TryGetValue(cadItem.Name, out var rnName))
+                                {
+                                    overrideViewName = rnName;
+                                }
+                                else if (!string.IsNullOrWhiteSpace(cadItem.ViewName) && cadRenameMap.TryGetValue(cadItem.ViewName, out var rnView))
+                                {
+                                    overrideViewName = rnView;
+                                }
+                            }
+                            bool ok = provider.TransferCadItemAsync(cadItem, destDoc.Adoc, isLinkMode: CadTransferModeLink, overrideViewName: overrideViewName).GetAwaiter().GetResult();
                             if (ok) totalTransferred++;
                         }
                     }
@@ -2211,19 +2268,19 @@ public partial class TransferPlusViewModel : ObservableObject
 
                     if (draftingViewIds.Any())
                     {
-                        int count = familyService.TransferDraftingViews(SelectedSourceDocument.Adoc, destDoc.Adoc, draftingViewIds);
+                        int count = familyService.TransferDraftingViews(SelectedSourceDocument.Adoc, destDoc.Adoc, draftingViewIds, cadCustomNames);
                         totalTransferred += count;
                     }
 
                     if (cadInstanceIds.Any())
                     {
-                        int count = familyService.TransferCadInstancesToDraftingViews(SelectedSourceDocument.Adoc, destDoc.Adoc, cadInstanceIds);
+                        int count = familyService.TransferCadInstancesToDraftingViews(SelectedSourceDocument.Adoc, destDoc.Adoc, cadInstanceIds, cadCustomNames);
                         totalTransferred += count;
                     }
 
                     if (otherElementIds.Any())
                     {
-                        int count = familyService.TransferDraftingViews(SelectedSourceDocument.Adoc, destDoc.Adoc, otherElementIds);
+                        int count = familyService.TransferDraftingViews(SelectedSourceDocument.Adoc, destDoc.Adoc, otherElementIds, cadCustomNames);
                         totalTransferred += count;
                     }
                 }
@@ -2521,6 +2578,19 @@ public partial class TransferPlusViewModel : ObservableObject
         }
     }
 
+    private string GetCadIdentifier(CadDetailItemModel cad)
+    {
+        if (cad.ElementId != null && cad.ElementId != ElementId.InvalidElementId)
+        {
+            return $"CAD_ELEM_{cad.ElementId.Value}_{cad.Name}";
+        }
+        if (!string.IsNullOrWhiteSpace(cad.FilePath))
+        {
+            return $"CAD_FILE_{cad.FilePath}";
+        }
+        return $"CAD_ITEM_{cad.Category}_{cad.Name}_{cad.ViewName}_{cad.SheetName}";
+    }
+
     private void UpdateCheckedCount()
     {
         var checkedItems = new List<Elemento>();
@@ -2573,7 +2643,44 @@ public partial class TransferPlusViewModel : ObservableObject
         // Sincronización dinámica con la paleta si está abierta o hay datos
         if (IsRenamePanelOpen || RenamePreviewItems.Any())
         {
-            if (IsFamiliesManagerActive)
+            if (IsCadDetailsManagerActive)
+            {
+                var checkedCadItems = new List<CadDetailItemModel>();
+                CollectCheckedCadItems(RootNodes, checkedCadItems);
+
+                var currentPreviewIds = RenamePreviewItems.Select(x => x.CadIdentifier).Where(x => x != null).ToHashSet();
+                var newCheckedCadMap = new Dictionary<string, CadDetailItemModel>(StringComparer.OrdinalIgnoreCase);
+                foreach (var c in checkedCadItems)
+                {
+                    string id = GetCadIdentifier(c);
+                    if (!newCheckedCadMap.ContainsKey(id))
+                    {
+                        newCheckedCadMap[id] = c;
+                    }
+                }
+
+                // Eliminar los que ya no están seleccionados
+                for (int i = RenamePreviewItems.Count - 1; i >= 0; i--)
+                {
+                    if (RenamePreviewItems[i].CadIdentifier == null || !newCheckedCadMap.ContainsKey(RenamePreviewItems[i].CadIdentifier!))
+                    {
+                        RenamePreviewItems[i].PropertyChanged -= PreviewItem_PropertyChanged;
+                        RenamePreviewItems.RemoveAt(i);
+                    }
+                }
+
+                // Añadir los nuevos seleccionados
+                foreach (var kvp in newCheckedCadMap)
+                {
+                    if (!currentPreviewIds.Contains(kvp.Key))
+                    {
+                        var pItem = new RenamePreviewItem(kvp.Value, kvp.Key);
+                        pItem.PropertyChanged += PreviewItem_PropertyChanged;
+                        RenamePreviewItems.Add(pItem);
+                    }
+                }
+            }
+            else if (IsFamiliesManagerActive)
             {
                 var checkedFamilies = new List<FamilyItemModel>();
                 CollectCheckedFamilies(RootNodes, checkedFamilies);
@@ -2900,7 +3007,30 @@ public partial class TransferPlusViewModel : ObservableObject
 
         RenamePreviewItems.Clear();
 
-        if (IsFamiliesManagerActive)
+        if (IsCadDetailsManagerActive)
+        {
+            var checkedCadItems = new List<CadDetailItemModel>();
+            CollectCheckedCadItems(RootNodes, checkedCadItems);
+
+            if (!checkedCadItems.Any())
+            {
+                TaskDialog.Show("TransferPlus", "No elements checked for renaming.");
+                return;
+            }
+
+            var processedIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var item in checkedCadItems)
+            {
+                string id = GetCadIdentifier(item);
+                if (processedIds.Add(id))
+                {
+                    var pItem = new RenamePreviewItem(item, id);
+                    pItem.PropertyChanged += PreviewItem_PropertyChanged;
+                    RenamePreviewItems.Add(pItem);
+                }
+            }
+        }
+        else if (IsFamiliesManagerActive)
         {
             var checkedFamilies = new List<FamilyItemModel>();
             CollectCheckedFamilies(RootNodes, checkedFamilies);
@@ -2986,6 +3116,10 @@ public partial class TransferPlusViewModel : ObservableObject
 
     partial void OnIsFamiliesManagerActiveChanged(bool value)
     {
+        if (IsRenamePanelOpen)
+        {
+            CloseRenamePanel();
+        }
         ActivateFamiliesManagerCommand.NotifyCanExecuteChanged();
         DeactivateFamiliesManagerCommand.NotifyCanExecuteChanged();
         ActivateCadDetailsManagerCommand.NotifyCanExecuteChanged();
@@ -3021,6 +3155,10 @@ public partial class TransferPlusViewModel : ObservableObject
 
     partial void OnIsCadDetailsManagerActiveChanged(bool value)
     {
+        if (IsRenamePanelOpen)
+        {
+            CloseRenamePanel();
+        }
         ActivateCadDetailsManagerCommand.NotifyCanExecuteChanged();
         DeactivateCadDetailsManagerCommand.NotifyCanExecuteChanged();
         ActivateFamiliesManagerCommand.NotifyCanExecuteChanged();

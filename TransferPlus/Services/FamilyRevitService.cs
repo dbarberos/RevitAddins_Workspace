@@ -868,7 +868,7 @@ namespace TransferPlus.Services
         /// <summary>
         /// Transfiere una lista de Vistas de Diseño (Drafting Views) desde un documento origen hacia un documento destino de forma silenciosa.
         /// </summary>
-        public int TransferDraftingViews(Document sourceDoc, Document targetDoc, List<ElementId> viewIds)
+        public int TransferDraftingViews(Document sourceDoc, Document targetDoc, List<ElementId> viewIds, Dictionary<ElementId, string>? customNames = null)
         {
             if (sourceDoc == null || targetDoc == null || viewIds == null || !viewIds.Any()) return 0;
 
@@ -891,6 +891,31 @@ namespace TransferPlus.Services
                         var copiedIds = ElementTransformUtils.CopyElements(sourceDoc, viewIds, targetDoc, Transform.Identity, copyOptions);
 
                         transferredCount = copiedIds.Count;
+
+                        if (customNames != null && customNames.Any())
+                        {
+                            var viewIdList = viewIds.ToList();
+                            var copiedIdList = copiedIds.ToList();
+                            for (int i = 0; i < viewIdList.Count && i < copiedIdList.Count; i++)
+                            {
+                                var srcId = viewIdList[i];
+                                if (customNames.TryGetValue(srcId, out var newName) && !string.IsNullOrWhiteSpace(newName))
+                                {
+                                    if (targetDoc.GetElement(copiedIdList[i]) is View v)
+                                    {
+                                        try
+                                        {
+                                            v.Name = newName;
+                                        }
+                                        catch (Exception nameEx)
+                                        {
+                                            TelemetryLogger.LogWarning($"[TransferDraftingViews] Could not rename view to '{newName}': {nameEx.Message}");
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
                         t.Commit();
                         TelemetryLogger.LogInfo($"[TransferDraftingViews] Transferidas {transferredCount} vistas de diseño con éxito a '{targetDoc.Title}'.");
                     }
@@ -911,7 +936,7 @@ namespace TransferPlus.Services
         /// <summary>
         /// Transfiere instancias CAD (DWG Links / Imports) incrustadas o vinculadas en vistas de modelo a nuevas Vistas de Diseño (Drafting Views) en el documento destino.
         /// </summary>
-        public int TransferCadInstancesToDraftingViews(Document sourceDoc, Document targetDoc, List<ElementId> cadInstanceIds)
+        public int TransferCadInstancesToDraftingViews(Document sourceDoc, Document targetDoc, List<ElementId> cadInstanceIds, Dictionary<ElementId, string>? customNames = null)
         {
             if (sourceDoc == null || targetDoc == null || cadInstanceIds == null || !cadInstanceIds.Any()) return 0;
 
@@ -982,8 +1007,11 @@ namespace TransferPlus.Services
                             var newDraftingView = ViewDrafting.Create(targetDoc, draftingVft.Id);
                             if (newDraftingView == null) continue;
 
-                            // Nombrar la vista de diseño
-                            string baseViewName = $"CAD - {cadName} ({sourceViewName})";
+                            // Nombrar la vista de diseño (respetando renombrado personalizado si existe)
+                            string baseViewName = (customNames != null && customNames.TryGetValue(cadId, out var customName) && !string.IsNullOrWhiteSpace(customName))
+                                ? customName
+                                : $"CAD - {cadName} ({sourceViewName})";
+
                             string uniqueViewName = baseViewName;
                             int suffix = 1;
                             while (existingViewNames.Contains(uniqueViewName))

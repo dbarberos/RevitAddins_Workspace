@@ -27,6 +27,7 @@ This directory contains the "technical memory" of the most complex C# components
 - [debugging_preselection_wpf_binding_value_loss_2026-07-01](references/debugging_preselection_wpf_binding_value_loss_2026-07-01.md): Root cause analysis for WPF ComboBox binding resets, first-load value loss, cascading deletions, and debugging log tracing.
 - [provider_pattern_family_manager_guide](references/provider_pattern_family_manager_guide.md): Provider Pattern architecture for multi-source family management across Local Folders, Azure Cloud, Open Models, and Linked Models.
 - [provider_pattern_cad_manager_guide](references/provider_pattern_cad_manager_guide.md): Provider Pattern architecture for multi-source CAD management across Local Folders, Autodesk Docs, Azure Storage, AWS S3, and Revit models with Import/Link conditional handling.
+- [debugging_cad_mode_rename_panel_empty_selection_2026-09-15](references/debugging_cad_mode_rename_panel_empty_selection_2026-09-15.md): Root cause analysis and multi-mode segregation pattern for CAD mode Rename panel empty selection failure.
 
 ## 🔧 Assets (Reusable Code)
 
