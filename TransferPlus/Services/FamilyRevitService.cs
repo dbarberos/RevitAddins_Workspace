@@ -1049,7 +1049,7 @@ namespace TransferPlus.Services
                             }
                             else
                             {
-                                cadName = $"CAD_{cadInst.Id.Value}";
+                                cadName = $"CAD_{cadInst.Id.GetIdValue()}";
                             }
 
                             string sourceViewName = "Model";
@@ -1684,7 +1684,7 @@ namespace TransferPlus.Services
             }
             catch (Exception ex)
             {
-                TelemetryLogger.LogExceptionSilently($"[GenerateViewPreview] Error exportando vista previa para ViewId={viewId.Value}", ex);
+                TelemetryLogger.LogExceptionSilently($"[GenerateViewPreview] Error exportando vista previa para ViewId={viewId.GetIdValue()}", ex);
             }
 
             return null;
@@ -1931,7 +1931,7 @@ namespace TransferPlus.Services
             }
             catch (Exception ex)
             {
-                TelemetryLogger.LogExceptionSilently($"[GenerateElementPreview] Error exportando vista previa para ElementId={elementId.Value}", ex);
+                TelemetryLogger.LogExceptionSilently($"[GenerateElementPreview] Error exportando vista previa para ElementId={elementId.GetIdValue()}", ex);
             }
 
             return null;
@@ -2051,8 +2051,8 @@ namespace TransferPlus.Services
                 try
                 {
                     BuiltInCategory bic = BuiltInCategory.INVALID;
-                    if (nativeFam.FamilyCategory != null) bic = (BuiltInCategory)nativeFam.FamilyCategory.Id.Value;
-                    else if (symbol.Category != null) bic = (BuiltInCategory)symbol.Category.Id.Value;
+                    if (nativeFam.FamilyCategory != null) bic = (BuiltInCategory)nativeFam.FamilyCategory.Id.GetIdValue();
+                    else if (symbol.Category != null) bic = (BuiltInCategory)symbol.Category.Id.GetIdValue();
 
                     if (bic == BuiltInCategory.OST_TitleBlocks)
                     {
@@ -2555,7 +2555,7 @@ namespace TransferPlus.Services
                                 if (elem is ReferencePlane || elem is Dimension || elem is ReferencePoint) continue;
                                 if (elem.Category != null)
                                 {
-                                    var bic = (BuiltInCategory)elem.Category.Id.Value;
+                                    var bic = (BuiltInCategory)elem.Category.Id.GetIdValue();
                                     if (bic == BuiltInCategory.OST_CLines ||
                                         bic == BuiltInCategory.OST_ReferenceLines ||
                                         bic == BuiltInCategory.OST_Dimensions ||

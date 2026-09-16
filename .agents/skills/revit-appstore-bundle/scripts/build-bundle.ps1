@@ -164,6 +164,10 @@ foreach ($Year in $TargetYears) {
     if (-not (Test-Path $VerResourcesDir)) {
         New-Item -ItemType Directory -Path $VerResourcesDir -Force | Out-Null
     }
+    $ProjectResources = Join-Path $resolvedProjectDir "Resources"
+    if (Test-Path $ProjectResources) {
+        Copy-Item -Path "$ProjectResources\*" -Destination $VerResourcesDir -Recurse -Force
+    }
     $ProjectHelp = Join-Path $resolvedProjectDir "Resources\help.html"
     if (Test-Path $ProjectHelp) {
         Copy-Item -Path $ProjectHelp -Destination (Join-Path $VerResourcesDir "help.html") -Force
@@ -174,8 +178,12 @@ foreach ($Year in $TargetYears) {
     if (-not (Test-Path $VerResourceDirSingular)) {
         New-Item -ItemType Directory -Path $VerResourceDirSingular -Force | Out-Null
     }
+    if (Test-Path $ProjectResources) {
+        Copy-Item -Path "$ProjectResources\*" -Destination $VerResourceDirSingular -Recurse -Force
+    }
     if (Test-Path $ProjectHelp) {
         Copy-Item -Path $ProjectHelp -Destination (Join-Path $VerResourceDirSingular "help.html") -Force
+        Copy-Item -Path $ProjectHelp -Destination (Join-Path $VerResourceDirSingular "Help.html") -Force
     }
 
     # 2. Generate standardized .addin manifest with DBDev Solutions identity and correct GUID
@@ -205,9 +213,14 @@ foreach ($Year in $TargetYears) {
 "@ + "`r`n"
 }
 
-# Copy root Resources (Icons, Help)
+# Copy root Resources (Icons, Help, Images, Styles)
 $ResourcesDest = Join-Path $ContentsPath "Resources"
 New-Item -ItemType Directory -Path $ResourcesDest -Force | Out-Null
+
+$ProjectResourcesRoot = Join-Path $resolvedProjectDir "Resources"
+if (Test-Path $ProjectResourcesRoot) {
+    Copy-Item -Path "$ProjectResourcesRoot\*" -Destination $ResourcesDest -Recurse -Force
+}
 
 $HelpSrc = Join-Path $resolvedProjectDir "Resources\help.html"
 if (Test-Path $HelpSrc) {

@@ -130,7 +130,7 @@ public static class DocumentCollector
             {
                 try
                 {
-                    if (element6 is Phase || (element6.Category != null && element6.Category.Id.Value == (long)BuiltInCategory.OST_Phases))
+                    if (element6 is Phase || (element6.Category != null && element6.Category.Id.GetIdValue() == (long)BuiltInCategory.OST_Phases))
                     {
                         continue; // Exclude Project Phases completely from TreeView
                     }
@@ -542,7 +542,7 @@ public static class DocumentCollector
             {
                 try
                 {
-                    if (element28.Category.Id.Value == (long)BuiltInCategory.OST_Rooms)
+                    if (element28.Category.Id.GetIdValue() == (long)BuiltInCategory.OST_Rooms)
                     {
                         Elemento item27 = new Elemento(element28, "Rooms", 0, _doc_origen);
                         elementsAFiltrar.Add(item27);
@@ -562,7 +562,7 @@ public static class DocumentCollector
         Report("Collecting Categories", categories.Size);
         foreach (object obj in categories)
         {
-            if (obj is Category category && category.Id.Value <= 0)
+            if (obj is Category category && category.Id.GetIdValue() <= 0)
             {
                 CategoryNameMap subCategories = category.SubCategories;
                 if (subCategories != null && subCategories.Size != 0)
@@ -692,7 +692,7 @@ public static class DocumentCollector
             if (obj is Category category && category.Parent == null)
             {
                 string familyName = "Model Objects";
-                if (category.Id.Value > 0)
+                if (category.Id.GetIdValue() > 0)
                 {
                     familyName = "Imported Objects";
                 }

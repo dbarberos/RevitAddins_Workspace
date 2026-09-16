@@ -76,12 +76,12 @@ namespace TransferPlus.Services.Providers
                                 }
                                 else
                                 {
-                                    cadName = $"CAD_{imp.Id.Value}";
+                                    cadName = $"CAD_{imp.Id.GetIdValue()}";
                                 }
                             }
                             catch
                             {
-                                cadName = $"CAD_{imp.Id.Value}";
+                                cadName = $"CAD_{imp.Id.GetIdValue()}";
                             }
 
                             string viewName = "3D / Model-wide Placement";

@@ -11,7 +11,7 @@ namespace TransferPlus.Models
         public string Name { get; set; } = string.Empty;
         public string Category { get; set; } = string.Empty;
         public ElementId? ElementId { get; set; }
-        public string ElementIdText => ElementId != null ? $"ID: {ElementId.Value}" : string.Empty;
+        public string ElementIdText => ElementId != null ? $"ID: {ElementId.GetIdValue()}" : string.Empty;
         public string StatusText => "To be deleted";
     }
 

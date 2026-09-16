@@ -2724,7 +2724,7 @@ public partial class TransferPlusViewModel : ObservableObject
     {
         if (cad.ElementId != null && cad.ElementId != ElementId.InvalidElementId)
         {
-            return $"CAD_ELEM_{cad.ElementId.Value}_{cad.Name}";
+            return $"CAD_ELEM_{cad.ElementId.GetIdValue()}_{cad.Name}";
         }
         if (!string.IsNullOrWhiteSpace(cad.FilePath))
         {
@@ -4552,7 +4552,7 @@ public partial class TransferPlusViewModel : ObservableObject
                         }
                         catch (Exception ex)
                         {
-                            LoggerService.LogError($"Error deleting CAD detail element '{item.Name}' (ID: {item.ElementId.Value})", ex);
+                            LoggerService.LogError($"Error deleting CAD detail element '{item.Name}' (ID: {item.ElementId.GetIdValue()})", ex);
                         }
                     }
                 }

@@ -66,7 +66,7 @@ namespace TransferPlus.Services.Providers
                             bool isDetailGroup = false;
                             try
                             {
-                                if (group.Category != null && group.Category.Id.Value == (long)BuiltInCategory.OST_IOSDetailGroups)
+                                if (group.Category != null && group.Category.Id.GetIdValue() == (long)BuiltInCategory.OST_IOSDetailGroups)
                                 {
                                     isDetailGroup = true;
                                 }
@@ -77,7 +77,7 @@ namespace TransferPlus.Services.Providers
                             {
                                 try
                                 {
-                                    if (group.GroupType.Category != null && group.GroupType.Category.Id.Value == (long)BuiltInCategory.OST_IOSDetailGroups)
+                                    if (group.GroupType.Category != null && group.GroupType.Category.Id.GetIdValue() == (long)BuiltInCategory.OST_IOSDetailGroups)
                                     {
                                         isDetailGroup = true;
                                     }
@@ -93,7 +93,7 @@ namespace TransferPlus.Services.Providers
 
                             if (!isDetailGroup) continue;
 
-                            string groupName = !string.IsNullOrWhiteSpace(group.Name) ? group.Name : (group.GroupType?.Name ?? $"Group_{group.Id.Value}");
+                            string groupName = !string.IsNullOrWhiteSpace(group.Name) ? group.Name : (group.GroupType?.Name ?? $"Group_{group.Id.GetIdValue()}");
                             string viewName = "Model / Unassigned View";
                             string sheetName = string.Empty;
                             ElementId? sheetId = null;
@@ -160,7 +160,7 @@ namespace TransferPlus.Services.Providers
                             bool isDetailType = false;
                             try
                             {
-                                if (gt.Category != null && gt.Category.Id.Value == (long)BuiltInCategory.OST_IOSDetailGroups)
+                                if (gt.Category != null && gt.Category.Id.GetIdValue() == (long)BuiltInCategory.OST_IOSDetailGroups)
                                 {
                                     isDetailType = true;
                                 }

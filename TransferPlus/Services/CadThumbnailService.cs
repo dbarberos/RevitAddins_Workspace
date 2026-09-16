@@ -90,7 +90,7 @@ namespace TransferPlus.Services
                 return existingBmp;
             }
 
-            string cacheKey = $"{cadItem.SourceDocumentName}_{cadItem.DisplayCategory}_{cadItem.Name}_{cadItem.ElementId?.Value}";
+            string cacheKey = $"{cadItem.SourceDocumentName}_{cadItem.DisplayCategory}_{cadItem.Name}_{cadItem.ElementId?.GetIdValue()}";
             if (_thumbnailCache.TryGetValue(cacheKey, out var cachedBmp))
             {
                 cadItem.Thumbnail = cachedBmp;

@@ -54,15 +54,15 @@ public class TransferOrchestrator
             else
             {
                 Element elem = sourceDoc.GetElement(item.eID);
-                if (elem is Phase || (elem != null && elem.Category != null && elem.Category.Id.Value == (long)BuiltInCategory.OST_Phases))
+                if (elem is Phase || (elem != null && elem.Category != null && elem.Category.Id.GetIdValue() == (long)BuiltInCategory.OST_Phases))
                 {
-                    LoggerService.LogWarning($"Transfer: Element '{item.Nombre}' (Category: Fases, Id: {item.eID.Value}) is a Project Phase. Revit API restricts direct Phase copying between documents. Skipping.");
+                    LoggerService.LogWarning($"Transfer: Element '{item.Nombre}' (Category: Fases, Id: {item.eID.GetIdValue()}) is a Project Phase. Revit API restricts direct Phase copying between documents. Skipping.");
                     continue;
                 }
                 if (elem is ViewSheet)
                 {
                     sheetsToTransfer.Add(item);
-                    LoggerService.LogInfo($"Transfer: Sheet '{item.Nombre}' (Id: {item.eID.Value}) queued for programmatic sheet creation.");
+                    LoggerService.LogInfo($"Transfer: Sheet '{item.Nombre}' (Id: {item.eID.GetIdValue()}) queued for programmatic sheet creation.");
                 }
                 else if (elem is View v)
                 {
@@ -76,19 +76,19 @@ public class TransferOrchestrator
 
                     if (!isCopyableViaDocumentCopy)
                     {
-                        LoggerService.LogInfo($"Transfer: Model view '{v.Name}' (type {v.ViewType}, Id: {v.Id.Value}) excluded from direct CopyElements. Handled separately in plan/sheet processing.");
+                        LoggerService.LogInfo($"Transfer: Model view '{v.Name}' (type {v.ViewType}, Id: {v.Id.GetIdValue()}) excluded from direct CopyElements. Handled separately in plan/sheet processing.");
                     }
                     else
                     {
                         elementsCopyList.Add(item.eID);
                         string viewKind = v.IsTemplate ? "ViewTemplate" : v.ViewType.ToString();
-                        LoggerService.LogInfo($"Transfer: {viewKind} '{elem.Name}' [Id: {elem.Id.Value}] queued for document CopyElements.");
+                        LoggerService.LogInfo($"Transfer: {viewKind} '{elem.Name}' [Id: {elem.Id.GetIdValue()}] queued for document CopyElements.");
                     }
                 }
                 else if (elem != null)
                 {
                     elementsCopyList.Add(item.eID);
-                    LoggerService.LogInfo($"Transfer: Standards Element '{elem.Name}' [Category: {elem.Category?.Name ?? "None"}, Class: {elem.GetType().Name}, Id: {elem.Id.Value}] queued for document CopyElements.");
+                    LoggerService.LogInfo($"Transfer: Standards Element '{elem.Name}' [Category: {elem.Category?.Name ?? "None"}, Class: {elem.GetType().Name}, Id: {elem.Id.GetIdValue()}] queued for document CopyElements.");
                 }
             }
         }
@@ -386,7 +386,7 @@ public class TransferOrchestrator
                             }
                             else if (config.cf_rbKeepOriginal)
                             {
-                                LoggerService.LogInfo($"DuplicateCheck: Element '{evalName}' (Id: {id.Value}) already exists in target. Option 'Keep Original' selected. Skipping transfer for this element.");
+                                LoggerService.LogInfo($"DuplicateCheck: Element '{evalName}' (Id: {id.GetIdValue()}) already exists in target. Option 'Keep Original' selected. Skipping transfer for this element.");
                                 continue;
                             }
                         }
@@ -501,7 +501,7 @@ public class TransferOrchestrator
                         ElementId newId = copied.ElementAtOrDefault(i);
                         if (newId == null || newId == ElementId.InvalidElementId)
                         {
-                            LoggerService.LogWarning($"Transfer: Element Id '{originalId.Value}' was in finalCopyList but resulted in InvalidElementId/null in target document. Skipping subsequent processing for this element.");
+                            LoggerService.LogWarning($"Transfer: Element Id '{originalId.GetIdValue()}' was in finalCopyList but resulted in InvalidElementId/null in target document. Skipping subsequent processing for this element.");
                             continue;
                         }
 
@@ -601,7 +601,7 @@ public class TransferOrchestrator
                     if (sourceSheet == null) continue;
 
                     Report($"Transferring Sheet: {sourceSheet.SheetNumber} - {sourceSheet.Name}");
-                    LoggerService.LogInfo($"SheetTransfer: Initiating transfer for Sheet '{sourceSheet.SheetNumber} - {sourceSheet.Name}' (Id: {sourceSheet.Id.Value})...");
+                    LoggerService.LogInfo($"SheetTransfer: Initiating transfer for Sheet '{sourceSheet.SheetNumber} - {sourceSheet.Name}' (Id: {sourceSheet.Id.GetIdValue()})...");
 
                     ViewSheet targetSheet = CreateViewSheet(sourceDoc, targetDoc, sourceSheet, config);
                     if (targetSheet == null)
@@ -624,12 +624,12 @@ public class TransferOrchestrator
                             .ToList();
 
                         var titleBlockIds = allSheetElements
-                            .Where(e => e.Category != null && e.Category.Id.Value == (long)BuiltInCategory.OST_TitleBlocks)
+                            .Where(e => e.Category != null && e.Category.Id.GetIdValue() == (long)BuiltInCategory.OST_TitleBlocks)
                             .Select(e => e.Id)
                             .ToList();
 
                         var detailElementIds = allSheetElements
-                            .Where(e => e.Category == null || e.Category.Id.Value != (long)BuiltInCategory.OST_TitleBlocks)
+                            .Where(e => e.Category == null || e.Category.Id.GetIdValue() != (long)BuiltInCategory.OST_TitleBlocks)
                             .Select(e => e.Id)
                             .ToList();
 
@@ -693,7 +693,7 @@ public class TransferOrchestrator
 
                         LoggerService.LogInfo($"SheetTransfer: Replicating placed views and viewports/schedules for Sheet '{sourceSheet.SheetNumber}'...");
                         var placedViewIds = sourceSheet.GetAllPlacedViews().ToList();
-                        LoggerService.LogInfo($"SheetTransfer [PLACED VIEWS QUERY]: GetAllPlacedViews returned {placedViewIds.Count} view(s) for source sheet '{sourceSheet.SheetNumber}' (Sheet Id: {sourceSheet.Id.Value}).");
+                        LoggerService.LogInfo($"SheetTransfer [PLACED VIEWS QUERY]: GetAllPlacedViews returned {placedViewIds.Count} view(s) for source sheet '{sourceSheet.SheetNumber}' (Sheet Id: {sourceSheet.Id.GetIdValue()}).");
 
                         // Collect Viewports globally from sourceDoc (view-scoped collector FilteredElementCollector(sourceDoc, sheet.Id) returns empty for linked documents)
                         var globalViewports = new FilteredElementCollector(sourceDoc)
@@ -762,7 +762,7 @@ public class TransferOrchestrator
                                 {
                                     targetViewId = mappedViewId;
                                     shouldCopyView = false;
-                                    LoggerService.LogInfo($"SheetTransfer: View '{srcPlacedView.Name}' [Id: {placedViewId.Value}] was already processed in this transfer run (Target ViewId: {targetViewId.Value}). Re-using mapped view.");
+                                    LoggerService.LogInfo($"SheetTransfer: View '{srcPlacedView.Name}' [Id: {placedViewId.GetIdValue()}] was already processed in this transfer run (Target ViewId: {targetViewId.GetIdValue()}). Re-using mapped view.");
                                 }
                                 else
                                 {
@@ -833,7 +833,7 @@ public class TransferOrchestrator
                                                 {
                                                     targetViewId = newPlan.Id;
                                                     viewWasNewlyCreated = true;
-                                                    LoggerService.LogInfo($"SheetTransfer [APPEND SUFFIX SUCCESS]: Created suffixed ViewPlan '{newPlan.Name}' (Target ViewId: {newPlan.Id.Value}).");
+                                                    LoggerService.LogInfo($"SheetTransfer [APPEND SUFFIX SUCCESS]: Created suffixed ViewPlan '{newPlan.Name}' (Target ViewId: {newPlan.Id.GetIdValue()}).");
                                                 }
                                             }
                                             else
@@ -924,7 +924,7 @@ public class TransferOrchestrator
                                             targetViewId = consolidatedPlacedView.Id;
                                             processedViewsMap[placedViewId] = targetViewId;
                                             newPlacedView = consolidatedPlacedView;
-                                            LoggerService.LogInfo($"SheetTransfer [CONSOLIDATED VIEW UPDATED]: Updated targetViewId to {targetViewId.Value} ('{newPlacedView.Name}') after 2D consolidation.");
+                                            LoggerService.LogInfo($"SheetTransfer [CONSOLIDATED VIEW UPDATED]: Updated targetViewId to {targetViewId.GetIdValue()} ('{newPlacedView.Name}') after 2D consolidation.");
 
                                             LoggerService.LogInfo($"SheetTransfer [RE-APPLYING TEMPLATE]: Re-applying matchPlantilla on consolidated view '{newPlacedView.Name}'...");
                                             matchPlantilla(sourceDoc, targetDoc, srcPlacedView, newPlacedView, options, config, duplicateItems);
@@ -943,11 +943,11 @@ public class TransferOrchestrator
 
                                      if (srcPlacedView.ViewType != ViewType.Schedule)
                                      {
-                                         LoggerService.LogInfo($"SheetTransfer: Evaluating Viewport placement for view '{srcPlacedView.Name}' (Target ViewId: {targetViewId.Value}) on sheet '{targetSheet.SheetNumber}'...");
+                                         LoggerService.LogInfo($"SheetTransfer: Evaluating Viewport placement for view '{srcPlacedView.Name}' (Target ViewId: {targetViewId.GetIdValue()}) on sheet '{targetSheet.SheetNumber}'...");
                                          bool canAdd = Viewport.CanAddViewToSheet(targetDoc, targetSheet.Id, targetViewId);
                                          if (!canAdd)
                                          {
-                                             LoggerService.LogWarning($"SheetTransfer: View '{srcPlacedView.Name}' (Target ViewId: {targetViewId.Value}) CANNOT be added to sheet '{targetSheet.SheetNumber}' (Viewport.CanAddViewToSheet returned false). Skipping viewport placement.");
+                                             LoggerService.LogWarning($"SheetTransfer: View '{srcPlacedView.Name}' (Target ViewId: {targetViewId.GetIdValue()}) CANNOT be added to sheet '{targetSheet.SheetNumber}' (Viewport.CanAddViewToSheet returned false). Skipping viewport placement.");
                                          }
                                          else
                                          {
@@ -1068,7 +1068,7 @@ public class TransferOrchestrator
                             }
                             catch (Exception exViewPlacement)
                             {
-                                LoggerService.LogError($"SheetTransfer: Failed processing view '{placedViewId.Value}' on sheet '{sourceSheet.SheetNumber}'", exViewPlacement);
+                                LoggerService.LogError($"SheetTransfer: Failed processing view '{placedViewId.GetIdValue()}' on sheet '{sourceSheet.SheetNumber}'", exViewPlacement);
                             }
                         }
                     }
@@ -1103,7 +1103,7 @@ public class TransferOrchestrator
                         if (processedViewsMap.TryGetValue(srcViewPlan.Id, out ElementId mappedPlanId))
                         {
                             targetPlanToUse = targetDoc.GetElement(mappedPlanId) as View;
-                            LoggerService.LogInfo($"Transfer: ViewPlan '{srcViewPlan.Name}' [Id: {srcViewPlan.Id.Value}] was already processed during sheet processing in this run (Target ViewId: {mappedPlanId.Value}). Re-using mapped view.");
+                            LoggerService.LogInfo($"Transfer: ViewPlan '{srcViewPlan.Name}' [Id: {srcViewPlan.Id.GetIdValue()}] was already processed during sheet processing in this run (Target ViewId: {mappedPlanId.GetIdValue()}). Re-using mapped view.");
                         }
                         else
                         {
@@ -1163,7 +1163,7 @@ public class TransferOrchestrator
 
                                     if (consolidatedPlan.Id != previousTargetPlanId)
                                     {
-                                        LoggerService.LogInfo($"Transfer [CONSOLIDATED PLAN UPDATED]: Updated targetPlanToUse to {targetPlanToUse.Id.Value} ('{targetPlanToUse.Name}') after 2D consolidation.");
+                                        LoggerService.LogInfo($"Transfer [CONSOLIDATED PLAN UPDATED]: Updated targetPlanToUse to {targetPlanToUse.Id.GetIdValue()} ('{targetPlanToUse.Name}') after 2D consolidation.");
 
                                         LoggerService.LogInfo($"Transfer [RE-APPLYING TEMPLATE]: Re-applying matchPlantilla on consolidated plan view '{targetPlanToUse.Name}'...");
                                         matchPlantilla(sourceDoc, targetDoc, srcViewPlan, targetPlanToUse, options, config, duplicateItems);
@@ -1315,7 +1315,7 @@ public class TransferOrchestrator
                 try
                 {
                     targetDoc.Delete(tempDrafting.Id);
-                    LoggerService.LogInfo($"Copy2DElementsViaDraftingBridge: Cleaned up temporary Drafting View (Id: {tempDrafting.Id.Value}).");
+                    LoggerService.LogInfo($"Copy2DElementsViaDraftingBridge: Cleaned up temporary Drafting View (Id: {tempDrafting.Id.GetIdValue()}).");
                 }
                 catch (Exception exDel)
                 {
@@ -1340,7 +1340,7 @@ public class TransferOrchestrator
         if (copyOptions == null) copyOptions = new CopyPasteOptions();
         copyOptions.SetDuplicateTypeNamesHandler(new CustomCopyHandlerOk());
 
-        LoggerService.LogInfo($"ponDependientes: Collecting 2D view elements for view '{vistaorigen.Name}' (Source ViewId: {vistaorigen.Id.Value})...");
+        LoggerService.LogInfo($"ponDependientes: Collecting 2D view elements for view '{vistaorigen.Name}' (Source ViewId: {vistaorigen.Id.GetIdValue()})...");
 
         var viewElements = new FilteredElementCollector(origen, vistaorigen.Id)
             .WhereElementIsNotElementType()
@@ -1356,10 +1356,10 @@ public class TransferOrchestrator
                         e.GetType().Name != "ViewCrop" &&
                         e.GetType().Name != "ExtentElem" &&
                         (e.Category == null || (
-                            e.Category.Id.Value != (long)BuiltInCategory.OST_Viewers &&
-                            e.Category.Id.Value != (long)BuiltInCategory.OST_ReferenceViewer &&
-                            e.Category.Id.Value != (long)BuiltInCategory.OST_CalloutBoundary &&
-                            e.Category.Id.Value != (long)BuiltInCategory.OST_Elev
+                            e.Category.Id.GetIdValue() != (long)BuiltInCategory.OST_Viewers &&
+                            e.Category.Id.GetIdValue() != (long)BuiltInCategory.OST_ReferenceViewer &&
+                            e.Category.Id.GetIdValue() != (long)BuiltInCategory.OST_CalloutBoundary &&
+                            e.Category.Id.GetIdValue() != (long)BuiltInCategory.OST_Elev
                         )))
             .ToList();
 
@@ -1421,7 +1421,7 @@ public class TransferOrchestrator
                 View sideEffectView = newlyCreatedViews.FirstOrDefault();
                 if (sideEffectView != null && sideEffectView.IsValidObject)
                 {
-                    LoggerService.LogInfo($"ponDependientes [SIDE-EFFECT VIEW CONSOLIDATION]: Revit created view '{sideEffectView.Name}' (Id: {sideEffectView.Id.Value}) containing the copied {all2DIds.Count} 2D elements. Consolidating into single target view...");
+                    LoggerService.LogInfo($"ponDependientes [SIDE-EFFECT VIEW CONSOLIDATION]: Revit created view '{sideEffectView.Name}' (Id: {sideEffectView.Id.GetIdValue()}) containing the copied {all2DIds.Count} 2D elements. Consolidating into single target view...");
 
                     if (IsCalloutView(vistadestino))
                     {
@@ -1430,11 +1430,11 @@ public class TransferOrchestrator
                         try
                         {
                             destino.Delete(sideEffectView.Id);
-                            LoggerService.LogInfo($"ponDependientes [CALLOUT CLEANUP]: Cleaned up temporary sideEffectView '{sideEffectView.Name}' (Id: {sideEffectView.Id.Value}).");
+                            LoggerService.LogInfo($"ponDependientes [CALLOUT CLEANUP]: Cleaned up temporary sideEffectView '{sideEffectView.Name}' (Id: {sideEffectView.Id.GetIdValue()}).");
                         }
                         catch (Exception exClean)
                         {
-                            LoggerService.LogWarning($"ponDependientes [CALLOUT CLEANUP FAILED]: Could not delete side-effect view '{sideEffectView.Name}' (Id: {sideEffectView.Id.Value}): {exClean.Message}");
+                            LoggerService.LogWarning($"ponDependientes [CALLOUT CLEANUP FAILED]: Could not delete side-effect view '{sideEffectView.Name}' (Id: {sideEffectView.Id.GetIdValue()}): {exClean.Message}");
                         }
                         return vistadestino;
                     }
@@ -1450,7 +1450,7 @@ public class TransferOrchestrator
                     try
                     {
                         destino.Delete(emptyViewId);
-                        LoggerService.LogInfo($"ponDependientes [CONSOLIDATION]: Deleted empty initial view (Id: {emptyViewId.Value}).");
+                        LoggerService.LogInfo($"ponDependientes [CONSOLIDATION]: Deleted empty initial view (Id: {emptyViewId.GetIdValue()}).");
                     }
                     catch (Exception exDel)
                     {
@@ -1461,7 +1461,7 @@ public class TransferOrchestrator
                     try
                     {
                         sideEffectView.Name = targetName;
-                        LoggerService.LogInfo($"ponDependientes [CONSOLIDATION SUCCESS]: Renamed view '{sideEffectView.Id.Value}' to '{sideEffectView.Name}'. 100% 2D elements consolidated into single view!");
+                        LoggerService.LogInfo($"ponDependientes [CONSOLIDATION SUCCESS]: Renamed view '{sideEffectView.Id.GetIdValue()}' to '{sideEffectView.Name}'. 100% 2D elements consolidated into single view!");
                     }
                     catch (Exception exRename)
                     {
@@ -1528,7 +1528,7 @@ public class TransferOrchestrator
         foreach (Element elem in viewElements)
         {
             string catName = elem.Category?.Name ?? "NoCategory";
-            long catId = elem.Category?.Id.Value ?? -1;
+            long catId = elem.Category?.Id.GetIdValue() ?? -1;
             string className = elem.GetType().Name;
 
             if (elem.Name.StartsWith("extentElem", StringComparison.OrdinalIgnoreCase) ||
@@ -1536,7 +1536,7 @@ public class TransferOrchestrator
                 className.Equals("ViewCrop", StringComparison.OrdinalIgnoreCase) ||
                 className.Equals("ExtentElem", StringComparison.OrdinalIgnoreCase))
             {
-                LoggerService.LogInfo($"ponDependientes [SKIP EXTENT]: Excluding view extent element '{elem.Name}' [Id: {elem.Id.Value}] from 2D copy.");
+                LoggerService.LogInfo($"ponDependientes [SKIP EXTENT]: Excluding view extent element '{elem.Name}' [Id: {elem.Id.GetIdValue()}] from 2D copy.");
                 continue;
             }
 
@@ -1544,13 +1544,13 @@ public class TransferOrchestrator
 
             try
             {
-                LoggerService.LogInfo($"ponDependientes [VIEW-LEVEL COPY]: Copying 2D element '{elem.Name}' (Category: '{catName}', Class: '{className}', Id: {elem.Id.Value}) via View-level CopyElements(Transform.Identity)...");
+                LoggerService.LogInfo($"ponDependientes [VIEW-LEVEL COPY]: Copying 2D element '{elem.Name}' (Category: '{catName}', Class: '{className}', Id: {elem.Id.GetIdValue()}) via View-level CopyElements(Transform.Identity)...");
                 var copiedIds = ElementTransformUtils.CopyElements(vistaorigen, new List<ElementId> { elem.Id }, vistadestino, Transform.Identity, copyOptions);
                 int vAfter = new FilteredElementCollector(destino).OfClass(typeof(View)).WhereElementIsNotElementType().Count();
 
                 if (vAfter > vBefore)
                 {
-                    LoggerService.LogWarning($"ponDependientes [VIEW DUPLICATION TRIGGER DETECTED!]: Element '{elem.Name}' (Category: '{catName}' [Id: {catId}], Class: '{className}', Id: {elem.Id.Value}) CAUSED REVIT TO DUPLICATE THE VIEW!");
+                    LoggerService.LogWarning($"ponDependientes [VIEW DUPLICATION TRIGGER DETECTED!]: Element '{elem.Name}' (Category: '{catName}' [Id: {catId}], Class: '{className}', Id: {elem.Id.GetIdValue()}) CAUSED REVIT TO DUPLICATE THE VIEW!");
 
                     var newlyCreatedViews = new FilteredElementCollector(destino)
                         .OfClass(typeof(View))
@@ -1564,7 +1564,7 @@ public class TransferOrchestrator
                         try
                         {
                             destino.Delete(dupView.Id);
-                            LoggerService.LogInfo($"ponDependientes [CLEANUP DUP VIEW]: Deleted side-effect duplicated view '{dupView.Name}' (Id: {dupView.Id.Value}).");
+                            LoggerService.LogInfo($"ponDependientes [CLEANUP DUP VIEW]: Deleted side-effect duplicated view '{dupView.Name}' (Id: {dupView.Id.GetIdValue()}).");
                         }
                         catch { }
                     }
@@ -1573,14 +1573,14 @@ public class TransferOrchestrator
                 else if (copiedIds != null && copiedIds.Any())
                 {
                     copiedCount++;
-                    LoggerService.LogInfo($"ponDependientes [VIEW-LEVEL OK]: Successfully copied 2D element '{elem.Name}' (Category: '{catName}', Class: '{className}', Id: {elem.Id.Value}).");
+                    LoggerService.LogInfo($"ponDependientes [VIEW-LEVEL OK]: Successfully copied 2D element '{elem.Name}' (Category: '{catName}', Class: '{className}', Id: {elem.Id.GetIdValue()}).");
                 }
             }
             catch (Exception exElem)
             {
-                string failMsg = $"• '{elem.Name}' (Id: {elem.Id.Value}, Category: '{catName}') - {exElem.Message}";
+                string failMsg = $"• '{elem.Name}' (Id: {elem.Id.GetIdValue()}, Category: '{catName}') - {exElem.Message}";
                 failedElementsSummary.Add(failMsg);
-                LoggerService.LogWarning($"ponDependientes [FAILED]: Could not copy 2D element '{elem.Name}' (Category: '{catName}', Id: {elem.Id.Value}) into target view '{vistadestino.Name}': {exElem.Message}");
+                LoggerService.LogWarning($"ponDependientes [FAILED]: Could not copy 2D element '{elem.Name}' (Category: '{catName}', Id: {elem.Id.GetIdValue()}) into target view '{vistadestino.Name}': {exElem.Message}");
             }
         }
 
@@ -1668,15 +1668,15 @@ public class TransferOrchestrator
         catch { }
 
         // DIAGNOSTIC LOGGING FOR CALLOUT DISCOVERY
-        LoggerService.LogInfo($"ponCallouts [DIAGNOSTIC START]: Inspecting source view '{vistaorigen.Name}' (Id: {vistaorigen.Id.Value}, Type: {vistaorigen.ViewType})...");
+        LoggerService.LogInfo($"ponCallouts [DIAGNOSTIC START]: Inspecting source view '{vistaorigen.Name}' (Id: {vistaorigen.Id.GetIdValue()}, Type: {vistaorigen.ViewType})...");
 
         // 1. Collect ALL Viewer Symbols (annotations) in document
         var allViewersInDoc = new FilteredElementCollector(origen)
             .WhereElementIsNotElementType()
             .Where(e => e != null && e.IsValidObject && e.Category != null &&
-                (e.Category.Id.Value == (long)BuiltInCategory.OST_Viewers ||
-                 e.Category.Id.Value == (long)BuiltInCategory.OST_CalloutBoundary ||
-                 e.Category.Id.Value == (long)BuiltInCategory.OST_ReferenceViewer))
+                (e.Category.Id.GetIdValue() == (long)BuiltInCategory.OST_Viewers ||
+                 e.Category.Id.GetIdValue() == (long)BuiltInCategory.OST_CalloutBoundary ||
+                 e.Category.Id.GetIdValue() == (long)BuiltInCategory.OST_ReferenceViewer))
             .ToList();
 
         LoggerService.LogInfo($"ponCallouts [DIAGNOSTIC]: Total viewers in entire source document: {allViewersInDoc.Count}");
@@ -1684,31 +1684,31 @@ public class TransferOrchestrator
         {
             var paramRefs = vElem.Parameters.Cast<Parameter>()
                 .Where(p => p != null && p.StorageType == StorageType.ElementId && p.AsElementId() != ElementId.InvalidElementId)
-                .Select(p => $"{p.Definition?.Name}={p.AsElementId().Value}")
+                .Select(p => $"{p.Definition?.Name}={p.AsElementId().GetIdValue()}")
                 .ToList();
 
-            LoggerService.LogInfo($"  -> Viewer Symbol Id: {vElem.Id.Value} | Category: '{vElem.Category?.Name}' | OwnerViewId: {vElem.OwnerViewId?.Value ?? -1} | Parameters: [{string.Join(", ", paramRefs)}]");
+            LoggerService.LogInfo($"  -> Viewer Symbol Id: {vElem.Id.GetIdValue()} | Category: '{vElem.Category?.Name}' | OwnerViewId: {vElem.OwnerViewId?.GetIdValue() ?? -1} | Parameters: [{string.Join(", ", paramRefs)}]");
         }
 
-        var viewersOnVistaOrigen = allViewersInDoc.Where(e => e.OwnerViewId != null && e.OwnerViewId.Value == vistaorigen.Id.Value).ToList();
+        var viewersOnVistaOrigen = allViewersInDoc.Where(e => e.OwnerViewId != null && e.OwnerViewId.GetIdValue() == vistaorigen.Id.GetIdValue()).ToList();
 
         // 2. Discover child Callout Views linked to vistaorigen
         List<ElementId> depIds = vistaorigen.GetDependentElements(null)?.ToList() ?? new List<ElementId>();
         List<Element> depElements = depIds.Select(id => origen.GetElement(id)).Where(e => e != null && e.IsValidObject).ToList();
 
         var childViewsOnSource = depElements.OfType<View>()
-            .Where(v => v != null && v.IsValidObject && !v.IsTemplate && v.Id.Value != vistaorigen.Id.Value)
+            .Where(v => v != null && v.IsValidObject && !v.IsTemplate && v.Id.GetIdValue() != vistaorigen.Id.GetIdValue())
             .ToList();
 
         // Also check views where SECTION_PARENT_VIEW_NAME matches vistaorigen.Name
         foreach (View v in new FilteredElementCollector(origen).OfClass(typeof(View)).Cast<View>())
         {
-            if (v == null || !v.IsValidObject || v.IsTemplate || v.Id.Value == vistaorigen.Id.Value) continue;
+            if (v == null || !v.IsValidObject || v.IsTemplate || v.Id.GetIdValue() == vistaorigen.Id.GetIdValue()) continue;
             var parentParam = v.get_Parameter(BuiltInParameter.SECTION_PARENT_VIEW_NAME);
             if (parentParam != null && !string.IsNullOrWhiteSpace(parentParam.AsString()) &&
                 parentParam.AsString().Equals(vistaorigen.Name, StringComparison.OrdinalIgnoreCase))
             {
-                if (!childViewsOnSource.Any(cv => cv.Id.Value == v.Id.Value))
+                if (!childViewsOnSource.Any(cv => cv.Id.GetIdValue() == v.Id.GetIdValue()))
                 {
                     childViewsOnSource.Add(v);
                 }
@@ -1721,21 +1721,21 @@ public class TransferOrchestrator
 
         foreach (View v in childViewsOnSource)
         {
-            if (!processedCalloutIds.Add(v.Id.Value)) continue;
+            if (!processedCalloutIds.Add(v.Id.GetIdValue())) continue;
 
             Element? viewerSym = viewersOnVistaOrigen.FirstOrDefault(e =>
-                e.Parameters.Cast<Parameter>().Any(p => p != null && p.StorageType == StorageType.ElementId && p.AsElementId() != null && p.AsElementId().Value == v.Id.Value));
+                e.Parameters.Cast<Parameter>().Any(p => p != null && p.StorageType == StorageType.ElementId && p.AsElementId() != null && p.AsElementId().GetIdValue() == v.Id.GetIdValue()));
 
             if (viewerSym == null)
             {
                 viewerSym = allViewersInDoc.FirstOrDefault(e =>
-                    e.Parameters.Cast<Parameter>().Any(p => p != null && p.StorageType == StorageType.ElementId && p.AsElementId() != null && p.AsElementId().Value == v.Id.Value));
+                    e.Parameters.Cast<Parameter>().Any(p => p != null && p.StorageType == StorageType.ElementId && p.AsElementId() != null && p.AsElementId().GetIdValue() == v.Id.GetIdValue()));
             }
 
             if (viewerSym == null)
             {
-                viewerSym = depElements.Where(e => e is not View && e.Id.Value != vistaorigen.Id.Value)
-                    .FirstOrDefault(e => e.Parameters.Cast<Parameter>().Any(p => p != null && p.StorageType == StorageType.ElementId && p.AsElementId() != null && p.AsElementId().Value == v.Id.Value));
+                viewerSym = depElements.Where(e => e is not View && e.Id.GetIdValue() != vistaorigen.Id.GetIdValue())
+                    .FirstOrDefault(e => e.Parameters.Cast<Parameter>().Any(p => p != null && p.StorageType == StorageType.ElementId && p.AsElementId() != null && p.AsElementId().GetIdValue() == v.Id.GetIdValue()));
             }
 
             if (viewerSym == null && viewersOnVistaOrigen.Count == 1 && childViewsOnSource.Count == 1)
@@ -1745,14 +1745,14 @@ public class TransferOrchestrator
 
             if (viewerSym == null && viewersOnVistaOrigen.Any())
             {
-                var usedSymbols = calloutPairs.Select(p => p.viewerSymbol?.Id?.Value).Where(id => id.HasValue).ToHashSet();
-                viewerSym = viewersOnVistaOrigen.FirstOrDefault(e => !usedSymbols.Contains(e.Id.Value));
+                var usedSymbols = calloutPairs.Select(p => p.viewerSymbol?.Id.GetIdValue() ?? -1).Where(id => id > 0).ToHashSet();
+                viewerSym = viewersOnVistaOrigen.FirstOrDefault(e => !usedSymbols.Contains(e.Id.GetIdValue()));
             }
 
             if (viewerSym == null && allViewersInDoc.Any())
             {
-                var usedSymbols = calloutPairs.Select(p => p.viewerSymbol?.Id?.Value).Where(id => id.HasValue).ToHashSet();
-                viewerSym = allViewersInDoc.FirstOrDefault(e => !usedSymbols.Contains(e.Id.Value));
+                var usedSymbols = calloutPairs.Select(p => p.viewerSymbol?.Id.GetIdValue() ?? -1).Where(id => id > 0).ToHashSet();
+                viewerSym = allViewersInDoc.FirstOrDefault(e => !usedSymbols.Contains(e.Id.GetIdValue()));
             }
 
             calloutPairs.Add((v, viewerSym));
@@ -1769,7 +1769,7 @@ public class TransferOrchestrator
                 View mappedCallout = destino.GetElement(mappedCalloutId) as View;
                 if (mappedCallout != null && mappedCallout.IsValidObject)
                 {
-                    LoggerService.LogInfo($"ponCallouts: Callout view '{calloutView.Name}' was already processed in this run (Target ViewId: {mappedCalloutId.Value}). Re-using mapped callout.");
+                    LoggerService.LogInfo($"ponCallouts: Callout view '{calloutView.Name}' was already processed in this run (Target ViewId: {mappedCalloutId.GetIdValue()}). Re-using mapped callout.");
                     if (CopiaDetalles)
                     {
                         View consolidatedMapped = ponDependientes(origen, calloutView, mappedCallout, copyOptions);
@@ -1800,7 +1800,7 @@ public class TransferOrchestrator
                 }
                 else if (config == null || config.cf_rbKeepOriginal)
                 {
-                    LoggerService.LogInfo($"ponCallouts: Callout view '{calloutView.Name}' already exists in target document (Target ViewId: {existingCallout.Id.Value}). Option 'Keep Original' active. Re-using existing callout view.");
+                    LoggerService.LogInfo($"ponCallouts: Callout view '{calloutView.Name}' already exists in target document (Target ViewId: {existingCallout.Id.GetIdValue()}). Option 'Keep Original' active. Re-using existing callout view.");
                     if (CopiaDetalles)
                     {
                         View consolidatedExisting = ponDependientes(origen, calloutView, existingCallout, copyOptions);
@@ -1835,7 +1835,7 @@ public class TransferOrchestrator
                 // Copies the callout from vistaorigen into vistadestino, automatically creating and placing the 2D callout boundary and bubble.
                 try
                 {
-                    LoggerService.LogInfo($"ponCallouts [STRATEGY 1 COPYELEMENTS]: Copying callout element (Id: {elementToCopy.Value}) from '{vistaorigen.Name}' into '{vistadestino.Name}'...");
+                    LoggerService.LogInfo($"ponCallouts [STRATEGY 1 COPYELEMENTS]: Copying callout element (Id: {elementToCopy.GetIdValue()}) from '{vistaorigen.Name}' into '{vistadestino.Name}'...");
                     var source = ElementTransformUtils.CopyElements(vistaorigen, new List<ElementId> { elementToCopy }, vistadestino, null, copyOptions);
 
                     if (source != null && source.Any())
@@ -1867,7 +1867,7 @@ public class TransferOrchestrator
 
                         if (targetCalloutView != null)
                         {
-                            LoggerService.LogInfo($"ponCallouts [STRATEGY 1 SUCCESS]: Copied callout view '{targetCalloutView.Name}' (Target Id: {targetCalloutView.Id.Value}) with native viewer symbol.");
+                            LoggerService.LogInfo($"ponCallouts [STRATEGY 1 SUCCESS]: Copied callout view '{targetCalloutView.Name}' (Target Id: {targetCalloutView.Id.GetIdValue()}) with native viewer symbol.");
                         }
                     }
                 }
@@ -1975,7 +1975,7 @@ public class TransferOrchestrator
 
                 if (targetCalloutView != null && targetCalloutView.IsValidObject)
                 {
-                    LoggerService.LogInfo($"ponCallouts: Target callout view '{targetCalloutView.Name}' (Id: {targetCalloutView.Id.Value}) ready. Applying parameters and On Duplicates naming...");
+                    LoggerService.LogInfo($"ponCallouts: Target callout view '{targetCalloutView.Name}' (Id: {targetCalloutView.Id.GetIdValue()}) ready. Applying parameters and On Duplicates naming...");
 
                     // ── 3. Renaming respecting "On Duplicates" ──
                     string desiredName = calloutView.Name;
@@ -2122,7 +2122,7 @@ public class TransferOrchestrator
             return;
         }
 
-        LoggerService.LogInfo($"ponSections [START]: Inspecting source view '{vistaorigen.Name}' (Id: {vistaorigen.Id.Value}, Type: {vistaorigen.ViewType})...");
+        LoggerService.LogInfo($"ponSections [START]: Inspecting source view '{vistaorigen.Name}' (Id: {vistaorigen.Id.GetIdValue()}, Type: {vistaorigen.ViewType})...");
 
         try
         {
@@ -2153,11 +2153,11 @@ public class TransferOrchestrator
                     .WhereElementIsNotElementType()
                     .ToList();
 
-                LoggerService.LogInfo($"ponSections [STRATEGY 0]: Found {viewScopedViewers.Count} view-scoped viewer mark(s) on '{vistaorigen.Name}' (Id: {vistaorigen.Id.Value}).");
+                LoggerService.LogInfo($"ponSections [STRATEGY 0]: Found {viewScopedViewers.Count} view-scoped viewer mark(s) on '{vistaorigen.Name}' (Id: {vistaorigen.Id.GetIdValue()}).");
 
                 foreach (var viewer in viewScopedViewers)
                 {
-                    LoggerService.LogInfo($"  [Viewer Mark {viewer.Id.Value}]: Name='{viewer.Name}', Cat='{viewer.Category?.Name}', Type='{viewer.GetType().Name}', OwnerView='{viewer.OwnerViewId?.Value}'");
+                    LoggerService.LogInfo($"  [Viewer Mark {viewer.Id.GetIdValue()}]: Name='{viewer.Name}', Cat='{viewer.Category?.Name}', Type='{viewer.GetType().Name}', OwnerView='{viewer.OwnerViewId?.GetIdValue()}'");
 
                     // 0a. Check all ElementId parameters on the viewer symbol
                     foreach (Parameter p in viewer.Parameters)
@@ -2171,18 +2171,18 @@ public class TransferOrchestrator
                             {
                                 string targetInfo = $"{refElem.GetType().Name} '{refElem.Name}' (Cat: {refElem.Category?.Name})";
                                 if (refElem is View testV) targetInfo += $" [ViewType: {testV.ViewType}, IsTemplate: {testV.IsTemplate}]";
-                                LoggerService.LogInfo($"    -> Param '{p.Definition?.Name}' ({p.Id.Value}) = {refId.Value} -> Element: {targetInfo}");
+                                LoggerService.LogInfo($"    -> Param '{p.Definition?.Name}' ({p.Id.GetIdValue()}) = {refId.GetIdValue()} -> Element: {targetInfo}");
 
                                 // Case 1: Direct View reference
                                 if (refElem is View refView && refView.IsValidObject && !refView.IsTemplate &&
-                                    refView.Id.Value != vistaorigen.Id.Value &&
+                                    refView.Id.GetIdValue() != vistaorigen.Id.GetIdValue() &&
                                     (refView.ViewType == ViewType.Section || refView.ViewType == ViewType.Detail || refView.ViewType == ViewType.Elevation))
                                 {
-                                    if (!childSectionViews.Any(cv => cv.Id.Value == refView.Id.Value))
+                                    if (!childSectionViews.Any(cv => cv.Id.GetIdValue() == refView.Id.GetIdValue()))
                                     {
                                         childSectionViews.Add(refView);
-                                        viewerMarkMap[refView.Id.Value] = viewer.Id;
-                                        LoggerService.LogInfo($"ponSections [DISCOVERY via Strategy 0 Direct View]: Found '{refView.Name}' (Id: {refView.Id.Value}) via viewer mark {viewer.Id.Value}");
+                                        viewerMarkMap[refView.Id.GetIdValue()] = viewer.Id;
+                                        LoggerService.LogInfo($"ponSections [DISCOVERY via Strategy 0 Direct View]: Found '{refView.Name}' (Id: {refView.Id.GetIdValue()}) via viewer mark {viewer.Id.GetIdValue()}");
                                     }
                                 }
 
@@ -2190,13 +2190,13 @@ public class TransferOrchestrator
                                 else if (refElem is Viewport vp && vp.IsValidObject && vp.ViewId != ElementId.InvalidElementId)
                                 {
                                     if (origen.GetElement(vp.ViewId) is View vpView && vpView.IsValidObject && !vpView.IsTemplate &&
-                                        vpView.Id.Value != vistaorigen.Id.Value &&
+                                        vpView.Id.GetIdValue() != vistaorigen.Id.GetIdValue() &&
                                         (vpView.ViewType == ViewType.Section || vpView.ViewType == ViewType.Detail || vpView.ViewType == ViewType.Elevation))
                                     {
-                                        if (!childSectionViews.Any(cv => cv.Id.Value == vpView.Id.Value))
+                                        if (!childSectionViews.Any(cv => cv.Id.GetIdValue() == vpView.Id.GetIdValue()))
                                         {
                                             childSectionViews.Add(vpView);
-                                            LoggerService.LogInfo($"ponSections [DISCOVERY via Strategy 0 Viewport]: Found '{vpView.Name}' (Id: {vpView.Id.Value}) via viewport {vp.Id.Value}");
+                                            LoggerService.LogInfo($"ponSections [DISCOVERY via Strategy 0 Viewport]: Found '{vpView.Name}' (Id: {vpView.Id.GetIdValue()}) via viewport {vp.Id.GetIdValue()}");
                                         }
                                     }
                                 }
@@ -2208,12 +2208,12 @@ public class TransferOrchestrator
                                     {
                                         ElementId vId = em.GetViewId(idx);
                                         if (vId != ElementId.InvalidElementId && origen.GetElement(vId) is View emView &&
-                                            emView.IsValidObject && !emView.IsTemplate && emView.Id.Value != vistaorigen.Id.Value)
+                                            emView.IsValidObject && !emView.IsTemplate && emView.Id.GetIdValue() != vistaorigen.Id.GetIdValue())
                                         {
-                                            if (!childSectionViews.Any(cv => cv.Id.Value == emView.Id.Value))
+                                            if (!childSectionViews.Any(cv => cv.Id.GetIdValue() == emView.Id.GetIdValue()))
                                             {
                                                 childSectionViews.Add(emView);
-                                                LoggerService.LogInfo($"ponSections [DISCOVERY via Strategy 0 ElevationMarker]: Found '{emView.Name}' (Id: {emView.Id.Value}) via marker {em.Id.Value}");
+                                                LoggerService.LogInfo($"ponSections [DISCOVERY via Strategy 0 ElevationMarker]: Found '{emView.Name}' (Id: {emView.Id.GetIdValue()}) via marker {em.Id.GetIdValue()}");
                                             }
                                         }
                                     }
@@ -2231,14 +2231,14 @@ public class TransferOrchestrator
                             foreach (var depId in vDepIds)
                             {
                                 if (depId != ElementId.InvalidElementId && origen.GetElement(depId) is View depView &&
-                                    depView.IsValidObject && !depView.IsTemplate && depView.Id.Value != vistaorigen.Id.Value &&
+                                    depView.IsValidObject && !depView.IsTemplate && depView.Id.GetIdValue() != vistaorigen.Id.GetIdValue() &&
                                     (depView.ViewType == ViewType.Section || depView.ViewType == ViewType.Detail || depView.ViewType == ViewType.Elevation))
                                 {
-                                    if (!childSectionViews.Any(cv => cv.Id.Value == depView.Id.Value))
+                                    if (!childSectionViews.Any(cv => cv.Id.GetIdValue() == depView.Id.GetIdValue()))
                                     {
                                         childSectionViews.Add(depView);
-                                        viewerMarkMap[depView.Id.Value] = viewer.Id;
-                                        LoggerService.LogInfo($"ponSections [DISCOVERY via Strategy 0 Viewer Dependent]: Found '{depView.Name}' (Id: {depView.Id.Value})");
+                                        viewerMarkMap[depView.Id.GetIdValue()] = viewer.Id;
+                                        LoggerService.LogInfo($"ponSections [DISCOVERY via Strategy 0 Viewer Dependent]: Found '{depView.Name}' (Id: {depView.Id.GetIdValue()})");
                                     }
                                 }
                             }
@@ -2268,15 +2268,15 @@ public class TransferOrchestrator
             var allDocSections = new FilteredElementCollector(origen)
                 .OfClass(typeof(View))
                 .Cast<View>()
-                .Where(v => v != null && v.IsValidObject && !v.IsTemplate && v.Id.Value != vistaorigen.Id.Value &&
+                .Where(v => v != null && v.IsValidObject && !v.IsTemplate && v.Id.GetIdValue() != vistaorigen.Id.GetIdValue() &&
                             (v.ViewType == ViewType.Section || v.ViewType == ViewType.Detail || v.ViewType == ViewType.Elevation))
                 .ToList();
 
-            LoggerService.LogInfo($"ponSections [STRATEGY 1 SCAN]: Total candidate Section/Detail/Elevation views in source doc: {allDocSections.Count}. Base View: '{baseView?.Name}' (Id: {baseViewId.Value})");
+            LoggerService.LogInfo($"ponSections [STRATEGY 1 SCAN]: Total candidate Section/Detail/Elevation views in source doc: {allDocSections.Count}. Base View: '{baseView?.Name}' (Id: {baseViewId.GetIdValue()})");
 
             foreach (View secView in allDocSections)
             {
-                if (childSectionViews.Any(cv => cv.Id.Value == secView.Id.Value)) continue;
+                if (childSectionViews.Any(cv => cv.Id.GetIdValue() == secView.Id.GetIdValue())) continue;
 
                 bool isMatch = false;
                 string matchReason = "";
@@ -2286,14 +2286,14 @@ public class TransferOrchestrator
                 {
                     if (p != null && p.StorageType == StorageType.ElementId && p.AsElementId() != null)
                     {
-                        long val = p.AsElementId().Value;
-                        if (val == vistaorigen.Id.Value)
+                        long val = p.AsElementId().GetIdValue();
+                        if (val == vistaorigen.Id.GetIdValue())
                         {
                             isMatch = true;
                             matchReason = $"Parameter '{p.Definition?.Name}' matches vistaorigen.Id ({val})";
                             break;
                         }
-                        else if (baseViewId != ElementId.InvalidElementId && val == baseViewId.Value)
+                        else if (baseViewId != ElementId.InvalidElementId && val == baseViewId.GetIdValue())
                         {
                             isMatch = true;
                             matchReason = $"Parameter '{p.Definition?.Name}' matches baseViewId ({val})";
@@ -2331,10 +2331,10 @@ public class TransferOrchestrator
                                 pName.IndexOf("Parent", StringComparison.OrdinalIgnoreCase) >= 0 ||
                                 pName.IndexOf("Principal", StringComparison.OrdinalIgnoreCase) >= 0)
                             {
-                                if (pId.Value == vistaorigen.Id.Value || (baseViewId != ElementId.InvalidElementId && pId.Value == baseViewId.Value))
+                                if (pId.GetIdValue() == vistaorigen.Id.GetIdValue() || (baseViewId != ElementId.InvalidElementId && pId.GetIdValue() == baseViewId.GetIdValue()))
                                 {
                                     isMatch = true;
-                                    matchReason = $"Parameter '{pName}' matches parent/base ID ({pId.Value})";
+                                    matchReason = $"Parameter '{pName}' matches parent/base ID ({pId.GetIdValue()})";
                                     break;
                                 }
                             }
@@ -2345,7 +2345,7 @@ public class TransferOrchestrator
                 if (isMatch)
                 {
                     childSectionViews.Add(secView);
-                    LoggerService.LogInfo($"ponSections [DISCOVERY via Strategy 1 Match]: Found '{secView.Name}' (Id: {secView.Id.Value}) -> {matchReason}");
+                    LoggerService.LogInfo($"ponSections [DISCOVERY via Strategy 1 Match]: Found '{secView.Name}' (Id: {secView.Id.GetIdValue()}) -> {matchReason}");
                 }
             }
 
@@ -2358,7 +2358,7 @@ public class TransferOrchestrator
 
             foreach (View sectionView in childSectionViews)
             {
-                if (!processedIds.Add(sectionView.Id.Value)) continue;
+                if (!processedIds.Add(sectionView.Id.GetIdValue())) continue;
 
                 try
                 {
@@ -2368,7 +2368,7 @@ public class TransferOrchestrator
                         View? mappedSection = destino.GetElement(mappedId) as View;
                         if (mappedSection != null && mappedSection.IsValidObject)
                         {
-                            LoggerService.LogInfo($"ponSections: Section '{sectionView.Name}' already processed (Target: {mappedId.Value}). Re-using mapped section.");
+                            LoggerService.LogInfo($"ponSections: Section '{sectionView.Name}' already processed (Target: {mappedId.GetIdValue()}). Re-using mapped section.");
                             if (CopiaDetalles)
                             {
                                 View consolidatedMapped = ponDependientes(origen, sectionView, mappedSection, copyOptions);
@@ -2399,7 +2399,7 @@ public class TransferOrchestrator
                         }
                         else if (config == null || config.cf_rbKeepOriginal)
                         {
-                            LoggerService.LogInfo($"ponSections: Section '{sectionView.Name}' already exists in target (Id: {existingSection.Id.Value}). Option 'Keep Original' active. Re-using existing section view.");
+                            LoggerService.LogInfo($"ponSections: Section '{sectionView.Name}' already exists in target (Id: {existingSection.Id.GetIdValue()}). Option 'Keep Original' active. Re-using existing section view.");
                             if (CopiaDetalles)
                             {
                                 View consolidatedExisting = ponDependientes(origen, sectionView, existingSection, copyOptions);
@@ -2439,7 +2439,7 @@ public class TransferOrchestrator
                         ElementId elementToCopy;
                         string copyStrategy;
 
-                        if (viewerMarkMap.TryGetValue(sectionView.Id.Value, out ElementId viewerMarkId))
+                        if (viewerMarkMap.TryGetValue(sectionView.Id.GetIdValue(), out ElementId viewerMarkId))
                         {
                             elementToCopy = viewerMarkId;
                             copyStrategy = "VIEWER_MARK";
@@ -2450,7 +2450,7 @@ public class TransferOrchestrator
                             copyStrategy = "VIEW_ELEMENT";
                         }
 
-                        LoggerService.LogInfo($"ponSections [STRATEGY 1 COPYELEMENTS ({copyStrategy})]: Copying '{sectionView.Name}' element Id {elementToCopy.Value} from '{vistaorigen.Name}' into '{vistadestino.Name}'...");
+                        LoggerService.LogInfo($"ponSections [STRATEGY 1 COPYELEMENTS ({copyStrategy})]: Copying '{sectionView.Name}' element Id {elementToCopy.GetIdValue()} from '{vistaorigen.Name}' into '{vistadestino.Name}'...");
 
                         ICollection<ElementId> copiedIds;
                         if (copyStrategy == "VIEWER_MARK")
@@ -2466,7 +2466,7 @@ public class TransferOrchestrator
 
                         if (copiedIds != null && copiedIds.Any())
                         {
-                            LoggerService.LogInfo($"ponSections [STRATEGY 1 COPY RESULT]: Copied {copiedIds.Count} element(s): [{string.Join(", ", copiedIds.Select(id => $"{id.Value}({destino.GetElement(id)?.GetType().Name})"))}]");
+                            LoggerService.LogInfo($"ponSections [STRATEGY 1 COPY RESULT]: Copied {copiedIds.Count} element(s): [{string.Join(", ", copiedIds.Select(id => $"{id.GetIdValue()}({destino.GetElement(id)?.GetType().Name})"))}]");
 
                             // Find the target ViewSection from the copied elements
                             targetSectionView = copiedIds.Select(id => destino.GetElement(id)).OfType<View>().FirstOrDefault(v => !v.IsTemplate);
@@ -2490,7 +2490,7 @@ public class TransferOrchestrator
                                                     if (destino.GetElement(depId) is View depV && depV.IsValidObject && !depV.IsTemplate)
                                                     {
                                                         targetSectionView = depV;
-                                                        LoggerService.LogInfo($"ponSections [STRATEGY 1 RESOLVE]: Found view '{depV.Name}' (Id: {depV.Id.Value}) via dependent element of copied viewer mark.");
+                                                        LoggerService.LogInfo($"ponSections [STRATEGY 1 RESOLVE]: Found view '{depV.Name}' (Id: {depV.Id.GetIdValue()}) via dependent element of copied viewer mark.");
                                                         break;
                                                     }
                                                 }
@@ -2508,7 +2508,7 @@ public class TransferOrchestrator
                                                 if (destino.GetElement(pId) is View pView && pView.IsValidObject && !pView.IsTemplate)
                                                 {
                                                     targetSectionView = pView;
-                                                    LoggerService.LogInfo($"ponSections [STRATEGY 1 RESOLVE]: Found view '{pView.Name}' (Id: {pView.Id.Value}) via parameter of copied element.");
+                                                    LoggerService.LogInfo($"ponSections [STRATEGY 1 RESOLVE]: Found view '{pView.Name}' (Id: {pView.Id.GetIdValue()}) via parameter of copied element.");
                                                     break;
                                                 }
                                             }
@@ -2520,7 +2520,7 @@ public class TransferOrchestrator
 
                             if (targetSectionView != null)
                             {
-                                LoggerService.LogInfo($"ponSections [STRATEGY 1 SUCCESS ({copyStrategy})]: Copied '{targetSectionView.Name}' (Target Id: {targetSectionView.Id.Value}) with native viewer symbol.");
+                                LoggerService.LogInfo($"ponSections [STRATEGY 1 SUCCESS ({copyStrategy})]: Copied '{targetSectionView.Name}' (Target Id: {targetSectionView.Id.GetIdValue()}) with native viewer symbol.");
                             }
                             else
                             {
@@ -3126,7 +3126,7 @@ public class TransferOrchestrator
             try
             {
                 vistadestino.ViewTemplateId = targetTemplateId;
-                LoggerService.LogInfo($"ViewTemplate: Applied template '{templateView.Name}' (TargetId: {targetTemplateId.Value}) to view '{vistadestino.Name}'.");
+                LoggerService.LogInfo($"ViewTemplate: Applied template '{templateView.Name}' (TargetId: {targetTemplateId.GetIdValue()}) to view '{vistadestino.Name}'.");
             }
             catch (Exception exApplyTmpl)
             {
@@ -3643,6 +3643,7 @@ public class TransferOrchestrator
                         LoggerService.LogWarning($"LinkOverrides [HIDE ERROR]: Could not sync hide/show visibility for link '{srcLink.Name}' in view '{targetView.Name}': {exHide.Message}");
                     }
 
+#if REVIT2024_OR_GREATER
                     RevitLinkGraphicsSettings srcSettings = null;
                     try
                     {
@@ -3734,6 +3735,7 @@ public class TransferOrchestrator
                             LoggerService.LogWarning($"LinkOverrides [WARNING]: Error configuring override settings for link '{srcLink.Name}' in view '{targetView.Name}': {exLinkOverrides.Message}");
                         }
                     }
+#endif
                 }
                 else
                 {
@@ -3742,10 +3744,12 @@ public class TransferOrchestrator
                         bool isHiddenInSrc = false;
                         try { isHiddenInSrc = srcLink.IsHidden(srcView); } catch { }
 
-                        RevitLinkGraphicsSettings srcSettings = null;
-                        try { srcSettings = srcView.GetLinkOverrides(srcLink.Id); } catch { }
+                        bool hasOverrides = false;
+#if REVIT2024_OR_GREATER
+                        try { hasOverrides = srcView.GetLinkOverrides(srcLink.Id) != null; } catch { }
+#endif
 
-                        if (isHiddenInSrc || srcSettings != null)
+                        if (isHiddenInSrc || hasOverrides)
                         {
                             string linkDisplayName = !string.IsNullOrEmpty(srcCleanName) ? srcCleanName : srcLink.Name;
                             if (!missingLinkNames.Contains(linkDisplayName))
@@ -4154,7 +4158,7 @@ public class TransferOrchestrator
                 .OfClass(typeof(ViewPlan))
                 .Cast<ViewPlan>()
                 .Where(v => !v.IsTemplate)
-                .Select(v => $"'{v.Name}'(Id:{v.Id.Value})")
+                .Select(v => $"'{v.Name}'(Id:{v.Id.GetIdValue()})")
                 .ToList();
             LoggerService.LogInfo($"[VIEW CHECKPOINT - {checkpointName}]: Total ViewPlans in targetDoc: {planViews.Count}. List: [{string.Join(", ", planViews)}]");
         }
@@ -4166,7 +4170,7 @@ public class TransferOrchestrator
 
     private static ViewPlan CreateViewPlan(Document sourceDoc, Document targetDoc, ViewPlan srcViewPlan, Dictionary<string, string>? levelMappings, bool forceLevel, Configuraciones? config = null, bool forceNewSuffixedView = false)
     {
-        LoggerService.LogInfo($"CreateViewPlan [START]: Processing ViewPlan '{srcViewPlan.Name}' (Source ViewId: {srcViewPlan.Id.Value}, ForceNewSuffixed: {forceNewSuffixedView})...");
+        LoggerService.LogInfo($"CreateViewPlan [START]: Processing ViewPlan '{srcViewPlan.Name}' (Source ViewId: {srcViewPlan.Id.GetIdValue()}, ForceNewSuffixed: {forceNewSuffixedView})...");
         LogTargetViewsCheckpoint(targetDoc, "6-CREATE_VIEW_PLAN_START");
 
         // 1. Get the ViewFamily of the source view
@@ -4197,7 +4201,7 @@ public class TransferOrchestrator
         {
             if (config == null || config.cf_rbKeepOriginal)
             {
-                LoggerService.LogInfo($"CreateViewPlan [RE-USE EXISTING]: View '{desiredName}' already exists in target document (Target Id: {existingByName.Id.Value}). Re-using existing view without creating a new copy.");
+                LoggerService.LogInfo($"CreateViewPlan [RE-USE EXISTING]: View '{desiredName}' already exists in target document (Target Id: {existingByName.Id.GetIdValue()}). Re-using existing view without creating a new copy.");
                 return existingByName as ViewPlan;
             }
         }
@@ -4240,7 +4244,7 @@ public class TransferOrchestrator
                 if (existingLevel != null)
                 {
                     targetLevelId = existingLevel.Id;
-                    LoggerService.LogInfo($"CreateViewPlan [LEVEL RESOLVED]: Using newly created or existing Level '{existingLevel.Name}' (Id: {existingLevel.Id.Value}).");
+                    LoggerService.LogInfo($"CreateViewPlan [LEVEL RESOLVED]: Using newly created or existing Level '{existingLevel.Name}' (Id: {existingLevel.Id.GetIdValue()}).");
                 }
                 else
                 {
@@ -4249,7 +4253,7 @@ public class TransferOrchestrator
                     catch { newLevel.Name = GetUniqueLevelName(targetDoc, customName); }
                     targetLevelId = newLevel.Id;
                     targetDoc.Regenerate();
-                    LoggerService.LogInfo($"CreateViewPlan [LEVEL CREATED]: Created new Level '{newLevel.Name}' (Id: {newLevel.Id.Value}) at elevation {newLevel.Elevation:F3} ft (mapped from '{srcLevelName}').");
+                    LoggerService.LogInfo($"CreateViewPlan [LEVEL CREATED]: Created new Level '{newLevel.Name}' (Id: {newLevel.Id.GetIdValue()}) at elevation {newLevel.Elevation:F3} ft (mapped from '{srcLevelName}').");
                 }
             }
             else
@@ -4258,7 +4262,7 @@ public class TransferOrchestrator
                 if (matchedLevel != null)
                 {
                     targetLevelId = matchedLevel.Id;
-                    LoggerService.LogInfo($"CreateViewPlan [LEVEL MAPPED]: Mapped view level '{srcLevelName}' -> existing Level '{matchedLevel.Name}' (Id: {matchedLevel.Id.Value}).");
+                    LoggerService.LogInfo($"CreateViewPlan [LEVEL MAPPED]: Mapped view level '{srcLevelName}' -> existing Level '{matchedLevel.Name}' (Id: {matchedLevel.Id.GetIdValue()}).");
                 }
                 else
                 {
@@ -4274,7 +4278,7 @@ public class TransferOrchestrator
             if (matchedLevel != null)
             {
                 targetLevelId = matchedLevel.Id;
-                LoggerService.LogInfo($"CreateViewPlan [LEVEL MATCHED]: Found matching Level '{matchedLevel.Name}' (Id: {matchedLevel.Id.Value}) in target document.");
+                LoggerService.LogInfo($"CreateViewPlan [LEVEL MATCHED]: Found matching Level '{matchedLevel.Name}' (Id: {matchedLevel.Id.GetIdValue()}) in target document.");
             }
             else
             {
@@ -4283,7 +4287,7 @@ public class TransferOrchestrator
                 catch { newLevel.Name = GetUniqueLevelName(targetDoc, srcLevelName); }
                 targetLevelId = newLevel.Id;
                 targetDoc.Regenerate();
-                LoggerService.LogInfo($"CreateViewPlan [LEVEL CREATED]: Created missing Level '{newLevel.Name}' (Id: {newLevel.Id.Value}) at elevation {newLevel.Elevation:F3} ft in target document.");
+                LoggerService.LogInfo($"CreateViewPlan [LEVEL CREATED]: Created missing Level '{newLevel.Name}' (Id: {newLevel.Id.GetIdValue()}) at elevation {newLevel.Elevation:F3} ft in target document.");
             }
         }
 
@@ -4299,22 +4303,22 @@ public class TransferOrchestrator
         ViewPlan targetViewPlan = null;
         try
         {
-            LoggerService.LogInfo($"CreateViewPlan [API CALL]: Calling ViewPlan.Create(targetDoc, targetVftId: {targetVft.Id.Value}, targetLevelId: {targetLevelId.Value})...");
+            LoggerService.LogInfo($"CreateViewPlan [API CALL]: Calling ViewPlan.Create(targetDoc, targetVftId: {targetVft.Id.GetIdValue()}, targetLevelId: {targetLevelId.GetIdValue()})...");
             targetViewPlan = ViewPlan.Create(targetDoc, targetVft.Id, targetLevelId);
             LogTargetViewsCheckpoint(targetDoc, "8-AFTER_VIEWPLAN_CREATE_API");
-            LoggerService.LogInfo($"CreateViewPlan [API SUCCESS]: ViewPlan.Create succeeded! (Target ViewId: {targetViewPlan.Id.Value}, Initial Default Name: '{targetViewPlan.Name}'). Setting name to '{desiredName}'...");
+            LoggerService.LogInfo($"CreateViewPlan [API SUCCESS]: ViewPlan.Create succeeded! (Target ViewId: {targetViewPlan.Id.GetIdValue()}, Initial Default Name: '{targetViewPlan.Name}'). Setting name to '{desiredName}'...");
 
             try
             {
                 targetViewPlan.Name = desiredName;
-                LoggerService.LogInfo($"CreateViewPlan [NAME ASSIGNED]: Successfully set view name to '{targetViewPlan.Name}' (Target ViewId: {targetViewPlan.Id.Value}).");
+                LoggerService.LogInfo($"CreateViewPlan [NAME ASSIGNED]: Successfully set view name to '{targetViewPlan.Name}' (Target ViewId: {targetViewPlan.Id.GetIdValue()}).");
             }
             catch (Exception exName)
             {
                 LoggerService.LogWarning($"CreateViewPlan [NAME COLLISION CATCH]: Failed to set view name to '{desiredName}' ({exName.Message}). Falling back to GetUniqueViewName...");
                 string uniqueFallbackName = GetUniqueViewName(targetDoc, desiredName, srcViewPlan.ViewType);
                 targetViewPlan.Name = uniqueFallbackName;
-                LoggerService.LogInfo($"CreateViewPlan [FALLBACK NAME ASSIGNED]: Assigned unique fallback name '{uniqueFallbackName}' to target ViewPlan (Id: {targetViewPlan.Id.Value}).");
+                LoggerService.LogInfo($"CreateViewPlan [FALLBACK NAME ASSIGNED]: Assigned unique fallback name '{uniqueFallbackName}' to target ViewPlan (Id: {targetViewPlan.Id.GetIdValue()}).");
             }
 
             LogTargetViewsCheckpoint(targetDoc, "9-AFTER_VIEWPLAN_NAME_SET");
@@ -4331,7 +4335,7 @@ public class TransferOrchestrator
         targetDoc.Regenerate();
         EnsureViewWorkplane(targetViewPlan);
 
-        LoggerService.LogInfo($"CreateViewPlan [COMPLETE]: Successfully initialized ViewPlan '{targetViewPlan.Name}' (Id: {targetViewPlan.Id.Value}).");
+        LoggerService.LogInfo($"CreateViewPlan [COMPLETE]: Successfully initialized ViewPlan '{targetViewPlan.Name}' (Id: {targetViewPlan.Id.GetIdValue()}).");
         return targetViewPlan;
     }
 
@@ -4358,7 +4362,7 @@ public class TransferOrchestrator
             try { tempLvl.Name = srcName; }
             catch { tempLvl.Name = GetUniqueLevelName(targetDoc, srcName); }
             targetDoc.Regenerate();
-            LoggerService.LogInfo($"EnsureSourceLevelExistsInTarget: Created level '{tempLvl.Name}' (Id: {tempLvl.Id.Value}, Z={srcZ:F3} ft) in target doc to satisfy CopyElements workplane matching.");
+            LoggerService.LogInfo($"EnsureSourceLevelExistsInTarget: Created level '{tempLvl.Name}' (Id: {tempLvl.Id.GetIdValue()}, Z={srcZ:F3} ft) in target doc to satisfy CopyElements workplane matching.");
             return tempLvl;
         }
         catch (Exception ex)
@@ -4440,7 +4444,7 @@ public class TransferOrchestrator
                         {
                             targetView.SketchPlane = sk;
                             doc.Regenerate();
-                            LoggerService.LogInfo($"EnsureViewWorkplane: Successfully assigned Level SketchPlane (Id: {sk.Id.Value}) to view '{targetView.Name}'.");
+                            LoggerService.LogInfo($"EnsureViewWorkplane: Successfully assigned Level SketchPlane (Id: {sk.Id.GetIdValue()}) to view '{targetView.Name}'.");
                         }
                         catch (Exception exAssign)
                         {
@@ -4616,7 +4620,7 @@ public class TransferOrchestrator
         {
             if (config.cf_rbKeepOriginal)
             {
-                LoggerService.LogInfo($"CreateViewSheet: ViewSheet '{srcSheet.SheetNumber} - {srcSheet.Name}' (Id: {existingSheet.Id.Value}) already exists in target document. Option 'Keep Original' active. Re-using existing target sheet.");
+                LoggerService.LogInfo($"CreateViewSheet: ViewSheet '{srcSheet.SheetNumber} - {srcSheet.Name}' (Id: {existingSheet.Id.GetIdValue()}) already exists in target document. Option 'Keep Original' active. Re-using existing target sheet.");
                 return existingSheet;
             }
             else if (config.cf_rbAbortTransaction)
@@ -4683,7 +4687,7 @@ public class TransferOrchestrator
         try { targetSheet.SheetNumber = evalSheetNumber; } catch { }
         try { targetSheet.Name = evalName; } catch { }
 
-        LoggerService.LogInfo($"CreateViewSheet: Successfully created ViewSheet '{targetSheet.SheetNumber} - {targetSheet.Name}' (Id: {targetSheet.Id.Value}).");
+        LoggerService.LogInfo($"CreateViewSheet: Successfully created ViewSheet '{targetSheet.SheetNumber} - {targetSheet.Name}' (Id: {targetSheet.Id.GetIdValue()}).");
         return targetSheet;
     }
 
