@@ -5,7 +5,7 @@
   Author="DBDev_dbarberos"
   Description="TransferPlus"
   Name="TransferPlus"
-  ProductCode="48B5AD42-A784-4443-B070-DC33535ABF00"
+  ProductCode="AD46B5D9-1B69-410C-B0E5-0AB43094107B"
   OnlineDocumentation="https://dbdev-dbarberos.github.io/PrivacyPolicy/"
   ProductType="Application"
   Icon="./Contents/Resources/Icon32.png"
@@ -17,6 +17,10 @@
     Email="dbarberos@outlook.com" />
 
   <!-- Components injected dynamically by build-bundle.ps1 -->
+  <Components Description="TransferPlus Add-in for Revit 2023">
+    <RuntimeRequirements OS="Win64" Platform="Revit" SeriesMin="2023" SeriesMax="2023" />
+    <ComponentEntry AppName="TransferPlus" Version="1.3.0" ModuleName="./Contents/2023/TransferPlus.addin" AppDescription="DBDev Solutions" LoadOnRevitStartup="True" />
+  </Components>
   <Components Description="TransferPlus Add-in for Revit 2024">
     <RuntimeRequirements OS="Win64" Platform="Revit" SeriesMin="2024" SeriesMax="2024" />
     <ComponentEntry AppName="TransferPlus" Version="1.3.0" ModuleName="./Contents/2024/TransferPlus.addin" AppDescription="DBDev Solutions" LoadOnRevitStartup="True" />
