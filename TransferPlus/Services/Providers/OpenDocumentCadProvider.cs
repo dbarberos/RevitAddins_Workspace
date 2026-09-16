@@ -52,25 +52,49 @@ public class OpenDocumentCadProvider : ICadProvider
         return Task.FromResult<IEnumerable<CadDetailItemModel>>(result);
     }
 
-    public Task<bool> TransferCadItemAsync(CadDetailItemModel cadItem, Document destinationDoc, bool isLinkMode = false, string? overrideViewName = null, CancellationToken cancellationToken = default)
+    public Task<bool> TransferCadItemAsync(
+        CadDetailItemModel cadItem, 
+        Document destinationDoc, 
+        bool isLinkMode = false, 
+        string? overrideViewName = null, 
+        bool keepOriginal = false, 
+        string? suffix = null, 
+        CancellationToken cancellationToken = default)
     {
         if (cadItem == null || destinationDoc == null || _sourceDoc == null) return Task.FromResult(false);
 
         if (cadItem.ElementId != null && cadItem.ElementId != ElementId.InvalidElementId)
         {
-            if (cadItem.IsDraftingView || cadItem.NativeElement is View)
+            var customNames = !string.IsNullOrWhiteSpace(overrideViewName)
+                ? new Dictionary<ElementId, string> { [cadItem.ElementId] = overrideViewName }
+                : null;
+
+            if (cadItem.IsDraftingView || cadItem.NativeElement is ViewDrafting)
             {
-                int count = _familyRevitService.TransferDraftingViews(_sourceDoc, destinationDoc, new List<ElementId> { cadItem.ElementId });
+                int count = _familyRevitService.TransferDraftingViews(_sourceDoc, destinationDoc, new List<ElementId> { cadItem.ElementId }, customNames, keepOriginal, suffix);
+                return Task.FromResult(count > 0);
+            }
+            else if (cadItem.NativeElement is View)
+            {
+                int count = _familyRevitService.TransferModelDetailViewsToDraftingViews(_sourceDoc, destinationDoc, new List<ElementId> { cadItem.ElementId }, customNames, keepOriginal, suffix);
                 return Task.FromResult(count > 0);
             }
             else if (cadItem.NativeElement is ImportInstance)
             {
-                int count = _familyRevitService.TransferCadInstancesToDraftingViews(_sourceDoc, destinationDoc, new List<ElementId> { cadItem.ElementId });
+                int count = _familyRevitService.TransferCadInstancesToDraftingViews(_sourceDoc, destinationDoc, new List<ElementId> { cadItem.ElementId }, customNames, keepOriginal, suffix);
+                return Task.FromResult(count > 0);
+            }
+            else if (cadItem.NativeElement is FamilyInstance || cadItem.NativeElement is FamilySymbol)
+            {
+                var renameMap = !string.IsNullOrWhiteSpace(overrideViewName)
+                    ? new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase) { [cadItem.Name] = overrideViewName }
+                    : null;
+                int count = _familyRevitService.TransferDetailComponentFamilies(_sourceDoc, destinationDoc, new List<ElementId> { cadItem.ElementId }, renameMap, keepOriginal, suffix);
                 return Task.FromResult(count > 0);
             }
             else
             {
-                int count = _familyRevitService.TransferDraftingViews(_sourceDoc, destinationDoc, new List<ElementId> { cadItem.ElementId });
+                int count = _familyRevitService.TransferDetailAnnotationsToDraftingViews(_sourceDoc, destinationDoc, new List<ElementId> { cadItem.ElementId }, customNames, keepOriginal, suffix);
                 return Task.FromResult(count > 0);
             }
         }

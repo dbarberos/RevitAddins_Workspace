@@ -10,7 +10,14 @@ public interface ICadProvider
 {
     string ProviderName { get; }
     CadSourceType? SourceType { get; }
-
     Task<IEnumerable<CadDetailItemModel>> GetCadItemsAsync(CancellationToken cancellationToken = default);
-    Task<bool> TransferCadItemAsync(CadDetailItemModel cadItem, Document destinationDoc, bool isLinkMode = false, string? overrideViewName = null, CancellationToken cancellationToken = default);
+
+    Task<bool> TransferCadItemAsync(
+        CadDetailItemModel cadItem, 
+        Document destinationDoc, 
+        bool isLinkMode = false, 
+        string? overrideViewName = null, 
+        bool keepOriginal = false, 
+        string? suffix = null, 
+        CancellationToken cancellationToken = default);
 }

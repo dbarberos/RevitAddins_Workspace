@@ -100,7 +100,14 @@ public class AutodeskDocsCadProvider : ICadProvider
         return result;
     }
 
-    public async Task<bool> TransferCadItemAsync(CadDetailItemModel cadItem, Document destinationDoc, bool isLinkMode = false, string? overrideViewName = null, CancellationToken cancellationToken = default)
+    public async Task<bool> TransferCadItemAsync(
+        CadDetailItemModel cadItem, 
+        Document destinationDoc, 
+        bool isLinkMode = false, 
+        string? overrideViewName = null, 
+        bool keepOriginal = false, 
+        string? suffix = null, 
+        CancellationToken cancellationToken = default)
     {
         if (cadItem == null || destinationDoc == null || _sourceItem == null) return false;
 
@@ -141,7 +148,7 @@ public class AutodeskDocsCadProvider : ICadProvider
 
             TelemetryLogger.LogInfo($"[AutodeskDocsCadProvider] Archivo CAD descargado en '{tempLocalPath}'. Transfiriendo a Revit (LinkMode: {isLinkMode})...");
 
-            bool loaded = _familyRevitService.TransferExternalCadToDraftingView(destinationDoc, tempLocalPath, overrideViewName, isLinkMode);
+            bool loaded = _familyRevitService.TransferExternalCadToDraftingView(destinationDoc, tempLocalPath, overrideViewName, isLinkMode, keepOriginal: keepOriginal, suffix: suffix);
 
             if (loaded)
             {

@@ -867,8 +867,17 @@ namespace TransferPlus.Services
 
         /// <summary>
         /// Transfiere una lista de Vistas de Diseño (Drafting Views) desde un documento origen hacia un documento destino de forma silenciosa.
+        /// <summary>
+        /// Transfiere una lista de Vistas de Diseño (Drafting Views) desde un documento origen hacia un documento destino de forma silenciosa.
+        /// Respeta las políticas de duplicados (Keep Original / Append Suffix).
         /// </summary>
-        public int TransferDraftingViews(Document sourceDoc, Document targetDoc, List<ElementId> viewIds, Dictionary<ElementId, string>? customNames = null)
+        public int TransferDraftingViews(
+            Document sourceDoc, 
+            Document targetDoc, 
+            List<ElementId> viewIds, 
+            Dictionary<ElementId, string>? customNames = null,
+            bool keepOriginal = false,
+            string? suffix = null)
         {
             if (sourceDoc == null || targetDoc == null || viewIds == null || !viewIds.Any()) return 0;
 
@@ -887,32 +896,73 @@ namespace TransferPlus.Services
 
                     try
                     {
+                        var existingViewNames = new FilteredElementCollector(targetDoc)
+                            .OfClass(typeof(View))
+                            .Cast<View>()
+                            .Select(v => v.Name)
+                            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+                        var filteredViewIds = new List<ElementId>();
+                        foreach (var vid in viewIds)
+                        {
+                            string rawName = (customNames != null && customNames.TryGetValue(vid, out var cn) && !string.IsNullOrWhiteSpace(cn))
+                                ? cn
+                                : (sourceDoc.GetElement(vid) is View sv ? sv.Name : string.Empty);
+
+                            if (keepOriginal && existingViewNames.Contains(rawName))
+                            {
+                                TelemetryLogger.LogInfo($"[TransferDraftingViews] Vista '{rawName}' ya existe en destino. Opción 'Keep Original' activa. Omitiendo.");
+                                continue;
+                            }
+                            filteredViewIds.Add(vid);
+                        }
+
+                        if (!filteredViewIds.Any())
+                        {
+                            t.Commit();
+                            return;
+                        }
+
                         var copyOptions = new CopyPasteOptions();
-                        var copiedIds = ElementTransformUtils.CopyElements(sourceDoc, viewIds, targetDoc, Transform.Identity, copyOptions);
+                        var copiedIds = ElementTransformUtils.CopyElements(sourceDoc, filteredViewIds, targetDoc, Transform.Identity, copyOptions);
 
                         transferredCount = copiedIds.Count;
 
-                        if (customNames != null && customNames.Any())
+                        var viewIdList = filteredViewIds.ToList();
+                        var copiedIdList = copiedIds.ToList();
+                        for (int i = 0; i < viewIdList.Count && i < copiedIdList.Count; i++)
                         {
-                            var viewIdList = viewIds.ToList();
-                            var copiedIdList = copiedIds.ToList();
-                            for (int i = 0; i < viewIdList.Count && i < copiedIdList.Count; i++)
+                            var srcId = viewIdList[i];
+                            var targetElem = targetDoc.GetElement(copiedIdList[i]) as View;
+                            if (targetElem == null) continue;
+
+                            string targetName = (customNames != null && customNames.TryGetValue(srcId, out var newName) && !string.IsNullOrWhiteSpace(newName))
+                                ? newName
+                                : (sourceDoc.GetElement(srcId) is View sv ? sv.Name : targetElem.Name);
+
+                            if (existingViewNames.Contains(targetName))
                             {
-                                var srcId = viewIdList[i];
-                                if (customNames.TryGetValue(srcId, out var newName) && !string.IsNullOrWhiteSpace(newName))
+                                if (!string.IsNullOrWhiteSpace(suffix))
                                 {
-                                    if (targetDoc.GetElement(copiedIdList[i]) is View v)
-                                    {
-                                        try
-                                        {
-                                            v.Name = newName;
-                                        }
-                                        catch (Exception nameEx)
-                                        {
-                                            TelemetryLogger.LogWarning($"[TransferDraftingViews] Could not rename view to '{newName}': {nameEx.Message}");
-                                        }
-                                    }
+                                    targetName += suffix;
                                 }
+                                string uniqueName = targetName;
+                                int c = 1;
+                                while (existingViewNames.Contains(uniqueName))
+                                {
+                                    uniqueName = $"{targetName}_{c++}";
+                                }
+                                targetName = uniqueName;
+                            }
+
+                            try
+                            {
+                                targetElem.Name = targetName;
+                                existingViewNames.Add(targetName);
+                            }
+                            catch (Exception nameEx)
+                            {
+                                TelemetryLogger.LogWarning($"[TransferDraftingViews] Could not rename view to '{targetName}': {nameEx.Message}");
                             }
                         }
 
@@ -935,8 +985,15 @@ namespace TransferPlus.Services
 
         /// <summary>
         /// Transfiere instancias CAD (DWG Links / Imports) incrustadas o vinculadas en vistas de modelo a nuevas Vistas de Diseño (Drafting Views) en el documento destino.
+        /// Respeta las políticas de duplicados (Keep Original / Append Suffix).
         /// </summary>
-        public int TransferCadInstancesToDraftingViews(Document sourceDoc, Document targetDoc, List<ElementId> cadInstanceIds, Dictionary<ElementId, string>? customNames = null)
+        public int TransferCadInstancesToDraftingViews(
+            Document sourceDoc, 
+            Document targetDoc, 
+            List<ElementId> cadInstanceIds, 
+            Dictionary<ElementId, string>? customNames = null,
+            bool keepOriginal = false,
+            string? suffix = null)
         {
             if (sourceDoc == null || targetDoc == null || cadInstanceIds == null || !cadInstanceIds.Any()) return 0;
 
@@ -1003,21 +1060,33 @@ namespace TransferPlus.Services
                                 sourceViewName = ownerView.Name;
                             }
 
-                            // a. Crear una nueva ViewDrafting
-                            var newDraftingView = ViewDrafting.Create(targetDoc, draftingVft.Id);
-                            if (newDraftingView == null) continue;
-
                             // Nombrar la vista de diseño (respetando renombrado personalizado si existe)
                             string baseViewName = (customNames != null && customNames.TryGetValue(cadId, out var customName) && !string.IsNullOrWhiteSpace(customName))
                                 ? customName
                                 : $"CAD - {cadName} ({sourceViewName})";
 
+                            if (keepOriginal && existingViewNames.Contains(baseViewName))
+                            {
+                                TelemetryLogger.LogInfo($"[TransferCadInstances] Vista '{baseViewName}' ya existe en destino. Opción 'Keep Original' activa. Omitiendo.");
+                                continue;
+                            }
+
+                            if (!string.IsNullOrWhiteSpace(suffix) && existingViewNames.Contains(baseViewName))
+                            {
+                                baseViewName += suffix;
+                            }
+
                             string uniqueViewName = baseViewName;
-                            int suffix = 1;
+                            int suffixCounter = 1;
                             while (existingViewNames.Contains(uniqueViewName))
                             {
-                                uniqueViewName = $"{baseViewName}_{suffix++}";
+                                uniqueViewName = $"{baseViewName}_{suffixCounter++}";
                             }
+
+                            // a. Crear una nueva ViewDrafting
+                            var newDraftingView = ViewDrafting.Create(targetDoc, draftingVft.Id);
+                            if (newDraftingView == null) continue;
+
                             newDraftingView.Name = uniqueViewName;
                             existingViewNames.Add(uniqueViewName);
 
@@ -1070,7 +1139,13 @@ namespace TransferPlus.Services
         /// <summary>
         /// Importa o vincula un archivo de dibujo CAD externo (.dwg, .dxf, .sat, etc.) en una nueva Vista de Diseño (Drafting View) en el documento destino.
         /// </summary>
-        public bool TransferExternalCadToDraftingView(Document targetDoc, string filePath, string? overrideViewName, bool isLinkMode)
+        public bool TransferExternalCadToDraftingView(
+            Document targetDoc, 
+            string filePath, 
+            string? overrideViewName, 
+            bool isLinkMode,
+            bool keepOriginal = false,
+            string? suffix = null)
         {
             if (targetDoc == null || string.IsNullOrWhiteSpace(filePath) || !System.IO.File.Exists(filePath)) return false;
 
@@ -1109,6 +1184,29 @@ namespace TransferPlus.Services
                             .Select(v => v.Name)
                             .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
+                        string fileName = System.IO.Path.GetFileNameWithoutExtension(filePath);
+                        string baseViewName = !string.IsNullOrWhiteSpace(overrideViewName) ? overrideViewName : $"CAD - {fileName}";
+
+                        if (keepOriginal && existingViewNames.Contains(baseViewName))
+                        {
+                            TelemetryLogger.LogInfo($"[TransferExternalCad] Vista '{baseViewName}' ya existe en destino. Opción 'Keep Original' activa. Omitiendo importación.");
+                            t.RollBack();
+                            success = true;
+                            return;
+                        }
+
+                        if (!string.IsNullOrWhiteSpace(suffix) && existingViewNames.Contains(baseViewName))
+                        {
+                            baseViewName += suffix;
+                        }
+
+                        string uniqueViewName = baseViewName;
+                        int suffixCounter = 1;
+                        while (existingViewNames.Contains(uniqueViewName))
+                        {
+                            uniqueViewName = $"{baseViewName}_{suffixCounter++}";
+                        }
+
                         // Crear una nueva ViewDrafting
                         var newDraftingView = ViewDrafting.Create(targetDoc, draftingVft.Id);
                         if (newDraftingView == null)
@@ -1117,14 +1215,6 @@ namespace TransferPlus.Services
                             return;
                         }
 
-                        string fileName = System.IO.Path.GetFileNameWithoutExtension(filePath);
-                        string baseViewName = !string.IsNullOrWhiteSpace(overrideViewName) ? overrideViewName : $"CAD - {fileName}";
-                        string uniqueViewName = baseViewName;
-                        int suffix = 1;
-                        while (existingViewNames.Contains(uniqueViewName))
-                        {
-                            uniqueViewName = $"{baseViewName}_{suffix++}";
-                        }
                         newDraftingView.Name = uniqueViewName;
                         existingViewNames.Add(uniqueViewName);
 
@@ -1133,14 +1223,9 @@ namespace TransferPlus.Services
                         if (isLinkMode)
                         {
                             // Link mode (Revit API doc.Link)
-                            if (ext == ".dwg" || ext == ".dxf")
+                            if (ext == ".dwg" || ext == ".dxf" || ext == ".dgn")
                             {
                                 var linkOpt = new DWGImportOptions { ThisViewOnly = true, Placement = ImportPlacement.Origin };
-                                targetDoc.Link(filePath, linkOpt, newDraftingView, out _);
-                            }
-                            else if (ext == ".dgn")
-                            {
-                                var linkOpt = new DGNImportOptions { ThisViewOnly = true, Placement = ImportPlacement.Origin };
                                 targetDoc.Link(filePath, linkOpt, newDraftingView, out _);
                             }
                             else
@@ -1196,6 +1281,348 @@ namespace TransferPlus.Services
 
             return success;
         }
+
+        /// <summary>
+        /// Transfiere Vistas de Detalle del Modelo (ViewSection de ViewType.Detail o Callouts) a nuevas Vistas de Diseño en el documento destino,
+        /// copiando todos los elementos de anotación 2D contenidos (líneas, textos, cotas, CADs y componentes de detalle).
+        /// </summary>
+        public int TransferModelDetailViewsToDraftingViews(
+            Document sourceDoc,
+            Document targetDoc,
+            List<ElementId> detailViewIds,
+            Dictionary<ElementId, string>? customNames = null,
+            bool keepOriginal = false,
+            string? suffix = null)
+        {
+            if (sourceDoc == null || targetDoc == null || detailViewIds == null || !detailViewIds.Any()) return 0;
+
+            int transferredCount = 0;
+
+            ExecuteWithWarningSuppression(targetDoc, () =>
+            {
+                using (var t = new Transaction(targetDoc, "Transfer Detail Views to Drafting Views"))
+                {
+                    var options = t.GetFailureHandlingOptions();
+                    options.SetFailuresPreprocessor(new WarningSwallower());
+                    options.SetClearAfterRollback(true);
+                    t.SetFailureHandlingOptions(options);
+
+                    t.Start();
+
+                    try
+                    {
+                        var draftingVft = new FilteredElementCollector(targetDoc)
+                            .OfClass(typeof(ViewFamilyType))
+                            .Cast<ViewFamilyType>()
+                            .FirstOrDefault(vft => vft.ViewFamily == ViewFamily.Drafting);
+
+                        if (draftingVft == null)
+                        {
+                            TelemetryLogger.LogWarning($"[TransferModelDetailViews] No se encontró ViewFamilyType para Drafting en '{targetDoc.Title}'.");
+                            t.RollBack();
+                            return;
+                        }
+
+                        var existingViewNames = new FilteredElementCollector(targetDoc)
+                            .OfClass(typeof(View))
+                            .Cast<View>()
+                            .Select(v => v.Name)
+                            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+                        var copyOptions = new CopyPasteOptions();
+
+                        foreach (var viewId in detailViewIds)
+                        {
+                            if (sourceDoc.GetElement(viewId) is not View srcView) continue;
+
+                            string baseViewName = (customNames != null && customNames.TryGetValue(viewId, out var cn) && !string.IsNullOrWhiteSpace(cn))
+                                ? cn
+                                : $"Detail - {srcView.Name}";
+
+                            if (keepOriginal && existingViewNames.Contains(baseViewName))
+                            {
+                                TelemetryLogger.LogInfo($"[TransferModelDetailViews] Vista '{baseViewName}' ya existe en destino. Opción 'Keep Original' activa. Omitiendo.");
+                                continue;
+                            }
+
+                            if (!string.IsNullOrWhiteSpace(suffix) && existingViewNames.Contains(baseViewName))
+                            {
+                                baseViewName += suffix;
+                            }
+
+                            string uniqueViewName = baseViewName;
+                            int suffixCounter = 1;
+                            while (existingViewNames.Contains(uniqueViewName))
+                            {
+                                uniqueViewName = $"{baseViewName}_{suffixCounter++}";
+                            }
+
+                            var newDraftingView = ViewDrafting.Create(targetDoc, draftingVft.Id);
+                            if (newDraftingView == null) continue;
+
+                            try { newDraftingView.Scale = srcView.Scale; } catch { }
+                            newDraftingView.Name = uniqueViewName;
+                            existingViewNames.Add(uniqueViewName);
+
+                            // Recolectar elementos de anotación 2D dependientes de la vista
+                            var viewElements = new FilteredElementCollector(sourceDoc, srcView.Id)
+                                .WhereElementIsNotElementType()
+                                .Where(e => e.ViewSpecific && e is not Viewport && e is not Level && e is not SketchPlane)
+                                .Select(e => e.Id)
+                                .ToList();
+
+                            if (viewElements.Any())
+                            {
+                                try
+                                {
+                                    ElementTransformUtils.CopyElements(
+                                        srcView,
+                                        viewElements,
+                                        newDraftingView,
+                                        Transform.Identity,
+                                        copyOptions);
+                                }
+                                catch (Exception exCopy)
+                                {
+                                    TelemetryLogger.LogWarning($"[TransferModelDetailViews] Error copiando anotaciones de '{srcView.Name}' a '{uniqueViewName}': {exCopy.Message}");
+                                }
+                            }
+
+                            transferredCount++;
+                        }
+
+                        t.Commit();
+                        TelemetryLogger.LogInfo($"[TransferModelDetailViews] Transferidas {transferredCount} vistas de detalle como vistas de diseño en '{targetDoc.Title}'.");
+                    }
+                    catch (Exception ex)
+                    {
+                        TelemetryLogger.LogExceptionSilently($"[TransferModelDetailViews] Error transfiriendo vistas de detalle a '{targetDoc.Title}'", ex);
+                        if (t.GetStatus() == TransactionStatus.Started)
+                        {
+                            t.RollBack();
+                        }
+                    }
+                }
+            });
+
+            return transferredCount;
+        }
+
+        /// <summary>
+        /// Transfiere elementos individuales 2D (FilledRegion, Detail Group, etc.) a nuevas Vistas de Diseño dedicadas en el documento destino.
+        /// </summary>
+        public int TransferDetailAnnotationsToDraftingViews(
+            Document sourceDoc,
+            Document targetDoc,
+            List<ElementId> elementIds,
+            Dictionary<ElementId, string>? customNames = null,
+            bool keepOriginal = false,
+            string? suffix = null)
+        {
+            if (sourceDoc == null || targetDoc == null || elementIds == null || !elementIds.Any()) return 0;
+
+            int transferredCount = 0;
+
+            ExecuteWithWarningSuppression(targetDoc, () =>
+            {
+                using (var t = new Transaction(targetDoc, "Transfer Detail Elements to Drafting Views"))
+                {
+                    var options = t.GetFailureHandlingOptions();
+                    options.SetFailuresPreprocessor(new WarningSwallower());
+                    options.SetClearAfterRollback(true);
+                    t.SetFailureHandlingOptions(options);
+
+                    t.Start();
+
+                    try
+                    {
+                        var draftingVft = new FilteredElementCollector(targetDoc)
+                            .OfClass(typeof(ViewFamilyType))
+                            .Cast<ViewFamilyType>()
+                            .FirstOrDefault(vft => vft.ViewFamily == ViewFamily.Drafting);
+
+                        if (draftingVft == null)
+                        {
+                            TelemetryLogger.LogWarning($"[TransferDetailAnnotations] No se encontró ViewFamilyType para Drafting en '{targetDoc.Title}'.");
+                            t.RollBack();
+                            return;
+                        }
+
+                        var existingViewNames = new FilteredElementCollector(targetDoc)
+                            .OfClass(typeof(View))
+                            .Cast<View>()
+                            .Select(v => v.Name)
+                            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+                        var copyOptions = new CopyPasteOptions();
+
+                        foreach (var elId in elementIds)
+                        {
+                            var elem = sourceDoc.GetElement(elId);
+                            if (elem == null) continue;
+
+                            View? sourceOwnerView = null;
+                            if (elem.OwnerViewId != ElementId.InvalidElementId && sourceDoc.GetElement(elem.OwnerViewId) is View ov)
+                            {
+                                sourceOwnerView = ov;
+                            }
+
+                            string elemName = !string.IsNullOrWhiteSpace(elem.Name) ? elem.Name : elem.GetType().Name;
+                            string baseViewName = (customNames != null && customNames.TryGetValue(elId, out var cn) && !string.IsNullOrWhiteSpace(cn))
+                                ? cn
+                                : $"Detail - {elemName}";
+
+                            if (keepOriginal && existingViewNames.Contains(baseViewName))
+                            {
+                                TelemetryLogger.LogInfo($"[TransferDetailAnnotations] Vista '{baseViewName}' ya existe en destino. Opción 'Keep Original' activa. Omitiendo.");
+                                continue;
+                            }
+
+                            if (!string.IsNullOrWhiteSpace(suffix) && existingViewNames.Contains(baseViewName))
+                            {
+                                baseViewName += suffix;
+                            }
+
+                            string uniqueViewName = baseViewName;
+                            int suffixCounter = 1;
+                            while (existingViewNames.Contains(uniqueViewName))
+                            {
+                                uniqueViewName = $"{baseViewName}_{suffixCounter++}";
+                            }
+
+                            var newDraftingView = ViewDrafting.Create(targetDoc, draftingVft.Id);
+                            if (newDraftingView == null) continue;
+
+                            newDraftingView.Name = uniqueViewName;
+                            existingViewNames.Add(uniqueViewName);
+
+                            try
+                            {
+                                if (sourceOwnerView != null)
+                                {
+                                    ElementTransformUtils.CopyElements(
+                                        sourceOwnerView,
+                                        new List<ElementId> { elId },
+                                        newDraftingView,
+                                        Transform.Identity,
+                                        copyOptions);
+                                }
+                                else
+                                {
+                                    ElementTransformUtils.CopyElements(
+                                        sourceDoc,
+                                        new List<ElementId> { elId },
+                                        targetDoc,
+                                        Transform.Identity,
+                                        copyOptions);
+                                }
+                                transferredCount++;
+                            }
+                            catch (Exception exCopy)
+                            {
+                                TelemetryLogger.LogWarning($"[TransferDetailAnnotations] Error copiando elemento '{elemName}' a vista de diseño '{uniqueViewName}': {exCopy.Message}");
+                            }
+                        }
+
+                        t.Commit();
+                        TelemetryLogger.LogInfo($"[TransferDetailAnnotations] Creadas y transferidas {transferredCount} vistas de diseño en '{targetDoc.Title}'.");
+                    }
+                    catch (Exception ex)
+                    {
+                        TelemetryLogger.LogExceptionSilently($"[TransferDetailAnnotations] Error general transfiriendo elementos a vistas de diseño en '{targetDoc.Title}'", ex);
+                        if (t.GetStatus() == TransactionStatus.Started)
+                        {
+                            t.RollBack();
+                        }
+                    }
+                }
+            });
+
+            return transferredCount;
+        }
+
+        /// <summary>
+        /// Transfiere las definiciones de Familia y Tipos de componentes de detalle 2D (OST_DetailComponents) al documento destino
+        /// utilizando TryTransferInMemoryFamily (patrón EditFamily -> LoadFamily) sin instanciar elementos gráficos visibles.
+        /// </summary>
+        public int TransferDetailComponentFamilies(
+            Document sourceDoc,
+            Document targetDoc,
+            List<ElementId> detailComponentIds,
+            Dictionary<string, string>? renameMap = null,
+            bool keepOriginal = false,
+            string? suffix = null,
+            UIApplication? uiApp = null)
+        {
+            if (sourceDoc == null || targetDoc == null || detailComponentIds == null || !detailComponentIds.Any()) return 0;
+
+            int transferredCount = 0;
+
+            try
+            {
+                var families = new HashSet<Family>();
+                foreach (var id in detailComponentIds)
+                {
+                    var elem = sourceDoc.GetElement(id);
+                    if (elem is FamilyInstance fi && fi.Symbol?.Family != null)
+                    {
+                        families.Add(fi.Symbol.Family);
+                    }
+                    else if (elem is FamilySymbol fs && fs.Family != null)
+                    {
+                        families.Add(fs.Family);
+                    }
+                }
+
+                var existingFamilyNames = new FilteredElementCollector(targetDoc)
+                    .OfClass(typeof(Family))
+                    .Cast<Family>()
+                    .Select(f => f.Name)
+                    .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+                foreach (var family in families)
+                {
+                    string targetFamilyName = family.Name;
+                    if (renameMap != null && renameMap.TryGetValue(family.Name, out var rn) && !string.IsNullOrWhiteSpace(rn))
+                    {
+                        targetFamilyName = rn;
+                    }
+
+                    if (keepOriginal && existingFamilyNames.Contains(targetFamilyName))
+                    {
+                        TelemetryLogger.LogInfo($"[TransferDetailComponents] Familia '{targetFamilyName}' ya existe en destino. Opción 'Keep Original' activa. Omitiendo.");
+                        continue;
+                    }
+
+                    if (!string.IsNullOrWhiteSpace(suffix) && existingFamilyNames.Contains(targetFamilyName))
+                    {
+                        targetFamilyName += suffix;
+                    }
+
+                    bool success = TryTransferInMemoryFamily(
+                        sourceDoc,
+                        family,
+                        targetDoc,
+                        out Family? loadedFamily,
+                        overrideFamilyName: targetFamilyName,
+                        uiApp: uiApp);
+
+                    if (success)
+                    {
+                        transferredCount++;
+                        existingFamilyNames.Add(targetFamilyName);
+                        TelemetryLogger.LogInfo($"[TransferDetailComponents] Familia de detalle '{targetFamilyName}' transferida con éxito a '{targetDoc.Title}'.");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                TelemetryLogger.LogError($"[TransferDetailComponents] Error general transfiriendo familias de componentes de detalle a '{targetDoc.Title}'", ex);
+            }
+
+            return transferredCount;
+        }
+
 
         /// <summary>
         /// Genera una imagen de previsualización (PNG) de una vista de Revit o detalle CAD utilizando ImageExportOptions de la API nativa.

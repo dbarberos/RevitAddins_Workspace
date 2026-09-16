@@ -97,12 +97,19 @@ public class LocalFolderCadProvider : ICadProvider
         return Task.FromResult<IEnumerable<CadDetailItemModel>>(result);
     }
 
-    public Task<bool> TransferCadItemAsync(CadDetailItemModel cadItem, Document destinationDoc, bool isLinkMode = false, string? overrideViewName = null, CancellationToken cancellationToken = default)
+    public Task<bool> TransferCadItemAsync(
+        CadDetailItemModel cadItem, 
+        Document destinationDoc, 
+        bool isLinkMode = false, 
+        string? overrideViewName = null, 
+        bool keepOriginal = false, 
+        string? suffix = null, 
+        CancellationToken cancellationToken = default)
     {
         if (cadItem == null || destinationDoc == null || string.IsNullOrWhiteSpace(cadItem.FilePath)) return Task.FromResult(false);
 
         string filePath = cadItem.FilePath;
-        bool success = _familyRevitService.TransferExternalCadToDraftingView(destinationDoc, filePath, overrideViewName, isLinkMode);
+        bool success = _familyRevitService.TransferExternalCadToDraftingView(destinationDoc, filePath, overrideViewName, isLinkMode, keepOriginal, suffix);
 
         if (success)
         {

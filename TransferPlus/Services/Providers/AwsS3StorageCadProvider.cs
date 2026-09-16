@@ -60,7 +60,14 @@ public class AwsS3StorageCadProvider : ICadProvider
         return result;
     }
 
-    public async Task<bool> TransferCadItemAsync(CadDetailItemModel cadItem, Document destinationDoc, bool isLinkMode = false, string? overrideViewName = null, CancellationToken cancellationToken = default)
+    public async Task<bool> TransferCadItemAsync(
+        CadDetailItemModel cadItem, 
+        Document destinationDoc, 
+        bool isLinkMode = false, 
+        string? overrideViewName = null, 
+        bool keepOriginal = false, 
+        string? suffix = null, 
+        CancellationToken cancellationToken = default)
     {
         if (cadItem == null || destinationDoc == null || _sourceItem == null) return false;
 
@@ -77,7 +84,7 @@ public class AwsS3StorageCadProvider : ICadProvider
             TelemetryLogger.LogInfo($"AwsS3StorageCadProvider: Archivo CAD descargado en '{tempLocalPath}'. Importando en Revit...");
 
             // AWS S3 objects are always imported (isLinkMode forced false)
-            bool loaded = _familyRevitService.TransferExternalCadToDraftingView(destinationDoc, tempLocalPath, overrideViewName, isLinkMode: false);
+            bool loaded = _familyRevitService.TransferExternalCadToDraftingView(destinationDoc, tempLocalPath, overrideViewName, isLinkMode: false, keepOriginal: keepOriginal, suffix: suffix);
 
             if (loaded)
             {

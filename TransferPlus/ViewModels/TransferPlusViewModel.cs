@@ -2181,6 +2181,114 @@ public partial class TransferPlusViewModel : ObservableObject
                 if (!cadRenameMap.Any()) cadRenameMap = null;
             }
 
+            string? effectiveSuffix = AppendSuffix ? (string.IsNullOrWhiteSpace(DuplicatesSuffixText) ? "_Copy" : DuplicatesSuffixText) : null;
+
+            // Pre-flight check if AbortTransaction is requested
+            if (AbortTransaction)
+            {
+                bool duplicateFound = false;
+                string duplicateInfo = string.Empty;
+
+                foreach (var destDoc in targetDestinations)
+                {
+                    if (destDoc.Adoc == null) continue;
+
+                    var existingViewNames = new FilteredElementCollector(destDoc.Adoc)
+                        .OfClass(typeof(View))
+                        .Cast<View>()
+                        .Select(v => v.Name)
+                        .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+                    var existingFamilyNames = new FilteredElementCollector(destDoc.Adoc)
+                        .OfClass(typeof(Family))
+                        .Cast<Family>()
+                        .Select(f => f.Name)
+                        .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+                    foreach (var cadItem in checkedCadItems)
+                    {
+                        if (SelectedSourceDocument?.EsCadSource == true)
+                        {
+                            string? overrideViewName = null;
+                            if (cadRenameMap != null)
+                            {
+                                if (!string.IsNullOrWhiteSpace(cadItem.FilePath) && cadRenameMap.TryGetValue(cadItem.FilePath, out var rnPath))
+                                    overrideViewName = rnPath;
+                                else if (!string.IsNullOrWhiteSpace(cadItem.Name) && cadRenameMap.TryGetValue(cadItem.Name, out var rnName))
+                                    overrideViewName = rnName;
+                                else if (!string.IsNullOrWhiteSpace(cadItem.ViewName) && cadRenameMap.TryGetValue(cadItem.ViewName, out var rnView))
+                                    overrideViewName = rnView;
+                            }
+
+                            string fileName = Path.GetFileNameWithoutExtension(cadItem.FilePath ?? string.Empty);
+                            string expectedViewName = !string.IsNullOrWhiteSpace(overrideViewName) ? overrideViewName : $"CAD - {fileName}";
+
+                            if (existingViewNames.Contains(expectedViewName))
+                            {
+                                duplicateFound = true;
+                                duplicateInfo = $"View '{expectedViewName}' already exists in target model '{destDoc.Nombre}'.";
+                                break;
+                            }
+                        }
+                        else
+                        {
+                            if (cadItem.ElementId == null || cadItem.ElementId == ElementId.InvalidElementId) continue;
+                            var elem = SelectedSourceDocument?.Adoc?.GetElement(cadItem.ElementId);
+                            if (elem == null) continue;
+
+                            if (elem is FamilyInstance fi && fi.Symbol?.Family != null)
+                            {
+                                string famName = fi.Symbol.Family.Name;
+                                if (cadRenameMap != null && cadRenameMap.TryGetValue(famName, out var rnFam))
+                                    famName = rnFam;
+                                if (existingFamilyNames.Contains(famName))
+                                {
+                                    duplicateFound = true;
+                                    duplicateInfo = $"Family '{famName}' already exists in target model '{destDoc.Nombre}'.";
+                                    break;
+                                }
+                            }
+                            else if (elem is FamilySymbol fs && fs.Family != null)
+                            {
+                                string famName = fs.Family.Name;
+                                if (cadRenameMap != null && cadRenameMap.TryGetValue(famName, out var rnFam))
+                                    famName = rnFam;
+                                if (existingFamilyNames.Contains(famName))
+                                {
+                                    duplicateFound = true;
+                                    duplicateInfo = $"Family '{famName}' already exists in target model '{destDoc.Nombre}'.";
+                                    break;
+                                }
+                            }
+                            else
+                            {
+                                string elemName = !string.IsNullOrWhiteSpace(elem.Name) ? elem.Name : elem.GetType().Name;
+                                string expectedViewName = (cadCustomNames != null && cadCustomNames.TryGetValue(cadItem.ElementId, out var cn) && !string.IsNullOrWhiteSpace(cn))
+                                    ? cn
+                                    : (elem is ImportInstance ? $"CAD - {elemName}" : (elem is View ? elemName : $"Detail - {elemName}"));
+
+                                if (existingViewNames.Contains(expectedViewName))
+                                {
+                                    duplicateFound = true;
+                                    duplicateInfo = $"View '{expectedViewName}' already exists in target model '{destDoc.Nombre}'.";
+                                    break;
+                                }
+                            }
+                        }
+                    }
+
+                    if (duplicateFound) break;
+                }
+
+                if (duplicateFound)
+                {
+                    TransferPlus.Services.LoggerService.LogInfo($"Transfer: Aborted due to duplicates. {duplicateInfo}");
+                    TaskDialog.Show("TransferPlus - Operation Aborted",
+                        $"The transfer operation was aborted because one or more selected CAD details or views already exist in the target model:\n\n{duplicateInfo}");
+                    return;
+                }
+            }
+
             if (SelectedSourceDocument?.EsCadSource == true)
             {
                 IsBusy = true;
@@ -2212,7 +2320,13 @@ public partial class TransferPlusViewModel : ObservableObject
                                     overrideViewName = rnView;
                                 }
                             }
-                            bool ok = provider.TransferCadItemAsync(cadItem, destDoc.Adoc, isLinkMode: CadTransferModeLink, overrideViewName: overrideViewName).GetAwaiter().GetResult();
+                            bool ok = provider.TransferCadItemAsync(
+                                cadItem, 
+                                destDoc.Adoc, 
+                                isLinkMode: CadTransferModeLink, 
+                                overrideViewName: overrideViewName,
+                                keepOriginal: KeepOriginal,
+                                suffix: effectiveSuffix).GetAwaiter().GetResult();
                             if (ok) totalTransferred++;
                         }
                     }
@@ -2245,22 +2359,38 @@ public partial class TransferPlusViewModel : ObservableObject
             try
             {
                 int totalTransferred = 0;
-                var familyService = new FamilyRevitService();
 
-                var draftingViewIds = checkedCadItems
-                    .Where(x => (x.IsDraftingView || x.NativeElement is View) && x.ElementId != null)
-                    .Select(x => x.ElementId!)
-                    .ToList();
+                var draftingViewIds = new List<ElementId>();
+                var cadInstanceIds = new List<ElementId>();
+                var detailViewIds = new List<ElementId>();
+                var detailComponentIds = new List<ElementId>();
+                var otherAnnotationIds = new List<ElementId>();
 
-                var cadInstanceIds = checkedCadItems
-                    .Where(x => !x.IsDraftingView && x.NativeElement is ImportInstance && x.ElementId != null)
-                    .Select(x => x.ElementId!)
-                    .ToList();
+                foreach (var cadItem in checkedCadItems)
+                {
+                    if (cadItem.ElementId == null || cadItem.ElementId == ElementId.InvalidElementId) continue;
 
-                var otherElementIds = checkedCadItems
-                    .Where(x => !draftingViewIds.Contains(x.ElementId!) && !cadInstanceIds.Contains(x.ElementId!) && x.ElementId != null)
-                    .Select(x => x.ElementId!)
-                    .ToList();
+                    if (cadItem.NativeElement is ViewDrafting || cadItem.IsDraftingView)
+                    {
+                        draftingViewIds.Add(cadItem.ElementId);
+                    }
+                    else if (cadItem.NativeElement is View)
+                    {
+                        detailViewIds.Add(cadItem.ElementId);
+                    }
+                    else if (cadItem.NativeElement is ImportInstance)
+                    {
+                        cadInstanceIds.Add(cadItem.ElementId);
+                    }
+                    else if (cadItem.NativeElement is FamilyInstance || cadItem.NativeElement is FamilySymbol)
+                    {
+                        detailComponentIds.Add(cadItem.ElementId);
+                    }
+                    else
+                    {
+                        otherAnnotationIds.Add(cadItem.ElementId);
+                    }
+                }
 
                 foreach (var destDoc in targetDestinations)
                 {
@@ -2268,19 +2398,31 @@ public partial class TransferPlusViewModel : ObservableObject
 
                     if (draftingViewIds.Any())
                     {
-                        int count = familyService.TransferDraftingViews(SelectedSourceDocument.Adoc, destDoc.Adoc, draftingViewIds, cadCustomNames);
+                        int count = _familyRevitService.TransferDraftingViews(SelectedSourceDocument.Adoc, destDoc.Adoc, draftingViewIds, cadCustomNames, keepOriginal: KeepOriginal, suffix: effectiveSuffix);
                         totalTransferred += count;
                     }
 
                     if (cadInstanceIds.Any())
                     {
-                        int count = familyService.TransferCadInstancesToDraftingViews(SelectedSourceDocument.Adoc, destDoc.Adoc, cadInstanceIds, cadCustomNames);
+                        int count = _familyRevitService.TransferCadInstancesToDraftingViews(SelectedSourceDocument.Adoc, destDoc.Adoc, cadInstanceIds, cadCustomNames, keepOriginal: KeepOriginal, suffix: effectiveSuffix);
                         totalTransferred += count;
                     }
 
-                    if (otherElementIds.Any())
+                    if (detailViewIds.Any())
                     {
-                        int count = familyService.TransferDraftingViews(SelectedSourceDocument.Adoc, destDoc.Adoc, otherElementIds, cadCustomNames);
+                        int count = _familyRevitService.TransferModelDetailViewsToDraftingViews(SelectedSourceDocument.Adoc, destDoc.Adoc, detailViewIds, cadCustomNames, keepOriginal: KeepOriginal, suffix: effectiveSuffix);
+                        totalTransferred += count;
+                    }
+
+                    if (otherAnnotationIds.Any())
+                    {
+                        int count = _familyRevitService.TransferDetailAnnotationsToDraftingViews(SelectedSourceDocument.Adoc, destDoc.Adoc, otherAnnotationIds, cadCustomNames, keepOriginal: KeepOriginal, suffix: effectiveSuffix);
+                        totalTransferred += count;
+                    }
+
+                    if (detailComponentIds.Any())
+                    {
+                        int count = _familyRevitService.TransferDetailComponentFamilies(SelectedSourceDocument.Adoc, destDoc.Adoc, detailComponentIds, cadRenameMap, keepOriginal: KeepOriginal, suffix: effectiveSuffix, uiApp: _app);
                         totalTransferred += count;
                     }
                 }
