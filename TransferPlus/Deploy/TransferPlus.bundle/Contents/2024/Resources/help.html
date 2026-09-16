@@ -24,7 +24,7 @@
 
     <h1>TransferPlus</h1>
     <p>
-        <span class="badge">Version 1.2.0</span> &nbsp;
+        <span class="badge">Version 1.3.0</span> &nbsp;
         <strong>Add-in ID (GUID):</strong> <code>D1981E8C-1951-45C0-B24C-CA821B7288D2</code>
     </p>
 
@@ -139,10 +139,34 @@
         <li><strong>Title Block & Family Dynamic Rendering</strong>: In-memory <code>EditFamily</code> and <code>ViewSheet</code> generation for responsive thumbnail previews.</li>
         <li><strong>Smart Zoom-to-Extents Framing</strong>: Auto-crop with adaptive margins for small annotations and tags.</li>
         <li><strong>Middle Column Horizontal Scrollbar</strong>: Dedicated scrolling for long names while keeping checkboxes and count columns fixed.</li>
+        <li><strong>Cross-Model CAD Transfer Engine</strong>:
+            <ul>
+                <li><strong>Dedicated Drafting Views</strong>: Every transferred CAD instance (<code>ImportInstance</code>), model detail view, and 2D annotation is instantiated in its own dedicated <code>ViewDrafting</code> in destination documents, preserving annotation scale.</li>
+                <li><strong>Sheet Hierarchy Bypass</strong>: Under <code>Sort by Sheet</code>, only selected child CAD/detail elements are transferred into Drafting Views; parent <code>ViewSheet</code> replication is strictly bypassed in CAD mode.</li>
+                <li><strong>In-Memory Detail Component Loading</strong>: 2D Detail Component families (<code>OST_DetailComponents</code>) have their pure definitions loaded via in-memory <code>EditFamily -> LoadFamily</code> without creating placeholder graphics.</li>
+                <li><strong>On Duplicates Compliance</strong>: Pre-flight check aborts on duplicate collisions under <em>Abort Transaction</em>, skips existing elements under <em>Keep Original</em>, and automatically appends suffixes (e.g. <code>_Copy</code>) under <em>Append Suffix</em>.</li>
+            </ul>
+        </li>
+        <li><strong>PowerRename Palette Integration & Chained Iterations</strong>: Full feature parity between Family Mode and CAD Mode with multi-stage chained regex matching and renamed CAD file export/download.</li>
         <li><strong>Leaf-Only CAD Deletion & Safety Confirmation</strong>: Deletion is strictly confined to lowest-level CAD/detail elements (links, imports, components). Parent Sheets and Views are never deleted and remain in the project for future reuse. Includes a hierarchical preview confirmation dialog.</li>
     </ul>
 
     <h2>6. Version History (Changelog)</h2>
+    <h3>v1.3.0</h3>
+    <ul>
+        <li><strong>Cross-Model CAD Transfer Engine</strong>: Complete multi-document transfer architecture for CAD Mode (<code>IsCadDetailsManagerActive</code>), handling native Drafting Views, model detail views/callouts, CAD import instances, detail components, and isolated annotations.</li>
+        <li><strong>Dedicated ViewDrafting Generation</strong>: Each transferred CAD instance, model detail view, and 2D annotation is automatically instantiated in its own dedicated <code>ViewDrafting</code> in target models, preserving scale and preventing view corruption.</li>
+        <li><strong>In-Memory Detail Component Loading</strong>: 2D Detail Component families (<code>OST_DetailComponents</code>) are loaded directly into the destination model's database using <code>EditFamily -> LoadFamily</code> in memory without creating placeholder graphical elements.</li>
+        <li><strong>Pre-Flight Duplicate Conflict Validation</strong>: Pre-flight inspection for <code>AbortTransaction</code> in CAD mode that validates destination view and family names before opening transactions, notifying the user via a descriptive <code>TaskDialog</code>.</li>
+        <li><strong>PowerRename Chaining & Iterative Modification</strong>: Enhanced regex replacement matching against working names, enabling multi-stage iterative renaming without losing prior edits.</li>
+        <li><strong>Renamed CAD Download & Export Pipeline</strong>: Full integration between the PowerRename palette and CAD export/download workflows, ensuring downloaded CAD files and exported <code>.rfa</code> detail families reflect custom renamed titles.</li>
+        <li><strong>Sheet Replication Isolation</strong>: In CAD Mode under <code>Sort by Sheet</code>, parent <code>ViewSheet</code> replication is strictly bypassed; only child detail elements are transferred into dedicated drafting views.</li>
+        <li><strong>Provider Architecture Harmonization</strong>: Updated <code>ICadProvider</code> and all implementations to honor <code>keepOriginal</code> and <code>suffix</code> policies.</li>
+        <li><strong>CAD Mode Rename Palette Empty Selection</strong>: Resolved an issue where opening the Rename palette in CAD mode showed an empty list due to family-only collection filtering.</li>
+        <li><strong>2D Detail View Direct Copy Failure</strong>: Replaced direct view copying of model detail views with automated 2D annotation extraction and placement into dedicated <code>ViewDrafting</code> containers.</li>
+        <li><strong>Collision-Resistant View Naming</strong>: Implemented iterative collision resolution (<code>_Copy_1</code>, <code>_Copy_2</code>) to prevent Revit native <code>ArgumentException</code> crashes when duplicate view names occur in target models.</li>
+    </ul>
+
     <h3>v1.2.0</h3>
     <ul>
         <li><strong>CAD Details & 2D Drafting Mode</strong>: Dedicated transfer mode for CAD files (DWG, DXF, DGN), drafting views, detail views/callouts, detail groups, and detail component items.</li>
