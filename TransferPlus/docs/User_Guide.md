@@ -137,6 +137,11 @@ TransferPlus provides a dedicated **CAD / Details Mode** tailored for migrating 
     * *Abort Transaction*: Pre-flight check detects destination view/family name collisions before starting transactions and alerts the user.
     * *Keep Original*: Automatically skips existing destination views or families.
     * *Append Suffix*: Appends custom suffixes (e.g. `_Copy`) and handles subsequent collisions iteratively (`_Copy_1`, `_Copy_2`).
+* **Full 2D Content Replication for Drafting Views**:
+  - When transferring native Drafting Views, all child view-specific elements (detail lines, text notes, filled regions, independent dimensions, detail components, and CAD elements) are completely copied into destination drafting views using a resilient two-tier copy strategy (batch copy with element-by-element fallback), ensuring views never arrive empty.
+* **3D-Referenced Dimension & Tag Isolation**:
+  - When transferring Model Detail Views or Callouts containing annotations referenced to 3D geometry not present in the destination model, non-transferrable 3D-dependent dimensions and tags are safely isolated and skipped, while 100% of independent 2D lines, text notes, filled regions, and detail components are preserved.
+  - A single, non-intrusive summary notification dialog in English informs the user upon completion of the multi-model transfer if any 3D references were omitted, eliminating repetitive per-view popup interruptions.
 * **PowerRename Palette Integration & Chained Iterations**:
   - Full feature parity between Family Mode and CAD Mode in the PowerRename palette.
   - Chained regex renaming: applying replacements updates working names, allowing subsequent pattern passes.
@@ -150,11 +155,14 @@ TransferPlus provides a dedicated **CAD / Details Mode** tailored for migrating 
 
 ## 6. Version History (Changelog)
 
-### v1.3.0 - 2026-09-16
+### v1.3.0 - 2026-09-17
 
 #### Added
 - **Cross-Model CAD Transfer Engine**: Complete multi-document transfer architecture for CAD Mode (`IsCadDetailsManagerActive`), handling native Drafting Views, model detail views/callouts, CAD import instances, detail components, and isolated annotations.
 - **Dedicated ViewDrafting Generation**: Each transferred CAD instance, model detail view, and 2D annotation is automatically instantiated in its own dedicated `ViewDrafting` in target models, preserving scale and preventing view corruption.
+- **Full 2D Child Element Copying in Drafting Views**: Upgraded `TransferDraftingViews` to recursively transfer all internal 2D annotations, detail lines, text notes, filled regions, and detail components into destination views using batch copy and element-by-element fallback.
+- **Resilient Fallback & 3D Geometry Reference Isolation**: Implemented two-tier fallback copying in `TransferModelDetailViewsToDraftingViews` and `TransferDraftingViews`. Annotations referencing 3D model geometry not present in destination models are isolated and skipped without halting transfer of independent 2D elements.
+- **Single English Notification Dialog**: Unified notification for skipped 3D-dependent annotations across multiple destination models, displaying a single informative dialog upon completion instead of multiple per-view alerts.
 - **In-Memory Detail Component Loading**: 2D Detail Component families (`OST_DetailComponents`) are loaded directly into the destination model's database using `EditFamily -> LoadFamily` in memory without creating placeholder graphical elements.
 - **Pre-Flight Duplicate Conflict Validation**: Pre-flight inspection for `AbortTransaction` in CAD mode that validates destination view and family names before opening transactions, notifying the user via a descriptive `TaskDialog`.
 - **PowerRename Chaining & Iterative Modification**: Enhanced regex replacement matching against working names, enabling multi-stage iterative renaming without losing prior edits.
@@ -165,6 +173,7 @@ TransferPlus provides a dedicated **CAD / Details Mode** tailored for migrating 
 - **Provider Architecture Harmonization**: Updated `ICadProvider` and all implementations (`LocalFolderCadProvider`, `AzureStorageCadProvider`, `AwsS3StorageCadProvider`, `AutodeskDocsCadProvider`, `OpenDocumentCadProvider`, `LinkedDocumentCadProvider`) to honor `keepOriginal` and `suffix` policies.
 
 #### Fixed
+- **Empty Drafting Views in Destination**: Resolved an issue where `TransferDraftingViews` duplicated only the view header, leaving destination drafting views blank.
 - **CAD Mode Rename Palette Empty Selection**: Resolved an issue where opening the Rename palette in CAD mode showed an empty list due to family-only collection filtering.
 - **2D Detail View Direct Copy Failure**: Replaced direct view copying of model detail views (which failed without matching 3D hosts) with automated 2D annotation extraction and placement into dedicated `ViewDrafting` containers.
 - **Collision-Resistant View Naming**: Implemented iterative collision resolution (`_Copy_1`, `_Copy_2`) to prevent Revit native `ArgumentException` crashes when duplicate view names occur in target models.

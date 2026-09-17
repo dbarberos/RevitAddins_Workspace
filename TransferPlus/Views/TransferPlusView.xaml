@@ -3,6 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:sys="clr-namespace:System;assembly=mscorlib"
         xmlns:local="clr-namespace:TransferPlus.Views"
         xmlns:viewmodels="clr-namespace:TransferPlus.ViewModels"
         mc:Ignorable="d"
@@ -44,73 +45,181 @@
     </Window.Style>
 
     <Window.Resources>
-        <ResourceDictionary>
-            <ResourceDictionary.MergedDictionaries>
-                <ResourceDictionary Source="pack://application:,,,/TransferPlus;component/Resources/Styles/TransferPlusStyles.xaml"/>
-            </ResourceDictionary.MergedDictionaries>
-            
-            <BooleanToVisibilityConverter x:Key="BoolToVis"/>
-            <local:NegativeConverter x:Key="NegativeConverter"/>
-            
-            <HierarchicalDataTemplate x:Key="CheckboxTreeTemplate" DataType="{x:Type viewmodels:TreeItemViewModel}" ItemsSource="{Binding Children}">
-                <TextBlock x:Name="NodeNameText" Text="{Binding Name}" FontWeight="Normal" Foreground="#333333" 
-                           VerticalAlignment="Center" Margin="2,3" TextWrapping="NoWrap" ToolTip="{Binding Name}"/>
-                <HierarchicalDataTemplate.Triggers>
-                    <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=TreeViewItem}, Path=IsMouseOver}" Value="True">
-                        <Setter TargetName="NodeNameText" Property="Foreground" Value="#007ACC"/>
-                    </DataTrigger>
-                </HierarchicalDataTemplate.Triggers>
-            </HierarchicalDataTemplate>
+        <!-- System Parameter Scrollbar Adjustments -->
+        <sys:Double x:Key="{x:Static SystemParameters.VerticalScrollBarWidthKey}">10</sys:Double>
+        <sys:Double x:Key="{x:Static SystemParameters.HorizontalScrollBarHeightKey}">10</sys:Double>
 
-            <Style x:Key="CardBorderStyle" TargetType="Border">
-                <Setter Property="Background" Value="White"/>
-                <Setter Property="CornerRadius" Value="8"/>
-                <Setter Property="Padding" Value="12,7"/>
-                <Setter Property="Margin" Value="0,0,0,6"/>
-                <Setter Property="BorderBrush" Value="#e8e8e8"/>
-                <Setter Property="BorderThickness" Value="1"/>
-                <Setter Property="Effect">
-                    <Setter.Value>
-                        <DropShadowEffect Color="#000000" Opacity="0.03" BlurRadius="5" ShadowDepth="2"/>
-                    </Setter.Value>
-                </Setter>
-            </Style>
+        <BooleanToVisibilityConverter x:Key="BoolToVis"/>
+        <local:NegativeConverter x:Key="NegativeConverter"/>
 
-            <Style x:Key="FilterPlusTextBlockStyle" TargetType="TextBlock">
-                <Setter Property="FontWeight" Value="Bold"/>
-                <Setter Property="FontSize" Value="12"/>
-                <Setter Property="Foreground" Value="#333"/>
-                <Setter Property="Margin" Value="0,0,0,8"/>
-            </Style>
-            <Style x:Key="StandardCardStyle" TargetType="Border" BasedOn="{StaticResource CardBorderStyle}">
-                <Style.Triggers>
-                    <DataTrigger Binding="{Binding IsFamiliesManagerActive}" Value="True">
-                        <Setter Property="Visibility" Value="Collapsed"/>
-                    </DataTrigger>
-                    <DataTrigger Binding="{Binding IsCadDetailsManagerActive}" Value="True">
-                        <Setter Property="Visibility" Value="Collapsed"/>
-                    </DataTrigger>
-                </Style.Triggers>
-            </Style>
+        <!-- Global TextBlock Style (Matches FilterPlus) -->
+        <Style TargetType="TextBlock">
+            <Setter Property="Margin" Value="0,10,0,2"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+        </Style>
 
-            <Style x:Key="FamiliesManagerCardStyle" TargetType="Border" BasedOn="{StaticResource CardBorderStyle}">
-                <Setter Property="Visibility" Value="Collapsed"/>
-                <Style.Triggers>
-                    <DataTrigger Binding="{Binding IsFamiliesManagerActive}" Value="True">
-                        <Setter Property="Visibility" Value="Visible"/>
-                    </DataTrigger>
-                </Style.Triggers>
-            </Style>
+        <!-- Global Button Style (Ensures CornerRadius = 4) -->
+        <Style TargetType="Button">
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Padding" Value="10,5"/>
+            <Style.Resources>
+                <Style TargetType="Border">
+                    <Setter Property="CornerRadius" Value="4"/>
+                </Style>
+            </Style.Resources>
+        </Style>
 
-            <Style x:Key="CadDetailsManagerCardStyle" TargetType="Border" BasedOn="{StaticResource CardBorderStyle}">
-                <Setter Property="Visibility" Value="Collapsed"/>
-                <Style.Triggers>
-                    <DataTrigger Binding="{Binding IsCadDetailsManagerActive}" Value="True">
-                        <Setter Property="Visibility" Value="Visible"/>
-                    </DataTrigger>
-                </Style.Triggers>
-            </Style>
-        </ResourceDictionary>
+        <!-- Global TextBox Style -->
+        <Style TargetType="TextBox">
+            <Setter Property="Padding" Value="4"/>
+            <Setter Property="BorderBrush" Value="#e0e0e0"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Style.Resources>
+                <Style TargetType="Border">
+                    <Setter Property="CornerRadius" Value="4"/>
+                </Style>
+            </Style.Resources>
+        </Style>
+
+        <!-- Global ComboBox Style -->
+        <Style TargetType="ComboBox">
+            <Setter Property="Padding" Value="4"/>
+            <Setter Property="BorderBrush" Value="#e0e0e0"/>
+            <Setter Property="BorderThickness" Value="1"/>
+        </Style>
+
+        <!-- Header Icon Flat Button Style -->
+        <Style x:Key="HeaderIconButtonStyle" TargetType="Button">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Margin" Value="2,0"/>
+            <Setter Property="Width" Value="20"/>
+            <Setter Property="Height" Value="20"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="border" Background="Transparent" CornerRadius="10" Padding="4">
+                            <Viewbox Width="10" Height="10" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                <ContentPresenter />
+                            </Viewbox>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="#f0f0f0"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="#e0e0e0"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Custom Toggle Switch CheckBox Style -->
+        <Style x:Key="SwitchStyle" TargetType="{x:Type CheckBox}">
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type CheckBox}">
+                        <StackPanel Orientation="Horizontal" Cursor="Hand">
+                            <Border x:Name="Background" Width="28" Height="14" Background="#ddd" CornerRadius="7" Padding="2" Margin="0,0,8,0" VerticalAlignment="Center">
+                                <Ellipse x:Name="Dot" Width="10" Height="10" Fill="White" HorizontalAlignment="Left">
+                                    <Ellipse.RenderTransform>
+                                        <TranslateTransform X="0"/>
+                                    </Ellipse.RenderTransform>
+                                </Ellipse>
+                            </Border>
+                            <ContentPresenter VerticalAlignment="Center" Content="{TemplateBinding Content}"/>
+                        </StackPanel>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="Background" Property="Background" Value="#777"/>
+                                <Trigger.EnterActions>
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <DoubleAnimation Storyboard.TargetName="Dot" 
+                                                             Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.X)" 
+                                                             To="14" 
+                                                             Duration="0:0:0.15"/>
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </Trigger.EnterActions>
+                                <Trigger.ExitActions>
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <DoubleAnimation Storyboard.TargetName="Dot" 
+                                                             Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.X)" 
+                                                             To="0" 
+                                                             Duration="0:0:0.15"/>
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </Trigger.ExitActions>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <HierarchicalDataTemplate x:Key="CheckboxTreeTemplate" DataType="{x:Type viewmodels:TreeItemViewModel}" ItemsSource="{Binding Children}">
+            <TextBlock x:Name="NodeNameText" Text="{Binding Name}" FontWeight="Normal" Foreground="#333333" 
+                       VerticalAlignment="Center" Margin="2,3" TextWrapping="NoWrap" ToolTip="{Binding Name}"/>
+            <HierarchicalDataTemplate.Triggers>
+                <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=TreeViewItem}, Path=IsMouseOver}" Value="True">
+                    <Setter TargetName="NodeNameText" Property="Foreground" Value="#007ACC"/>
+                </DataTrigger>
+            </HierarchicalDataTemplate.Triggers>
+        </HierarchicalDataTemplate>
+
+        <Style x:Key="CardBorderStyle" TargetType="Border">
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="CornerRadius" Value="8"/>
+            <Setter Property="Padding" Value="12,7"/>
+            <Setter Property="Margin" Value="0,0,0,6"/>
+            <Setter Property="BorderBrush" Value="#e8e8e8"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Effect">
+                <Setter.Value>
+                    <DropShadowEffect Color="#000000" Opacity="0.03" BlurRadius="5" ShadowDepth="2"/>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="FilterPlusTextBlockStyle" TargetType="TextBlock">
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="Foreground" Value="#333"/>
+            <Setter Property="Margin" Value="0,0,0,8"/>
+        </Style>
+        <Style x:Key="StandardCardStyle" TargetType="Border" BasedOn="{StaticResource CardBorderStyle}">
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding IsFamiliesManagerActive}" Value="True">
+                    <Setter Property="Visibility" Value="Collapsed"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding IsCadDetailsManagerActive}" Value="True">
+                    <Setter Property="Visibility" Value="Collapsed"/>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+
+        <Style x:Key="FamiliesManagerCardStyle" TargetType="Border" BasedOn="{StaticResource CardBorderStyle}">
+            <Setter Property="Visibility" Value="Collapsed"/>
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding IsFamiliesManagerActive}" Value="True">
+                    <Setter Property="Visibility" Value="Visible"/>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+
+        <Style x:Key="CadDetailsManagerCardStyle" TargetType="Border" BasedOn="{StaticResource CardBorderStyle}">
+            <Setter Property="Visibility" Value="Collapsed"/>
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding IsCadDetailsManagerActive}" Value="True">
+                    <Setter Property="Visibility" Value="Visible"/>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
     </Window.Resources>
 
     <Grid>

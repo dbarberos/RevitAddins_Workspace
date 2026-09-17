@@ -147,6 +147,17 @@
                 <li><strong>On Duplicates Compliance</strong>: Pre-flight check aborts on duplicate collisions under <em>Abort Transaction</em>, skips existing elements under <em>Keep Original</em>, and automatically appends suffixes (e.g. <code>_Copy</code>) under <em>Append Suffix</em>.</li>
             </ul>
         </li>
+        <li><strong>Full 2D Content Replication for Drafting Views</strong>:
+            <ul>
+                <li>When transferring native Drafting Views, all child view-specific elements (detail lines, text notes, filled regions, independent dimensions, detail components, and CAD elements) are completely copied into destination drafting views using a resilient two-tier copy strategy (batch copy with element-by-element fallback), ensuring views never arrive empty.</li>
+            </ul>
+        </li>
+        <li><strong>3D-Referenced Dimension & Tag Isolation</strong>:
+            <ul>
+                <li>When transferring Model Detail Views or Callouts containing annotations referenced to 3D geometry not present in the destination model, non-transferrable 3D-dependent dimensions and tags are safely isolated and skipped, while 100% of independent 2D lines, text notes, filled regions, and detail components are preserved.</li>
+                <li>A single, non-intrusive summary notification dialog in English informs the user upon completion of the multi-model transfer if any 3D references were omitted, eliminating repetitive per-view popup interruptions.</li>
+            </ul>
+        </li>
         <li><strong>PowerRename Palette Integration & Chained Iterations</strong>: Full feature parity between Family Mode and CAD Mode with multi-stage chained regex matching and renamed CAD file export/download.</li>
         <li><strong>Leaf-Only CAD Deletion & Safety Confirmation</strong>: Deletion is strictly confined to lowest-level CAD/detail elements (links, imports, components). Parent Sheets and Views are never deleted and remain in the project for future reuse. Includes a hierarchical preview confirmation dialog.</li>
     </ul>
@@ -156,12 +167,16 @@
     <ul>
         <li><strong>Cross-Model CAD Transfer Engine</strong>: Complete multi-document transfer architecture for CAD Mode (<code>IsCadDetailsManagerActive</code>), handling native Drafting Views, model detail views/callouts, CAD import instances, detail components, and isolated annotations.</li>
         <li><strong>Dedicated ViewDrafting Generation</strong>: Each transferred CAD instance, model detail view, and 2D annotation is automatically instantiated in its own dedicated <code>ViewDrafting</code> in target models, preserving scale and preventing view corruption.</li>
+        <li><strong>Full 2D Child Element Copying in Drafting Views</strong>: Upgraded <code>TransferDraftingViews</code> to recursively transfer all internal 2D annotations, detail lines, text notes, filled regions, and detail components into destination views using batch copy and element-by-element fallback.</li>
+        <li><strong>Resilient Fallback & 3D Geometry Reference Isolation</strong>: Implemented two-tier fallback copying in <code>TransferModelDetailViewsToDraftingViews</code> and <code>TransferDraftingViews</code>. Annotations referencing 3D model geometry not present in destination models are isolated and skipped without halting transfer of independent 2D elements.</li>
+        <li><strong>Single English Notification Dialog</strong>: Unified notification for skipped 3D-dependent annotations across multiple destination models, displaying a single informative dialog upon completion instead of multiple per-view alerts.</li>
         <li><strong>In-Memory Detail Component Loading</strong>: 2D Detail Component families (<code>OST_DetailComponents</code>) are loaded directly into the destination model's database using <code>EditFamily -> LoadFamily</code> in memory without creating placeholder graphical elements.</li>
         <li><strong>Pre-Flight Duplicate Conflict Validation</strong>: Pre-flight inspection for <code>AbortTransaction</code> in CAD mode that validates destination view and family names before opening transactions, notifying the user via a descriptive <code>TaskDialog</code>.</li>
         <li><strong>PowerRename Chaining & Iterative Modification</strong>: Enhanced regex replacement matching against working names, enabling multi-stage iterative renaming without losing prior edits.</li>
         <li><strong>Renamed CAD Download & Export Pipeline</strong>: Full integration between the PowerRename palette and CAD export/download workflows, ensuring downloaded CAD files and exported <code>.rfa</code> detail families reflect custom renamed titles.</li>
         <li><strong>Sheet Replication Isolation</strong>: In CAD Mode under <code>Sort by Sheet</code>, parent <code>ViewSheet</code> replication is strictly bypassed; only child detail elements are transferred into dedicated drafting views.</li>
         <li><strong>Provider Architecture Harmonization</strong>: Updated <code>ICadProvider</code> and all implementations to honor <code>keepOriginal</code> and <code>suffix</code> policies.</li>
+        <li><strong>Empty Drafting Views in Destination</strong>: Resolved an issue where <code>TransferDraftingViews</code> duplicated only the view header, leaving destination drafting views blank.</li>
         <li><strong>CAD Mode Rename Palette Empty Selection</strong>: Resolved an issue where opening the Rename palette in CAD mode showed an empty list due to family-only collection filtering.</li>
         <li><strong>2D Detail View Direct Copy Failure</strong>: Replaced direct view copying of model detail views with automated 2D annotation extraction and placement into dedicated <code>ViewDrafting</code> containers.</li>
         <li><strong>Collision-Resistant View Naming</strong>: Implemented iterative collision resolution (<code>_Copy_1</code>, <code>_Copy_2</code>) to prevent Revit native <code>ArgumentException</code> crashes when duplicate view names occur in target models.</li>

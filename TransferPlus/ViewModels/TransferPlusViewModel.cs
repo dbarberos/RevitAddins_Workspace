@@ -2392,13 +2392,16 @@ public partial class TransferPlusViewModel : ObservableObject
                     }
                 }
 
+                bool anyHadSkipped3dReferences = false;
+
                 foreach (var destDoc in targetDestinations)
                 {
                     StatusMessage = $"Transferring to '{destDoc.Nombre}'...";
 
                     if (draftingViewIds.Any())
                     {
-                        int count = _familyRevitService.TransferDraftingViews(SelectedSourceDocument.Adoc, destDoc.Adoc, draftingViewIds, cadCustomNames, keepOriginal: KeepOriginal, suffix: effectiveSuffix);
+                        int count = _familyRevitService.TransferDraftingViews(SelectedSourceDocument.Adoc, destDoc.Adoc, draftingViewIds, cadCustomNames, keepOriginal: KeepOriginal, suffix: effectiveSuffix, out bool hadSkippedDrafting);
+                        if (hadSkippedDrafting) anyHadSkipped3dReferences = true;
                         totalTransferred += count;
                     }
 
@@ -2410,7 +2413,8 @@ public partial class TransferPlusViewModel : ObservableObject
 
                     if (detailViewIds.Any())
                     {
-                        int count = _familyRevitService.TransferModelDetailViewsToDraftingViews(SelectedSourceDocument.Adoc, destDoc.Adoc, detailViewIds, cadCustomNames, keepOriginal: KeepOriginal, suffix: effectiveSuffix);
+                        int count = _familyRevitService.TransferModelDetailViewsToDraftingViews(SelectedSourceDocument.Adoc, destDoc.Adoc, detailViewIds, cadCustomNames, keepOriginal: KeepOriginal, suffix: effectiveSuffix, out bool hadSkippedDetail);
+                        if (hadSkippedDetail) anyHadSkipped3dReferences = true;
                         totalTransferred += count;
                     }
 
@@ -2429,6 +2433,12 @@ public partial class TransferPlusViewModel : ObservableObject
 
                 TransferPlus.Services.LoggerService.LogInfo($"Transfer: Completed CAD details transfer. Transferred {totalTransferred} item(s).");
                 TaskDialog.Show("TransferPlus", $"CAD details transfer completed successfully! Transferred {totalTransferred} item(s) to destination model(s).");
+
+                if (anyHadSkipped3dReferences)
+                {
+                    TaskDialog.Show("TransferPlus - Notice",
+                        "Some view annotations (such as dimensions or tags referenced to 3D model geometry) could not be transferred to the destination 2D Drafting View(s) because their referenced 3D model elements do not exist in the destination model.\n\nAll independent 2D lines, text notes, filled regions, detail components, and CAD elements have been successfully transferred.");
+                }
             }
             catch (Exception ex)
             {

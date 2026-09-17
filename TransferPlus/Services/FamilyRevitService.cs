@@ -869,7 +869,7 @@ namespace TransferPlus.Services
         /// Transfiere una lista de Vistas de Diseño (Drafting Views) desde un documento origen hacia un documento destino de forma silenciosa.
         /// <summary>
         /// Transfiere una lista de Vistas de Diseño (Drafting Views) desde un documento origen hacia un documento destino de forma silenciosa.
-        /// Respeta las políticas de duplicados (Keep Original / Append Suffix).
+        /// Respeta las políticas de duplicados (Keep Original / Append Suffix) y copia íntegramente los elementos 2D contenidos.
         /// </summary>
         public int TransferDraftingViews(
             Document sourceDoc, 
@@ -879,9 +879,23 @@ namespace TransferPlus.Services
             bool keepOriginal = false,
             string? suffix = null)
         {
+            return TransferDraftingViews(sourceDoc, targetDoc, viewIds, customNames, keepOriginal, suffix, out _);
+        }
+
+        public int TransferDraftingViews(
+            Document sourceDoc, 
+            Document targetDoc, 
+            List<ElementId> viewIds, 
+            Dictionary<ElementId, string>? customNames,
+            bool keepOriginal,
+            string? suffix,
+            out bool hadSkippedElements)
+        {
+            hadSkippedElements = false;
             if (sourceDoc == null || targetDoc == null || viewIds == null || !viewIds.Any()) return 0;
 
             int transferredCount = 0;
+            bool skippedAny = false;
 
             ExecuteWithWarningSuppression(targetDoc, () =>
             {
@@ -930,6 +944,9 @@ namespace TransferPlus.Services
 
                         var viewIdList = filteredViewIds.ToList();
                         var copiedIdList = copiedIds.ToList();
+
+                        targetDoc.Regenerate();
+
                         for (int i = 0; i < viewIdList.Count && i < copiedIdList.Count; i++)
                         {
                             var srcId = viewIdList[i];
@@ -964,6 +981,54 @@ namespace TransferPlus.Services
                             {
                                 TelemetryLogger.LogWarning($"[TransferDraftingViews] Could not rename view to '{targetName}': {nameEx.Message}");
                             }
+
+                            // Copiar el contenido 2D completo de la vista de diseño origen
+                            if (sourceDoc.GetElement(srcId) is View srcView)
+                            {
+                                var childElements = new FilteredElementCollector(sourceDoc, srcView.Id)
+                                    .WhereElementIsNotElementType()
+                                    .Where(e => e.ViewSpecific && e is not Viewport && e is not Level && e is not SketchPlane)
+                                    .Where(e => !e.Name.StartsWith("ViewCrop", StringComparison.OrdinalIgnoreCase) &&
+                                                !e.Name.StartsWith("extentElem", StringComparison.OrdinalIgnoreCase) &&
+                                                !e.GetType().Name.Equals("ViewCrop", StringComparison.OrdinalIgnoreCase) &&
+                                                !e.GetType().Name.Equals("ExtentElem", StringComparison.OrdinalIgnoreCase))
+                                    .Select(e => e.Id)
+                                    .ToList();
+
+                                if (childElements.Any())
+                                {
+                                    try
+                                    {
+                                        ElementTransformUtils.CopyElements(
+                                            srcView,
+                                            childElements,
+                                            targetElem,
+                                            Transform.Identity,
+                                            copyOptions);
+                                    }
+                                    catch (Exception exBatch)
+                                    {
+                                        TelemetryLogger.LogWarning($"[TransferDraftingViews] Copia en bloque de anotaciones de '{srcView.Name}' a '{targetName}' falló: {exBatch.Message}. Ejecutando copia elemento a elemento...");
+                                        foreach (var cid in childElements)
+                                        {
+                                            try
+                                            {
+                                                ElementTransformUtils.CopyElements(
+                                                    srcView,
+                                                    new List<ElementId> { cid },
+                                                    targetElem,
+                                                    Transform.Identity,
+                                                    copyOptions);
+                                            }
+                                            catch (Exception exSingle)
+                                            {
+                                                skippedAny = true;
+                                                TelemetryLogger.LogWarning($"[TransferDraftingViews] Elemento {cid.GetIdValue()} omitido en '{srcView.Name}': {exSingle.Message}");
+                                            }
+                                        }
+                                    }
+                                }
+                            }
                         }
 
                         t.Commit();
@@ -980,6 +1045,7 @@ namespace TransferPlus.Services
                 }
             });
 
+            hadSkippedElements = skippedAny;
             return transferredCount;
         }
 
@@ -1294,9 +1360,23 @@ namespace TransferPlus.Services
             bool keepOriginal = false,
             string? suffix = null)
         {
+            return TransferModelDetailViewsToDraftingViews(sourceDoc, targetDoc, detailViewIds, customNames, keepOriginal, suffix, out _);
+        }
+
+        public int TransferModelDetailViewsToDraftingViews(
+            Document sourceDoc,
+            Document targetDoc,
+            List<ElementId> detailViewIds,
+            Dictionary<ElementId, string>? customNames,
+            bool keepOriginal,
+            string? suffix,
+            out bool hadSkipped3dReferences)
+        {
+            hadSkipped3dReferences = false;
             if (sourceDoc == null || targetDoc == null || detailViewIds == null || !detailViewIds.Any()) return 0;
 
             int transferredCount = 0;
+            bool skippedAny = false;
 
             ExecuteWithWarningSuppression(targetDoc, () =>
             {
@@ -1364,10 +1444,16 @@ namespace TransferPlus.Services
                             newDraftingView.Name = uniqueViewName;
                             existingViewNames.Add(uniqueViewName);
 
+                            targetDoc.Regenerate();
+
                             // Recolectar elementos de anotación 2D dependientes de la vista
                             var viewElements = new FilteredElementCollector(sourceDoc, srcView.Id)
                                 .WhereElementIsNotElementType()
                                 .Where(e => e.ViewSpecific && e is not Viewport && e is not Level && e is not SketchPlane)
+                                .Where(e => !e.Name.StartsWith("ViewCrop", StringComparison.OrdinalIgnoreCase) &&
+                                            !e.Name.StartsWith("extentElem", StringComparison.OrdinalIgnoreCase) &&
+                                            !e.GetType().Name.Equals("ViewCrop", StringComparison.OrdinalIgnoreCase) &&
+                                            !e.GetType().Name.Equals("ExtentElem", StringComparison.OrdinalIgnoreCase))
                                 .Select(e => e.Id)
                                 .ToList();
 
@@ -1384,7 +1470,24 @@ namespace TransferPlus.Services
                                 }
                                 catch (Exception exCopy)
                                 {
-                                    TelemetryLogger.LogWarning($"[TransferModelDetailViews] Error copiando anotaciones de '{srcView.Name}' a '{uniqueViewName}': {exCopy.Message}");
+                                    TelemetryLogger.LogWarning($"[TransferModelDetailViews] Copia en bloque de anotaciones de '{srcView.Name}' a '{uniqueViewName}' falló: {exCopy.Message}. Ejecutando copia elemento a elemento...");
+                                    foreach (var elemId in viewElements)
+                                    {
+                                        try
+                                        {
+                                            ElementTransformUtils.CopyElements(
+                                                srcView,
+                                                new List<ElementId> { elemId },
+                                                newDraftingView,
+                                                Transform.Identity,
+                                                copyOptions);
+                                        }
+                                        catch (Exception exElem)
+                                        {
+                                            skippedAny = true;
+                                            TelemetryLogger.LogWarning($"[TransferModelDetailViews] Elemento {elemId.GetIdValue()} con dependencias 3D omitido en '{srcView.Name}': {exElem.Message}");
+                                        }
+                                    }
                                 }
                             }
 
@@ -1405,6 +1508,7 @@ namespace TransferPlus.Services
                 }
             });
 
+            hadSkipped3dReferences = skippedAny;
             return transferredCount;
         }
 

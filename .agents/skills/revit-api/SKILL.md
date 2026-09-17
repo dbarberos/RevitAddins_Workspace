@@ -101,6 +101,7 @@ You have structured expert knowledge in the following 30 domains. Use the concep
 * [revit_active_model_leaf_only_cad_and_detail_deletion_pattern_2026-09-14.md](file:///c:/Users/david.barbero/Documents/DOCUMENTOS/ALTEN/Workbench/RevitAddins_Workspace/RevitAddins_Workspace/.agents/skills/revit-api/references/revit_active_model_leaf_only_cad_and_detail_deletion_pattern_2026-09-14.md)
 * [debugging_linked_models_2d_views_and_cad_collection_2026-08-21.md](file:///c:/Users/david.barbero/Documents/DOCUMENTOS/ALTEN/Workbench/RevitAddins_Workspace/RevitAddins_Workspace/.agents/skills/revit-api/references/debugging_linked_models_2d_views_and_cad_collection_2026-08-21.md)
 * [debugging_linked_models_detail_item_dynamic_preview_rendering_2026-08-23.md](file:///c:/Users/david.barbero/Documents/DOCUMENTOS/ALTEN/Workbench/RevitAddins_Workspace/RevitAddins_Workspace/.agents/skills/revit-api/references/debugging_linked_models_detail_item_dynamic_preview_rendering_2026-08-23.md)
+* [debugging_view_drafting_child_elements_and_3d_references_2026-09-17.md](file:///c:/Users/david.barbero/Documents/DOCUMENTOS/ALTEN/Workbench/RevitAddins_Workspace/RevitAddins_Workspace/.agents/skills/revit-api/references/debugging_view_drafting_child_elements_and_3d_references_2026-09-17.md)
 * [guia_transferencia_familias_en_memoria.md](file:///c:/Users/david.barbero/Documents/DOCUMENTOS/ALTEN/Workbench/RevitAddins_Workspace/RevitAddins_Workspace/.agents/skills/revit-api/references/guia_transferencia_familias_en_memoria.md)
 
 ### Reusable Assets
