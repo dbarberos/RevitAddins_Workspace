@@ -3370,8 +3370,19 @@ public partial class TransferPlusViewModel : ObservableObject
     [RelayCommand]
     private void InsertFilterRegexHelper(string snippet)
     {
-        SearchFilter = (SearchFilter ?? string.Empty) + snippet;
+        if (snippet.Contains("text") && !string.IsNullOrWhiteSpace(SearchFilter) && !SearchFilter.Contains("(?") && !SearchFilter.Contains(".*"))
+        {
+            SearchFilter = snippet.Replace("text", SearchFilter.Trim());
+        }
+        else
+        {
+            SearchFilter = string.IsNullOrWhiteSpace(SearchFilter) ? snippet : (SearchFilter + snippet);
+        }
         FilterUseRegex = true;
+        if (snippet.Contains("(?"))
+        {
+            FilterOnlyNames = true;
+        }
     }
 
     [RelayCommand]

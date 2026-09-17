@@ -153,11 +153,25 @@ TransferPlus provides a dedicated **CAD / Details Mode** tailored for migrating 
 
 ---
 
+### 5.9. Asset Explorer Search & Advanced Filtering (`Filter:`)
+TransferPlus includes an integrated search and filtering engine in the right-hand settings panel, applicable across all operation modes (Standard, Family Mode, CAD Mode):
+* **Text Search & Bulk Selection**: Type queries to filter and automatically check matching elements within the hierarchical tree.
+* **Filter Options**:
+  - **Use OR**: Accumulates new search matches on top of existing selections instead of replacing them.
+  - **Only by name**: Restricts pattern evaluation strictly to element names, ignoring Revit category strings.
+  - **Use Regex**: Activates standard .NET Regular Expression evaluation for pattern-based queries.
+* **Regex Help Popup & Negative Matching ("Not Contain")**:
+  - Clicking the **"i" (Regex Help)** button opens an interactive cheat sheet containing common regex building blocks (starts with `^`, ends with `$`, digits `\d+`, letters `[a-zA-Z]+`, wildcards `.*`, OR `gato|perro`).
+  - **Not Contain (Negative Matching)** (`^(?!.*text).*$`): Instantly configures negative lookahead matching to select all items whose names do *not* contain the target keyword. Clicking this helper automatically sets `Use Regex` and `Only by name` to guarantee clean negative matching without false positive matches against category names. If text is already entered in the filter box, it is automatically substituted into the pattern.
+
+---
+
 ## 6. Version History (Changelog)
 
 ### v1.3.0 - 2026-09-17
 
 #### Added
+- **Not Contain (Negative Matching) Regex Filter**: Added dedicated negative lookahead pattern helper (`^(?!.*text).*$`) under "Not Contain (Negative Matching)" in the Regex Help popup of the Filter card. Features smart text replacement, auto-activates `Use Regex` and `Only by name`, and works seamlessly across Standard, Family, and CAD modes.
 - **Cross-Model CAD Transfer Engine**: Complete multi-document transfer architecture for CAD Mode (`IsCadDetailsManagerActive`), handling native Drafting Views, model detail views/callouts, CAD import instances, detail components, and isolated annotations.
 - **Dedicated ViewDrafting Generation**: Each transferred CAD instance, model detail view, and 2D annotation is automatically instantiated in its own dedicated `ViewDrafting` in target models, preserving scale and preventing view corruption.
 - **Full 2D Child Element Copying in Drafting Views**: Upgraded `TransferDraftingViews` to recursively transfer all internal 2D annotations, detail lines, text notes, filled regions, and detail components into destination views using batch copy and element-by-element fallback.

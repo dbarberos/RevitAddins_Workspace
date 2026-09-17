@@ -160,11 +160,13 @@
         </li>
         <li><strong>PowerRename Palette Integration & Chained Iterations</strong>: Full feature parity between Family Mode and CAD Mode with multi-stage chained regex matching and renamed CAD file export/download.</li>
         <li><strong>Leaf-Only CAD Deletion & Safety Confirmation</strong>: Deletion is strictly confined to lowest-level CAD/detail elements (links, imports, components). Parent Sheets and Views are never deleted and remain in the project for future reuse. Includes a hierarchical preview confirmation dialog.</li>
+        <li><strong>Asset Explorer Search & Negative Regex Filtering</strong>: Integrated search card supporting OR operations, name-only filtering, regular expressions, and an interactive cheat sheet including the <strong>Not Contain (Negative Matching)</strong> pattern (<code>^(?!.*text).*$</code>) that automatically isolates element names and selects items omitting the specified string.</li>
     </ul>
 
     <h2>6. Version History (Changelog)</h2>
     <h3>v1.3.0</h3>
     <ul>
+        <li><strong>Not Contain (Negative Matching) Regex Filter</strong>: Added dedicated negative lookahead pattern helper (<code>^(?!.*text).*$</code>) under "Not Contain (Negative Matching)" in the Regex Help popup of the Filter card with smart text replacement and auto-activation of <code>Use Regex</code> and <code>Only by name</code>.</li>
         <li><strong>Cross-Model CAD Transfer Engine</strong>: Complete multi-document transfer architecture for CAD Mode (<code>IsCadDetailsManagerActive</code>), handling native Drafting Views, model detail views/callouts, CAD import instances, detail components, and isolated annotations.</li>
         <li><strong>Dedicated ViewDrafting Generation</strong>: Each transferred CAD instance, model detail view, and 2D annotation is automatically instantiated in its own dedicated <code>ViewDrafting</code> in target models, preserving scale and preventing view corruption.</li>
         <li><strong>Full 2D Child Element Copying in Drafting Views</strong>: Upgraded <code>TransferDraftingViews</code> to recursively transfer all internal 2D annotations, detail lines, text notes, filled regions, and detail components into destination views using batch copy and element-by-element fallback.</li>

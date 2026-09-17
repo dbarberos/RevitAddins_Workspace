@@ -828,6 +828,21 @@
                                                              <TextBlock Grid.Column="1" Text="Matches 'gato' OR 'perro'" VerticalAlignment="Center" TextWrapping="Wrap" Foreground="#555" FontSize="10.5"/>
                                                          </Grid>
                                                      </Button>
+
+                                                     <!-- Category: Not Contain (Negative Matching) -->
+                                                     <TextBlock Text="Not Contain (Negative Matching)" FontWeight="Bold" Foreground="#333" Margin="0,15,0,5" FontSize="11"/>
+                                                     <Button Command="{Binding InsertFilterRegexHelperCommand}" CommandParameter="^(?!.*text).*$" Click="CloseFilterRegexPopup" HorizontalAlignment="Stretch">
+                                                         <Grid Margin="0,0,0,5" Width="355">
+                                                             <Grid.ColumnDefinitions>
+                                                                 <ColumnDefinition Width="110"/>
+                                                                 <ColumnDefinition Width="*"/>
+                                                             </Grid.ColumnDefinitions>
+                                                             <Border Grid.Column="0" Background="#F9F9F9" BorderBrush="#E0E0E0" BorderThickness="1" CornerRadius="4" Height="28" Margin="0,0,10,0">
+                                                                 <TextBlock Text="^(?!.*text).*$" HorizontalAlignment="Center" VerticalAlignment="Center" FontWeight="SemiBold" FontSize="9" Foreground="#111"/>
+                                                             </Border>
+                                                             <TextBlock Grid.Column="1" Text="Does not contain 'text' (matches everything else)" VerticalAlignment="Center" TextWrapping="Wrap" Foreground="#555" FontSize="10.5"/>
+                                                         </Grid>
+                                                     </Button>
                                                  </StackPanel>
                                              </ScrollViewer>
                                          </Border>
