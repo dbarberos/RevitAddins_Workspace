@@ -63,6 +63,21 @@ public partial class AzureStorageSourceViewModel : ObservableObject
         }
     }
 
+    public AzureStorageSourceViewModel(CadSourceItemModel? model)
+    {
+        if (model != null)
+        {
+            Name = model.Name;
+            ConnectionString = model.ConnectionString;
+            EndpointUrl = model.EndpointUrl;
+            ClientId = model.ClientId;
+            TenantId = model.TenantId;
+            ContainerName = model.ContainerName;
+            RootPath = model.RootPath;
+            IsActive = model.IsActive;
+        }
+    }
+
     [RelayCommand]
     private async Task TestConnectionAsync()
     {
@@ -130,6 +145,23 @@ public partial class AzureStorageSourceViewModel : ObservableObject
             Id = existingId ?? Guid.NewGuid().ToString(),
             Name = Name.Trim(),
             SourceType = FamilySourceType.AzureStorage,
+            ConnectionString = ConnectionString.Trim(),
+            EndpointUrl = EndpointUrl.Trim(),
+            ClientId = ClientId.Trim(),
+            TenantId = TenantId.Trim(),
+            ContainerName = ContainerName.Trim(),
+            RootPath = RootPath.Trim(),
+            IsActive = IsActive
+        };
+    }
+
+    public CadSourceItemModel ToCadModel(string? existingId = null)
+    {
+        return new CadSourceItemModel
+        {
+            Id = existingId ?? Guid.NewGuid().ToString(),
+            Name = Name.Trim(),
+            SourceType = CadSourceType.AzureStorage,
             ConnectionString = ConnectionString.Trim(),
             EndpointUrl = EndpointUrl.Trim(),
             ClientId = ClientId.Trim(),

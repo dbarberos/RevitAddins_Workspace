@@ -24,7 +24,7 @@
 
     <h1>TransferPlus</h1>
     <p>
-        <span class="badge">Version 1.1.0</span> &nbsp;
+        <span class="badge">Version 1.3.0</span> &nbsp;
         <strong>Add-in ID (GUID):</strong> <code>D1981E8C-1951-45C0-B24C-CA821B7288D2</code>
     </p>
 
@@ -45,6 +45,15 @@
     <p>To uninstall this plug-in, exit the Autodesk product if you are currently running it, simply rerun the installer by downloading it again from the Autodesk App Store, and select the 'Uninstall' button, or you can uninstall it from 'Control Panel\Programs\Programs and Features' (Windows 10/11), just as you would uninstall any other application from your system.</p>
 
     <h2>4. Commands and Features Guide</h2>
+    <h3>4.1. Ribbon Panel Integration</h3>
+    <p>By default, following Autodesk App Store single-command guidelines, the <strong>TransferPlus</strong> ribbon panel is placed under Revit's native <strong>Add-Ins (Complementos)</strong> tab.</p>
+    <p>Through the <strong>Settings (Gear Icon)</strong> dialog in TransferPlus, users can configure ribbon placement:</p>
+    <ul>
+        <li><strong>Add-Ins Tab (Default)</strong>: Places the button under the standard Add-Ins tab.</li>
+        <li><strong>Revit Manage Tab</strong>: Integrates into the <strong>Manage (Gestionar)</strong> tab within the <strong>Settings (Configuración)</strong> panel, immediately to the right of <em>Additional Settings (Configuración adicional)</em>.</li>
+        <li><strong>Custom Tab</strong>: Allows specifying a custom user-defined ribbon tab name.</li>
+    </ul>
+
     <table>
         <tr>
             <th>Command</th>
@@ -123,7 +132,73 @@
         <li><strong>Single-Line Trimming</strong>: Ellipsis truncation and tooltips ensure clean display without clipping.</li>
     </ul>
 
+    <h3>5.8. CAD Details & 2D Drafting Views Transfer Mode</h3>
+    <ul>
+        <li><strong>Five Dedicated Origins</strong>: Supports CAD Formats (DWG, DXF, DGN), Drafting Views, Detail Views/Callouts, Detail Groups, and Detail Items.</li>
+        <li><strong>Real-time 2D Vector Previews</strong>: Dynamic 200x200 vector previews generated via scratch drafting views and native <code>ImageExportOptions</code>.</li>
+        <li><strong>Title Block & Family Dynamic Rendering</strong>: In-memory <code>EditFamily</code> and <code>ViewSheet</code> generation for responsive thumbnail previews.</li>
+        <li><strong>Smart Zoom-to-Extents Framing</strong>: Auto-crop with adaptive margins for small annotations and tags.</li>
+        <li><strong>Middle Column Horizontal Scrollbar</strong>: Dedicated scrolling for long names while keeping checkboxes and count columns fixed.</li>
+        <li><strong>Cross-Model CAD Transfer Engine</strong>:
+            <ul>
+                <li><strong>Dedicated Drafting Views</strong>: Every transferred CAD instance (<code>ImportInstance</code>), model detail view, and 2D annotation is instantiated in its own dedicated <code>ViewDrafting</code> in destination documents, preserving annotation scale.</li>
+                <li><strong>Sheet Hierarchy Bypass</strong>: Under <code>Sort by Sheet</code>, only selected child CAD/detail elements are transferred into Drafting Views; parent <code>ViewSheet</code> replication is strictly bypassed in CAD mode.</li>
+                <li><strong>In-Memory Detail Component Loading</strong>: 2D Detail Component families (<code>OST_DetailComponents</code>) have their pure definitions loaded via in-memory <code>EditFamily -> LoadFamily</code> without creating placeholder graphics.</li>
+                <li><strong>On Duplicates Compliance</strong>: Pre-flight check aborts on duplicate collisions under <em>Abort Transaction</em>, skips existing elements under <em>Keep Original</em>, and automatically appends suffixes (e.g. <code>_Copy</code>) under <em>Append Suffix</em>.</li>
+            </ul>
+        </li>
+        <li><strong>Full 2D Content Replication for Drafting Views</strong>:
+            <ul>
+                <li>When transferring native Drafting Views, all child view-specific elements (detail lines, text notes, filled regions, independent dimensions, detail components, and CAD elements) are completely copied into destination drafting views using a resilient two-tier copy strategy (batch copy with element-by-element fallback), ensuring views never arrive empty.</li>
+            </ul>
+        </li>
+        <li><strong>3D-Referenced Dimension & Tag Isolation</strong>:
+            <ul>
+                <li>When transferring Model Detail Views or Callouts containing annotations referenced to 3D geometry not present in the destination model, non-transferrable 3D-dependent dimensions and tags are safely isolated and skipped, while 100% of independent 2D lines, text notes, filled regions, and detail components are preserved.</li>
+                <li>A single, non-intrusive summary notification dialog in English informs the user upon completion of the multi-model transfer if any 3D references were omitted, eliminating repetitive per-view popup interruptions.</li>
+            </ul>
+        </li>
+        <li><strong>PowerRename Palette Integration & Chained Iterations</strong>: Full feature parity between Family Mode and CAD Mode with multi-stage chained regex matching and renamed CAD file export/download.</li>
+        <li><strong>Leaf-Only CAD Deletion & Safety Confirmation</strong>: Deletion is strictly confined to lowest-level CAD/detail elements (links, imports, components). Parent Sheets and Views are never deleted and remain in the project for future reuse. Includes a hierarchical preview confirmation dialog.</li>
+        <li><strong>Asset Explorer Search & Negative Regex Filtering</strong>: Integrated search card supporting OR operations, name-only filtering, regular expressions, and an interactive cheat sheet including the <strong>Not Contain (Negative Matching)</strong> pattern (<code>^(?!.*text).*$</code>) that automatically isolates element names and selects items omitting the specified string.</li>
+    </ul>
+
     <h2>6. Version History (Changelog)</h2>
+    <h3>v1.3.0</h3>
+    <ul>
+        <li><strong>Not Contain (Negative Matching) Regex Filter</strong>: Added dedicated negative lookahead pattern helper (<code>^(?!.*text).*$</code>) under "Not Contain (Negative Matching)" in the Regex Help popup of the Filter card with smart text replacement and auto-activation of <code>Use Regex</code> and <code>Only by name</code>.</li>
+        <li><strong>Cross-Model CAD Transfer Engine</strong>: Complete multi-document transfer architecture for CAD Mode (<code>IsCadDetailsManagerActive</code>), handling native Drafting Views, model detail views/callouts, CAD import instances, detail components, and isolated annotations.</li>
+        <li><strong>Dedicated ViewDrafting Generation</strong>: Each transferred CAD instance, model detail view, and 2D annotation is automatically instantiated in its own dedicated <code>ViewDrafting</code> in target models, preserving scale and preventing view corruption.</li>
+        <li><strong>Full 2D Child Element Copying in Drafting Views</strong>: Upgraded <code>TransferDraftingViews</code> to recursively transfer all internal 2D annotations, detail lines, text notes, filled regions, and detail components into destination views using batch copy and element-by-element fallback.</li>
+        <li><strong>Resilient Fallback & 3D Geometry Reference Isolation</strong>: Implemented two-tier fallback copying in <code>TransferModelDetailViewsToDraftingViews</code> and <code>TransferDraftingViews</code>. Annotations referencing 3D model geometry not present in destination models are isolated and skipped without halting transfer of independent 2D elements.</li>
+        <li><strong>Single English Notification Dialog</strong>: Unified notification for skipped 3D-dependent annotations across multiple destination models, displaying a single informative dialog upon completion instead of multiple per-view alerts.</li>
+        <li><strong>In-Memory Detail Component Loading</strong>: 2D Detail Component families (<code>OST_DetailComponents</code>) are loaded directly into the destination model's database using <code>EditFamily -> LoadFamily</code> in memory without creating placeholder graphical elements.</li>
+        <li><strong>Pre-Flight Duplicate Conflict Validation</strong>: Pre-flight inspection for <code>AbortTransaction</code> in CAD mode that validates destination view and family names before opening transactions, notifying the user via a descriptive <code>TaskDialog</code>.</li>
+        <li><strong>PowerRename Chaining & Iterative Modification</strong>: Enhanced regex replacement matching against working names, enabling multi-stage iterative renaming without losing prior edits.</li>
+        <li><strong>Renamed CAD Download & Export Pipeline</strong>: Full integration between the PowerRename palette and CAD export/download workflows, ensuring downloaded CAD files and exported <code>.rfa</code> detail families reflect custom renamed titles.</li>
+        <li><strong>Sheet Replication Isolation</strong>: In CAD Mode under <code>Sort by Sheet</code>, parent <code>ViewSheet</code> replication is strictly bypassed; only child detail elements are transferred into dedicated drafting views.</li>
+        <li><strong>Provider Architecture Harmonization</strong>: Updated <code>ICadProvider</code> and all implementations to honor <code>keepOriginal</code> and <code>suffix</code> policies.</li>
+        <li><strong>Empty Drafting Views in Destination</strong>: Resolved an issue where <code>TransferDraftingViews</code> duplicated only the view header, leaving destination drafting views blank.</li>
+        <li><strong>CAD Mode Rename Palette Empty Selection</strong>: Resolved an issue where opening the Rename palette in CAD mode showed an empty list due to family-only collection filtering.</li>
+        <li><strong>2D Detail View Direct Copy Failure</strong>: Replaced direct view copying of model detail views with automated 2D annotation extraction and placement into dedicated <code>ViewDrafting</code> containers.</li>
+        <li><strong>Collision-Resistant View Naming</strong>: Implemented iterative collision resolution (<code>_Copy_1</code>, <code>_Copy_2</code>) to prevent Revit native <code>ArgumentException</code> crashes when duplicate view names occur in target models.</li>
+    </ul>
+
+    <h3>v1.2.0</h3>
+    <ul>
+        <li><strong>CAD Details & 2D Drafting Mode</strong>: Dedicated transfer mode for CAD files (DWG, DXF, DGN), drafting views, detail views/callouts, detail groups, and detail component items.</li>
+        <li><strong>Dynamic 2D Vector Previews</strong>: In-memory vector preview generation using scratch drafting views, native Revit <code>ImageExportOptions</code>, and automated transaction rollbacks.</li>
+        <li><strong>Title Block & Family Dynamic Rendering</strong>: Dynamic preview rendering for title blocks and family types using in-memory <code>EditFamily</code> and <code>ViewSheet</code> generation.</li>
+        <li><strong>Auto-Crop & Zoom-to-Extents Framing</strong>: Automatic bounding box framing and margin calculations for small annotation elements, tags, and drafting items.</li>
+        <li><strong>Middle Column Horizontal Scrolling</strong>: Dedicated horizontal scrollbar in the asset tree allowing unconstrained reading of long family/view names while keeping checkboxes and element count badges stationary.</li>
+        <li><strong>Leaf-Only CAD Deletion with Hierarchical Confirmation Dialog</strong>: Interactive safety confirmation window before deleting CAD details from active models. Displays the hierarchy with clear visual indicators that parent Sheets and Views are preserved while only the selected leaf CAD/detail elements are deleted.</li>
+        <li><strong>Ribbon Placement on Add-Ins Tab (Default)</strong>: Aligned with Autodesk App Store single-command guidelines by placing the TransferPlus ribbon panel on Revit's native Add-Ins (Complementos) tab by default.</li>
+        <li><strong>Revit Manage Tab Placement (Settings Group)</strong>: Option to insert the TransferPlus button directly into the native Settings (Configuración) panel of the Manage tab, immediately to the right of Additional Settings.</li>
+        <li><strong>Configuration Window Tab Options</strong>: Updated Tab Option selection card with clear choices: Add-Ins tab (default), Revit Manage tab, and Custom tab name.</li>
+        <li><strong>Parent Sheet & View Deletion Prevention in CAD Mode</strong>: Fixed an issue where tri-state checkbox bubbling or parent node resolution in <code>Sort by Sheet</code> mode could cause parent <code>ViewSheet</code> or <code>View</code> containers to be deleted along with CAD details. Deletion is now strictly confined to leaf elements.</li>
+        <li><strong>XML Settings Deserialization Resilience</strong>: Resolved startup deserialization errors caused by legacy DBDevDefault settings. Seamless backwards-compatible auto-upgrade to Add-Ins default with non-blocking error handling.</li>
+    </ul>
+
     <h3>v1.1.0</h3>
     <ul>
         <li><strong>Family Details Metadata</strong>: Dynamic extraction of <code>File size</code> (KB/MB) and <code>Last modified</code> date (yyyy-MM-dd).</li>

@@ -33,16 +33,35 @@ public static class SettingsService
                 XmlResolver = null
             };
 
+            TransferPlusSettings? loaded = null;
             using (var stream = new FileStream(SettingsFilePath, FileMode.Open, FileAccess.Read))
             using (var xmlReader = System.Xml.XmlReader.Create(stream, settings))
             {
-                return (TransferPlusSettings)serializer.Deserialize(xmlReader);
+                loaded = (TransferPlusSettings?)serializer.Deserialize(xmlReader);
             }
+
+            if (loaded != null)
+            {
+                if (loaded.SelectedTabOption == TabOption.DBDevDefault)
+                {
+                    loaded.SelectedTabOption = TabOption.AddInsDefaultTab;
+                    Save(loaded);
+                }
+                return loaded;
+            }
+
+            return new TransferPlusSettings();
         }
         catch (Exception ex)
         {
-            System.Diagnostics.Debug.WriteLine("Error loading settings: " + ex.Message);
-            return new TransferPlusSettings();
+            LoggerService.LogWarning($"Failed to load settings from '{SettingsFilePath}': {ex.Message}. Falling back to default settings.");
+            var fallback = new TransferPlusSettings();
+            try
+            {
+                Save(fallback);
+            }
+            catch { }
+            return fallback;
         }
     }
 
@@ -68,7 +87,7 @@ public static class SettingsService
         }
         catch (Exception ex)
         {
-            System.Diagnostics.Debug.WriteLine("Error saving settings: " + ex.Message);
+            LoggerService.LogWarning($"Failed to save settings to '{SettingsFilePath}': {ex.Message}");
         }
     }
 }

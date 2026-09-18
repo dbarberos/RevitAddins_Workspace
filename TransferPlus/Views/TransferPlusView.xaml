@@ -3,10 +3,11 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:sys="clr-namespace:System;assembly=mscorlib"
         xmlns:local="clr-namespace:TransferPlus.Views"
         xmlns:viewmodels="clr-namespace:TransferPlus.ViewModels"
         mc:Ignorable="d"
-        Title="TransferPlus" Height="840"
+        Title="TransferPlus" Height="894"
         Icon="pack://application:,,,/TransferPlus;component/Resources/Icons/TransferPlus32x32.png"
         WindowStartupLocation="CenterScreen"
         Background="#FAFAFA">
@@ -44,70 +45,181 @@
     </Window.Style>
 
     <Window.Resources>
-        <ResourceDictionary>
-            <ResourceDictionary.MergedDictionaries>
-                <ResourceDictionary Source="pack://application:,,,/TransferPlus;component/Resources/Styles/TransferPlusStyles.xaml"/>
-            </ResourceDictionary.MergedDictionaries>
-            
-            <BooleanToVisibilityConverter x:Key="BoolToVis"/>
-            <local:NegativeConverter x:Key="NegativeConverter"/>
-            
-            <HierarchicalDataTemplate x:Key="CheckboxTreeTemplate" DataType="{x:Type viewmodels:TreeItemViewModel}" ItemsSource="{Binding Children}">
-                <Grid Margin="2,3">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="Auto"/>
-                    </Grid.ColumnDefinitions>
-                    
-                    <CheckBox Grid.Column="0" IsChecked="{Binding IsChecked}" IsThreeState="True" VerticalAlignment="Center" Margin="0,0,6,0"/>
-                    <TextBlock x:Name="NodeNameText" Grid.Column="1" Text="{Binding Name}" FontWeight="Normal" Foreground="#333333" VerticalAlignment="Center" TextWrapping="NoWrap"/>
-                    <TextBlock Grid.Column="2" Text="{Binding Count}" Foreground="#888888" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="15,0,10,0"/>
-                </Grid>
-                <HierarchicalDataTemplate.Triggers>
-                    <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=TreeViewItem}, Path=IsMouseOver}" Value="True">
-                        <Setter TargetName="NodeNameText" Property="Foreground" Value="#007ACC"/>
-                    </DataTrigger>
-                </HierarchicalDataTemplate.Triggers>
-            </HierarchicalDataTemplate>
+        <!-- System Parameter Scrollbar Adjustments -->
+        <sys:Double x:Key="{x:Static SystemParameters.VerticalScrollBarWidthKey}">10</sys:Double>
+        <sys:Double x:Key="{x:Static SystemParameters.HorizontalScrollBarHeightKey}">10</sys:Double>
 
-            <Style x:Key="CardBorderStyle" TargetType="Border">
-                <Setter Property="Background" Value="White"/>
-                <Setter Property="CornerRadius" Value="8"/>
-                <Setter Property="Padding" Value="12,7"/>
-                <Setter Property="Margin" Value="0,0,0,6"/>
-                <Setter Property="BorderBrush" Value="#e8e8e8"/>
-                <Setter Property="BorderThickness" Value="1"/>
-                <Setter Property="Effect">
-                    <Setter.Value>
-                        <DropShadowEffect Color="#000000" Opacity="0.03" BlurRadius="5" ShadowDepth="2"/>
-                    </Setter.Value>
-                </Setter>
-            </Style>
+        <BooleanToVisibilityConverter x:Key="BoolToVis"/>
+        <local:NegativeConverter x:Key="NegativeConverter"/>
 
-            <Style x:Key="FilterPlusTextBlockStyle" TargetType="TextBlock">
-                <Setter Property="FontWeight" Value="Bold"/>
-                <Setter Property="FontSize" Value="12"/>
-                <Setter Property="Foreground" Value="#333"/>
-                <Setter Property="Margin" Value="0,0,0,8"/>
-            </Style>
-            <Style x:Key="StandardCardStyle" TargetType="Border" BasedOn="{StaticResource CardBorderStyle}">
-                <Style.Triggers>
-                    <DataTrigger Binding="{Binding IsFamiliesManagerActive}" Value="True">
-                        <Setter Property="Visibility" Value="Collapsed"/>
-                    </DataTrigger>
-                </Style.Triggers>
-            </Style>
+        <!-- Global TextBlock Style (Matches FilterPlus) -->
+        <Style TargetType="TextBlock">
+            <Setter Property="Margin" Value="0,10,0,2"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+        </Style>
 
-            <Style x:Key="FamiliesManagerCardStyle" TargetType="Border" BasedOn="{StaticResource CardBorderStyle}">
-                <Setter Property="Visibility" Value="Collapsed"/>
-                <Style.Triggers>
-                    <DataTrigger Binding="{Binding IsFamiliesManagerActive}" Value="True">
-                        <Setter Property="Visibility" Value="Visible"/>
-                    </DataTrigger>
-                </Style.Triggers>
-            </Style>
-        </ResourceDictionary>
+        <!-- Global Button Style (Ensures CornerRadius = 4) -->
+        <Style TargetType="Button">
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Padding" Value="10,5"/>
+            <Style.Resources>
+                <Style TargetType="Border">
+                    <Setter Property="CornerRadius" Value="4"/>
+                </Style>
+            </Style.Resources>
+        </Style>
+
+        <!-- Global TextBox Style -->
+        <Style TargetType="TextBox">
+            <Setter Property="Padding" Value="4"/>
+            <Setter Property="BorderBrush" Value="#e0e0e0"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Style.Resources>
+                <Style TargetType="Border">
+                    <Setter Property="CornerRadius" Value="4"/>
+                </Style>
+            </Style.Resources>
+        </Style>
+
+        <!-- Global ComboBox Style -->
+        <Style TargetType="ComboBox">
+            <Setter Property="Padding" Value="4"/>
+            <Setter Property="BorderBrush" Value="#e0e0e0"/>
+            <Setter Property="BorderThickness" Value="1"/>
+        </Style>
+
+        <!-- Header Icon Flat Button Style -->
+        <Style x:Key="HeaderIconButtonStyle" TargetType="Button">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Margin" Value="2,0"/>
+            <Setter Property="Width" Value="20"/>
+            <Setter Property="Height" Value="20"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="border" Background="Transparent" CornerRadius="10" Padding="4">
+                            <Viewbox Width="10" Height="10" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                <ContentPresenter />
+                            </Viewbox>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="#f0f0f0"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="#e0e0e0"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Custom Toggle Switch CheckBox Style -->
+        <Style x:Key="SwitchStyle" TargetType="{x:Type CheckBox}">
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type CheckBox}">
+                        <StackPanel Orientation="Horizontal" Cursor="Hand">
+                            <Border x:Name="Background" Width="28" Height="14" Background="#ddd" CornerRadius="7" Padding="2" Margin="0,0,8,0" VerticalAlignment="Center">
+                                <Ellipse x:Name="Dot" Width="10" Height="10" Fill="White" HorizontalAlignment="Left">
+                                    <Ellipse.RenderTransform>
+                                        <TranslateTransform X="0"/>
+                                    </Ellipse.RenderTransform>
+                                </Ellipse>
+                            </Border>
+                            <ContentPresenter VerticalAlignment="Center" Content="{TemplateBinding Content}"/>
+                        </StackPanel>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="Background" Property="Background" Value="#777"/>
+                                <Trigger.EnterActions>
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <DoubleAnimation Storyboard.TargetName="Dot" 
+                                                             Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.X)" 
+                                                             To="14" 
+                                                             Duration="0:0:0.15"/>
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </Trigger.EnterActions>
+                                <Trigger.ExitActions>
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <DoubleAnimation Storyboard.TargetName="Dot" 
+                                                             Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.X)" 
+                                                             To="0" 
+                                                             Duration="0:0:0.15"/>
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </Trigger.ExitActions>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <HierarchicalDataTemplate x:Key="CheckboxTreeTemplate" DataType="{x:Type viewmodels:TreeItemViewModel}" ItemsSource="{Binding Children}">
+            <TextBlock x:Name="NodeNameText" Text="{Binding Name}" FontWeight="Normal" Foreground="#333333" 
+                       VerticalAlignment="Center" Margin="2,3" TextWrapping="NoWrap" ToolTip="{Binding Name}"/>
+            <HierarchicalDataTemplate.Triggers>
+                <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=TreeViewItem}, Path=IsMouseOver}" Value="True">
+                    <Setter TargetName="NodeNameText" Property="Foreground" Value="#007ACC"/>
+                </DataTrigger>
+            </HierarchicalDataTemplate.Triggers>
+        </HierarchicalDataTemplate>
+
+        <Style x:Key="CardBorderStyle" TargetType="Border">
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="CornerRadius" Value="8"/>
+            <Setter Property="Padding" Value="12,7"/>
+            <Setter Property="Margin" Value="0,0,0,6"/>
+            <Setter Property="BorderBrush" Value="#e8e8e8"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Effect">
+                <Setter.Value>
+                    <DropShadowEffect Color="#000000" Opacity="0.03" BlurRadius="5" ShadowDepth="2"/>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="FilterPlusTextBlockStyle" TargetType="TextBlock">
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="Foreground" Value="#333"/>
+            <Setter Property="Margin" Value="0,0,0,8"/>
+        </Style>
+        <Style x:Key="StandardCardStyle" TargetType="Border" BasedOn="{StaticResource CardBorderStyle}">
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding IsFamiliesManagerActive}" Value="True">
+                    <Setter Property="Visibility" Value="Collapsed"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding IsCadDetailsManagerActive}" Value="True">
+                    <Setter Property="Visibility" Value="Collapsed"/>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+
+        <Style x:Key="FamiliesManagerCardStyle" TargetType="Border" BasedOn="{StaticResource CardBorderStyle}">
+            <Setter Property="Visibility" Value="Collapsed"/>
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding IsFamiliesManagerActive}" Value="True">
+                    <Setter Property="Visibility" Value="Visible"/>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+
+        <Style x:Key="CadDetailsManagerCardStyle" TargetType="Border" BasedOn="{StaticResource CardBorderStyle}">
+            <Setter Property="Visibility" Value="Collapsed"/>
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding IsCadDetailsManagerActive}" Value="True">
+                    <Setter Property="Visibility" Value="Visible"/>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
     </Window.Resources>
 
     <Grid>
@@ -225,10 +337,12 @@
                 <Border Grid.Row="3" Background="#f0f0f0" BorderBrush="#ddd" BorderThickness="1,1,1,0" Padding="5,6">
                     <Grid>
                         <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="26"/>
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="60"/>
                         </Grid.ColumnDefinitions>
-                        <StackPanel Orientation="Horizontal" Grid.Column="0" VerticalAlignment="Center" Margin="0">
+                        <Border Grid.Column="0"/>
+                        <StackPanel Orientation="Horizontal" Grid.Column="1" VerticalAlignment="Center" Margin="2,0,0,0">
                             <TextBlock Text="Elements" FontWeight="SemiBold" FontSize="11" Foreground="#555" Margin="0,0,8,0" VerticalAlignment="Center"/>
                             <Button Command="{Binding ExpandAllCommand}" Style="{StaticResource HeaderIconButtonStyle}" ToolTip="Expand All" VerticalAlignment="Center">
                                 <Path Data="M0,0 L10,0 L5,8 Z" Fill="#666" HorizontalAlignment="Center" VerticalAlignment="Center"/>
@@ -237,93 +351,131 @@
                                 <Path Data="M5,0 L10,8 L0,8 Z" Fill="#666" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                             </Button>
                         </StackPanel>
-                        <TextBlock Grid.Column="1" Text="Count" FontWeight="SemiBold" FontSize="11" Foreground="#555" HorizontalAlignment="Right" Margin="0,0,10,0"/>
+                        <TextBlock Grid.Column="2" Text="Count" FontWeight="SemiBold" FontSize="11" Foreground="#555" HorizontalAlignment="Right" Margin="0,0,10,0"/>
                     </Grid>
                 </Border>
 
                 <!-- TreeView container -->
                 <Border Grid.Row="4" BorderBrush="#ddd" BorderThickness="1" Background="White">
-                    <TreeView FlowDirection="LeftToRight" 
-                              ItemsSource="{Binding RootNodes}" 
-                              ItemTemplate="{StaticResource CheckboxTreeTemplate}"
-                              SelectedItemChanged="TreeView_SelectedItemChanged"
-                              VirtualizingStackPanel.IsVirtualizing="True"
-                              VirtualizingStackPanel.VirtualizationMode="Recycling"
-                              ScrollViewer.VerticalScrollBarVisibility="Auto"
-                              ScrollViewer.HorizontalScrollBarVisibility="Auto"
-                              BorderThickness="0" Background="Transparent">
-                        <TreeView.ItemContainerStyle>
-                            <Style TargetType="TreeViewItem">
-                                <Setter Property="Visibility" Value="{Binding IsVisible, Converter={StaticResource BoolToVis}}"/>
-                                <Setter Property="Background" Value="#f9f9f9"/>
-                                <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
-                                <Setter Property="IsExpanded" Value="{Binding IsExpanded, Mode=TwoWay}" />
-                                <Setter Property="Padding" Value="0"/>
-                                <Setter Property="Margin" Value="0"/>
-                                <Setter Property="BorderThickness" Value="0"/>
-                                <Setter Property="Template">
-                                    <Setter.Value>
-                                        <ControlTemplate TargetType="TreeViewItem">
-                                            <Grid>
-                                                <Grid.RowDefinitions>
-                                                    <RowDefinition Height="Auto"/>
-                                                    <RowDefinition/>
-                                                </Grid.RowDefinitions>
-                                                <!-- Header row acts as background for whole line. Border is White for gap -->
-                                                <Border Name="Bd" Background="{TemplateBinding Background}" BorderBrush="White" BorderThickness="0,0,0,1" SnapsToDevicePixels="true">
-                                                    <Grid>
-                                                         <Grid.ColumnDefinitions>
-                                                             <ColumnDefinition Width="Auto"/>
-                                                             <ColumnDefinition Width="*"/>
-                                                         </Grid.ColumnDefinitions>
-                                                         <!-- Expander Toggle -->
-                                                         <ToggleButton x:Name="Expander" Grid.Column="0" Margin="{Binding IndentMargin}" IsChecked="{Binding IsExpanded, RelativeSource={RelativeSource TemplatedParent}}" ClickMode="Press">
-                                                             <ToggleButton.Template>
-                                                                 <ControlTemplate TargetType="ToggleButton">
-                                                                     <Border Width="20" Height="20" Background="Transparent" Cursor="Hand">
-                                                                         <TextBlock x:Name="ExpanderText" Text="▶" VerticalAlignment="Center" HorizontalAlignment="Center" FontSize="10" Foreground="Gray"/>
-                                                                     </Border>
-                                                                     <ControlTemplate.Triggers>
-                                                                         <Trigger Property="IsChecked" Value="True">
-                                                                             <Setter TargetName="ExpanderText" Property="Text" Value="▼"/>
-                                                                         </Trigger>
-                                                                     </ControlTemplate.Triggers>
-                                                                 </ControlTemplate>
-                                                             </ToggleButton.Template>
-                                                         </ToggleButton>
-                                                         <!-- Content Row -->
-                                                         <ContentPresenter x:Name="PART_Header" Grid.Column="1" ContentSource="Header" HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"/>
-                                                    </Grid>
-                                                </Border>
-                                                <!-- No margin on ItemsHost to avoid WPF default indentation cutting off Backgrounds -->
-                                                <ItemsPresenter x:Name="ItemsHost" Grid.Row="1" />
-                                            </Grid>
-                                            <ControlTemplate.Triggers>
-                                                <Trigger Property="IsExpanded" Value="false">
-                                                    <Setter TargetName="ItemsHost" Property="Visibility" Value="Collapsed"/>
-                                                </Trigger>
-                                                <Trigger Property="HasItems" Value="false">
-                                                    <Setter TargetName="Expander" Property="Visibility" Value="Hidden"/>
-                                                </Trigger>
-                                                <Trigger Property="IsSelected" Value="true">
-                                                    <Setter TargetName="Bd" Property="BorderBrush" Value="#007ACC"/>
-                                                    <Setter TargetName="Bd" Property="BorderThickness" Value="1.5"/>
-                                                </Trigger>
-                                            </ControlTemplate.Triggers>
-                                        </ControlTemplate>
-                                    </Setter.Value>
-                                </Setter>
-                                <Style.Triggers>
-                                    <DataTrigger Binding="{Binding IsChecked}" Value="True">
-                                        <Setter Property="Background" Value="#e8f5e9"/>
-                                    </DataTrigger>
-                                    <DataTrigger Binding="{Binding IsChecked}" Value="{x:Null}">
-                                        <Setter Property="Background" Value="#fff8e1"/>
-                                    </DataTrigger>
-                                </Style.Triggers>
-                            </Style>
-                        </TreeView.ItemContainerStyle>
-                    </TreeView>
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+
+                        <TreeView Grid.Row="0"
+                                  FlowDirection="LeftToRight" 
+                                  ItemsSource="{Binding RootNodes}" 
+                                  ItemTemplate="{StaticResource CheckboxTreeTemplate}"
+                                  SelectedItemChanged="TreeView_SelectedItemChanged"
+                                  VirtualizingStackPanel.IsVirtualizing="True"
+                                  VirtualizingStackPanel.VirtualizationMode="Recycling"
+                                  ScrollViewer.VerticalScrollBarVisibility="Auto"
+                                  ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                                  BorderThickness="0" Background="Transparent">
+                            <TreeView.ItemContainerStyle>
+                                <Style TargetType="TreeViewItem">
+                                    <Setter Property="Visibility" Value="{Binding IsVisible, Converter={StaticResource BoolToVis}}"/>
+                                    <Setter Property="Background" Value="#f9f9f9"/>
+                                    <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                                    <Setter Property="IsExpanded" Value="{Binding IsExpanded, Mode=TwoWay}" />
+                                    <Setter Property="Padding" Value="0"/>
+                                    <Setter Property="Margin" Value="0"/>
+                                    <Setter Property="BorderThickness" Value="0"/>
+                                    <Setter Property="Template">
+                                        <Setter.Value>
+                                            <ControlTemplate TargetType="TreeViewItem">
+                                                <Grid>
+                                                    <Grid.RowDefinitions>
+                                                        <RowDefinition Height="Auto"/>
+                                                        <RowDefinition/>
+                                                    </Grid.RowDefinitions>
+                                                    <!-- Header row acts as background for whole line. Border is White for gap -->
+                                                    <Border Name="Bd" Background="{TemplateBinding Background}" BorderBrush="White" BorderThickness="0,0,0,1" SnapsToDevicePixels="true" MinHeight="24">
+                                                        <Grid>
+                                                             <Grid.ColumnDefinitions>
+                                                                 <ColumnDefinition Width="26"/>
+                                                                 <ColumnDefinition Width="*"/>
+                                                                 <ColumnDefinition Width="60"/>
+                                                             </Grid.ColumnDefinitions>
+                                                             <!-- 1. CheckBox at far left (before expander, vertically aligned) -->
+                                                             <CheckBox Grid.Column="0" IsChecked="{Binding IsChecked}" IsThreeState="True" 
+                                                                       VerticalAlignment="Center" HorizontalAlignment="Center" Margin="4,0,2,0"/>
+                                                             <!-- 2. Expander + Content (indented by level, scrollable via TreeHScrollBar) -->
+                                                             <Grid Grid.Column="1" ClipToBounds="True" Height="24">
+                                                                 <Canvas Height="24" HorizontalAlignment="Stretch" VerticalAlignment="Center">
+                                                                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Height="24">
+                                                                         <StackPanel.RenderTransform>
+                                                                             <TranslateTransform X="{Binding Value, ElementName=TreeHScrollBar, Converter={StaticResource NegativeConverter}}"/>
+                                                                         </StackPanel.RenderTransform>
+                                                                         <!-- Expander Toggle -->
+                                                                         <ToggleButton x:Name="Expander" Margin="{Binding IndentMargin}" IsChecked="{Binding IsExpanded, RelativeSource={RelativeSource TemplatedParent}}" ClickMode="Press" VerticalAlignment="Center">
+                                                                             <ToggleButton.Template>
+                                                                                 <ControlTemplate TargetType="ToggleButton">
+                                                                                     <Border Width="18" Height="20" Background="Transparent" Cursor="Hand">
+                                                                                         <TextBlock x:Name="ExpanderText" Text="▶" VerticalAlignment="Center" HorizontalAlignment="Center" FontSize="10" Foreground="Gray"/>
+                                                                                     </Border>
+                                                                                     <ControlTemplate.Triggers>
+                                                                                         <Trigger Property="IsChecked" Value="True">
+                                                                                             <Setter TargetName="ExpanderText" Property="Text" Value="▼"/>
+                                                                                         </Trigger>
+                                                                                     </ControlTemplate.Triggers>
+                                                                                 </ControlTemplate>
+                                                                             </ToggleButton.Template>
+                                                                         </ToggleButton>
+                                                                         <!-- Content Row (Node Name) -->
+                                                                         <ContentPresenter x:Name="PART_Header" ContentSource="Header" 
+                                                                                           VerticalAlignment="Center"/>
+                                                                     </StackPanel>
+                                                                 </Canvas>
+                                                             </Grid>
+                                                             <!-- 3. Count TextBlock (far right, vertically aligned) -->
+                                                             <TextBlock Grid.Column="2" Text="{Binding Count}" Foreground="#888888" 
+                                                                        HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                                                        </Grid>
+                                                    </Border>
+                                                    <!-- No margin on ItemsHost to avoid WPF default indentation cutting off Backgrounds -->
+                                                    <ItemsPresenter x:Name="ItemsHost" Grid.Row="1" />
+                                                </Grid>
+                                                <ControlTemplate.Triggers>
+                                                    <Trigger Property="IsExpanded" Value="false">
+                                                        <Setter TargetName="ItemsHost" Property="Visibility" Value="Collapsed"/>
+                                                    </Trigger>
+                                                    <Trigger Property="HasItems" Value="false">
+                                                        <Setter TargetName="Expander" Property="Visibility" Value="Hidden"/>
+                                                    </Trigger>
+                                                    <Trigger Property="IsSelected" Value="true">
+                                                        <Setter TargetName="Bd" Property="BorderBrush" Value="#007ACC"/>
+                                                        <Setter TargetName="Bd" Property="BorderThickness" Value="1.5"/>
+                                                    </Trigger>
+                                                </ControlTemplate.Triggers>
+                                            </ControlTemplate>
+                                        </Setter.Value>
+                                    </Setter>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsChecked}" Value="True">
+                                            <Setter Property="Background" Value="#e8f5e9"/>
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding IsChecked}" Value="{x:Null}">
+                                            <Setter Property="Background" Value="#fff8e1"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TreeView.ItemContainerStyle>
+                        </TreeView>
+
+                        <!-- Pinned Horizontal ScrollBar for Middle Column (Title/Name) -->
+                        <Grid Grid.Row="1" Background="#f7f7f7" Height="15">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="26"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="60"/>
+                            </Grid.ColumnDefinitions>
+                            <Border Grid.Column="0" Background="#f0f0f0" BorderBrush="#e0e0e0" BorderThickness="0,1,1,0"/>
+                            <ScrollBar x:Name="TreeHScrollBar" Grid.Column="1" Orientation="Horizontal" Minimum="0" Maximum="1500" SmallChange="20" LargeChange="100" ViewportSize="200"/>
+                            <Border Grid.Column="2" Background="#f0f0f0" BorderBrush="#e0e0e0" BorderThickness="1,1,0,0"/>
+                        </Grid>
+                    </Grid>
                 </Border>
             </Grid>
 
@@ -676,6 +828,21 @@
                                                              <TextBlock Grid.Column="1" Text="Matches 'gato' OR 'perro'" VerticalAlignment="Center" TextWrapping="Wrap" Foreground="#555" FontSize="10.5"/>
                                                          </Grid>
                                                      </Button>
+
+                                                     <!-- Category: Not Contain (Negative Matching) -->
+                                                     <TextBlock Text="Not Contain (Negative Matching)" FontWeight="Bold" Foreground="#333" Margin="0,15,0,5" FontSize="11"/>
+                                                     <Button Command="{Binding InsertFilterRegexHelperCommand}" CommandParameter="^(?!.*text).*$" Click="CloseFilterRegexPopup" HorizontalAlignment="Stretch">
+                                                         <Grid Margin="0,0,0,5" Width="355">
+                                                             <Grid.ColumnDefinitions>
+                                                                 <ColumnDefinition Width="110"/>
+                                                                 <ColumnDefinition Width="*"/>
+                                                             </Grid.ColumnDefinitions>
+                                                             <Border Grid.Column="0" Background="#F9F9F9" BorderBrush="#E0E0E0" BorderThickness="1" CornerRadius="4" Height="28" Margin="0,0,10,0">
+                                                                 <TextBlock Text="^(?!.*text).*$" HorizontalAlignment="Center" VerticalAlignment="Center" FontWeight="SemiBold" FontSize="9" Foreground="#111"/>
+                                                             </Border>
+                                                             <TextBlock Grid.Column="1" Text="Does not contain 'text' (matches everything else)" VerticalAlignment="Center" TextWrapping="Wrap" Foreground="#555" FontSize="10.5"/>
+                                                         </Grid>
+                                                     </Button>
                                                  </StackPanel>
                                              </ScrollViewer>
                                          </Border>
@@ -752,7 +919,7 @@
                             </StackPanel>
                         </Border>
                         <!-- Family Details Card -->
-                        <Border Style="{StaticResource FamiliesManagerCardStyle}" Height="315">
+                        <Border Style="{StaticResource FamiliesManagerCardStyle}" Height="316">
                             <Grid>
                                 <Grid.RowDefinitions>
                                     <RowDefinition Height="Auto"/>
@@ -811,13 +978,6 @@
                                                          <DataTrigger Binding="{Binding IsSingleFamilyDetails}" Value="True">
                                                              <Setter Property="Visibility" Value="Visible"/>
                                                          </DataTrigger>
-                                                         <MultiDataTrigger>
-                                                             <MultiDataTrigger.Conditions>
-                                                                 <Condition Binding="{Binding IsSingleFamilyDetails}" Value="True"/>
-                                                                 <Condition Binding="{Binding SelectedFamily}" Value="{x:Null}" />
-                                                             </MultiDataTrigger.Conditions>
-                                                             <Setter Property="Visibility" Value="Collapsed"/>
-                                                         </MultiDataTrigger>
                                                      </Style.Triggers>
                                                  </Style>
                                              </Grid.Style>
@@ -838,7 +998,7 @@
                                                  </Border>
                                              </StackPanel>
                                              
-                                                                      <!-- Right Column: Family Name, Type, Category, Revit Version, Host, File size, Last modified (Title stacked above property value with 50% reduced uniform spacing) -->
+                                             <!-- Right Column: Family Name, Type, Category, Revit Version, Host, File size, Last modified (Title stacked above property value with 50% reduced uniform spacing) -->
                                              <StackPanel Grid.Column="1" VerticalAlignment="Top" Margin="0,0,0,0">
                                                  <!-- Family Name -->
                                                  <TextBlock Text="{Binding SelectedFamily.Name}" 
@@ -900,7 +1060,7 @@
                                                 <Style TargetType="TextBlock">
                                                     <Setter Property="Visibility" Value="Collapsed"/>
                                                     <Style.Triggers>
-                                                        <DataTrigger Binding="{Binding IsSingleFamilyDetails}" Value="False">
+                                                        <DataTrigger Binding="{Binding ShowMultipleFamilyDetailsPlaceholder}" Value="True">
                                                             <Setter Property="Visibility" Value="Visible"/>
                                                         </DataTrigger>
                                                     </Style.Triggers>
@@ -1006,6 +1166,364 @@
                             </Grid>
                         </Border>
 
+                        <!-- Select Details/CAD Card -->
+                        <Border Style="{StaticResource CadDetailsManagerCardStyle}">
+                            <StackPanel>
+                                <TextBlock Text="Select Details/CAD:" FontWeight="Bold" FontSize="12" Foreground="#999" Margin="0,0,0,8"/>
+                                
+                                <!-- 2 Columns: Origin (Left) & Organize (Right) -->
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="1"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    
+                                    <!-- Left Column: Origin -->
+                                    <StackPanel Grid.Column="0" Margin="0,0,10,0">
+                                        <TextBlock Text="ORIGIN" FontSize="9" FontWeight="SemiBold" Foreground="#999" Margin="0,0,0,5"/>
+                                        <RadioButton Content="CAD Links / CAD Imports" GroupName="CadDetailsOriginGroup" IsChecked="{Binding CadOriginLinksAndImports}" FontSize="11" Margin="0,0,0,6">
+                                            <RadioButton.ToolTip>
+                                                <ToolTip MaxWidth="225">
+                                                    <TextBlock TextWrapping="Wrap" FontSize="11.5" LineHeight="15" Foreground="#333333">
+                                                        <Bold>CAD Links / CAD Imports</Bold><LineBreak/>
+                                                        Collects external DWG, DXF, DGN, and SAT vector files imported or linked into the source model.<LineBreak/><LineBreak/>
+                                                        <Bold>Elements shown:</Bold> ImportInstance elements (Linked and Imported CAD drawings) categorized with their host views.<LineBreak/><LineBreak/>
+                                                        <Bold>Where to find:</Bold> Placed in 2D Floor/Ceiling Plans, Elevations, Sections, or Drafting Views via Insert tab -> Link CAD / Import CAD.
+                                                    </TextBlock>
+                                                </ToolTip>
+                                            </RadioButton.ToolTip>
+                                        </RadioButton>
+
+                                        <RadioButton Content="Drafting Views" GroupName="CadDetailsOriginGroup" IsChecked="{Binding CadOriginDraftingViews}" FontSize="11" Margin="0,0,0,6">
+                                            <RadioButton.ToolTip>
+                                                <ToolTip MaxWidth="225">
+                                                    <TextBlock TextWrapping="Wrap" FontSize="11.5" LineHeight="15" Foreground="#333333">
+                                                        <Bold>Drafting Views</Bold><LineBreak/>
+                                                        Collects 2D drafting views containing detail sketches, standard construction details, notes, and embedded CAD drawings.<LineBreak/><LineBreak/>
+                                                        <Bold>Elements shown:</Bold> Non-template ViewDrafting elements with their sheet placements and embedded CAD counts.<LineBreak/><LineBreak/>
+                                                        <Bold>Where to find:</Bold> Project Browser -> Drafting Views (Detail). Created via View tab -> Create panel -> Drafting View.
+                                                    </TextBlock>
+                                                </ToolTip>
+                                            </RadioButton.ToolTip>
+                                        </RadioButton>
+
+                                        <RadioButton Content="Details Views / Detail Callouts" GroupName="CadDetailsOriginGroup" IsChecked="{Binding CadOriginDetailViewsAndCallouts}" FontSize="11" Margin="0,0,0,6">
+                                            <RadioButton.ToolTip>
+                                                <ToolTip MaxWidth="225">
+                                                    <TextBlock TextWrapping="Wrap" FontSize="11.5" LineHeight="15" Foreground="#333333">
+                                                        <Bold>Details Views / Detail Callouts</Bold><LineBreak/>
+                                                        Collects dedicated 2D/3D detail section cuts and callout views generated from parent model views.<LineBreak/><LineBreak/>
+                                                        <Bold>Elements shown:</Bold> ViewSection and ViewPlan elements configured as Detail views or Callouts (IsCallout = true).<LineBreak/><LineBreak/>
+                                                        <Bold>Where to find:</Bold> Project Browser -> Sections (Detail) or Floor/Ceiling Plans (Callouts). Created via View tab -> Create panel -> Callout / Section.
+                                                    </TextBlock>
+                                                </ToolTip>
+                                            </RadioButton.ToolTip>
+                                        </RadioButton>
+
+                                        <RadioButton Content="Details Groups" GroupName="CadDetailsOriginGroup" IsChecked="{Binding CadOriginDetailGroups}" FontSize="11" Margin="0,0,0,6">
+                                            <RadioButton.ToolTip>
+                                                <ToolTip MaxWidth="225">
+                                                    <TextBlock TextWrapping="Wrap" FontSize="11.5" LineHeight="15" Foreground="#333333">
+                                                        <Bold>Details Groups</Bold><LineBreak/>
+                                                        Collects 2D Detail Groups composed of lines, text notes, regions, and detail components grouped together.<LineBreak/><LineBreak/>
+                                                        <Bold>Elements shown:</Bold> Placed 2D Group instances and unplaced GroupType definitions (OST_IOSDetailGroups).<LineBreak/><LineBreak/>
+                                                        <Bold>Where to find:</Bold> Project Browser -> Groups -> Detail. Placed in views via Annotate/Architecture tab -> Model/Detail Group.
+                                                    </TextBlock>
+                                                </ToolTip>
+                                            </RadioButton.ToolTip>
+                                        </RadioButton>
+
+                                        <RadioButton Content="Details Items" GroupName="CadDetailsOriginGroup" IsChecked="{Binding CadOriginDetailItems}" FontSize="11" Margin="0,0,0,0">
+                                            <RadioButton.ToolTip>
+                                                <ToolTip MaxWidth="225">
+                                                    <TextBlock TextWrapping="Wrap" FontSize="11.5" LineHeight="15" Foreground="#333333">
+                                                        <Bold>Details Items</Bold><LineBreak/>
+                                                        Collects 2D parametric Detail Component families (FamilyInstances) placed in views for construction detailing.<LineBreak/><LineBreak/>
+                                                        <Bold>Elements shown:</Bold> Detail Item FamilyInstances (OST_DetailComponents), excluding system filled regions.<LineBreak/><LineBreak/>
+                                                        <Bold>Where to find:</Bold> Placed in 2D views via Annotate tab -> Detail panel -> Component.
+                                                    </TextBlock>
+                                                </ToolTip>
+                                            </RadioButton.ToolTip>
+                                        </RadioButton>
+                                    </StackPanel>
+
+                                    <!-- Vertical Separator -->
+                                    <Border Grid.Column="1" Background="#E0E0E0" Margin="0,2,0,2"/>
+
+                                    <!-- Right Column: Organize -->
+                                    <StackPanel Grid.Column="2" Margin="10,0,0,0">
+                                        <TextBlock Text="ORGANIZE" FontSize="9" FontWeight="SemiBold" Foreground="#999" Margin="0,0,0,5"/>
+                                        <CheckBox Content="Sort by Sheet" IsChecked="{Binding CadSortBySheet}" Style="{StaticResource SwitchStyle}" FontSize="11" Margin="0,0,0,6">
+                                            <CheckBox.ToolTip>
+                                                <ToolTip MaxWidth="225">
+                                                    <TextBlock TextWrapping="Wrap" FontSize="11.5" LineHeight="15" Foreground="#333333">
+                                                        <Bold>Sort by Sheet</Bold><LineBreak/>
+                                                        Organizes elements into a 3-level tree hierarchy: Sheet (Number - Name) -> View -> Item.<LineBreak/><LineBreak/>
+                                                        <Bold>Behavior:</Bold> Items placed on sheets are grouped under their respective sheet title. Unassigned items appear under (No Sheet / Standalone).
+                                                    </TextBlock>
+                                                </ToolTip>
+                                            </CheckBox.ToolTip>
+                                        </CheckBox>
+
+                                        <CheckBox Content="Sort by View" IsChecked="{Binding CadSortByView}" Style="{StaticResource SwitchStyle}" FontSize="11" Margin="0,0,0,6">
+                                            <CheckBox.ToolTip>
+                                                <ToolTip MaxWidth="225">
+                                                    <TextBlock TextWrapping="Wrap" FontSize="11.5" LineHeight="15" Foreground="#333333">
+                                                        <Bold>Sort by View</Bold><LineBreak/>
+                                                        Organizes elements into a 2-level tree hierarchy: View -> Item.<LineBreak/><LineBreak/>
+                                                        <Bold>Behavior:</Bold> Groups all items directly under their parent host view name regardless of whether the view is placed on a sheet.
+                                                    </TextBlock>
+                                                </ToolTip>
+                                            </CheckBox.ToolTip>
+                                        </CheckBox>
+
+                                        <CheckBox Content="Sort by Name" IsChecked="{Binding CadSortByName}" Style="{StaticResource SwitchStyle}" FontSize="11" Margin="0,0,0,0">
+                                            <CheckBox.ToolTip>
+                                                <ToolTip MaxWidth="225">
+                                                    <TextBlock TextWrapping="Wrap" FontSize="11.5" LineHeight="15" Foreground="#333333">
+                                                        <Bold>Sort by Name</Bold><LineBreak/>
+                                                        Displays all collected elements in a flat alphabetical list sorted from A to Z.<LineBreak/><LineBreak/>
+                                                        <Bold>Behavior:</Bold> Omits intermediate folder groupings for fast direct selection across all items in the model.
+                                                    </TextBlock>
+                                                </ToolTip>
+                                            </CheckBox.ToolTip>
+                                        </CheckBox>
+
+                                        <!-- CAD Transfer Mode (Import vs Link) -->
+                                        <TextBlock Text="TRANSFER MODE" FontSize="9" FontWeight="SemiBold" Foreground="#999" Margin="0,8,0,4"/>
+                                        <RadioButton Content="Import CAD" GroupName="CadTransferModeGroup" IsChecked="{Binding CadTransferModeImport}" FontSize="11" Margin="0,0,0,4">
+                                            <RadioButton.ToolTip>
+                                                <ToolTip MaxWidth="225">
+                                                    <TextBlock TextWrapping="Wrap" FontSize="11.5" LineHeight="15" Foreground="#333333">
+                                                        <Bold>Import CAD</Bold><LineBreak/>
+                                                        Directly imports and embeds the CAD drawing into the target Drafting View without external link dependencies.
+                                                    </TextBlock>
+                                                </ToolTip>
+                                            </RadioButton.ToolTip>
+                                        </RadioButton>
+
+                                        <RadioButton Content="Link CAD" GroupName="CadTransferModeGroup" IsChecked="{Binding CadTransferModeLink}" IsEnabled="{Binding CanSelectCadLinkMode}" FontSize="11" Margin="0,0,0,0">
+                                            <RadioButton.Style>
+                                                <Style TargetType="RadioButton">
+                                                    <Setter Property="Foreground" Value="#333333"/>
+                                                    <Style.Triggers>
+                                                        <Trigger Property="IsEnabled" Value="False">
+                                                            <Setter Property="Foreground" Value="#B0B0B0"/>
+                                                        </Trigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </RadioButton.Style>
+                                            <RadioButton.ToolTip>
+                                                <ToolTip MaxWidth="225">
+                                                    <TextBlock TextWrapping="Wrap" FontSize="11.5" LineHeight="15" Foreground="#333333">
+                                                        <Bold>Link CAD</Bold><LineBreak/>
+                                                        Inserts the CAD drawing as a linked reference in the Drafting View.<LineBreak/><LineBreak/>
+                                                        <Italic>Note: Only available when the source is a Local Directory or Autodesk Docs.</Italic>
+                                                    </TextBlock>
+                                                </ToolTip>
+                                            </RadioButton.ToolTip>
+                                        </RadioButton>
+                                    </StackPanel>
+                                </Grid>
+
+                                <!-- Horizontal Separator Line -->
+                                <Border BorderBrush="#E0E0E0" BorderThickness="0,1,0,0" Margin="0,8,0,8"/>
+
+                                <!-- Placeholder text when NO CAD detail is selected or checked -->
+                                <TextBlock Text="Select or click a detail/CAD item in the tree to view details" 
+                                           Foreground="#999" FontStyle="Italic" FontSize="11" TextWrapping="Wrap"
+                                           TextAlignment="Center" Margin="14" MinHeight="50" VerticalAlignment="Center" HorizontalAlignment="Center">
+                                    <TextBlock.Style>
+                                        <Style TargetType="TextBlock">
+                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding HasCadDetails}" Value="False">
+                                                    <Setter Property="Visibility" Value="Visible"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
+
+                                <!-- Details Content: Visible when a CAD detail is selected or checked -->
+                                <Grid>
+                                    <Grid.Style>
+                                        <Style TargetType="Grid">
+                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding HasCadDetails}" Value="True">
+                                                    <Setter Property="Visibility" Value="Visible"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Grid.Style>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                    </Grid.RowDefinitions>
+
+                                    <!-- Row 0: Single Detail Preview (Thumbnail + Metadata) OR Multi-Selection Text (MinHeight 50px) -->
+                                    <Grid Grid.Row="0" MinHeight="50">
+                                        <!-- Single Detail Selected / Checked -->
+                                        <Grid>
+                                            <Grid.Style>
+                                                <Style TargetType="Grid">
+                                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding IsSingleCadDetails}" Value="True">
+                                                            <Setter Property="Visibility" Value="Visible"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </Grid.Style>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="Auto"/> <!-- Left: 128x128 Thumbnail -->
+                                                <ColumnDefinition Width="*"/>    <!-- Right: Name + Category + View/Sheet + Source -->
+                                            </Grid.ColumnDefinitions>
+
+                                            <!-- Left: 128x128 Thumbnail Container -->
+                                            <StackPanel Grid.Column="0" VerticalAlignment="Top" Margin="0,0,14,0">
+                                                <Border Width="128" Height="128" Background="#FAFAFA" BorderBrush="#E5E5E5" BorderThickness="1" CornerRadius="4" VerticalAlignment="Top">
+                                                    <Grid>
+                                                        <Image Source="{Binding SelectedCadThumbnail}" Stretch="Uniform" Margin="2"/>
+                                                        <ProgressBar IsIndeterminate="True" Width="24" Height="24" 
+                                                                     HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                                     Visibility="{Binding IsLoadingCadThumbnail, Converter={StaticResource BoolToVis}}"/>
+                                                    </Grid>
+                                                </Border>
+                                            </StackPanel>
+
+                                            <!-- Right: Detail metadata stacked -->
+                                            <StackPanel Grid.Column="1" VerticalAlignment="Top" Margin="0,0,0,0">
+                                                <!-- Detail Name -->
+                                                <TextBlock Text="{Binding SelectedCadDetail.Name}" 
+                                                           FontWeight="Bold" FontSize="12" Foreground="#111111"
+                                                           TextWrapping="NoWrap" TextTrimming="CharacterEllipsis"
+                                                           ToolTip="{Binding SelectedCadDetail.Name}" Margin="0,0,0,2"/>
+
+                                                <!-- Category / Origin -->
+                                                <StackPanel Margin="0,0,0,2">
+                                                    <TextBlock Text="Category" FontWeight="Bold" FontSize="10" Foreground="#111111" Margin="0,0,0,-2"/>
+                                                    <TextBlock Text="{Binding SelectedCadDetail.DisplayCategory}" FontSize="10" Foreground="#333333" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" ToolTip="{Binding SelectedCadDetail.DisplayCategory}" Margin="0,0,0,-1"/>
+                                                </StackPanel>
+
+                                                <!-- Host View / Sheet -->
+                                                <StackPanel Margin="0,0,0,2">
+                                                    <TextBlock Text="View / Sheet" FontWeight="Bold" FontSize="10" Foreground="#111111" Margin="0,0,0,-2"/>
+                                                    <TextBlock Text="{Binding SelectedCadDetail.LocationSummary}" FontSize="10" Foreground="#333333" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" ToolTip="{Binding SelectedCadDetail.LocationSummary}" Margin="0,0,0,-1"/>
+                                                </StackPanel>
+
+                                                <!-- Source Document / Location -->
+                                                <StackPanel Margin="0,0,0,0">
+                                                    <TextBlock Text="Source" FontWeight="Bold" FontSize="10" Foreground="#111111" Margin="0,0,0,-2"/>
+                                                    <TextBlock Text="{Binding SelectedCadDetail.SourceDocumentName}" FontSize="10" Foreground="#333333" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" ToolTip="{Binding SelectedCadDetail.SourceDocumentName}" Margin="0,0,0,0"/>
+                                                </StackPanel>
+                                            </StackPanel>
+                                        </Grid>
+
+                                        <!-- Multiple CAD Details Selected (MinHeight 50px) -->
+                                        <TextBlock Text="Multiple details/CAD selected" Foreground="#999" FontStyle="Italic" MinHeight="50" VerticalAlignment="Center" HorizontalAlignment="Center" Margin="14">
+                                            <TextBlock.Style>
+                                                <Style TargetType="TextBlock">
+                                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding ShowMultipleCadDetailsPlaceholder}" Value="True">
+                                                            <Setter Property="Visibility" Value="Visible"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </TextBlock.Style>
+                                        </TextBlock>
+                                    </Grid>
+
+                                    <!-- Row 1: Separator Line -->
+                                    <Border Grid.Row="1" BorderBrush="#E0E0E0" BorderThickness="0,1,0,0" Margin="0,6,0,6"/>
+
+                                    <!-- Row 2: Action Buttons Row (Left-aligned: Delete, Download, and Stacked Option Switches) -->
+                                    <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="2,0,0,2">
+                                        <!-- Delete Button (Leftmost) -->
+                                        <Button Command="{Binding DeleteSelectedCadItemsCommand}" Width="28" Height="28" Margin="0,0,8,0" VerticalAlignment="Center" Cursor="Hand" ToolTip="Delete Selected Detail/CAD Items from Active Model">
+                                            <Button.Template>
+                                                <ControlTemplate TargetType="Button">
+                                                    <Border x:Name="border" Background="Transparent" CornerRadius="4" Padding="4">
+                                                        <Viewbox Width="18" Height="18">
+                                                            <Path Data="M16,9V19H8V9H16M14.5,3H9.5L8.5,4H5V6H19V4H15.5L14.5,3M18,7H6V19A2,2 0 0,0 8,21H16A2,2 0 0,0 18,19V7Z" Fill="#777" x:Name="iconPath"/>
+                                                        </Viewbox>
+                                                    </Border>
+                                                    <ControlTemplate.Triggers>
+                                                        <Trigger Property="IsMouseOver" Value="True">
+                                                            <Setter TargetName="border" Property="Background" Value="#eeeeee"/>
+                                                            <Setter TargetName="iconPath" Property="Fill" Value="#333"/>
+                                                        </Trigger>
+                                                        <Trigger Property="IsPressed" Value="True">
+                                                            <Setter TargetName="border" Property="Background" Value="#dddddd"/>
+                                                        </Trigger>
+                                                        <Trigger Property="IsEnabled" Value="False">
+                                                            <Setter TargetName="iconPath" Property="Fill" Value="#cccccc"/>
+                                                            <Setter TargetName="border" Property="Opacity" Value="0.4"/>
+                                                        </Trigger>
+                                                    </ControlTemplate.Triggers>
+                                                </ControlTemplate>
+                                            </Button.Template>
+                                        </Button>
+
+                                        <!-- Download Button (Right of Delete) -->
+                                        <Button Command="{Binding DownloadSelectedCadItemsCommand}" Width="28" Height="28" Margin="0,0,12,0" VerticalAlignment="Center" Cursor="Hand" ToolTip="Download / Export Selected Detail/CAD Items">
+                                            <Button.Template>
+                                                <ControlTemplate TargetType="Button">
+                                                    <Border x:Name="border" Background="Transparent" CornerRadius="4" Padding="4">
+                                                        <Viewbox Width="18" Height="18">
+                                                            <Path Data="M12,16L7,11H10V4H14V11H17L12,16M5,18H19V20H5V18Z" Fill="#777" x:Name="iconPath"/>
+                                                        </Viewbox>
+                                                    </Border>
+                                                    <ControlTemplate.Triggers>
+                                                        <Trigger Property="IsMouseOver" Value="True">
+                                                            <Setter TargetName="border" Property="Background" Value="#eeeeee"/>
+                                                            <Setter TargetName="iconPath" Property="Fill" Value="#333"/>
+                                                        </Trigger>
+                                                        <Trigger Property="IsPressed" Value="True">
+                                                            <Setter TargetName="border" Property="Background" Value="#dddddd"/>
+                                                        </Trigger>
+                                                        <Trigger Property="IsEnabled" Value="False">
+                                                            <Setter TargetName="iconPath" Property="Fill" Value="#cccccc"/>
+                                                            <Setter TargetName="border" Property="Opacity" Value="0.4"/>
+                                                        </Trigger>
+                                                    </ControlTemplate.Triggers>
+                                                </ControlTemplate>
+                                            </Button.Template>
+                                        </Button>
+
+                                        <!-- Stacked Option Switches (Right of Download) -->
+                                        <StackPanel VerticalAlignment="Center" Margin="0,0,0,0">
+                                            <!-- 1. Save Details/CAD as organized. -->
+                                            <CheckBox Content="Save Details/CAD as organized." 
+                                                      Style="{StaticResource SwitchStyle}"
+                                                      IsChecked="{Binding SaveCadDetailsAsOrganized}" 
+                                                      VerticalAlignment="Center" 
+                                                      FontSize="11.5" 
+                                                      Foreground="#333333" 
+                                                      Cursor="Hand"
+                                                      Margin="0,0,0,3"
+                                                      ToolTip="When enabled, saves files into folders and subfolders reproducing the exact hierarchy displayed in the tree explorer."/>
+
+                                            <!-- 2. Overwrite Duplicates -->
+                                            <CheckBox Content="Overwrite Duplicates" 
+                                                      Style="{StaticResource SwitchStyle}"
+                                                      IsChecked="{Binding OverwriteCadDuplicates}" 
+                                                      VerticalAlignment="Center" 
+                                                      FontSize="11.5" 
+                                                      Foreground="#333333" 
+                                                      Cursor="Hand"
+                                                      Margin="0,0,0,0"
+                                                      ToolTip="When enabled, existing files with the same name in the destination directory will be overwritten. When disabled, numerical duplicates are created without overwriting."/>
+                                        </StackPanel>
+                                    </StackPanel>
+                                </Grid>
+                            </StackPanel>
+                        </Border>
+
                         <!-- Rename Card -->
                         <Border Style="{StaticResource CardBorderStyle}">
                             <StackPanel>
@@ -1039,7 +1557,18 @@
                         <!-- Families Manager Card -->
                         <Border Style="{StaticResource CardBorderStyle}">
                             <StackPanel>
-                                <TextBlock Text="Families Manager:" FontWeight="Bold" FontSize="12" Foreground="#999" Margin="0,0,0,8"/>
+                                <TextBlock Text="Families Manager:" FontWeight="Bold" FontSize="12" Margin="0,0,0,8">
+                                    <TextBlock.Style>
+                                        <Style TargetType="TextBlock">
+                                            <Setter Property="Foreground" Value="#999"/>
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding IsFamiliesManagerActive}" Value="True">
+                                                    <Setter Property="Foreground" Value="#007ACC"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
                                 <Grid>
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="*"/>
@@ -1111,6 +1640,129 @@
 
                                     <!-- Sources Button -->
                                     <Button Grid.Column="4" Content="Sources" Command="{Binding OpenSourcesWindowCommand}" IsEnabled="{Binding IsFamiliesManagerActive}" Height="28" Padding="4,4">
+                                        <Button.Style>
+                                            <Style TargetType="Button">
+                                                <Setter Property="Background" Value="#E1E1E1"/>
+                                                <Setter Property="BorderBrush" Value="#707070"/>
+                                                <Setter Property="BorderThickness" Value="1"/>
+                                                <Setter Property="Foreground" Value="Black"/>
+                                                <Setter Property="FontWeight" Value="Normal"/>
+                                                <Setter Property="FontSize" Value="11.5"/>
+                                                <Setter Property="Cursor" Value="Hand"/>
+                                                <Style.Resources>
+                                                    <Style TargetType="Border">
+                                                        <Setter Property="CornerRadius" Value="4"/>
+                                                    </Style>
+                                                </Style.Resources>
+                                                <Style.Triggers>
+                                                    <Trigger Property="IsMouseOver" Value="True">
+                                                        <Setter Property="Background" Value="#D5D5D5"/>
+                                                        <Setter Property="BorderBrush" Value="#505050"/>
+                                                    </Trigger>
+                                                    <Trigger Property="IsPressed" Value="True">
+                                                        <Setter Property="Background" Value="#C5C5C5"/>
+                                                        <Setter Property="BorderBrush" Value="#303030"/>
+                                                    </Trigger>
+                                                    <Trigger Property="IsEnabled" Value="False">
+                                                        <Setter Property="Background" Value="#F3F3F3"/>
+                                                        <Setter Property="Foreground" Value="#B0B0B0"/>
+                                                        <Setter Property="BorderBrush" Value="Transparent"/>
+                                                        <Setter Property="BorderThickness" Value="0"/>
+                                                    </Trigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Button.Style>
+                                    </Button>
+                                </Grid>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- CAD Details Manager Card -->
+                        <Border Style="{StaticResource CardBorderStyle}">
+                            <StackPanel>
+                                <TextBlock Text="CAD Details Manager:" FontWeight="Bold" FontSize="12" Margin="0,0,0,8">
+                                    <TextBlock.Style>
+                                        <Style TargetType="TextBlock">
+                                            <Setter Property="Foreground" Value="#999"/>
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding IsCadDetailsManagerActive}" Value="True">
+                                                    <Setter Property="Foreground" Value="#007ACC"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="6"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="6"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+
+                                    <!-- Activate Button -->
+                                    <Button Grid.Column="0" Content="Activate" Command="{Binding ActivateCadDetailsManagerCommand}" Height="28" Padding="4,4">
+                                        <Button.Style>
+                                            <Style TargetType="Button">
+                                                <Setter Property="Background" Value="#007ACC"/>
+                                                <Setter Property="Foreground" Value="White"/>
+                                                <Setter Property="FontWeight" Value="SemiBold"/>
+                                                <Setter Property="FontSize" Value="11.5"/>
+                                                <Setter Property="BorderThickness" Value="0"/>
+                                                <Setter Property="Cursor" Value="Hand"/>
+                                                <Style.Resources>
+                                                    <Style TargetType="Border">
+                                                        <Setter Property="CornerRadius" Value="4"/>
+                                                    </Style>
+                                                </Style.Resources>
+                                                <Style.Triggers>
+                                                    <Trigger Property="IsMouseOver" Value="True">
+                                                        <Setter Property="Background" Value="#005999"/>
+                                                    </Trigger>
+                                                    <Trigger Property="IsEnabled" Value="False">
+                                                        <Setter Property="Background" Value="#F3F3F3"/>
+                                                        <Setter Property="Foreground" Value="#B0B0B0"/>
+                                                        <Setter Property="BorderBrush" Value="Transparent"/>
+                                                        <Setter Property="BorderThickness" Value="0"/>
+                                                    </Trigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Button.Style>
+                                    </Button>
+
+                                    <!-- Desactivate Button -->
+                                    <Button Grid.Column="2" Content="Desactivate" Command="{Binding DeactivateCadDetailsManagerCommand}" Height="28" Padding="4,4">
+                                        <Button.Style>
+                                            <Style TargetType="Button">
+                                                <Setter Property="Background" Value="#007ACC"/>
+                                                <Setter Property="Foreground" Value="White"/>
+                                                <Setter Property="FontWeight" Value="SemiBold"/>
+                                                <Setter Property="FontSize" Value="11.5"/>
+                                                <Setter Property="BorderThickness" Value="0"/>
+                                                <Setter Property="Cursor" Value="Hand"/>
+                                                <Style.Resources>
+                                                    <Style TargetType="Border">
+                                                        <Setter Property="CornerRadius" Value="4"/>
+                                                    </Style>
+                                                </Style.Resources>
+                                                <Style.Triggers>
+                                                    <Trigger Property="IsMouseOver" Value="True">
+                                                        <Setter Property="Background" Value="#005999"/>
+                                                    </Trigger>
+                                                    <Trigger Property="IsEnabled" Value="False">
+                                                        <Setter Property="Background" Value="#F3F3F3"/>
+                                                        <Setter Property="Foreground" Value="#B0B0B0"/>
+                                                        <Setter Property="BorderBrush" Value="Transparent"/>
+                                                        <Setter Property="BorderThickness" Value="0"/>
+                                                    </Trigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Button.Style>
+                                    </Button>
+
+                                    <!-- Sources Button -->
+                                    <Button Grid.Column="4" Content="Sources" Command="{Binding OpenCadSourcesWindowCommand}" IsEnabled="{Binding IsCadDetailsManagerActive}" Height="28" Padding="4,4">
                                         <Button.Style>
                                             <Style TargetType="Button">
                                                 <Setter Property="Background" Value="#E1E1E1"/>

@@ -12,7 +12,7 @@ public partial class ConfigurationViewModel : ObservableObject
     private readonly TransferPlusSettings _originalSettings;
     
     [ObservableProperty]
-    private bool _isDBDevSelected;
+    private bool _isAddInsDefaultTabSelected;
 
     [ObservableProperty]
     private bool _isRevitDefaultSelected;
@@ -30,7 +30,7 @@ public partial class ConfigurationViewModel : ObservableObject
     {
         _originalSettings = SettingsService.Load();
         
-        IsDBDevSelected = _originalSettings.SelectedTabOption == TabOption.DBDevDefault;
+        IsAddInsDefaultTabSelected = _originalSettings.SelectedTabOption == TabOption.AddInsDefaultTab || _originalSettings.SelectedTabOption == TabOption.DBDevDefault;
         IsRevitDefaultSelected = _originalSettings.SelectedTabOption == TabOption.RevitDefault;
         IsCustomSelected = _originalSettings.SelectedTabOption == TabOption.Custom;
         CustomTabName = _originalSettings.CustomTabName;
@@ -40,7 +40,7 @@ public partial class ConfigurationViewModel : ObservableObject
     [RelayCommand]
     private void Save(Window window)
     {
-        TabOption selectedOption = TabOption.DBDevDefault;
+        TabOption selectedOption = TabOption.AddInsDefaultTab;
         if (IsRevitDefaultSelected) selectedOption = TabOption.RevitDefault;
         else if (IsCustomSelected) selectedOption = TabOption.Custom;
 

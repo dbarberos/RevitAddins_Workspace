@@ -1,5 +1,6 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using Autodesk.Revit.DB;
+using TransferPlus.Models;
 
 namespace TransferPlus.ViewModels;
 
@@ -19,6 +20,8 @@ public partial class RenamePreviewItem : ObservableObject
 
     public ElementId? SourceId { get; init; }
     public string? FamilyIdentifier { get; init; }
+    public string? CadIdentifier { get; init; }
+    public CadDetailItemModel? CadItem { get; init; }
     public string OriginalName { get; init; }
     public bool IsType { get; init; }
     public string? ParentFamilyName { get; init; }
@@ -39,5 +42,15 @@ public partial class RenamePreviewItem : ObservableObject
         NewName = originalName;
         IsType = isType;
         ParentFamilyName = parentFamilyName;
+    }
+
+    public RenamePreviewItem(CadDetailItemModel cadItem, string cadIdentifier)
+    {
+        CadItem = cadItem;
+        CadIdentifier = cadIdentifier;
+        SourceId = cadItem.ElementId;
+        OriginalName = !string.IsNullOrWhiteSpace(cadItem.Name) ? cadItem.Name : (!string.IsNullOrWhiteSpace(cadItem.ViewName) ? cadItem.ViewName : "CAD Detail");
+        WorkingName = OriginalName;
+        NewName = OriginalName;
     }
 }

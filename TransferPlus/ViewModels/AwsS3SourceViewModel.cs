@@ -64,6 +64,21 @@ public partial class AwsS3SourceViewModel : ObservableObject
         }
     }
 
+    public AwsS3SourceViewModel(CadSourceItemModel? model)
+    {
+        if (model != null)
+        {
+            Name = model.Name;
+            BucketName = model.BucketName;
+            Region = string.IsNullOrWhiteSpace(model.Region) ? "eu-west-1" : model.Region;
+            EndpointUrl = string.IsNullOrWhiteSpace(model.EndpointUrl) ? "http://localhost:4566" : model.EndpointUrl;
+            AccessKey = string.IsNullOrWhiteSpace(model.AccessKey) ? "test" : model.AccessKey;
+            SecretKey = string.IsNullOrWhiteSpace(model.SecretKey) ? "test" : model.SecretKey;
+            RootPath = model.RootPath;
+            IsActive = model.IsActive;
+        }
+    }
+
     [RelayCommand]
     private async Task TestConnectionAsync()
     {
@@ -135,6 +150,23 @@ public partial class AwsS3SourceViewModel : ObservableObject
             Id = existingId ?? Guid.NewGuid().ToString(),
             Name = Name.Trim(),
             SourceType = FamilySourceType.AwsS3,
+            BucketName = BucketName.Trim(),
+            Region = Region.Trim(),
+            EndpointUrl = EndpointUrl.Trim(),
+            AccessKey = AccessKey.Trim(),
+            SecretKey = SecretKey.Trim(),
+            RootPath = RootPath.Trim(),
+            IsActive = IsActive
+        };
+    }
+
+    public CadSourceItemModel ToCadModel(string? existingId = null)
+    {
+        return new CadSourceItemModel
+        {
+            Id = existingId ?? Guid.NewGuid().ToString(),
+            Name = Name.Trim(),
+            SourceType = CadSourceType.AwsS3,
             BucketName = BucketName.Trim(),
             Region = Region.Trim(),
             EndpointUrl = EndpointUrl.Trim(),

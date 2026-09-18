@@ -17,7 +17,7 @@ th { background-color: #f2f2f2; }
 <body>
 
 <h1>FilterPlus</h1>
-<p><strong>Current Version:</strong> v1.6.0<br/>
+<p><strong>Current Version:</strong> v1.7.0<br/>
 <strong>Add-in ID (GUID):</strong> <code>A5265BB9-214C-4109-8DDC-DF1F6E4305B9</code></p>
 <hr>
 
@@ -42,7 +42,7 @@ th { background-color: #f2f2f2; }
 
 <h2>4. Commands and Features Guide</h2>
 <h3>4.1. Ribbon Panel Integration</h3>
-<p>The add-in creates a custom tab containing the FilterPlus panel.</p>
+<p>By default, in accordance with Autodesk App Store single-command guidelines, the <strong>FilterPlus</strong> panel is placed inside Revit's native <strong>"Add-Ins" (Complementos)</strong> tab. Placement can also be configured via the Settings window (gear icon) to the Add-Ins tab, Revit contextual tab (Modify), or a custom tab.</p>
 <table>
 <tr><th>Command</th><th>Function</th><th>Technical Class</th></tr>
 <tr><td><strong>FilterPlus</strong></td><td>Opens the main window for hierarchical selection and filtering.</td><td><code>FilterPlus.Application</code></td></tr>
@@ -135,17 +135,44 @@ th { background-color: #f2f2f2; }
 
 <h2>6. Version History (Changelog)</h2>
 
+<h3>v1.7.0</h3>
+<h4>Added</h4>
+<ul>
+<li><strong>Add-Ins Ribbon Tab Placement</strong>: FilterPlus loads by default under Revit's native <strong>Add-Ins (Complementos)</strong> tab, complying with Autodesk App Store single-command guidelines.</li>
+<li><strong>Ribbon Placement Configuration</strong>: Added user configuration options in the Settings dialog to select between the Add-Ins tab (default), Revit contextual tab, or a custom-named tab.</li>
+<li><strong>Silent XML Schema Migration</strong>: Automatic in-memory upgrade from legacy <code>DBDevDefault</code> settings to <code>AddInsDefaultTab</code> on startup, persisting clean XML without user intervention.</li>
+<li><strong>Resilient Startup Error Handling</strong>: Upgraded configuration service to gracefully fall back to default settings without displaying blocking modal dialogs during Revit startup.</li>
+<li><strong>Contextual F1 Help for Revit 2023</strong>: Included the complete <code>Resources/help.html</code> bundle for Revit 2023, ensuring F1 context-sensitive help functions across all supported Revit releases (2023–2027).</li>
+</ul>
+<h4>Changed</h4>
+<ul>
+<li><strong>Custom Application Window Icon</strong>: Replaced default Autodesk Revit window icon with official <code>RibbonIcon32.png</code> across all dialogs and Revit 2023 UI to comply with Autodesk trademark rules.</li>
+<li><strong>Packaging Script Automation</strong>: Updated <code>build-bundle.ps1</code> to support Revit 2023 packaging, dynamic version resolution from <code>.csproj</code>, and automatic timestamp-sorted binary staging.</li>
+</ul>
+<h4>Fixed</h4>
+<ul>
+<li><strong>Revit 2023 Multi-Version Compatibility</strong>: Resolved <code>ElementId</code> API compilation incompatibilities using <code>#if REVIT2024_OR_GREATER</code> (handling 64-bit <code>ElementId.Value</code> vs 32-bit <code>ElementId.IntegerValue</code>).</li>
+<li><strong>XmlSerializer Rejection of <code>[Obsolete]</code> Enums</strong>: Fixed <code>InvalidOperationException</code> (XML error 3, 54) caused by .NET Framework 4.8 <code>XmlSerializer</code> excluding obsolete enum members from deserialization schemas.</li>
+<li><strong>Stream Race Condition Prevention</strong>: Closed file read streams before saving migrated settings, preventing file locks.</li>
+</ul>
+
 <h3>v1.6.0</h3>
 <h4>Added</h4>
 <ul>
-<li><strong>Persistent Saved Selections:</strong> Save and recover selection sets persistently within active Revit projects.</li>
-<li><strong>Save Selection Window:</strong> A dedicated window to save new selections or overwrite existing ones.</li>
-<li><strong>Save Selection UI Polish:</strong> Standardized button widths and increased bottom spacing for improved visual alignment.</li>
-<li><strong>Dropdown Auto-Reset:</strong> Dropdowns reset to their default empty states and action buttons automatically disable after recovering or deleting selections.</li>
-<li><strong>WPF Window Custom Icons:</strong> Added custom title bar icons to all WPF windows.</li>
-<li><strong>Sort by Model Grouping:</strong> Group elements in the explorer tree by their host or link models, respecting the active grouping hierarchy.</li>
-<li><strong>100k Element Cache Warning:</strong> Integrates an orange warning icon and tooltip to signal when the combined elements exceed 100,000, triggering an automatic fallback to Active Model Only.</li>
-<li><strong>Isolated Selection Filters:</strong> Restricts host selection from picking <code>RevitLinkInstance</code> blocks, and restricts linked selection strictly to unchecked link models.</li>
+<li><strong>Persistent Saved Selections</strong>: Save and recover selection sets persistently within active Revit projects.</li>
+<li><strong>Save Selection Window</strong>: A dedicated window to save new selections or overwrite existing ones.</li>
+<li><strong>Save Selection UI Polish</strong>: Standardized button widths and increased bottom spacing for improved visual alignment.</li>
+<li><strong>Dropdown Auto-Reset</strong>: Dropdowns reset to their default empty states and action buttons automatically disable after recovering or deleting selections.</li>
+<li><strong>WPF Window Custom Icons</strong>: Added custom title bar icons to all WPF windows.</li>
+<li><strong>Sort by Model Grouping</strong>: Group elements in the explorer tree by their host or link models, respecting the active grouping hierarchy.</li>
+<li><strong>100k Element Cache Warning</strong>: Integrates an orange warning icon and tooltip to signal when the combined elements exceed 100,000, triggering an automatic fallback to Active Model Only to preserve performance.</li>
+<li><strong>Isolated Selection Filters</strong>: Introduces custom selection filters during "Select in Revit" to prevent selecting <code>RevitLinkInstance</code> blocks in Host phase and block selection of elements inside unchecked link models in Linked phase.</li>
+</ul>
+<h4>Fixed</h4>
+<ul>
+<li><strong>App Store Bundle Assembly Resolution</strong>: Bundled full runtime dependencies (<code>Nice3point.Revit.Toolkit.dll</code>, <code>Nice3point.Revit.Extensions.dll</code>, <code>CommunityToolkit.Mvvm.dll</code>, <code>System.Text.Json.dll</code>, etc.) inside all multi-version folders (Revit 2023–2027) preventing startup <code>System.IO.FileNotFoundException</code> crashes.</li>
+<li><strong>Publisher Identity Sanitization</strong>: Eliminated all legacy placeholder metadata across <code>.addin</code> manifests and <code>PackageContents.xml</code>, strictly unifying the identity under <code>DBDev Solutions</code> and <code>DBDev_dbarberos</code>.</li>
+<li><strong>W3C XML Conformance</strong>: Standardized XML declaration headers to <code>&lt;?xml version="1.0" encoding="utf-8"?&gt;</code> across all package manifests.</li>
 </ul>
 
 <h3>v1.5.0</h3>

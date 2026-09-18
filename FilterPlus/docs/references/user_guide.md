@@ -1,6 +1,6 @@
 # User Guide - FilterPlus
 
-**Current Version:** 1.6.0  
+**Current Version:** 1.7.0  
 **Developer:** DBDev_dbarberos  
 **Publisher Website:** [Autodesk App Store Profile](https://apps.autodesk.com/en/Publisher/PublisherHomepage) *(Publisher profile URL)*  
 **Privacy Policy:** [https://dbdev-dbarberos.github.io/PrivacyPolicy/](https://dbdev-dbarberos.github.io/PrivacyPolicy/)  
@@ -111,7 +111,12 @@ FilterPlus allows you to save and recover element selections persistently across
 ## 5. Commands and Features Guide
 
 ### 5.1. Ribbon Panel
-The add-in creates a custom tab named **"DBDev"** (configurable) containing the **FilterPlus** panel.
+By default, in accordance with Autodesk App Store single-command guidelines, the **FilterPlus** panel is placed inside Revit's native **"Add-Ins" (Complementos)** tab.
+
+Users can easily customize the ribbon placement via the Configuration window (gear icon):
+- **Place FilterPlus on Add-Ins tab (default)**: Places the panel on the standard Revit Add-Ins tab.
+- **Place on Revit contextual tab**: Integrates into the contextual "Modify" tab for rapid selection workflows.
+- **Place on tab named [Custom]**: Allows creating or using an existing custom tab.
 
 | Command | Function | Technical Class |
 | :--- | :--- | :--- |
@@ -136,6 +141,23 @@ In Revit 2025 and higher, FilterPlus integrates into the right-click context men
 ---
 
 ## 7. Version History (Changelog)
+
+### [1.7.0]
+#### Added
+- **Add-Ins Ribbon Tab Placement**: FilterPlus now loads by default under Revit's native **Add-Ins (Complementos)** tab, complying with Autodesk App Store single-command guidelines.
+- **Ribbon Placement Configuration**: Added user configuration options in the Settings dialog to select between the Add-Ins tab (default), Revit contextual tab, or a custom-named tab.
+- **Silent XML Schema Migration**: Automatic in-memory upgrade from legacy `DBDevDefault` settings to `AddInsDefaultTab` on startup, persisting clean XML without user intervention.
+- **Resilient Startup Error Handling**: Upgraded configuration service to gracefully fall back to default settings without displaying blocking modal dialogs during Revit startup.
+- **Contextual F1 Help for Revit 2023**: Included the complete `Resources/help.html` bundle for Revit 2023, ensuring F1 context-sensitive help functions across all supported Revit releases (2023–2027).
+
+#### Changed
+- **Custom Application Window Icon**: Replaced default Autodesk Revit window icon with official `RibbonIcon32.png` across all dialogs and Revit 2023 UI to comply with Autodesk trademark rules.
+- **Packaging Script Automation**: Updated `build-bundle.ps1` to support Revit 2023 packaging, dynamic version resolution from `.csproj`, and automatic timestamp-sorted binary staging.
+
+#### Fixed
+- **Revit 2023 Multi-Version Compatibility**: Resolved `ElementId` API compilation incompatibilities using `#if REVIT2024_OR_GREATER` (handling 64-bit `ElementId.Value` vs 32-bit `ElementId.IntegerValue`).
+- **XmlSerializer Rejection of `[Obsolete]` Enums**: Fixed `InvalidOperationException` (XML error 3, 54) caused by .NET Framework 4.8 `XmlSerializer` excluding obsolete enum members from deserialization schemas.
+- **Stream Race Condition Prevention**: Closed file read streams before saving migrated settings, preventing file locks.
 
 ### [1.6.0]
 #### Added

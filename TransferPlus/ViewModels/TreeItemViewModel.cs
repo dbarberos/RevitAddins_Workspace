@@ -54,6 +54,10 @@ public partial class TreeItemViewModel : ObservableObject
                 {
                     sym.IsChecked = value == true;
                 }
+                else if (Item is CadDetailItemModel cad)
+                {
+                    cad.IsChecked = value == true;
+                }
 
                 if (!_isUpdatingState && !IsBulkUpdating)
                 {

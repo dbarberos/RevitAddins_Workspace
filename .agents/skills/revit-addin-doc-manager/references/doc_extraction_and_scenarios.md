@@ -8,10 +8,12 @@ This document details the phases for extracting technical information directly f
 
 Before making changes or interacting with the user, the agent must inspect the repository to collect the following objective metadata:
 
-### A. Project Version:
-1.  Run `git describe --tags --abbrev=0` to read the current official version (Git Tag).
-2.  If it fails or there are no tags, read the `Properties/AssemblyInfo.cs` file to extract the value of the `[assembly: AssemblyVersion("...")]` attribute.
-3.  If it doesn't exist, read the `.csproj` file to look for the `<Version>` or `<AssemblyVersion>` XML tags.
+### A. Project Version (Monorepo Scoped):
+1.  In a monorepo workspace, search for the latest git tag scoped to the target add-in:
+    `git describe --tags --match "$AppName-v*" --abbrev=0`
+    If not found, search legacy un-prefixed tags (`v*`).
+2.  Inspect the target add-in's `.csproj` file (`$AppName/$AppName.csproj`) to extract the canonical `<Version>` XML tag.
+3.  If neither exists, check `Properties/AssemblyInfo.cs` for `[assembly: AssemblyVersion("...")]`.
 
 ### B. Add-in Identity:
 1.  Parse the `.addin` manifest (Revit Manifest) to retrieve the `AddInId` (GUID), `FullClassName`, and the `Text` displayed in the Revit GUI.
@@ -38,7 +40,8 @@ Before making changes or interacting with the user, the agent must inspect the r
     *   All new or updated content **MUST BE IN ENGLISH**.
     *   If the code version is higher, update the file header.
     *   **Main Guide Update**: Review and rewrite the usage guide for the options and functionalities to reflect the current behavior. Use the `.md` artifacts to understand what has changed since the previous version and ensure all guide points are synchronized from the origin to the latest update.
-    *   **Changelog Generation**: In addition to reading the commits (`git log [last_tag]..HEAD --oneline`), extract details from the artifacts to group the changes made under the **Added**, **Changed**, or **Fixed** sections. Record a new entry in the version history. **CRITICAL: Do NOT delete or overwrite previous version entries in the Changelog. Append new version blocks at the top of the version history to preserve a full historical record of all changes.**
+    *   **Changelog Generation**: Read the commits strictly isolated to the add-in's directory (`git log [last_tag]..HEAD --oneline -- [AppName]/`), extract details from the artifacts to group the changes made under the **Added**, **Changed**, or **Fixed** sections. Record a new entry in the version history. **CRITICAL: Do NOT delete or overwrite previous version entries in the Changelog. Append new version blocks at the top of the version history to preserve a full historical record of all changes.**
+    *   **Git Tagging**: Tag the release using the scoped format: `git tag -a [AppName]-v[SemVer] -m "Release [AppName] v[SemVer]: ..."`
     *   If new command classes without documentation are detected, add them to the guide section with the tag `[PENDING: Functional Description]`.
 
 ---

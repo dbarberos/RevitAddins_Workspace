@@ -106,6 +106,22 @@ public partial class AutodeskDocsSourceViewModel : ObservableObject
         }
     }
 
+    public AutodeskDocsSourceViewModel(CadSourceItemModel model)
+    {
+        if (model == null) return;
+        _editingId = model.Id;
+        SourceName = model.Name;
+        ClientId = model.ClientId;
+        AccessToken = model.AccessToken;
+        RefreshToken = model.RefreshToken;
+        IsActive = model.IsActive;
+
+        if (!string.IsNullOrWhiteSpace(AccessToken) || !string.IsNullOrWhiteSpace(RefreshToken))
+        {
+            _ = ConnectAndLoadHubsAsync();
+        }
+    }
+
     [RelayCommand]
     private async Task SignInWithAutodeskAsync()
     {
@@ -416,6 +432,25 @@ public partial class AutodeskDocsSourceViewModel : ObservableObject
             Id = idOverride ?? _editingId,
             Name = SourceName,
             SourceType = FamilySourceType.AutodeskDocs,
+            HubId = SelectedNode?.HubId ?? string.Empty,
+            ProjectId = SelectedNode?.ProjectId ?? string.Empty,
+            FolderId = SelectedNode?.Id ?? string.Empty,
+            FolderName = cleanFolderName,
+            ClientId = ClientId,
+            AccessToken = AccessToken,
+            RefreshToken = RefreshToken,
+            IsActive = IsActive
+        };
+    }
+
+    public CadSourceItemModel ToCadModel(string? idOverride = null)
+    {
+        string cleanFolderName = SelectedNode?.Name.Replace("📁 ", "").Trim() ?? "Project Files";
+        return new CadSourceItemModel
+        {
+            Id = idOverride ?? _editingId,
+            Name = SourceName,
+            SourceType = CadSourceType.AutodeskDocs,
             HubId = SelectedNode?.HubId ?? string.Empty,
             ProjectId = SelectedNode?.ProjectId ?? string.Empty,
             FolderId = SelectedNode?.Id ?? string.Empty,

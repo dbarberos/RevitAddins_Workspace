@@ -31,6 +31,16 @@ public partial class DirectorySourceViewModel : ObservableObject
         }
     }
 
+    public DirectorySourceViewModel(CadSourceItemModel? model)
+    {
+        if (model != null)
+        {
+            Name = model.Name;
+            Directory = model.Path;
+            IsActive = model.IsActive;
+        }
+    }
+
     [RelayCommand]
     private void BrowseDirectory()
     {
@@ -151,6 +161,18 @@ public partial class DirectorySourceViewModel : ObservableObject
             Id = existingId ?? Guid.NewGuid().ToString(),
             Name = Name.Trim(),
             SourceType = FamilySourceType.Directory,
+            Path = Directory.Trim(),
+            IsActive = IsActive
+        };
+    }
+
+    public CadSourceItemModel ToCadModel(string? existingId = null)
+    {
+        return new CadSourceItemModel
+        {
+            Id = existingId ?? Guid.NewGuid().ToString(),
+            Name = Name.Trim(),
+            SourceType = CadSourceType.Directory,
             Path = Directory.Trim(),
             IsActive = IsActive
         };

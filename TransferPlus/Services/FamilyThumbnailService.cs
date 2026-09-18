@@ -22,6 +22,9 @@ namespace TransferPlus.Services
 
         private static readonly ConcurrentDictionary<string, BitmapSource> _thumbnailCache = new();
 
+        public static Autodesk.Revit.ApplicationServices.Application? CurrentApplication { get; set; }
+        public static Document? ActiveDocument { get; set; }
+
         /// <summary>
         /// Extracts a preview image for the given family model.
         /// IMPORTANT: TransferPlus opens as a MODAL dialog (ShowDialog), which means Revit's
@@ -54,11 +57,23 @@ namespace TransferPlus.Services
             {
                 BitmapSource? result = null;
 
-                // --- Strategy A: Native Revit Family (synchronous on current thread) ---
+                // --- Strategy A1: Native Revit Family Symbol GetPreviewImage ---
                 if (family.NativeFamily is Family nativeFam && nativeFam.Document != null)
                 {
                     LoggerService.LogInfo($"[ThumbnailService] Extracting preview SYNCHRONOUSLY for native family '{family.Name}'...");
                     result = ExtractNativeFamilyThumbnail(nativeFam, cancellationToken);
+                }
+
+                // --- Strategy A2: Dynamic Scratch View Rendering for Native Families lacking 3D/2D icons ---
+                if (result == null && !cancellationToken.IsCancellationRequested && family.NativeFamily is Family nativeFamToRender)
+                {
+                    LoggerService.LogInfo($"[ThumbnailService] Executing dynamic scratch view rendering for native family '{family.Name}'...");
+                    var revitService = new FamilyRevitService();
+                    string? previewPath = revitService.GenerateFamilyRenderedPreview(nativeFamToRender, family.SourceDocument as Document ?? ActiveDocument);
+                    if (!string.IsNullOrWhiteSpace(previewPath) && File.Exists(previewPath))
+                    {
+                        result = LoadBitmapFromPath(previewPath);
+                    }
                 }
 
                 // --- Strategy B1: Direct RFA OLE PNG stream extraction for disk files ---
@@ -87,7 +102,24 @@ namespace TransferPlus.Services
                     }
                 }
 
-                // --- Strategy C: Guaranteed 2D Reference Symbol Icon Fallback ---
+                // --- Strategy B3: In-Memory .RFA Document Opening and View Rendering ---
+                if (result == null && !cancellationToken.IsCancellationRequested)
+                {
+                    string? diskPath = ResolveDiskPath(family);
+                    if (!string.IsNullOrEmpty(diskPath) && File.Exists(diskPath))
+                    {
+                        LoggerService.LogInfo($"[ThumbnailService] Executing in-memory document opening and view rendering for .rfa '{diskPath}'...");
+                        var revitService = new FamilyRevitService();
+                        var app = (family.SourceDocument as Document)?.Application ?? CurrentApplication ?? (ActiveDocument?.Application);
+                        string? previewPath = revitService.GenerateRfaFileRenderedPreview(diskPath, app);
+                        if (!string.IsNullOrWhiteSpace(previewPath) && File.Exists(previewPath))
+                        {
+                            result = LoadBitmapFromPath(previewPath);
+                        }
+                    }
+                }
+
+                // --- Strategy C: Guaranteed 2D Reference Symbol Icon Fallback (only if all dynamic rendering failed) ---
                 if (result == null && !cancellationToken.IsCancellationRequested)
                 {
                     LoggerService.LogInfo($"[ThumbnailService] Generating 2D reference preview icon fallback for '{family.Name}'...");
@@ -115,6 +147,26 @@ namespace TransferPlus.Services
                 LoggerService.LogError($"[ThumbnailService] Exception while extracting thumbnail for '{family.Name}'", ex);
             }
             return null;
+        }
+
+        private static BitmapSource? LoadBitmapFromPath(string previewPath)
+        {
+            try
+            {
+                var bitmapImage = new BitmapImage();
+                bitmapImage.BeginInit();
+                bitmapImage.CacheOption = BitmapCacheOption.OnLoad;
+                bitmapImage.CreateOptions = BitmapCreateOptions.IgnoreImageCache;
+                bitmapImage.UriSource = new Uri(previewPath, UriKind.Absolute);
+                bitmapImage.EndInit();
+                bitmapImage.Freeze();
+                return bitmapImage;
+            }
+            catch (Exception loadEx)
+            {
+                LoggerService.LogWarning($"[ThumbnailService] Error cargando BitmapImage desde '{previewPath}': {loadEx.Message}");
+                return null;
+            }
         }
 
         /// <summary>

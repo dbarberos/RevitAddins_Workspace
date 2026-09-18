@@ -564,4 +564,87 @@ public static class AutodeskDocsService
         TelemetryLogger.LogInfo($"[AutodeskDocsService] Downloaded ACC family '{rawFileName}' to '{localPath}'");
         return localPath;
     }
+
+    /// <summary>
+    /// GET https://developer.api.autodesk.com/data/v1/projects/{projectId}/folders/{folderId}/contents
+    /// Retrieves subfolders and CAD item files (.dwg, .dxf, .axm, .sat, .dgn, .obj, .3dm, .skp, .stl) in a specific folder.
+    /// </summary>
+    public static async Task<(List<AccFolderModel> Subfolders, List<AccItemModel> CadItems)> GetFolderCadContentsAsync(
+        string accessToken,
+        string projectId,
+        string folderId,
+        CancellationToken cancellationToken = default)
+    {
+        var subfolders = new List<AccFolderModel>();
+        var cadItems = new List<AccItemModel>();
+
+        if (string.IsNullOrWhiteSpace(accessToken) || string.IsNullOrWhiteSpace(projectId) || string.IsNullOrWhiteSpace(folderId))
+            return (subfolders, cadItems);
+
+        var cadExtensions = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        {
+            ".dwg", ".dxf", ".axm", ".sat", ".dgn", ".obj", ".3dm", ".skp", ".stl"
+        };
+
+        try
+        {
+            string url = $"{BaseUrl}/data/v1/projects/{Uri.EscapeDataString(projectId)}/folders/{Uri.EscapeDataString(folderId)}/contents";
+            var request = new HttpRequestMessage(HttpMethod.Get, url);
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+
+            var response = await HttpClient.SendAsync(request, cancellationToken);
+            if (!response.IsSuccessStatusCode)
+            {
+                TelemetryLogger.LogWarning($"[AutodeskDocsService] GetFolderCadContentsAsync failed for folder '{folderId}': {response.StatusCode}");
+                return (subfolders, cadItems);
+            }
+
+            string json = await response.Content.ReadAsStringAsync();
+            using var doc = JsonDocument.Parse(json);
+            if (doc.RootElement.TryGetProperty("data", out var dataArray) && dataArray.ValueKind == JsonValueKind.Array)
+            {
+                foreach (var element in dataArray.EnumerateArray())
+                {
+                    string type = element.GetProperty("type").GetString() ?? string.Empty;
+                    string id = element.GetProperty("id").GetString() ?? string.Empty;
+                    var attributes = element.GetProperty("attributes");
+
+                    if (type.Equals("folders", StringComparison.OrdinalIgnoreCase))
+                    {
+                        string folderName = attributes.GetProperty("displayName").GetString() ?? "Subfolder";
+                        subfolders.Add(new AccFolderModel { Id = id, Name = folderName, HasChildren = true });
+                    }
+                    else if (type.Equals("items", StringComparison.OrdinalIgnoreCase))
+                    {
+                        string displayName = attributes.GetProperty("displayName").GetString() ?? string.Empty;
+                        string ext = Path.GetExtension(displayName);
+                        if (cadExtensions.Contains(ext))
+                        {
+                            long size = attributes.TryGetProperty("storageSize", out var szProp) ? szProp.GetInt64() : 0;
+                            DateTime? lastMod = null;
+                            if (attributes.TryGetProperty("lastModifiedTime", out var lmtProp) &&
+                                DateTime.TryParse(lmtProp.GetString(), out var dt))
+                            {
+                                lastMod = dt;
+                            }
+
+                            cadItems.Add(new AccItemModel
+                            {
+                                Id = id,
+                                DisplayName = displayName,
+                                ContentLength = size,
+                                LastModified = lastMod
+                            });
+                        }
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            TelemetryLogger.LogError($"Error in GetFolderCadContentsAsync for folder '{folderId}'", ex);
+        }
+
+        return (subfolders, cadItems);
+    }
 }

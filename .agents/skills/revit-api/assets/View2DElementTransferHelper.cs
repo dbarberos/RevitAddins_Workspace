@@ -120,5 +120,69 @@ namespace RevitApiHelpers
 
             return vistadestino;
         }
+
+        /// <summary>
+        /// Resilient two-tier copy engine for transferring 2D elements between views (e.g. from Detail Views to Drafting Views).
+        /// Executes an initial batch copy, falling back to element-by-element copy if 3D-dependent dimensions or tags fail.
+        /// </summary>
+        /// <param name="sourceView">Source view containing 2D elements.</param>
+        /// <param name="targetView">Target 2D Drafting view in the destination document.</param>
+        /// <param name="copyOptions">Revit copy/paste options.</param>
+        /// <param name="hadSkippedElements">Outputs true if any incompatible elements (e.g., 3D-dependent dimensions) were skipped.</param>
+        /// <returns>Number of successfully copied elements.</returns>
+        public static int Copy2DElementsWithFallback(
+            View sourceView,
+            View targetView,
+            CopyPasteOptions copyOptions,
+            out bool hadSkippedElements)
+        {
+            hadSkippedElements = false;
+            if (sourceView == null || targetView == null) return 0;
+
+            Document sourceDoc = sourceView.Document;
+            Document targetDoc = targetView.Document;
+
+            targetDoc.Regenerate();
+
+            var childElements = new FilteredElementCollector(sourceDoc, sourceView.Id)
+                .WhereElementIsNotElementType()
+                .Where(e => e.ViewSpecific && e is not Viewport && e is not Level && e is not SketchPlane)
+                .Where(e => !e.Name.StartsWith("ViewCrop", StringComparison.OrdinalIgnoreCase) &&
+                            !e.Name.StartsWith("extentElem", StringComparison.OrdinalIgnoreCase) &&
+                            !e.GetType().Name.Equals("ViewCrop", StringComparison.OrdinalIgnoreCase) &&
+                            !e.GetType().Name.Equals("ExtentElem", StringComparison.OrdinalIgnoreCase))
+                .Select(e => e.Id)
+                .ToList();
+
+            if (!childElements.Any()) return 0;
+
+            copyOptions ??= new CopyPasteOptions();
+            int copiedCount = 0;
+
+            try
+            {
+                // Tier 1: Fast batch copy
+                var copiedIds = ElementTransformUtils.CopyElements(sourceView, childElements, targetView, Transform.Identity, copyOptions);
+                copiedCount = copiedIds.Count;
+            }
+            catch
+            {
+                // Tier 2: Element-by-element fallback (isolates 3D-referenced dimensions/tags)
+                foreach (var cid in childElements)
+                {
+                    try
+                    {
+                        var singleCopied = ElementTransformUtils.CopyElements(sourceView, new List<ElementId> { cid }, targetView, Transform.Identity, copyOptions);
+                        copiedCount += singleCopied.Count;
+                    }
+                    catch
+                    {
+                        hadSkippedElements = true;
+                    }
+                }
+            }
+
+            return copiedCount;
+        }
     }
 }

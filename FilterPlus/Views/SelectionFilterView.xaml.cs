@@ -5,7 +5,9 @@ namespace FilterPlus.Views;
 
 public partial class SelectionFilterView : Window
 {
+#if DEBUG
     private LogView _logView;
+#endif
 
     public SelectionFilterView(SelectionFilterViewModel viewModel)
     {
@@ -18,9 +20,10 @@ public partial class SelectionFilterView : Window
         viewModel.HideWindowRequested = this.Hide;
         viewModel.ShowWindowRequested = this.Show;
 
-        // _logView = new LogView();
-        // _logView.Show(); // Uncomment for development/debugging
-        
-        // this.Closed += (s, e) => _logView.Close();
+#if DEBUG
+        _logView = new LogView();
+        _logView.Show();
+        this.Closed += (s, e) => _logView?.Close();
+#endif
     }
 }
