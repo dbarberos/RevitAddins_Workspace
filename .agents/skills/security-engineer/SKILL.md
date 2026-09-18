@@ -89,3 +89,6 @@ For each task, the agent must provide:
 - **Exception Leaks:** Don't show raw stack traces to the user in TaskDialogs; log them securely.
 - **DLL Hijacking:** Verify that third-party DLLs are loaded from trusted locations.
 - **Silent Failures:** Never use `catch { }`. If you find an empty catch, replace it with a secure logger that doesn't leak the StackTrace to the UI.
+
+## 📚 Technical References
+- [dpapi_credential_encryption_guide](references/dpapi_credential_encryption_guide.md): Local credential encryption via Windows DPAPI for JSON configurations in Revit add-ins.

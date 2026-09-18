@@ -23,6 +23,7 @@ Modifying the Revit model (`Document`) requires an active `Transaction`. Failing
 
 ## References
 - [Transaction Architecture & Rules](file:///b:/REVIT/C%23/RevitAddins_Workspace/.agents/skills/revit-transactions/references/transaction_rules.md): Deep dive into `using`, nested contexts, and SubTransactions.
+- [Unit System & Bridge Document Copying Debugging](file:///c:/Users/david.barbero/Documents/DOCUMENTOS/ALTEN/Workbench/RevitAddins_Workspace/RevitAddins_Workspace/.agents/skills/revit-transactions/references/debugging_revit_unit_system_and_bridge_document_2026-07-17.md): Resolving read-only link transactions and unit system mismatches when copying elements with suffix.
 
 ## Assets
 - [TransactionTemplates.cs](file:///b:/REVIT/C%23/RevitAddins_Workspace/.agents/skills/revit-transactions/assets/TransactionTemplates.cs): C# Boilerplate.

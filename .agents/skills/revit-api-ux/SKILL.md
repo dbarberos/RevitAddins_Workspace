@@ -21,6 +21,7 @@ description: Advanced UX/UI, WPF/XAML MVVM page registration, Dockable Panes, ev
 * **WPF & MVVM in Revit**: [32_WPF_XAML_MVVM.md](file:///c:/Users/david.barbero/Documents/DOCUMENTOS/ALTEN/Workbench/RevitAddins_Workspace/RevitAddins_Workspace/.agents/skills/revit-api-ux/references/32_WPF_XAML_MVVM.md)
 * **Real-Time Context**: [33_DocumentEvents_and_Idling.md](file:///c:/Users/david.barbero/Documents/DOCUMENTOS/ALTEN/Workbench/RevitAddins_Workspace/RevitAddins_Workspace/.agents/skills/revit-api-ux/references/33_DocumentEvents_and_Idling.md)
 * **WebView2 & React UI**: [17_WebView2_and_WebUI.md](file:///c:/Users/david.barbero/Documents/DOCUMENTOS/ALTEN/Workbench/RevitAddins_Workspace/RevitAddins_Workspace/.agents/skills/revit-api-ux/references/17_WebView2_and_WebUI.md)
+* **Debugging WPF Windows**: [debugging_wpf_owner_ambiguity_2026-07-16.md](file:///c:/Users/david.barbero/Documents/DOCUMENTOS/ALTEN/Workbench/RevitAddins_Workspace/RevitAddins_Workspace/.agents/skills/revit-api-ux/references/debugging_wpf_owner_ambiguity_2026-07-16.md)
 
 ## 4. Asset Mapping
 * [DockablePaneRegistrator.cs](file:///c:/Users/david.barbero/Documents/DOCUMENTOS/ALTEN/Workbench/RevitAddins_Workspace/RevitAddins_Workspace/.agents/skills/revit-api-ux/assets/DockablePaneRegistrator.cs) -> WPF Page dockable pane registration boilerplate.

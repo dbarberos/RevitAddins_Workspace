@@ -24,6 +24,7 @@ When specific resilience architecture concepts are needed, locate the following 
 * **Async Event Routing:** [42_ExternalEvents_and_Idling.md](file:///c:/Users/david.barbero/Documents/DOCUMENTOS/ALTEN/Workbench/RevitAddins_Workspace/RevitAddins_Workspace/.agents/skills/revit-api-resilience/references/42_ExternalEvents_and_Idling.md)
 * **Application Telemetry:** [43_Logging_and_CrashReporting.md](file:///c:/Users/david.barbero/Documents/DOCUMENTOS/ALTEN/Workbench/RevitAddins_Workspace/RevitAddins_Workspace/.agents/skills/revit-api-resilience/references/43_Logging_and_CrashReporting.md)
 * **Debugging Modeless UI:** [debugging_modeless_wpf_thread_block_2026-07-07.md](file:///c:/Users/david.barbero/Documents/DOCUMENTOS/ALTEN/Workbench/RevitAddins_Workspace/RevitAddins_Workspace/.agents/skills/revit-api-resilience/references/debugging_modeless_wpf_thread_block_2026-07-07.md)
+* **Debugging XmlSerializer Enum & Startup Resilience:** [debugging_xmlserializer_obsolete_enum_2026-09-11.md](file:///c:/Users/david.barbero/Documents/DOCUMENTOS/ALTEN/Workbench/RevitAddins_Workspace/RevitAddins_Workspace/.agents/skills/revit-api-resilience/references/debugging_xmlserializer_obsolete_enum_2026-09-11.md)
 
 ## 4. Asset Mapping (Code Blueprints)
 Inject, adapt, or copy the exact implementations located in the `./assets/` directory:

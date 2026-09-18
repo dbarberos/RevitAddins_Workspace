@@ -51,7 +51,22 @@ public static class LoggerService
         WriteToFile(entry);
     }
 
-    public static void LogError(string context, Exception ex)
+    public static void LogWarning(string message)
+    {
+        string timestamp = DateTime.Now.ToString("HH:mm:ss.fff");
+        string entry = $"[{timestamp}] WARN: {message}";
+        
+        var dispatcher = _uiDispatcher ?? System.Windows.Application.Current?.Dispatcher ?? System.Windows.Threading.Dispatcher.CurrentDispatcher;
+        if (dispatcher != null)
+        {
+            dispatcher.BeginInvoke(new Action(() => Logs.Insert(0, entry)));
+        }
+
+        System.Diagnostics.Debug.WriteLine(entry);
+        WriteToFile(entry);
+    }
+
+    public static void LogError(string context, Exception ex, bool showDialog = true)
     {
         string timestamp = DateTime.Now.ToString("HH:mm:ss.fff");
         string entry = $"[{timestamp}] ERROR in {context}: {ex.Message}";
@@ -66,8 +81,11 @@ public static class LoggerService
         System.Diagnostics.Debug.WriteLine(ex.StackTrace);
         WriteToFile(entry, ex.StackTrace);
 
-        // Use WPF MessageBox instead of Revit TaskDialog to prevent thread-safety crashes when called from WPF context
-        string userMessage = $"An error occurred in {context}: {ex.Message}\n\nCheck Debug Log for details.";
-        System.Windows.MessageBox.Show(userMessage, "FilterPlus Error", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
+        if (showDialog)
+        {
+            // Use WPF MessageBox instead of Revit TaskDialog to prevent thread-safety crashes when called from WPF context
+            string userMessage = $"An error occurred in {context}: {ex.Message}\n\nCheck Debug Log for details.";
+            System.Windows.MessageBox.Show(userMessage, "FilterPlus Error", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
+        }
     }
 }

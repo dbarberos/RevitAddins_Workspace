@@ -12,6 +12,7 @@ For detailed technical specifications and execution flows, consult the files in 
 
 *   `references/icon_loading_strategy.md`: Active environment diagnosis, image size organization, resource compilation schemes in the `.csproj` project, and compatibility with variable DPI screens and Dark Themes (Revit 2024+).
 *   `references/debugging_wpf_icon_baml_exception_2026-07-07.md`: Resolving startup BAML / TypeConverterMarkupExtension crashes inside external Revit hosts by enforcing absolute pack URIs in WPF window titles.
+*   `references/debugging_secondary_window_default_revit_icon_missing_pack_uri_2026-08-17.md`: Preventing default Revit host icon fallbacks on child/secondary modal and modeless WPF windows through complete assembly pack URI coverage.
 
 ## 📦 Assets (Templates and C# Code Examples)
 The following files are located in the `assets/` folder and can be injected as reusable helpers:

@@ -1,6 +1,6 @@
 # FilterPlus
 
-> **Current Version:** v1.6.0  
+> **Current Version:** v1.7.0  
 > **Add-in ID (GUID):** `A5265BB9-214C-4109-8DDC-DF1F6E4305B9`  
 
 ---
@@ -32,11 +32,16 @@ To uninstall this plug-in, exit the Autodesk product if you are currently runnin
 ## 4. Commands and Features Guide
 
 ### 4.1. Ribbon Panel Integration
-The add-in creates a custom tab containing the FilterPlus panel.
+By default, in accordance with Autodesk App Store single-command guidelines, the **FilterPlus** ribbon panel is installed directly under Revit's native **"Add-Ins" (Complementos)** tab.
+
+Users can customize or relocate the ribbon panel at any time via the **Settings (Gear Icon)** dialog in the main FilterPlus window:
+* **Add-Ins Tab (Default)**: Loads the FilterPlus button under Revit's standard Add-Ins tab.
+* **Revit Contextual Tab**: Integrates into the contextual Modify tab for rapid viewport selection workflows.
+* **Custom Tab**: Allows assigning a custom user-defined ribbon tab name (e.g. `DBDev`).
 
 | Command | Function | Technical Class |
 |---------|----------|-----------------|
-| **FilterPlus** | Opens the main window for hierarchical selection and filtering. | `FilterPlus.Application` |
+| **FilterPlus** | Opens the main window for hierarchical selection and filtering. | `FilterPlus.Application` / `FilterPlus.Commands.StartupCommand` |
 | **(Context Menu)** | In Revit 2025+, FilterPlus integrates into the right-click menu for instant filtering. | `FilterPlus.ViewModels.SelectionFilterViewModel` |
 
 ---
@@ -131,6 +136,21 @@ FilterPlus allows you to save and recover element selections persistently across
 
 ## 6. Version History (Changelog)
 
+### v1.7.0 - 2026-09-11
+
+#### Added
+- **Default Native Add-Ins Tab Placement**: FilterPlus now installs and loads by default under Revit's standard **Add-Ins (Complementos)** tab, complying with Autodesk App Store single-command publication requirements.
+- **Ribbon Location Configuration**: Enhanced the configuration window (gear icon) allowing users to choose between:
+  - Default Revit Add-Ins tab.
+  - Contextual Revit tab (Modify).
+  - Custom user-defined tab.
+- **Startup Settings Resilience**: Hardened XML serialization in `SettingsService.Load()` with automatic backup and fallback to default settings if XML corruption or schema mismatch occurs.
+- **Revit 2023 Contextual Help (F1)**: Updated deployment scripts and bundle manifests to deploy and load `help.html` in Revit 2023.
+
+#### Changed
+- **Settings UI Modernization**: Updated radio button labels, tooltips, and layout in `SettingsView.xaml` to clarify the default Add-Ins tab behavior.
+- **Monorepo Versioning Standards**: Standardized scoped Git tags (`FilterPlus-v1.7.0`) and path-isolated commit logs.
+
 ### v1.6.0
 
 #### Added
@@ -142,6 +162,11 @@ FilterPlus allows you to save and recover element selections persistently across
 - **Sort by Model Grouping**: Group elements in the explorer tree by their host or link models, respecting the active grouping hierarchy.
 - **100k Element Cache Warning**: Integrates an orange warning icon and tooltip to signal when the combined elements exceed 100,000, triggering an automatic fallback to Active Model Only to preserve performance.
 - **Isolated Selection Filters**: Introduces custom selection filters during "Select in Revit" to prevent selecting `RevitLinkInstance` blocks in Host phase and block selection of elements inside unchecked link models in Linked phase.
+
+#### Fixed
+- **App Store Bundle Assembly Resolution**: Bundled full runtime dependencies (`Nice3point.Revit.Toolkit.dll`, `Nice3point.Revit.Extensions.dll`, `CommunityToolkit.Mvvm.dll`, `System.Text.Json.dll`, etc.) inside all multi-version folders (Revit 2023–2027) preventing startup `System.IO.FileNotFoundException` crashes.
+- **Publisher Identity Sanitization**: Eliminated all legacy placeholder metadata across `.addin` manifests and `PackageContents.xml`, strictly unifying the identity under `DBDev Solutions` and `DBDev_dbarberos`.
+- **W3C XML Conformance**: Standardized XML declaration headers to `<?xml version="1.0" encoding="utf-8"?>` across all package manifests.
 
 ### v1.5.0
 

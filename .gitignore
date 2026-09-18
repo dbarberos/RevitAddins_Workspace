@@ -423,3 +423,5 @@ FodyWeavers.xsd
 .DS_Store
 .nuget/
 validation_report.md
+*.exe
+references_examples/Maestro/

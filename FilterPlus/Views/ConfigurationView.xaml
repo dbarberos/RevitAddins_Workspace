@@ -65,8 +65,8 @@
             <StackPanel>
                 <TextBlock Text="Tab Option (*)" FontWeight="500" Margin="0,0,0,8" Foreground="#333"/>
                 
-                <RadioButton Content="Place FilterPlus on DBDev tab(default)" IsChecked="{Binding IsDBDevSelected}" Margin="0,0,0,6"/>
-                <RadioButton Content="Place on Revit default tab" IsChecked="{Binding IsRevitDefaultSelected}" Margin="0,0,0,6"/>
+                <RadioButton Content="Place FilterPlus on Add-Ins tab (default)" IsChecked="{Binding IsAddInsDefaultTabSelected}" Margin="0,0,0,6"/>
+                <RadioButton Content="Place on Revit contextual tab" IsChecked="{Binding IsRevitDefaultSelected}" Margin="0,0,0,6"/>
                 <RadioButton Content="Place on tab named:" IsChecked="{Binding IsCustomSelected}" Margin="0,0,0,4"/>
                 
                 <TextBox Text="{Binding CustomTabName, UpdateSourceTrigger=PropertyChanged}" 

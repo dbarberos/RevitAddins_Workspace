@@ -1,0 +1,290 @@
+using System.Windows;
+using TransferPlus.ViewModels;
+
+namespace TransferPlus.Views;
+
+public partial class TransferPlusView : Window
+{
+    private LogView? _logView;
+    private bool _isClosing = false;
+
+    public TransferPlusView(TransferPlusViewModel viewModel)
+    {
+        InitializeComponent();
+        DataContext = viewModel;
+
+        // Set dispatcher for secure logger updates
+        TransferPlus.Services.LoggerService.SetDispatcher(this.Dispatcher);
+
+        // Register action delegate for ConfigurationViewModel toggle debug window button
+        ConfigurationViewModel.ToggleDebugWindowAction = () =>
+        {
+            this.Dispatcher.Invoke(() =>
+            {
+                ToggleDebugLogWindow();
+            });
+        };
+
+        this.Loaded += TransferPlusView_Loaded;
+        this.Closed += TransferPlusView_Closed;
+    }
+
+    private void TransferPlusView_Loaded(object sender, RoutedEventArgs e)
+    {
+        this.Loaded -= TransferPlusView_Loaded;
+        try
+        {
+            CreateAndPrepareLogView();
+
+#if DEBUG
+            _logView?.Show();
+#endif
+        }
+        catch (System.Exception ex)
+        {
+            TransferPlus.Services.LoggerService.LogError("LogView Open", ex);
+        }
+    }
+
+    private void CreateAndPrepareLogView()
+    {
+        if (_logView != null) return;
+
+        _logView = new LogView();
+        _logView.Owner = this;
+        _logView.Closing += (s, e) =>
+        {
+            if (!_isClosing)
+            {
+                e.Cancel = true;
+                _logView.Hide();
+            }
+        };
+    }
+
+    private void TransferPlusView_Closed(object? sender, System.EventArgs e)
+    {
+        _isClosing = true;
+        if (_logView != null)
+        {
+            try
+            {
+                _logView.Close();
+            }
+            catch { }
+        }
+    }
+
+    public void ToggleDebugLogWindow()
+    {
+        try
+        {
+            if (_logView == null)
+            {
+                CreateAndPrepareLogView();
+            }
+
+            if (_logView != null)
+            {
+                if (_logView.IsVisible)
+                {
+                    _logView.Hide();
+                }
+                else
+                {
+                    _logView.Show();
+                    _logView.Activate();
+                }
+            }
+        }
+        catch
+        {
+            // Recreate if window object state was destroyed
+            _logView = null;
+            CreateAndPrepareLogView();
+            _logView?.Show();
+            _logView?.Activate();
+        }
+    }
+
+    private void CloseRegexPopup(object sender, RoutedEventArgs e)
+    {
+        BtnRegexHelper.IsChecked = false;
+    }
+
+    private void CloseFilterRegexPopup(object sender, RoutedEventArgs e)
+    {
+        BtnFilterRegexHelper.IsChecked = false;
+    }
+
+    private void TreeView_SelectedItemChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
+    {
+        if (DataContext is TransferPlusViewModel vm && e.NewValue is TreeItemViewModel selectedNode)
+        {
+            if (selectedNode.Item is Models.FamilyItemModel famItem)
+            {
+                vm.SelectedFamily = famItem;
+                vm.SelectedSymbol = null;
+            }
+            else if (selectedNode.Item is Models.FamilySymbolItemModel symItem && selectedNode.Parent?.Item is Models.FamilyItemModel parentFam)
+            {
+                vm.SelectedFamily = parentFam;
+                vm.SelectedSymbol = symItem;
+            }
+            else if (selectedNode.Item is Models.CadDetailItemModel cadItem)
+            {
+                vm.SelectedCadDetail = cadItem;
+            }
+            else if (selectedNode.Category == "Sheet")
+            {
+                if (selectedNode.Item is Models.CadDetailItemModel sheetItem)
+                {
+                    vm.SelectedCadDetail = sheetItem;
+                }
+                else
+                {
+                    var allCad = GetAllChildCadItems(selectedNode);
+                    var firstWithSheet = allCad.FirstOrDefault(x => x.SheetId != null && x.SheetId != Autodesk.Revit.DB.ElementId.InvalidElementId)
+                                         ?? allCad.FirstOrDefault(x => !string.IsNullOrWhiteSpace(x.SheetName));
+                    if (firstWithSheet != null && firstWithSheet.SourceDocument is Autodesk.Revit.DB.Document sDoc)
+                    {
+                        Autodesk.Revit.DB.Element? sheetElem = null;
+                        if (firstWithSheet.SheetId != null && firstWithSheet.SheetId != Autodesk.Revit.DB.ElementId.InvalidElementId)
+                        {
+                            sheetElem = sDoc.GetElement(firstWithSheet.SheetId);
+                        }
+
+                        if (sheetElem == null && !string.IsNullOrWhiteSpace(selectedNode.Name))
+                        {
+                            sheetElem = new Autodesk.Revit.DB.FilteredElementCollector(sDoc)
+                                .OfClass(typeof(Autodesk.Revit.DB.ViewSheet))
+                                .Cast<Autodesk.Revit.DB.ViewSheet>()
+                                .FirstOrDefault(s => $"{s.SheetNumber} - {s.Name}" == selectedNode.Name || s.Name == selectedNode.Name || s.SheetNumber == selectedNode.Name);
+                        }
+
+                        if (sheetElem is Autodesk.Revit.DB.ViewSheet vs)
+                        {
+                            var sheetCadItem = new Models.CadDetailItemModel
+                            {
+                                Name = $"{vs.SheetNumber} - {vs.Name}",
+                                ViewName = vs.Name,
+                                SheetName = $"{vs.SheetNumber} - {vs.Name}",
+                                SheetId = vs.Id,
+                                Category = "Sheet",
+                                IsDraftingView = false,
+                                IsLinked = false,
+                                CadCount = 0,
+                                ElementId = vs.Id,
+                                OwnerViewId = vs.Id,
+                                NativeElement = vs,
+                                SourceDocument = sDoc,
+                                SourceDocumentName = sDoc.Title
+                            };
+                            vm.SelectedCadDetail = sheetCadItem;
+                        }
+                        else
+                        {
+                            vm.SelectedCadDetail = firstWithSheet;
+                        }
+                    }
+                }
+            }
+            else if (selectedNode.Category == "View")
+            {
+                if (selectedNode.Item is Models.CadDetailItemModel viewItem)
+                {
+                    vm.SelectedCadDetail = viewItem;
+                }
+                else
+                {
+                    var allCad = GetAllChildCadItems(selectedNode);
+                    var firstChildCad = allCad.FirstOrDefault(c => c.OwnerViewId != null && c.OwnerViewId != Autodesk.Revit.DB.ElementId.InvalidElementId);
+                    if (firstChildCad != null && firstChildCad.OwnerViewId != null && firstChildCad.SourceDocument is Autodesk.Revit.DB.Document sDoc)
+                    {
+                        var ownerView = sDoc.GetElement(firstChildCad.OwnerViewId) as Autodesk.Revit.DB.View;
+                        if (ownerView != null)
+                        {
+                            var viewCadItem = new Models.CadDetailItemModel
+                            {
+                                Name = ownerView.Name,
+                                ViewName = ownerView.Name,
+                                SheetName = firstChildCad.SheetName,
+                                SheetId = firstChildCad.SheetId,
+                                Category = "Drafting Views",
+                                IsDraftingView = ownerView.ViewType == Autodesk.Revit.DB.ViewType.DraftingView,
+                                IsLinked = false,
+                                CadCount = 0,
+                                ElementId = ownerView.Id,
+                                OwnerViewId = ownerView.Id,
+                                NativeElement = ownerView,
+                                SourceDocument = sDoc,
+                                SourceDocumentName = sDoc.Title
+                            };
+                            vm.SelectedCadDetail = viewCadItem;
+                        }
+                        else
+                        {
+                            vm.SelectedCadDetail = firstChildCad;
+                        }
+                    }
+                    else if (firstChildCad != null)
+                    {
+                        vm.SelectedCadDetail = firstChildCad;
+                    }
+                }
+            }
+            else
+            {
+                var allCad = GetAllChildCadItems(selectedNode);
+                var firstChildCad = allCad.FirstOrDefault();
+                if (firstChildCad != null)
+                {
+                    vm.SelectedCadDetail = firstChildCad;
+                }
+                else
+                {
+                    vm.SelectedFamily = null;
+                    vm.SelectedSymbol = null;
+                }
+            }
+        }
+    }
+
+    private static System.Collections.Generic.List<Models.CadDetailItemModel> GetAllChildCadItems(TreeItemViewModel node)
+    {
+        var list = new System.Collections.Generic.List<Models.CadDetailItemModel>();
+        if (node.Item is Models.CadDetailItemModel item)
+        {
+            list.Add(item);
+        }
+        foreach (var child in node.Children)
+        {
+            list.AddRange(GetAllChildCadItems(child));
+        }
+        return list;
+    }
+
+    private void CloseDatePopup(object sender, RoutedEventArgs e)
+    {
+        BtnDateHelper.IsChecked = false;
+    }
+
+    private void Cancel_Click(object sender, RoutedEventArgs e)
+    {
+        this.Close();
+    }
+}
+
+public class NegativeConverter : System.Windows.Data.IValueConverter
+{
+    public object Convert(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture)
+    {
+        if (value is double d) return -d;
+        return 0;
+    }
+    public object ConvertBack(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture)
+    {
+        if (value is double d) return -d;
+        return 0;
+    }
+}

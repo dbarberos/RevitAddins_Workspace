@@ -1,0 +1,8 @@
+- `[x]` Copy original models: `Elemento.cs`, `Nodo.cs`, `Archivo.cs`, `Estructura.cs`, `Configuraciones.cs`
+- `[x]` Copy and adapt `Serializaciones.cs` to use `TaskDialog`
+- `[x]` Implement fully featured `DocumentCollector.cs` (37 categories with WPF progress callback)
+- `[x]` Implement full `TransferOrchestrator.cs` (nested dependencies copy, link transform matrix, warnings preprocessor)
+- `[x]` Create WPF modal inputs: `RenameTextView.xaml` and `TakeTextView.xaml`
+- `[x]` Implement the `TransferPlusViewModel.cs` (renaming commands, file list options, progress binding)
+- `[x]` Update `TransferPlusView.xaml` with text action buttons, link coordinate radios, ios-style switches, duplicate handlers
+- `[x]` Verify compilation in target Revit SDK (R24)

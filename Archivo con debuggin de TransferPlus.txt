@@ -1,0 +1,33 @@
+***- La ventana del addin TransferPlus se va debajo de la ventana de Revit cuando se hace la transferencia, pareciendo que se ha cerrado, pero estando aun activa. Hay que cambiar la ventana para que después de la transferencia siga manteniéndose sobre la ventana de Revit , pero sin ocultar el mensaje de transferencia correcta.Texto del mensaje  "Transfer complete!"
+
+
+***- indicación en el mensaje de error por tener seleccionada en ON Duplicate = Abort Transaction al intentar transferir un elemento con el mismo nombre.
+Debemos cambiar el texto por algo que no parezca tanto eun error sino un warning comokm:
+La aplicaciónTransferPlus ha localizado un elemento con el mismo nombre. Transfer Canceled. (Quitamos la mención a Check Debug Log for details).
+La segunda pantalla de error es correcta, sdalvo que debemos incluir como nombre, además del nombre, habría que incluir que clase de leemnto es, si es plano ,material, y los subgrupos en jerarquiaen los que se engloba
+
+-Incluir entre las expresiones regulares :
+^[\w\s\W]+$
+Que sirve para selcionar todo el título completo para sustituir el nombre del elemento.
+
+
+-Para podde incluir prefijo y sufijo, hay que añadir en la casilla Changed by: la expresión regular 
+prefijo$1
+y la expresión regular 
+$1Sufijo
+y al seleccionar una de estas opciones por defecto en la casilla Find se incluye la expresión regular
+(.*)
+y debería activarse por defecto la casilla Use regular expresiopns
+Estas sdos popciones deberían incluirse al inicio del listado. Revisión del tramanño de los títulos de los grupos en el tooltip de Changed By.
+
+
+- Incluir boton de cancel para cerrar el addin TransferPlus.
+
+
+- Al transferir un plano sin ninguna opción seleccionada, no se transfiere el titleblock que si que se debería transferir, el único elemento que debería transferirse al crearse el plano, el plano si se crea.
+
+
+No se crea duplicado de plano al copiar uno que ya existe en el archivo destino, cuando se emplea append Suffix
+Tampoco se crea el duplicado al cambiar el nombre del plano por uno nuevo
+
+-En el texto de transfer View elements Incluir en paréntesis cotar 2d lines, tags, etc)
