@@ -1,4 +1,4 @@
-# Walkthrough: Add "Not Contain" Option to Filter Regex Help
+# Walkthrough: Add "Not Contain" Option to Filter Regex Help & Specialized Bottom-Up Engine
 
 **Date:** 2026-09-17  
 **Add-in:** TransferPlus  
@@ -11,7 +11,9 @@
 
 A new regular expression helper option, **"Not Contain (Negative Matching)"**, was integrated into the **Regex Help (Filter)** popup located on the persistent **Filter** card in TransferPlus.
 
-This feature enables users across all application modes (**Standard Mode**, **Family Mode**, and **CAD Mode**) to filter and select all elements whose names do NOT contain a given keyword or pattern.
+Additionally, a specialized bottom-up leaf evaluation engine (`FilterTreeNegative`) was developed to fix a critical hierarchical tree phenomenon: when using negative lookaheads (such as `^(?!.*dwg).*$`), parent structural folders (`"CAD Formats"`, `"Views"`, `"Families"`) previously evaluated to `match = true` and forced all descendant elements to `true`, erroneously selecting the entire tree. With `FilterTreeNegative`, evaluation is strictly confined to leaf elements, and parent container states are calculated bottom-up via `RefreshState()`.
+
+This feature enables users across all application modes (**Standard Mode**, **Family Mode**, and **CAD Mode**) to accurately filter and select all elements whose names do NOT contain a given keyword or pattern.
 
 ---
 
@@ -20,7 +22,7 @@ This feature enables users across all application modes (**Standard Mode**, **Fa
 | Component | File | Changes Made |
 |---|---|---|
 | **View (WPF / XAML)** | [TransferPlusView.xaml](file:///c:/Users/david.barbero/Documents/DOCUMENTOS/ALTEN/Workbench/RevitAddins_Workspace/RevitAddins_Workspace/TransferPlus/Views/TransferPlusView.xaml) | Added `Not Contain (Negative Matching)` category header and button row with code `^(?!.*text).*$` and description to `BtnFilterRegexHelper` popup. |
-| **ViewModel (C#)** | [TransferPlusViewModel.cs](file:///c:/Users/david.barbero/Documents/DOCUMENTOS/ALTEN/Workbench/RevitAddins_Workspace/RevitAddins_Workspace/TransferPlus/ViewModels/TransferPlusViewModel.cs) | Enhanced `InsertFilterRegexHelper` with smart text substitution (`text` replaced with current filter text if present) and automatic activation of `FilterUseRegex = true` and `FilterOnlyNames = true` to prevent false positive category matches. |
+| **ViewModel (C#)** | [TransferPlusViewModel.cs](file:///c:/Users/david.barbero/Documents/DOCUMENTOS/ALTEN/Workbench/RevitAddins_Workspace/RevitAddins_Workspace/TransferPlus/ViewModels/TransferPlusViewModel.cs) | 1. Enhanced `InsertFilterRegexHelper` with smart text substitution and auto-activation of `FilterUseRegex` and `FilterOnlyNames`.<br>2. Implemented `FilterTreeNegative(Regex searchRegex)`: strictly evaluates leaf nodes, bypassing downward container cascading.<br>3. In `FilterTree`, routed negative patterns (`(?!` / `(?<!`) to `FilterTreeNegative`. |
 | **Documentation** | [User_Guide.md](file:///c:/Users/david.barbero/Documents/DOCUMENTOS/ALTEN/Workbench/RevitAddins_Workspace/RevitAddins_Workspace/TransferPlus/docs/User_Guide.md) | Added section 5.9 documenting Search & Advanced Filtering and updated the v1.3.0 Changelog. |
 | **Help Resource** | [help.html](file:///c:/Users/david.barbero/Documents/DOCUMENTOS/ALTEN/Workbench/RevitAddins_Workspace/RevitAddins_Workspace/TransferPlus/Resources/help.html) | Added bullet point in Section 5 and updated v1.3.0 Changelog. |
 
@@ -28,14 +30,19 @@ This feature enables users across all application modes (**Standard Mode**, **Fa
 
 ## 3. Key Technical Decisions & Edge Case Handling
 
-1. **Negative Lookahead Syntax**:
-   - Uses `^(?!.*text).*$`. In .NET Regular Expressions with `RegexOptions.IgnoreCase`, this matches all strings from start to end that do not contain the substring `"text"`.
-2. **Category False-Positive Suppression**:
-   - When filtering without `FilterOnlyNames`, TransferPlus checks `Category` if `Name` fails to match. If someone searches for items *not* containing `"Puerta"`, a door called `"Puerta 1"` would fail the name match, but its category `"Doors"` does NOT contain `"Puerta"`, incorrectly causing it to match!
-   - By automatically enabling `FilterOnlyNames = true` whenever a lookahead `(?` pattern is inserted, the filter strictly tests element and view names.
-3. **Smart Keyword Substitution**:
-   - If the user types a term like `M_` in the filter box and clicks the button, the helper replaces `"text"` with `"M_"`, resulting directly in `^(?!.*M_).*$`.
-   - If the filter box is empty, it populates `^(?!.*text).*$` for the user to edit.
+1. **Negative Lookaround Detection**:
+   - In `FilterTree()`, `isNegativeFilter` detects `(?!` (negative lookahead) and `(?<!` (negative lookbehind).
+2. **Leaf-Only Isolation**:
+   - Leaf items to evaluate are gathered via:
+     ```csharp
+     GetAllDescendantNodes(RootNodes)
+         .Where(n => n.Level > 0 && (n.Children == null || !n.Children.Any()) && n.Category != "Sheet" && n.Category != "View" && n.Category != "Root")
+     ```
+   - Structural grouping containers are never evaluated or forced to `true`.
+3. **Bottom-Up State Calculation**:
+   - After leaves are set, `root.RefreshState()` propagates states from the leaves up to the root. If all leaves in a folder pass $\rightarrow$ checked (`true`). If none pass $\rightarrow$ unchecked (`false`). If mixed $\rightarrow$ indeterminate (`null`).
+4. **Smart Keyword Substitution**:
+   - Pre-typed text in the search box (e.g. `dwg`) is automatically substituted into `^(?!.*dwg).*$` upon clicking the helper.
 
 ---
 
@@ -52,6 +59,8 @@ This feature enables users across all application modes (**Standard Mode**, **Fa
 ## 5. Verification Checklist
 - [x] UI matches existing rows: button border on left (`Width="110"`), text description on right.
 - [x] Placed at the very end of the list under its own category header.
-- [x] Clicking row inserts regex, enables `Use Regex`, enables `Only by name`, and closes popup.
+- [x] Negative regex patterns are routed to `FilterTreeNegative`.
+- [x] Only items omitting the keyword are checked; items containing the keyword remain unchecked.
+- [x] Parent categories reflect true tri-state (indeterminate or unchecked) without cascading down.
 - [x] Filter functions across CAD Mode, Family Mode, and Standard Mode.
 - [x] Bundles re-packaged and local desktop add-in updated.

@@ -1,37 +1,41 @@
-# Implementation Plan: Add "Not Contain" Option to Filter Regex Help
+# Implementation Plan: Add "Not Contain" Option to Filter Regex Help & Specialized Bottom-Up Filter Engine
 
 **Date:** 2026-09-17  
 **Add-in:** TransferPlus  
-**Component:** Asset Explorer Filter Card & Regex Helper Palette  
+**Component:** Asset Explorer Filter Card, Regex Helper Palette & Specialized Leaf-Only Bottom-Up Filter Engine  
 
 ---
 
 ## 1. Objective
 Add a new regular expression pattern option to the **Regex Help (Filter)** dropdown within the main window's **Filter** card, allowing users across all add-in modes (**Current Project / Standard Mode**, **Family Mode**, and **CAD Mode**) to filter and select elements whose names do NOT contain a specified keyword.
 
+Furthermore, implement a specialized bottom-up leaf evaluation engine (`FilterTreeNegative`) to resolve the hierarchical tree anomaly where negative lookaheads (`(?!` / `(?<!`) caused structural parent folders to match and cascade downward, incorrectly selecting 100% of the tree.
+
 ---
 
-## 2. Technical Architecture & Analysis
+## 2. Technical Architecture & Root Cause Analysis
 
 ### 2.1. Shared Filter Card Scope
-The Filter card in `TransferPlusView.xaml` (lines 490–850) is part of the persistent right-hand settings panel and is shared across all operation modes (Standard, Family, and CAD mode).
+The Filter card in `TransferPlusView.xaml` is part of the persistent right-hand settings panel and is shared across all operation modes (Standard, Family, and CAD mode).
 
-### 2.2. Negative Matching Pattern & Lookahead
-- Regex: `^(?!.*text).*$`
-- The negative lookahead `(?!.*text)` ensures that the string starting at the anchor `^` does not contain the sequence `text` anywhere before matching the remainder of the line `.*$`.
-- Case-insensitivity is managed via `RegexOptions.IgnoreCase`.
+### 2.2. The Hierarchical Tree Contradiction in Negative Matching
+- **Positive Filters:** When searching for `"dwg"`, parent folders (`"CAD Formats"`, `"Views"`, `"Families"`) do not contain `"dwg"`, evaluating to `false`. Only the specific leaf matching `"dwg"` is checked.
+- **Negative Filters (`^(?!.*dwg).*$`):** Parent container names almost never contain `"dwg"`. In standard recursive top-down evaluation, parent folders matched `true`. Calling `node.SetCheckedState(true)` on a parent folder forcibly set `IsChecked = true` on all descendants (even those with `"dwg"`), resulting in 100% of elements being selected.
 
-### 2.3. Category False-Positive Prevention
-In `TransferPlusViewModel.FilterNode`:
-```csharp
-match = searchRegex.IsMatch(node.Name);
-if (!match && !FilterOnlyNames)
-{
-    match = searchRegex.IsMatch(node.Category);
-}
-```
-If `FilterOnlyNames` were `false`, an element with name `"Puerta Entrada"` (which doesn't match `^(?!.*Puerta).*$`) would fail the first check, but `searchRegex.IsMatch("Doors")` would evaluate to `true` (since `"Doors"` does not contain `"Puerta"`). This would produce false positive selections.  
-**Resolution:** When the negative match helper is selected, the ViewModel automatically enforces `FilterOnlyNames = true` alongside `FilterUseRegex = true`.
+### 2.3. The Solution: Specialized Bottom-Up Leaf Evaluation (`FilterTreeNegative`)
+1. Detect negative lookahead / exclusion filters:
+   ```csharp
+   bool isNegativeFilter = FilterUseRegex && searchRegex != null && (searchText.Contains("(?!") || searchText.Contains("(?<!"));
+   ```
+2. When `isNegativeFilter` is `true`, bypass top-down container cascading.
+3. Collect all true leaf nodes across the tree (`n.Level > 0 && (n.Children == null || !n.Children.Any()) && n.Category != "Sheet" && n.Category != "View" && n.Category != "Root"`).
+4. Strictly evaluate `searchRegex.IsMatch` on each leaf node.
+   - If `match == true`: `leaf.IsChecked = true; ExpandParents(leaf);`
+   - If `match == false`: `leaf.IsChecked = false;` (unless `FilterUseOr` is active).
+5. Propagate states upwards from leaves via `root.RefreshState()`. Parent containers dynamically calculate:
+   - All children checked $\rightarrow$ `IsChecked = true`.
+   - Zero children checked $\rightarrow$ `IsChecked = false`.
+   - Mixed children $\rightarrow$ `IsChecked = null` (Indeterminate).
 
 ---
 
@@ -57,26 +61,27 @@ Added the new section at the end of the `BtnFilterRegexHelper` popup:
 ```
 
 ### 3.2. ViewModel (`TransferPlus/ViewModels/TransferPlusViewModel.cs`)
-Enhanced `InsertFilterRegexHelper(string snippet)`:
-```csharp
-[RelayCommand]
-private void InsertFilterRegexHelper(string snippet)
-{
-    if (snippet.Contains("text") && !string.IsNullOrWhiteSpace(SearchFilter) && !SearchFilter.Contains("(?") && !SearchFilter.Contains(".*"))
-    {
-        SearchFilter = snippet.Replace("text", SearchFilter.Trim());
-    }
-    else
-    {
-        SearchFilter = string.IsNullOrWhiteSpace(SearchFilter) ? snippet : (SearchFilter + snippet);
-    }
-    FilterUseRegex = true;
-    if (snippet.Contains("(?"))
-    {
-        FilterOnlyNames = true;
-    }
-}
-```
+1. Enhanced `InsertFilterRegexHelper(string snippet)`:
+   ```csharp
+   [RelayCommand]
+   private void InsertFilterRegexHelper(string snippet)
+   {
+       if (snippet.Contains("text") && !string.IsNullOrWhiteSpace(SearchFilter) && !SearchFilter.Contains("(?") && !SearchFilter.Contains(".*"))
+       {
+           SearchFilter = snippet.Replace("text", SearchFilter.Trim());
+       }
+       else
+       {
+           SearchFilter = string.IsNullOrWhiteSpace(SearchFilter) ? snippet : (SearchFilter + snippet);
+       }
+       FilterUseRegex = true;
+       if (snippet.Contains("(?"))
+       {
+           FilterOnlyNames = true;
+       }
+   }
+   ```
+2. Added `FilterTreeNegative(Regex searchRegex)` and routed negative expressions in `FilterTree()`.
 
 ---
 

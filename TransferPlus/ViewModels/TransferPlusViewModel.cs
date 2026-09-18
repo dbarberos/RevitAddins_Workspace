@@ -1615,10 +1615,19 @@ public partial class TransferPlusViewModel : ObservableObject
                 }
             }
 
-            // Apply the current search matches on the nodes shown in the explorer
-            foreach (var node in RootNodes)
+            bool isNegativeFilter = FilterUseRegex && searchRegex != null && (searchText.Contains("(?!") || searchText.Contains("(?<!"));
+
+            if (isNegativeFilter)
             {
-                FilterNode(node, searchText, searchRegex);
+                FilterTreeNegative(searchRegex!);
+            }
+            else
+            {
+                // Apply the current search matches on the nodes shown in the explorer
+                foreach (var node in RootNodes)
+                {
+                    FilterNode(node, searchText, searchRegex);
+                }
             }
 
             // Ensure parent nodes reflect child states properly
@@ -1746,6 +1755,66 @@ public partial class TransferPlusViewModel : ObservableObject
         foreach (var child in node.Children)
         {
             FilterNode(child, searchText, searchRegex);
+        }
+    }
+
+    private void FilterTreeNegative(Regex searchRegex)
+    {
+        // 1. Collect all true leaf nodes across the entire tree, excluding structural grouping containers
+        var allLeaves = GetAllDescendantNodes(RootNodes)
+            .Where(n => n.Level > 0 && (n.Children == null || !n.Children.Any()) && n.Category != "Sheet" && n.Category != "View" && n.Category != "Root")
+            .ToList();
+
+        TransferPlus.Services.LoggerService.LogInfo($"FilterTreeNegative: Evaluating {allLeaves.Count} leaf nodes with exclusion pattern.");
+
+        // 2. Evaluate each leaf node strictly
+        foreach (var leaf in allLeaves)
+        {
+            bool match = false;
+            try
+            {
+                match = searchRegex.IsMatch(leaf.Name);
+                if (!match && !FilterOnlyNames)
+                {
+                    match = searchRegex.IsMatch(leaf.Category);
+                    if (!match && leaf.Item != null)
+                    {
+                        if (leaf.Item is Elemento elm)
+                        {
+                            if (elm.Familia != null) match = searchRegex.IsMatch(elm.Familia);
+                            if (!match && elm.Tipo != null) match = searchRegex.IsMatch(elm.Tipo);
+                        }
+                        else if (leaf.Item is FamilyItemModel fam)
+                        {
+                            if (fam.Name != null) match = searchRegex.IsMatch(fam.Name);
+                            if (!match && fam.CategoryName != null) match = searchRegex.IsMatch(fam.CategoryName);
+                        }
+                        else if (leaf.Item is FamilySymbolItemModel symItem)
+                        {
+                            if (symItem.Name != null) match = searchRegex.IsMatch(symItem.Name);
+                            if (!match && symItem.FamilyName != null) match = searchRegex.IsMatch(symItem.FamilyName);
+                        }
+                        else if (leaf.Item is CadDetailItemModel cadItem)
+                        {
+                            if (cadItem.Name != null) match = searchRegex.IsMatch(cadItem.Name);
+                            if (!match && cadItem.ViewName != null) match = searchRegex.IsMatch(cadItem.ViewName);
+                            if (!match && cadItem.SheetName != null) match = searchRegex.IsMatch(cadItem.SheetName);
+                        }
+                    }
+                }
+            }
+            catch { }
+
+            if (match)
+            {
+                leaf.IsChecked = true;
+                leaf.IsExpanded = true;
+                ExpandParents(leaf);
+            }
+            else if (!FilterUseOr)
+            {
+                leaf.IsChecked = false;
+            }
         }
     }
 
