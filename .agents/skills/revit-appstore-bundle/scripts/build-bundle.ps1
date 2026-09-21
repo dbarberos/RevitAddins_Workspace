@@ -112,16 +112,12 @@ foreach ($Year in $TargetYears) {
 
 
     $PublishDir = $null
-    $FoundDlls = @()
     foreach ($cand in $Candidates) {
         $candidateDll = Join-Path $cand "$AppName.dll"
         if ((Test-Path $cand) -and (Test-Path $candidateDll)) {
-            $FoundDlls += (Get-Item $candidateDll)
+            $PublishDir = $cand
+            break
         }
-    }
-
-    if ($FoundDlls.Count -gt 0) {
-        $PublishDir = ($FoundDlls | Sort-Object LastWriteTime -Descending | Select-Object -First 1).DirectoryName
     }
 
     if (-not $PublishDir) {
@@ -132,15 +128,12 @@ foreach ($Year in $TargetYears) {
         } catch {
             Write-Warning "Compilation failed for $ConfigName. Skipping $Year."
         }
-        $FoundDlls = @()
         foreach ($cand in $Candidates) {
             $candidateDll = Join-Path $cand "$AppName.dll"
             if ((Test-Path $cand) -and (Test-Path $candidateDll)) {
-                $FoundDlls += (Get-Item $candidateDll)
+                $PublishDir = $cand
+                break
             }
-        }
-        if ($FoundDlls.Count -gt 0) {
-            $PublishDir = ($FoundDlls | Sort-Object LastWriteTime -Descending | Select-Object -First 1).DirectoryName
         }
     }
 
@@ -155,9 +148,13 @@ foreach ($Year in $TargetYears) {
     $TargetVersionDir = Join-Path $ContentsPath $Year
     New-Item -ItemType Directory -Path $TargetVersionDir -Force | Out-Null
     
-    # 1. Copy ALL binaries and dependency DLLs (Nice3point, CommunityToolkit, System.*, etc.)
-    $CopiedFiles = Copy-Item -Path "$PublishDir\*" -Destination $TargetVersionDir -Recurse -Force -PassThru
-    Write-Host "  -> Copied $($CopiedFiles.Count) binaries/resources for $Year" -ForegroundColor Gray
+    # 1. Copy ALL binaries and dependency DLLs (Nice3point, CommunityToolkit, System.*, etc.), excluding nested publish folders
+    $CopiedCount = 0
+    Get-ChildItem -Path $PublishDir | Where-Object { $_.Name -ne "publish" -and $_.Name -ne $AppName -and $_.Name -ne "obj" } | ForEach-Object {
+        Copy-Item -Path $_.FullName -Destination $TargetVersionDir -Recurse -Force
+        $CopiedCount++
+    }
+    Write-Host "  -> Copied $CopiedCount items/binaries for $Year" -ForegroundColor Gray
 
     # Guarantee that version-specific Resources folder and help.html are always present
     $VerResourcesDir = Join-Path $TargetVersionDir "Resources"
@@ -204,10 +201,10 @@ foreach ($Year in $TargetYears) {
     $TargetAddinPath = Join-Path $TargetVersionDir "$AppName.addin"
     [System.IO.File]::WriteAllText($TargetAddinPath, $AddinContent, [System.Text.Encoding]::UTF8)
 
-    # 3. Add Component Entry to PackageContents XML
+    # 3. Add Component Entry to PackageContents XML with R prefix required by Autodesk Autoloader
     $ComponentsXml += @"
   <Components Description="$AppName Add-in for Revit $Year">
-    <RuntimeRequirements OS="Win64" Platform="Revit" SeriesMin="$Year" SeriesMax="$Year" />
+    <RuntimeRequirements OS="Win64" Platform="Revit" SeriesMin="R$Year" SeriesMax="R$Year" />
     <ComponentEntry AppName="$AppName" Version="$Version" ModuleName="./Contents/$Year/$AppName.addin" AppDescription="DBDev Solutions" LoadOnRevitStartup="True" />
   </Components>
 "@ + "`r`n"
