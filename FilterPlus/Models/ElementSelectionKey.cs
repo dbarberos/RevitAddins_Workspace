@@ -16,11 +16,19 @@ public struct ElementSelectionKey : IEquatable<ElementSelectionKey>
 
     public bool Equals(ElementSelectionKey other)
     {
+#if REVIT2024_OR_GREATER
         long thisId = ElementId != null ? ElementId.Value : -1;
         long otherId = other.ElementId != null ? other.ElementId.Value : -1;
         
         long thisLinkId = LinkInstanceId != null ? LinkInstanceId.Value : -1;
         long otherLinkId = other.LinkInstanceId != null ? other.LinkInstanceId.Value : -1;
+#else
+        long thisId = ElementId != null ? ElementId.IntegerValue : -1;
+        long otherId = other.ElementId != null ? other.ElementId.IntegerValue : -1;
+        
+        long thisLinkId = LinkInstanceId != null ? LinkInstanceId.IntegerValue : -1;
+        long otherLinkId = other.LinkInstanceId != null ? other.LinkInstanceId.IntegerValue : -1;
+#endif
 
         return thisId == otherId && thisLinkId == otherLinkId;
     }
@@ -34,8 +42,13 @@ public struct ElementSelectionKey : IEquatable<ElementSelectionKey>
     {
         unchecked
         {
+#if REVIT2024_OR_GREATER
             long thisId = ElementId != null ? ElementId.Value : -1;
             long thisLinkId = LinkInstanceId != null ? LinkInstanceId.Value : -1;
+#else
+            long thisId = ElementId != null ? ElementId.IntegerValue : -1;
+            long thisLinkId = LinkInstanceId != null ? LinkInstanceId.IntegerValue : -1;
+#endif
             return (thisId.GetHashCode() * 397) ^ thisLinkId.GetHashCode();
         }
     }

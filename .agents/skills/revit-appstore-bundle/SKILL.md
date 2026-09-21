@@ -18,9 +18,11 @@ Automates packaging multi-version Revit add-ins (2023–2027) into standardized 
 3. **Valid XML Declaration**: `PackageContents.xml` must strictly start with `<?xml version="1.0" encoding="utf-8"?>`.
 4. **Contextual Help**: Associated `help.html` and icons must be present inside `Contents/Resources/`.
 5. **Monorepo Versioning & Dynamic Package Resolution**: In multi-project workspaces, the version declared in `PackageContents.xml` (`AppVersion`) and in the output archive (`[AppName]_v[Version].zip`) MUST strictly match the target add-in's `<Version>` tag from its `.csproj` (e.g., `FilterPlus.csproj`).
+6. **Autoloader Series Prefix ("R")**: In `PackageContents.xml`, `SeriesMin` and `SeriesMax` MUST strictly include the `"R"` prefix (`R2023`, `R2024`, `R2025`, `R2026`, `R2027`). Omitting the `"R"` causes Revit's Autoloader to silently reject the bundle across all versions.
 
 ## 📚 Technical References
 - `references/debugging_appstore_bundle_missing_dependencies_and_identity_collision_2026-08-17.md`: Root cause analysis and resolution for AppStore bundle loading failures.
+- `references/debugging_appstore_bundle_autoloader_series_prefix_and_multiversion_2026-09-21.md`: Autoloader series prefix omission, multi-version ElementId compatibility (2023 vs 2024+), and assembly resolution.
 
 ## 🛠️ Scripts & Automation
 ```powershell
