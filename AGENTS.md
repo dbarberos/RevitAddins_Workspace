@@ -171,6 +171,8 @@ The agent has modular skills organized under `.agents/skills/`:
 | `revit-async-operations` | `.agents/skills/revit-async-operations/` | Async modeless coordination via Revit.Async (Kennan Chen). |
 | `revit-api-resilience` | `.agents/skills/revit-api-resilience/` | Failure API (popup suppression), IUpdater (DMU), telemetry scrubbing, and native AsyncTaskDispatcher. |
 | `revit-addin-obfuscation` | `.agents/skills/revit-addin-obfuscation/` | Anti-tampering protection, Obfuscar configuration, MSBuild target integration, and automated CI/CD build scripts. |
+| `revit-appstore-bundle` | `.agents/skills/revit-appstore-bundle/` | Autodesk App Store bundle packager, PackageContents.xml Autoloader series format, and .NET 8 resolution. |
+| `revit-sdd` | `.agents/skills/revit-sdd/` | Spec-Driven Development (SSD/SDD) methodology: two-tier constitution, EARS specifications, clinical QA, and atomic task breakdowns. |
 
 ---
 
