@@ -65,7 +65,7 @@
   - Add determinate progress bar during processing.
 
 ### Phase 7: External Command & Ribbon Integration
-- [ ] **T8: Implement CmdImportTable & Application.cs** (Maps to: `RF-6.4`, `AC-8`)
+- [x] **T8: Implement CmdImportTable & Application.cs** (Maps to: `RF-6.4`, `AC-8`)
   - Create `TablePlus/Commands/CmdImportTable.cs` with `[Transaction(TransactionMode.Manual)]`.
   - Implement `TablePlus/Application.cs` (`IExternalApplication`) creating Ribbon Tab `DBDev Tools` / Panel `Tables` / PushButton `Import Excel`.
   - Wire `AppDomain.CurrentDomain.AssemblyResolve` hook for .NET 8 / Revit 2025+ support.
