@@ -92,3 +92,14 @@ Formulate up to 10 clinical questions covering:
 - [spec-template.md](file:///c:/Users/david.barbero/Documents/DOCUMENTOS/ALTEN/Workbench/RevitAddins_Workspace/RevitAddins_Workspace/.agents/skills/revit-sdd/assets/spec-template.md)
 - [plan-template.md](file:///c:/Users/david.barbero/Documents/DOCUMENTOS/ALTEN/Workbench/RevitAddins_Workspace/RevitAddins_Workspace/.agents/skills/revit-sdd/assets/plan-template.md)
 - [tasks-template.md](file:///c:/Users/david.barbero/Documents/DOCUMENTOS/ALTEN/Workbench/RevitAddins_Workspace/RevitAddins_Workspace/.agents/skills/revit-sdd/assets/tasks-template.md)
+
+---
+
+## 5. Artifact Archiving & Continuous Traceability (`docs/references/`)
+
+In strict accordance with Section 7.A of [AGENTS.md](file:///c:/Users/david.barbero/Documents/DOCUMENTOS/ALTEN/Workbench/RevitAddins_Workspace/RevitAddins_Workspace/AGENTS.md):
+1. **Milestone Snapshots**: Whenever a major logical milestone or task block is completed (e.g., Backend Engine completed, ViewModel & UI completed, or upon user request), the agent MUST export/snapshot the active session's `walkthrough.md` and/or `implementation_plan.md` into the target add-in's `docs/references/` folder.
+2. **Naming Convention**: `[AddIn]/docs/references/[artifact_type]_[YYYYMMDD]_[spec_id]_[description].md`
+   - Example: `TablePlus/docs/references/implementation_plan_20260922_001_excel_vector_import.md`
+   - Example: `TablePlus/docs/references/walkthrough_20260923_001_excel_vector_import_t1_t5.md`
+3. **Phase 8 Final Archiving**: Upon completing all tasks (`T1..Tn`) and validating all Acceptance Criteria (`AC-1..AC-n`), the final complete `walkthrough_[YYYYMMDD]_[spec_id].md` and `implementation_plan_[YYYYMMDD]_[spec_id].md` MUST be archived in `[AddIn]/docs/references/` and committed to Git before closing the feature.

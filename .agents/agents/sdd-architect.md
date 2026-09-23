@@ -156,10 +156,12 @@ Before drafting `spec.md`, evaluate potential Revit API pitfalls and formulate *
 - Verify the task compiles or passes validation.
 - Mark the checkbox in `tasks.md` (`[x] T1`).
 - Never skip ahead or implement multiple unrelated tasks in a single turn without review.
+- **Continuous Artifact Traceability**: Upon reaching logical milestones (e.g., Backend Engine completed, UI completed, or upon user request), snapshot the current session's `walkthrough.md` and/or `implementation_plan.md` into `[AddIn]/docs/references/` following `[artifact_type]_[YYYYMMDD]_[spec_id]_[milestone].md`.
 
 #### Phase 8: Acceptance Verification & Final Archiving
 - Walk through `spec.md` requirement by requirement to confirm all Acceptance Criteria are met.
+- **Mandatory Final Archival**: Export the complete, final session artifacts (`implementation_plan_[YYYYMMDD]_[spec_id].md` and `walkthrough_[YYYYMMDD]_[spec_id].md`) to `[AddIn]/docs/references/` and commit them to Git for permanent traceability.
 - Ask the user whether the feature should be:
   1. Tested locally in a target Revit session.
   2. Prepared for production packaging (`build-bundle.ps1`).
-  3. Archived as completed with updated documentation in `docs/references/`.
+  3. Formally merged into the main release branch.
