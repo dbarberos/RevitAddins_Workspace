@@ -59,7 +59,7 @@
   - Create `TablePlus/ViewModels/TableImportViewModel.cs`.
   - Implement asynchronous file loading, worksheet selection, and range validation.
   - Implement `[RelayCommand]` for browsing files and executing the import.
-- [ ] **T7: Build TableImportView.xaml with FilterPlus Design System** (Maps to: `RF-6.1`, `RF-6.2`, `RF-6.3`, `AC-7`)
+- [x] **T7: Build TableImportView.xaml with FilterPlus Design System** (Maps to: `RF-6.1`, `RF-6.2`, `RF-6.3`, `AC-7`)
   - Create `TablePlus/Views/TableImportView.xaml` with inline resources, brushes, and control templates.
   - Layout Card 1 (File Browser & Drag/Drop), Card 2 (Worksheet & Range Picker), Card 3 (View Settings & Scale).
   - Add determinate progress bar during processing.

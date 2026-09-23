@@ -1,0 +1,444 @@
+<Window x:Class="TablePlus.Views.TableImportView"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:viewmodels="clr-namespace:TablePlus.ViewModels"
+        mc:Ignorable="d"
+        x:Name="TableImportWindow"
+        Title="TablePlus — Import Excel Spreadsheet"
+        Width="700" Height="820"
+        MinWidth="640" MinHeight="750"
+        WindowStartupLocation="CenterScreen"
+        Background="#F5F7FA"
+        Foreground="#1E293B"
+        FontFamily="Segoe UI, Inter, Arial"
+        FontSize="13"
+        AllowDrop="True"
+        DragOver="Window_DragOver"
+        Drop="Window_Drop"
+        Icon="pack://application:,,,/TablePlus;component/Resources/Icons/RibbonIcon32.png">
+
+    <Window.Resources>
+        <!-- COLOR PALETTE BRUSHES -->
+        <SolidColorBrush x:Key="WindowBgBrush" Color="#F8FAFC"/>
+        <SolidColorBrush x:Key="CardBgBrush" Color="#FFFFFF"/>
+        <SolidColorBrush x:Key="CardBorderBrush" Color="#E2E8F0"/>
+        <SolidColorBrush x:Key="CardBorderHoverBrush" Color="#CBD5E1"/>
+        <SolidColorBrush x:Key="PrimaryBrush" Color="#0284C7"/>
+        <SolidColorBrush x:Key="PrimaryHoverBrush" Color="#0369A1"/>
+        <SolidColorBrush x:Key="PrimaryPressedBrush" Color="#075985"/>
+        <SolidColorBrush x:Key="PrimaryDisabledBrush" Color="#94A3B8"/>
+        <SolidColorBrush x:Key="TextPrimaryBrush" Color="#0F172A"/>
+        <SolidColorBrush x:Key="TextSecondaryBrush" Color="#475569"/>
+        <SolidColorBrush x:Key="TextMutedBrush" Color="#94A3B8"/>
+        <SolidColorBrush x:Key="SuccessBrush" Color="#10B981"/>
+        <SolidColorBrush x:Key="SuccessBgBrush" Color="#ECFDF5"/>
+        <SolidColorBrush x:Key="ErrorBrush" Color="#EF4444"/>
+        <SolidColorBrush x:Key="ErrorBgBrush" Color="#FEF2F2"/>
+
+        <!-- CONVERTERS -->
+        <BooleanToVisibilityConverter x:Key="BoolToVis"/>
+
+        <!-- CONTROL TEMPLATES AND STYLES -->
+
+        <!-- Card Container Border Style -->
+        <Style x:Key="CardBorderStyle" TargetType="Border">
+            <Setter Property="Background" Value="{StaticResource CardBgBrush}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource CardBorderBrush}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="8"/>
+            <Setter Property="Padding" Value="16"/>
+            <Setter Property="Margin" Value="0,0,0,12"/>
+            <Setter Property="Effect">
+                <Setter.Value>
+                    <DropShadowEffect BlurRadius="6" ShadowDepth="1" Opacity="0.04" Color="#0F172A"/>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Primary Action Button Style -->
+        <Style x:Key="PrimaryButtonStyle" TargetType="Button">
+            <Setter Property="Background" Value="{StaticResource PrimaryBrush}"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="Padding" Value="18,9"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="border" Background="{TemplateBinding Background}" CornerRadius="6" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="{StaticResource PrimaryHoverBrush}"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="{StaticResource PrimaryPressedBrush}"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="border" Property="Background" Value="{StaticResource PrimaryDisabledBrush}"/>
+                                <Setter Property="Cursor" Value="Arrow"/>
+                                <Setter Property="Opacity" Value="0.65"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Secondary Ghost Button Style -->
+        <Style x:Key="GhostButtonStyle" TargetType="Button">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="{StaticResource TextSecondaryBrush}"/>
+            <Setter Property="FontWeight" Value="Medium"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="Padding" Value="14,8"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="BorderBrush" Value="{StaticResource CardBorderBrush}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="border" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="6" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="#F1F5F9"/>
+                                <Setter TargetName="border" Property="BorderBrush" Value="{StaticResource CardBorderHoverBrush}"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="#E2E8F0"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Modern Toggle Switch Style (FilterPlus Theme) -->
+        <Style x:Key="SwitchStyle" TargetType="{x:Type CheckBox}">
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type CheckBox}">
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                            <Border x:Name="BackgroundBorder" Width="36" Height="20" Background="#CBD5E1" CornerRadius="10" Padding="2" Margin="0,0,10,0" VerticalAlignment="Center">
+                                <Ellipse x:Name="Dot" Width="16" Height="16" Fill="White" HorizontalAlignment="Left">
+                                    <Ellipse.RenderTransform>
+                                        <TranslateTransform X="0"/>
+                                    </Ellipse.RenderTransform>
+                                </Ellipse>
+                            </Border>
+                            <ContentPresenter VerticalAlignment="Center" Content="{TemplateBinding Content}"/>
+                        </StackPanel>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="BackgroundBorder" Property="Background" Value="{StaticResource PrimaryBrush}"/>
+                                <Trigger.EnterActions>
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <DoubleAnimation Storyboard.TargetName="Dot" Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.X)" To="16" Duration="0:0:0.12"/>
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </Trigger.EnterActions>
+                                <Trigger.ExitActions>
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <DoubleAnimation Storyboard.TargetName="Dot" Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.X)" To="0" Duration="0:0:0.12"/>
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </Trigger.ExitActions>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Clean Text Box Style -->
+        <Style x:Key="CleanTextBoxStyle" TargetType="TextBox">
+            <Setter Property="Padding" Value="10,7"/>
+            <Setter Property="BorderBrush" Value="{StaticResource CardBorderBrush}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Background" Value="#FFFFFF"/>
+            <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TextBox">
+                        <Border x:Name="border" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="6">
+                            <ScrollViewer x:Name="PART_ContentHost" Focusable="false" HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Hidden"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="border" Property="BorderBrush" Value="{StaticResource CardBorderHoverBrush}"/>
+                            </Trigger>
+                            <Trigger Property="IsFocused" Value="True">
+                                <Setter TargetName="border" Property="BorderBrush" Value="{StaticResource PrimaryBrush}"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="border" Property="Background" Value="#F8FAFC"/>
+                                <Setter Property="Foreground" Value="{StaticResource TextMutedBrush}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Clean ComboBox Style with Virtualization Support -->
+        <Style x:Key="VirtualizedComboBoxStyle" TargetType="ComboBox">
+            <Setter Property="Padding" Value="10,7"/>
+            <Setter Property="BorderBrush" Value="{StaticResource CardBorderBrush}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Background" Value="#FFFFFF"/>
+            <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}"/>
+            <Setter Property="ScrollViewer.CanContentScroll" Value="True"/>
+            <Setter Property="VirtualizingPanel.IsVirtualizing" Value="True"/>
+            <Setter Property="VirtualizingPanel.VirtualizationMode" Value="Recycling"/>
+        </Style>
+    </Window.Resources>
+
+    <!-- MAIN APPLICATION GRID -->
+    <Grid Margin="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/> <!-- Header -->
+            <RowDefinition Height="*"/>    <!-- Scrollable Cards Body -->
+            <RowDefinition Height="Auto"/> <!-- Error or Progress Banner -->
+            <RowDefinition Height="Auto"/> <!-- Bottom Action Bar -->
+        </Grid.RowDefinitions>
+
+        <!-- HEADER BAR -->
+        <Grid Grid.Row="0" Margin="0,0,0,16">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+
+            <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <TextBlock Text="Table" FontWeight="Bold" FontSize="20" Foreground="{StaticResource TextPrimaryBrush}"/>
+                    <TextBlock Text="Plus" FontWeight="Bold" FontSize="20" Foreground="{StaticResource PrimaryBrush}"/>
+                    <Border Background="#E0F2FE" CornerRadius="4" Padding="6,2" Margin="10,0,0,0" VerticalAlignment="Center">
+                        <TextBlock Text="VECTOR ENGINE" FontSize="10" FontWeight="Bold" Foreground="#0369A1"/>
+                    </Border>
+                </StackPanel>
+                <TextBlock Text="Import Excel worksheets as crisp, editable 2D vector tables in Revit drafting and legend views." 
+                           Foreground="{StaticResource TextSecondaryBrush}" FontSize="12" Margin="0,3,0,0"/>
+            </StackPanel>
+
+            <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                <Border Background="#F1F5F9" CornerRadius="12" Padding="8,4">
+                    <TextBlock Text="v1.0" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource TextSecondaryBrush}"/>
+                </Border>
+            </StackPanel>
+        </Grid>
+
+        <!-- SCROLLABLE CARDS CONTAINER -->
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Margin="0,0,0,10">
+            <StackPanel Margin="0,0,8,0">
+
+                <!-- CARD 1: SOURCE SPREADSHEET -->
+                <Border Style="{StaticResource CardBorderStyle}">
+                    <StackPanel>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
+                            <TextBlock Text="1" FontWeight="Bold" FontSize="14" Foreground="White" Width="22" Height="22" TextAlignment="Center" VerticalAlignment="Center">
+                                <TextBlock.Background>
+                                    <VisualBrush>
+                                        <VisualBrush.Visual>
+                                            <Ellipse Width="22" Height="22" Fill="{StaticResource PrimaryBrush}"/>
+                                        </VisualBrush.Visual>
+                                    </VisualBrush>
+                                </TextBlock.Background>
+                            </TextBlock>
+                            <TextBlock Text="Source Spreadsheet" FontWeight="SemiBold" FontSize="14" Foreground="{StaticResource TextPrimaryBrush}" Margin="8,0,0,0" VerticalAlignment="Center"/>
+                        </StackPanel>
+
+                        <!-- File Browse Row -->
+                        <Grid Margin="0,0,0,8">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBox Grid.Column="0" Text="{Binding FilePath, UpdateSourceTrigger=PropertyChanged}" 
+                                     Style="{StaticResource CleanTextBoxStyle}" Margin="0,0,8,0" IsReadOnly="True"
+                                     ToolTip="{Binding FilePath}"/>
+                            <Button Grid.Column="1" Content="Browse..." Command="{Binding BrowseFileCommand}" Style="{StaticResource GhostButtonStyle}"/>
+                        </Grid>
+
+                        <!-- Drag and Drop Zone Hint -->
+                        <Border BorderBrush="#CBD5E1" BorderThickness="1" CornerRadius="6" Background="#F8FAFC" Padding="12,10"
+                                ToolTip="Drag an Excel file from Windows Explorer and drop it anywhere inside this window">
+                            <TextBlock HorizontalAlignment="Center" Foreground="{StaticResource TextMutedBrush}" FontSize="12">
+                                <Run Text="💡 Drag &amp; drop an "/>
+                                <Run Text=".xlsx, .xls" FontWeight="SemiBold"/>
+                                <Run Text=" or "/>
+                                <Run Text=".csv" FontWeight="SemiBold"/>
+                                <Run Text=" file directly into this window"/>
+                            </TextBlock>
+                        </Border>
+
+                        <!-- File Loaded Badge -->
+                        <Border Background="{StaticResource SuccessBgBrush}" BorderBrush="#A7F3D0" BorderThickness="1" CornerRadius="6" Padding="10,6" Margin="0,8,0,0"
+                                Visibility="{Binding IsFileLoaded, Converter={StaticResource BoolToVis}}">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="✓" Foreground="{StaticResource SuccessBrush}" FontWeight="Bold" Margin="0,0,6,0"/>
+                                <TextBlock Text="Loaded: " FontWeight="SemiBold" Foreground="#065F46"/>
+                                <TextBlock Text="{Binding FileName}" Foreground="#047857"/>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </Border>
+
+                <!-- CARD 2: WORKSHEET AND RANGE PICKER -->
+                <Border Style="{StaticResource CardBorderStyle}" IsEnabled="{Binding IsFileLoaded}">
+                    <StackPanel>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
+                            <TextBlock Text="2" FontWeight="Bold" FontSize="14" Foreground="White" Width="22" Height="22" TextAlignment="Center" VerticalAlignment="Center">
+                                <TextBlock.Background>
+                                    <VisualBrush>
+                                        <VisualBrush.Visual>
+                                            <Ellipse Width="22" Height="22" Fill="{StaticResource PrimaryBrush}"/>
+                                        </VisualBrush.Visual>
+                                    </VisualBrush>
+                                </TextBlock.Background>
+                            </TextBlock>
+                            <TextBlock Text="Worksheet &amp; Cell Range" FontWeight="SemiBold" FontSize="14" Foreground="{StaticResource TextPrimaryBrush}" Margin="8,0,0,0" VerticalAlignment="Center"/>
+                        </StackPanel>
+
+                        <!-- Worksheet Selector -->
+                        <TextBlock Text="Worksheet:" FontWeight="Medium" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,4"/>
+                        <ComboBox ItemsSource="{Binding Worksheets}" SelectedItem="{Binding SelectedWorksheet}"
+                                  Style="{StaticResource VirtualizedComboBoxStyle}" Margin="0,0,0,6"/>
+
+                        <!-- Range Preview -->
+                        <TextBlock Text="{Binding UsedRangePreview}" Foreground="{StaticResource TextMutedBrush}" FontSize="11" Margin="2,0,0,12"/>
+
+                        <!-- Range Selection Mode -->
+                        <TextBlock Text="Range Scope:" FontWeight="Medium" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,6"/>
+                        <StackPanel Margin="0,0,0,10">
+                            <!-- Entire Sheet Option -->
+                            <RadioButton Content="Entire Worksheet (Used Data Grid)" IsChecked="{Binding IsEntireSheet}" Margin="0,0,0,6" FontWeight="Medium"/>
+
+                            <!-- Named Range Option -->
+                            <RadioButton Content="Excel Defined Named Range" IsChecked="{Binding IsNamedRange}" Margin="0,0,0,6" FontWeight="Medium"/>
+                            <ComboBox ItemsSource="{Binding NamedRanges}" SelectedItem="{Binding SelectedNamedRange}" 
+                                      IsEnabled="{Binding IsNamedRange}" Style="{StaticResource VirtualizedComboBoxStyle}" Margin="24,0,0,8"/>
+
+                            <!-- Custom Range Option -->
+                            <RadioButton Content="Custom Cell Coordinates (e.g. A1:G25)" IsChecked="{Binding IsCustomRange}" Margin="0,0,0,6" FontWeight="Medium"/>
+                            <TextBox Text="{Binding CustomRangeText, UpdateSourceTrigger=PropertyChanged}" 
+                                     IsEnabled="{Binding IsCustomRange}" Style="{StaticResource CleanTextBoxStyle}" Margin="24,0,0,0"
+                                     ToolTip="Enter standard cell address or rectangle, e.g. A1:G20 or B5:F15"/>
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+
+                <!-- CARD 3: TARGET VIEW SETTINGS -->
+                <Border Style="{StaticResource CardBorderStyle}">
+                    <StackPanel>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
+                            <TextBlock Text="3" FontWeight="Bold" FontSize="14" Foreground="White" Width="22" Height="22" TextAlignment="Center" VerticalAlignment="Center">
+                                <TextBlock.Background>
+                                    <VisualBrush>
+                                        <VisualBrush.Visual>
+                                            <Ellipse Width="22" Height="22" Fill="{StaticResource PrimaryBrush}"/>
+                                        </VisualBrush.Visual>
+                                    </VisualBrush>
+                                </TextBlock.Background>
+                            </TextBlock>
+                            <TextBlock Text="Revit View Configuration" FontWeight="SemiBold" FontSize="14" Foreground="{StaticResource TextPrimaryBrush}" Margin="8,0,0,0" VerticalAlignment="Center"/>
+                        </StackPanel>
+
+                        <!-- View Type (Drafting vs Legend) -->
+                        <TextBlock Text="Target View Type:" FontWeight="Medium" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,6"/>
+                        <Grid Margin="0,0,0,12">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <RadioButton Grid.Column="0" Content="Drafting View (ViewDrafting)" IsChecked="{Binding IsDraftingView}" FontWeight="Medium"
+                                         ToolTip="Creates a standard 2D drafting view under Drafting Views category"/>
+                            <RadioButton Grid.Column="1" Content="Legend View (Multi-Sheet Placeable)" IsChecked="{Binding IsLegendView}" FontWeight="Medium"
+                                         ToolTip="Creates a Legend view that can be placed on multiple sheets simultaneously"/>
+                        </Grid>
+
+                        <!-- View Name -->
+                        <TextBlock Text="View Name:" FontWeight="Medium" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,4"/>
+                        <TextBox Text="{Binding ViewName, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource CleanTextBoxStyle}" Margin="0,0,0,12"/>
+
+                        <!-- View Scale -->
+                        <TextBlock Text="View Scale (1:X):" FontWeight="Medium" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,4"/>
+                        <ComboBox ItemsSource="{Binding AvailableScales}" SelectedItem="{Binding SelectedScale}" 
+                                  Style="{StaticResource VirtualizedComboBoxStyle}" Margin="0,0,0,14"/>
+
+                        <!-- Visual Overrides and Toggles -->
+                        <TextBlock Text="Styling &amp; Formatting Options:" FontWeight="Medium" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,8"/>
+                        <StackPanel Margin="2,0,0,0">
+                            <CheckBox Content="Preserve Cell Background Fills (FilledRegions)" 
+                                      IsChecked="{Binding PreserveBackgroundFills}" 
+                                      Style="{StaticResource SwitchStyle}" Margin="0,0,0,10"
+                                      Foreground="{StaticResource TextSecondaryBrush}"/>
+                            <CheckBox Content="Black &amp; White High-Contrast Mode (Disregards Colors)" 
+                                      IsChecked="{Binding BlackAndWhiteMode}" 
+                                      Style="{StaticResource SwitchStyle}"
+                                      Foreground="{StaticResource TextSecondaryBrush}"/>
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+
+            </StackPanel>
+        </ScrollViewer>
+
+        <!-- PROGRESS AND ERROR BANNER -->
+        <StackPanel Grid.Row="2" Margin="0,0,0,10">
+            <!-- Error Banner -->
+            <Border Background="{StaticResource ErrorBgBrush}" BorderBrush="#FCA5A5" BorderThickness="1" CornerRadius="6" Padding="12,8" Margin="0,0,0,8"
+                    Visibility="{Binding HasError, Converter={StaticResource BoolToVis}}">
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="⚠️" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                    <TextBlock Text="{Binding ErrorMessage}" Foreground="{StaticResource ErrorBrush}" FontWeight="Medium" TextWrapping="Wrap" VerticalAlignment="Center"/>
+                </StackPanel>
+            </Border>
+
+            <!-- Determinate Progress Bar and Status -->
+            <StackPanel Visibility="{Binding IsBusy, Converter={StaticResource BoolToVis}}">
+                <Grid Margin="0,0,0,4">
+                    <TextBlock Text="{Binding StatusMessage}" Foreground="{StaticResource TextSecondaryBrush}" FontSize="12"/>
+                    <TextBlock Text="{Binding ProgressPercent, StringFormat={}{0:0}%}" HorizontalAlignment="Right" Foreground="{StaticResource PrimaryBrush}" FontWeight="SemiBold" FontSize="12"/>
+                </Grid>
+                <ProgressBar Value="{Binding ProgressPercent}" Maximum="100" Height="6" Background="#E2E8F0" Foreground="{StaticResource PrimaryBrush}">
+                    <ProgressBar.Resources>
+                        <Style TargetType="Border">
+                            <Setter Property="CornerRadius" Value="3"/>
+                        </Style>
+                    </ProgressBar.Resources>
+                </ProgressBar>
+            </StackPanel>
+        </StackPanel>
+
+        <!-- ACTION BAR (FOOTER) -->
+        <Border Grid.Row="3" BorderBrush="{StaticResource CardBorderBrush}" BorderThickness="0,1,0,0" Padding="0,14,0,0">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <TextBlock Grid.Column="0" Text="{Binding StatusMessage}" Foreground="{StaticResource TextMutedBrush}" 
+                           FontSize="12" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+
+                <Button Grid.Column="1" Content="Cancel" Command="{Binding CancelCommand}" Style="{StaticResource GhostButtonStyle}" Margin="0,0,10,0"/>
+
+                <Button Grid.Column="2" Content="Import Table" Command="{Binding ImportTableCommand}" 
+                        IsEnabled="{Binding CanImport}" Style="{StaticResource PrimaryButtonStyle}"/>
+            </Grid>
+        </Border>
+    </Grid>
+</Window>
