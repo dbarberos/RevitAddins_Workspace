@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>TablePlus User Guide</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 25px; line-height: 1.6; color: #333; max-width: 950px; margin: auto; }
+        h1, h2, h3 { color: #005A9C; }
+        h1 { border-bottom: 2px solid #005A9C; padding-bottom: 10px; }
+        h2 { border-bottom: 1px solid #ddd; padding-bottom: 6px; margin-top: 30px; }
+        code { background-color: #f4f4f4; padding: 2px 5px; border-radius: 3px; font-family: Consolas, monospace; }
+        table { border-collapse: collapse; width: 100%; margin: 15px 0; }
+        th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
+        th { background-color: #f8f9fa; font-weight: 600; }
+        .badge { display: inline-block; padding: 4px 8px; font-size: 12px; font-weight: bold; border-radius: 4px; background-color: #007ACC; color: white; }
+        .alert { padding: 15px; margin: 15px 0; border: 1px solid transparent; border-radius: 4px; }
+        .alert-info { background-color: #e7f3fe; border-color: #b6d4fe; color: #084298; }
+        .alert-warning { background-color: #fff3cd; border-color: #ffecb5; color: #664d03; }
+        ul, ol { padding-left: 25px; }
+        li { margin-bottom: 6px; }
+    </style>
+</head>
+<body>
+
+    <h1>TablePlus</h1>
+    <p>
+        <span class="badge">Version 1.0.0</span> &nbsp;
+        <strong>Add-in ID (GUID):</strong> <code>C9281744-8B1A-4C23-9D01-B719E022F3AA</code>
+    </p>
+
+    <h2>1. Overview</h2>
+    <p><strong>TablePlus</strong> is an enterprise Autodesk Revit add-in designed as a comprehensive tabular and spreadsheet management suite. It allows BIM managers, architects, and engineers to import Microsoft Excel spreadsheets (<code>.xlsx</code>, <code>.xlsm</code>, <code>.csv</code>) directly into Autodesk Revit as native vector <strong>Drafting Views</strong> or <strong>Legend Views</strong> without quality degradation.</p>
+    <p>Unlike rasterized screen captures or bitmap imports, TablePlus generates true parametric vector elements: crisp detail lines for borders, filled regions for cell background fills, and native Text Note elements configured with matched fonts, weights, colors, and alignments. All generated tables are stamped with an Extensible Storage schema for future synchronization and lifecycle management.</p>
+
+    <h2>2. Requirements and Compatibility</h2>
+    <div class="alert alert-warning">
+        <strong>Compatibility:</strong> Supported on 64-bit Windows across Autodesk Revit 2024, 2025, 2026, and 2027.
+    </div>
+    <ul>
+        <li><strong>Platform</strong>: .NET Framework 4.8 (Revit 2024) / .NET 8.0 (Revit 2025, 2026, 2027).</li>
+        <li><strong>Host Application</strong>: Autodesk Revit 2024, 2025, 2026, 2027 (Win64).</li>
+        <li><strong>Office Dependency</strong>: None. TablePlus operates via managed OpenXML libraries (ClosedXML) and does not require Microsoft Office or Excel to be installed on the machine.</li>
+    </ul>
+
+    <h2>3. Installation & Uninstallation</h2>
+    <p>The installer that ran when you downloaded this plug-in from the Autodesk App Store has already installed the plug-in. You may need to restart the Autodesk product to activate the plug-in.</p>
+    <p>To uninstall this plug-in, exit the Autodesk product if you are currently running it, simply rerun the installer by downloading it again from the Autodesk App Store, and select the 'Uninstall' button, or you can uninstall it from 'Control Panel\Programs\Programs and Features' (Windows 10/11), just as you would uninstall any other application from your system.</p>
+
+    <h2>4. Ribbon Panel Integration</h2>
+    <p>By default, in accordance with Autodesk App Store single-command guidelines, TablePlus integrates into Revit's ribbon under the <strong>DBDev Tools</strong> tab (or the native <strong>Add-Ins</strong> tab):</p>
+
+    <table>
+        <tr>
+            <th>Command</th>
+            <th>Description</th>
+            <th>Technical Class</th>
+        </tr>
+        <tr>
+            <td><strong>Import Table</strong></td>
+            <td>Opens the interactive Excel Vector Table Import dialog to select workbooks, sheets, ranges, target views, and styling options.</td>
+            <td><code>TablePlus.Commands.CmdImportTable</code></td>
+        </tr>
+    </table>
+
+    <h2>5. Key Features & Comprehensive Usage Guide</h2>
+
+    <h3>5.1. Excel Vector Geometry Engine</h3>
+    <p>When an Excel workbook is imported, TablePlus calculates physical dimensions based on column widths and row heights converted into internal Revit imperial units (feet):</p>
+    <ul>
+        <li><strong>Cell Borders</strong>: Generated as clean, closed Revit detail lines. Multiple line weights, styles, and edge topologies (thin, medium, thick, double, dashed) are faithfully mapped.</li>
+        <li><strong>Cell Background Shading</strong>: Cells with background fill colors are rendered using solid <code>FilledRegion</code> elements with matched RGB color types.</li>
+        <li><strong>Merged Cells</strong>: Merged ranges are unified into combined boundary polygons with centered text note alignment across the full merged span.</li>
+        <li><strong>Typographic Fidelity</strong>: Text elements inherit the source font family, font size, bold, italic, underline, font color, horizontal alignment (Left, Center, Right), and vertical alignment (Top, Middle, Bottom).</li>
+    </ul>
+
+    <h3>5.2. Target View Flexibility</h3>
+    <p>Users can import tables into:</p>
+    <ul>
+        <li><strong>New Drafting View</strong>: Creates a dedicated Drafting View at 1:1 scale (e.g. <em>Table_GeneralNotes</em>), ideal for placing on multiple sheets.</li>
+        <li><strong>Existing Drafting View</strong>: Inserts or replaces tabular content within an active drafting view.</li>
+        <li><strong>Legend View</strong>: Creates a Legend View allowing tabular graphic standards to be placed simultaneously across multiple documentation sheets.</li>
+    </ul>
+
+    <h3>5.3. Extensible Storage Metadata Tracking</h3>
+    <p>Every view created by TablePlus is tagged with an invisible Extensible Storage schema (GUID: <code>E3B21D40-6C9A-4E2F-8A11-92D0543B7A1C</code>) recording:</p>
+    <ul>
+        <li>Source workbook file path.</li>
+        <li>Worksheet name and imported cell range address (e.g., <code>A1:G35</code>).</li>
+        <li>Last import UTC timestamp.</li>
+        <li>Active update behavior configuration.</li>
+    </ul>
+
+    <h3>5.4. Modern Card-Based User Interface</h3>
+    <p>The import dialog features the <strong>FilterPlus modern card-based theme</strong> with live validation, file browsing, automatic sheet discovery, range preview, and scale/view type selectors.</p>
+
+    <h2>6. Support and Contact</h2>
+    <p>For technical inquiries, bug reports, or feature suggestions:</p>
+    <ul>
+        <li><strong>Developer:</strong> DBDev_dbarberos</li>
+        <li><strong>Company:</strong> DBDev Solutions</li>
+        <li><strong>Support Email:</strong> <a href="mailto:dbarberos@outlook.com">dbarberos@outlook.com</a></li>
+        <li><strong>Website:</strong> <a href="https://dbdev-dbarberos.github.io" target="_blank">https://dbdev-dbarberos.github.io</a></li>
+    </ul>
+
+</body>
+</html>

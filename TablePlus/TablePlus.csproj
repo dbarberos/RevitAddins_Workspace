@@ -7,13 +7,18 @@
         <IsRepackable>false</IsRepackable>
         <EnableDynamicLoading>true</EnableDynamicLoading>
         <ImplicitUsings>enable</ImplicitUsings>
-        <Configurations>Debug.R23;Debug.R24;Debug.R25;Debug.R26;Debug.R27</Configurations>
-        <Configurations>$(Configurations);Release.R23;Release.R24;Release.R25;Release.R26;Release.R27</Configurations>
+        <DefaultItemExcludes>$(DefaultItemExcludes);Deploy\**;TablePlusPublishPackage\**</DefaultItemExcludes>
+        <Configurations>Debug.R24;Debug.R25;Debug.R26;Debug.R27</Configurations>
+        <Configurations>$(Configurations);Release.R24;Release.R25;Release.R26;Release.R27</Configurations>
         <Version>1.0.0</Version>
         <Company>DBDev_dbarberos</Company>
         <Authors>DBDev_dbarberos</Authors>
         <Copyright>Copyright © 2026 DBDev_dbarberos</Copyright>
         <Product>TablePlus</Product>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="$(Configuration.StartsWith('Debug'))">
+        <DefineConstants>$(DefineConstants);DEBUG</DefineConstants>
     </PropertyGroup>
 
     <ItemGroup>
@@ -27,7 +32,7 @@
         <PackageReference Include="JetBrains.Annotations" Version="2025.2.4" PrivateAssets="all"/>
         <PackageReference Include="Polyfill" Version="10.0.0" PrivateAssets="all"/>
         <PackageReference Include="CommunityToolkit.Mvvm" Version="8.2.2"/>
-        <PackageReference Include="System.Text.Json" Version="8.0.5"/>
+        <PackageReference Include="System.Text.Json" Version="8.0.5" Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'"/>
         <PackageReference Include="ClosedXML" Version="0.104.2"/>
         <PackageReference Include="Obfuscar" Version="2.2.50" PrivateAssets="all"/>
     </ItemGroup>

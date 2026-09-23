@@ -1,0 +1,37 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<ApplicationPackage
+  SchemaVersion="1.0"
+  AppVersion="1.0.0"
+  Author="DBDev_dbarberos"
+  Description="TablePlus"
+  Name="TablePlus"
+  ProductCode="A9D54A27-714C-44FD-8B29-E3DE95F0D759"
+  OnlineDocumentation="https://dbdev-dbarberos.github.io/PrivacyPolicy/"
+  ProductType="Application"
+  Icon="./Contents/Resources/Icon32.png"
+  HelpFile="./Contents/Resources/Help.html">
+
+  <CompanyDetails
+    Name="DBDev Solutions"
+    Url="https://dbdev-dbarberos.github.io"
+    Email="dbarberos@outlook.com" />
+
+  <!-- Components injected dynamically by build-bundle.ps1 -->
+  <Components Description="TablePlus Add-in for Revit 2024">
+    <RuntimeRequirements OS="Win64" Platform="Revit" SeriesMin="R2024" SeriesMax="R2024" />
+    <ComponentEntry AppName="TablePlus" Version="1.0.0" ModuleName="./Contents/2024/TablePlus.addin" AppDescription="DBDev Solutions" LoadOnRevitStartup="True" />
+  </Components>
+  <Components Description="TablePlus Add-in for Revit 2025">
+    <RuntimeRequirements OS="Win64" Platform="Revit" SeriesMin="R2025" SeriesMax="R2025" />
+    <ComponentEntry AppName="TablePlus" Version="1.0.0" ModuleName="./Contents/2025/TablePlus.addin" AppDescription="DBDev Solutions" LoadOnRevitStartup="True" />
+  </Components>
+  <Components Description="TablePlus Add-in for Revit 2026">
+    <RuntimeRequirements OS="Win64" Platform="Revit" SeriesMin="R2026" SeriesMax="R2026" />
+    <ComponentEntry AppName="TablePlus" Version="1.0.0" ModuleName="./Contents/2026/TablePlus.addin" AppDescription="DBDev Solutions" LoadOnRevitStartup="True" />
+  </Components>
+  <Components Description="TablePlus Add-in for Revit 2027">
+    <RuntimeRequirements OS="Win64" Platform="Revit" SeriesMin="R2027" SeriesMax="R2027" />
+    <ComponentEntry AppName="TablePlus" Version="1.0.0" ModuleName="./Contents/2027/TablePlus.addin" AppDescription="DBDev Solutions" LoadOnRevitStartup="True" />
+  </Components>
+
+</ApplicationPackage>

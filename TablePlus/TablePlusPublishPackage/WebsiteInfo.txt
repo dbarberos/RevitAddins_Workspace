@@ -1,0 +1,5 @@
+Publisher: DBDev_dbarberos
+Company Name: DBDev Solutions
+Website URL: https://dbdev-dbarberos.github.io
+Documentation & Privacy Policy: https://dbdev-dbarberos.github.io/PrivacyPolicy/
+Support Email: dbarberos@outlook.com

@@ -1,0 +1,12 @@
+﻿<RevitAddIns>
+    <AddIn Type="Application">
+        <Name>TablePlus</Name>
+        <Assembly>TablePlus.dll</Assembly>
+        <AddInId>C9281744-8B1A-4C23-9D01-B719E022F3AA</AddInId>
+        <FullClassName>TablePlus.Application</FullClassName>
+        <VendorId>DBDev_dbarberos</VendorId>
+        <VendorDescription>DBDev Solutions</VendorDescription>
+        <VendorEmail>dbarberos@outlook.com</VendorEmail>
+        <ContextName>TablePlus</ContextName>
+    </AddIn>
+</RevitAddIns>

@@ -82,12 +82,29 @@ The add-in registers a unified Ribbon Panel under the `DBDev Tools` tab (or `Add
 - Multi-version resolution hook `AppDomain.CurrentDomain.AssemblyResolve` registered in `OnStartup()`.
 
 ### 4.5. Persistent Metadata Schema (Extensible Storage)
-- Every generated table view and synchronized schedule link must be stamped with a registered `TablePlus` Extensible Storage schema storing:
+- Every generated table view and synchronized schedule link must be stamped with a registered `TablePlus` Extensible Storage schema (`E3B21D40-6C9A-4E2F-8A11-92D0543B7A1C`) storing:
   - `SourceFilePath`
   - `SheetName` / `RangeAddress`
   - `LastImportTimestampUtc`
   - `MappingProfileId`
   - `UpdateBehavior`
+
+### 4.6. Multi-Version Architecture & Autodesk App Store Packaging (Revit 2024–2027)
+- **Supported Versions**: Strictly covers Autodesk Revit **2024, 2025, 2026, and 2027** (`Configurations`: `Debug.R24..R27` and `Release.R24..R27`).
+- **Target Frameworks**:
+  - Revit 2024: `.NET Framework 4.8`
+  - Revit 2025 & 2026: `.NET 8.0`
+  - Revit 2027: `.NET 9.0`
+- **Autodesk App Store Autoloader Specification (`revit-appstore-bundle`)**:
+  - `PackageContents.xml` must strictly declare the `"R"` prefix in `SeriesMin` and `SeriesMax` (`R2024`, `R2025`, `R2026`, `R2027`).
+  - Standardized vendor metadata: VendorId `DBDev_dbarberos`, VendorDescription `DBDev Solutions`, Email `dbarberos@outlook.com`.
+  - Every version folder (`Contents/202X/`) must include all dependent DLLs (`ClosedXML.dll`, `DocumentFormat.OpenXml.dll`, `Nice3point.*.dll`, `CommunityToolkit.Mvvm.dll`, `SixLabors.Fonts.dll`, etc.) alongside `TablePlus.dll`, `TablePlus.addin`, and contextual `help.html`.
+- **Packaging Automation**:
+  - Bundles are compiled and zipped via `.\.agents\skills\revit-appstore-bundle\scripts\build-bundle.ps1 -AppName "TablePlus" -Version "1.0.0" -ProjectDir ".\TablePlus" -TargetYears @("2024", "2025", "2026", "2027")`.
+  - Staged deliverables in `TablePlus/Deploy/` and synced with `TablePlus/TablePlusPublishPackage/`.
+- **MSBuild Hygiene**:
+  - `<DefaultItemExcludes>` in `.csproj` must exclude `Deploy\**` and `TablePlusPublishPackage\**` to prevent MSBuild crawling.
+  - Obfuscation is governed by `..\Obfuscar.targets` and root `obfuscar.xml`.
 
 ---
 
@@ -95,3 +112,5 @@ The add-in registers a unified Ribbon Panel under the `DBDev Tools` tab (or `Add
 - ❌ Do NOT store native Revit `Element` instances in ViewModels.
 - ❌ Do NOT write code across modules without approving their corresponding vertical `spec.md`, `plan.md`, and `tasks.md`.
 - ❌ Do NOT suppress fatal failures or corrupt document state (`FailureSeverity.DocumentCorruption`).
+- ❌ Do NOT omit the `"R"` prefix in `SeriesMin`/`SeriesMax` attributes within `PackageContents.xml`.
+- ❌ Do NOT ship isolated DLLs without their third-party dependencies in version bundle subfolders.
