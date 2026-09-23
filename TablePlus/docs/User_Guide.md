@@ -50,18 +50,18 @@ To uninstall this plug-in, exit the Autodesk product if you are currently runnin
 ## 4. Commands and Features Guide
 
 ### 4.1. Ribbon Panel Integration
-TablePlus integrates into the Autodesk Revit ribbon under the dedicated **DBDev Tools** tab (or Revit's standard **Add-Ins / Complementos** tab):
+TablePlus integrates into the Autodesk Revit ribbon under the standard **Add-Ins / Complementos** tab:
 
 | Command Button | Function | Technical Class |
 |---|---|---|
-| **Import Table** | Opens the interactive Excel Vector Table Import dialog to browse workbooks, select worksheets, configure cell ranges, set target views, and generate vector graphics. | `TablePlus.Commands.CmdImportTable` |
+| **Import Excel** | Opens the interactive Excel Vector Table Import dialog to browse workbooks, select worksheets, configure cell ranges, set target views, and generate vector graphics. | `TablePlus.Commands.CmdImportTable` |
 | *(Contextual F1)* | Launches the offline HTML user manual ([help.html](file:///c:/Users/david.barbero/Documents/DOCUMENTOS/ALTEN/Workbench/RevitAddins_Workspace/RevitAddins_Workspace/TablePlus/Resources/help.html)) with full usage instructions. | `TablePlus.Application` |
 
 ```text
 Ribbon Hierarchy:
-[DBDev Tools] (Tab)
+[Add-Ins / Complementos] (Tab)
  └── [TablePlus] (Panel)
-      └── [Import Table] (Large PushButton 32x32 with ToolTip & F1 Help)
+      └── [Import Excel] (Large PushButton 32x32 with ToolTip & F1 Help)
 ```
 
 ---
@@ -69,7 +69,7 @@ Ribbon Hierarchy:
 ## 5. Comprehensive Usage Guide
 
 ### 5.1. Source Spreadsheet Selection & Inspection
-1. Click the **Import Table** button in the **DBDev Tools** ribbon tab.
+1. Click the **Import Excel** button in the **Add-Ins / Complementos** ribbon tab.
 2. In the **Excel Source File** card:
    - Click **Browse...** to select your target spreadsheet (`.xlsx`, `.xlsm`, `.csv`).
    - The add-in asynchronously opens the workbook in read-only mode and discovers all available worksheets.

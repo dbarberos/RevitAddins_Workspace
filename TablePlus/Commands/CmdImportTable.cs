@@ -9,9 +9,9 @@ using TablePlus.Views;
 namespace TablePlus.Commands;
 
 /// <summary>
-/// External command entry point for TablePlus Excel Vector Import.
+/// External command entry point for TablePlus Master Dashboard.
 /// Runs in the Revit API context to initialize services, configure the ViewModel,
-/// and display the modal import window.
+/// and display the modal dashboard window.
 /// </summary>
 [UsedImplicitly]
 [Transaction(TransactionMode.Manual)]
@@ -40,10 +40,11 @@ public class CmdImportTable : ExternalCommand
             var excelService = new ExcelReaderService();
             var schemaService = new SchemaService();
             var geometryService = new TableGeometryService(schemaService);
+            var registryService = new TableRegistryService(schemaService, excelService);
 
-            // Instantiate ViewModel and show modal window
-            var viewModel = new TableImportViewModel(doc, excelService, geometryService, schemaService);
-            var view = new TableImportView(viewModel);
+            // Instantiate ViewModel and display master dashboard
+            var viewModel = new MainWindowViewModel(doc, uiDoc, registryService, geometryService, excelService, schemaService);
+            var view = new MainWindowView(viewModel);
 
             view.ShowDialog();
         }

@@ -23,11 +23,11 @@ To uninstall this plug-in, exit the Autodesk product if you are currently runnin
 ## Commands and Features Guide
 
 ### Ribbon Panel Integration
-The add-in creates a dedicated tool panel under the **DBDev Tools** tab (or Revit's standard **Add-Ins** tab):
+The add-in creates a dedicated tool panel under Revit's standard **Add-Ins / Complementos** tab:
 
 | Command | Function | Technical Class |
 |---------|----------|-----------------|
-| **Import Table** | Opens the interactive Excel Vector Table Import dialog to select workbooks, sheets, ranges, target views, and styling options. | `TablePlus.Commands.CmdImportTable` |
+| **Import Excel** | Opens the interactive Excel Vector Table Import dialog to select workbooks, sheets, ranges, target views, and styling options. | `TablePlus.Commands.CmdImportTable` |
 
 ---
 

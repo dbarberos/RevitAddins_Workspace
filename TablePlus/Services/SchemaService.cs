@@ -240,6 +240,27 @@ public class SchemaService : ISchemaService
         return entity.IsValid() ? SafeGetString(entity, schema, FieldTimestampUtc) : null;
     }
 
+    /// <inheritdoc />
+    public void RemoveTableMetadata(View view)
+    {
+        if (view == null) return;
+        var schema = Schema.Lookup(SchemaGuid);
+        if (schema == null) return;
+
+        try
+        {
+            var entity = view.GetEntity(schema);
+            if (entity != null && entity.IsValid())
+            {
+                view.DeleteEntity(schema);
+            }
+        }
+        catch
+        {
+            // Silently swallow delete entity errors
+        }
+    }
+
     private static string? SafeGetString(Entity entity, Schema schema, string fieldName)
     {
         try

@@ -26,4 +26,16 @@ public class TableImportConfig
     /// UTC timestamp of when the table was imported or last synchronized.
     /// </summary>
     public string? LastImportedTimestampUtc { get; set; }
+
+    // Spec 002 additions:
+    public bool IsAutoSyncEnabled { get; set; } = false;
+    public TableSourceType SourceType { get; set; } = TableSourceType.ExcelXlsx;
+    public string? GridLineStyleName { get; set; }
+    public string? BodyTextNoteTypeName { get; set; }
+
+    // Header Row Styling Overrides
+    public bool HeaderCustomStyleEnabled { get; set; } = false;
+    public string? HeaderTextNoteTypeName { get; set; }
+    public string? HeaderTextColorHex { get; set; }
+    public string? HeaderFillColorHex { get; set; }
 }

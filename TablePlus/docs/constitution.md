@@ -72,10 +72,10 @@ TablePlus/specs/
 - All spreadsheet manipulation must use clean, open-source managed libraries (e.g., `ClosedXML` / `ExcelDataReader`).
 
 ### 4.4. Unified Ribbon & Entry Points (`Application.cs`)
-The add-in registers a unified Ribbon Panel under the `DBDev Tools` tab (or `Add-Ins` if tab exists):
-- **Panel:** `TablePlus` (or `Tables`)
+The add-in registers a unified Ribbon Panel under the standard `Add-Ins` tab (Complementos), complying with Autodesk App Store single-command add-in requirements:
+- **Panel:** `TablePlus`
 - **Buttons**:
-  - `Import Table` (`CmdImportTable`)
+  - `Import Excel` (`CmdImportTable`)
   - `Sync Tables` (`CmdSyncTables`)
   - `Schedule Link` (`CmdScheduleLink`)
   - `Settings` (`CmdTableSettings`)

@@ -1,14 +1,18 @@
+using Autodesk.Revit.DB;
 using Autodesk.Revit.UI;
 using JetBrains.Annotations;
 using Nice3point.Revit.Extensions;
 using Nice3point.Revit.Toolkit.External;
 using TablePlus.Commands;
+using TablePlus.Models;
+using TablePlus.Services;
 
 namespace TablePlus;
 
 /// <summary>
 /// Application entry point for TablePlus.
-/// Configures Revit Ribbon tab, panels, pushbuttons, and registers the dynamic assembly resolver.
+/// Configures Revit Ribbon tab, panels, pushbuttons, registers the dynamic assembly resolver,
+/// and hooks document lifecycle events for automatic background synchronization.
 /// </summary>
 [UsedImplicitly]
 public class Application : ExternalApplication
@@ -16,12 +20,97 @@ public class Application : ExternalApplication
     public override void OnStartup()
     {
         AppDomain.CurrentDomain.AssemblyResolve += OnAssemblyResolve;
-        CreateRibbon();
+
+        try
+        {
+            CreateRibbon();
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"TablePlus Ribbon Error: {ex.Message}");
+        }
+
+        try
+        {
+            Application.ControlledApplication.DocumentOpened += OnDocumentOpened;
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"TablePlus AutoSync Hook Error: {ex.Message}");
+        }
     }
 
     public override void OnShutdown()
     {
         AppDomain.CurrentDomain.AssemblyResolve -= OnAssemblyResolve;
+
+        try
+        {
+            Application.ControlledApplication.DocumentOpened -= OnDocumentOpened;
+        }
+        catch
+        {
+            // Silently swallow unhook exceptions on exit
+        }
+    }
+
+    /// <summary>
+    /// Background check executed when a project document is opened.
+    /// Automatically updates any table views marked with IsAutoSyncEnabled if their source file was modified.
+    /// </summary>
+    private static void OnDocumentOpened(object? sender, Autodesk.Revit.DB.Events.DocumentOpenedEventArgs e)
+    {
+        var doc = e.Document;
+        if (doc == null || doc.IsFamilyDocument || doc.IsReadOnly) return;
+
+        try
+        {
+            var schemaService = new SchemaService();
+            var excelService = new ExcelReaderService();
+            var registryService = new TableRegistryService(schemaService, excelService);
+
+            var tables = registryService.DiscoverTablesAsync(doc).GetAwaiter().GetResult();
+            var autoSyncTables = tables.Where(t => t.IsAutoSyncEnabled && t.Status == TableSyncStatus.Modified).ToList();
+
+            if (autoSyncTables.Count > 0)
+            {
+                var geometryService = new TableGeometryService(schemaService);
+
+                using var tg = new TransactionGroup(doc, "TablePlus: Auto-Sync Tables on Document Open");
+                tg.Start();
+
+                foreach (var item in autoSyncTables)
+                {
+                    if (!System.IO.File.Exists(item.SourceFilePath)) continue;
+
+                    try
+                    {
+                        var cells = excelService.ExtractCells(item.SourceFilePath, item.SelectedSheetName, item.Config.CustomRangeAddress);
+                        var merges = excelService.ExtractMergedCells(item.SourceFilePath, item.SelectedSheetName);
+
+#if REVIT2024_OR_GREATER
+                        var viewId = new ElementId(item.ViewId);
+#else
+                        var viewId = new ElementId((int)item.ViewId);
+#endif
+                        if (doc.GetElement(viewId) is View targetView)
+                        {
+                            geometryService.UpdateTableInView(doc, targetView, item.Config, cells, merges);
+                        }
+                    }
+                    catch
+                    {
+                        // Proceed with remaining tables if one fails
+                    }
+                }
+
+                tg.Assimilate();
+            }
+        }
+        catch
+        {
+            // Document open must never be interrupted by background auto-sync exceptions
+        }
     }
 
     /// <summary>
@@ -54,29 +143,22 @@ public class Application : ExternalApplication
 
         try
         {
-            // Prefer dedicated company tab "DBDev Tools"
-            panel = Application.CreatePanel("Tables", "DBDev Tools");
+            // Placed on Revit's standard Add-Ins (Complementos) tab,
+            // strictly complying with Autodesk App Store single-tool requirements.
+            panel = Application.CreatePanel("TablePlus");
         }
-        catch
+        catch (Exception ex)
         {
-            try
-            {
-                // Fallback to standard "Add-Ins" tab
-                panel = Application.CreatePanel("Tables");
-            }
-            catch
-            {
-                // Ribbon creation failed
-            }
+            System.Diagnostics.Debug.WriteLine($"TablePlus Ribbon Panel Creation Error: {ex.Message}");
         }
 
         if (panel != null)
         {
-            var button = panel.AddPushButton<CmdImportTable>("Import\nExcel");
+            var button = panel.AddPushButton<CmdImportTable>("TablePlus\nDashboard");
             button.SetImage("/TablePlus;component/Resources/Icons/TablePlus16x16.png");
             button.SetLargeImage("/TablePlus;component/Resources/Icons/TablePlus32x32.png");
-            button.ToolTip = "TablePlus — Import Excel Spreadsheet";
-            button.LongDescription = "Import Excel spreadsheets (.xlsx, .xls, .csv) into native Revit Drafting Views or Legend Views as editable 2D vector tables with cell fills, borders, and text formatting.";
+            button.ToolTip = "TablePlus — Master Table Dashboard";
+            button.LongDescription = "Open the TablePlus Master Dashboard to manage, synchronize, and format Excel spreadsheets and schedules in Revit Drafting and Legend views.";
 
             // Contextual F1 Help configuration
             try

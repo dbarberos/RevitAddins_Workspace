@@ -44,7 +44,7 @@ The resulting deliverable will be located at:
 Before submitting, test the bundle locally:
 1. Copy the generated folder `TablePlus.bundle` to `%AppData%\Autodesk\ApplicationPlugins\`.
 2. Launch Revit (2024–2027).
-3. Verify that the **DBDev Tools** (or **Add-Ins**) tab appears in the ribbon, clicking **Import Table** launches the window without missing assembly errors, and Excel vector tables import smoothly.
+3. Verify that the **TablePlus** panel appears in the **Add-Ins / Complementos** ribbon tab, clicking **Import Excel** launches the window without missing assembly errors, and Excel vector tables import smoothly.
 4. Delete the test bundle from `%AppData%\Autodesk\ApplicationPlugins\` when finished.
 
 ---

@@ -54,4 +54,11 @@ public interface ISchemaService
     /// Retrieves the recorded import timestamp (UTC ISO 8601) from the view's Extensible Storage.
     /// </summary>
     string? GetTimestampUtc(View view);
+
+    /// <summary>
+    /// Removes the TablePlus Extensible Storage entity from the specified View, unlinking it.
+    /// MUST be called within an active Revit Transaction.
+    /// </summary>
+    /// <param name="view">The Revit view to unlink.</param>
+    void RemoveTableMetadata(View view);
 }
