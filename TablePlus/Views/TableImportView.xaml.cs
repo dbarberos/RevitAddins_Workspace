@@ -19,6 +19,17 @@ public partial class TableImportView : Window
         _viewModel = viewModel ?? throw new ArgumentNullException(nameof(viewModel));
         DataContext = _viewModel;
 
+        // Enforce Window Icon via absolute pack URI to prevent external host Revit.exe fallback
+        try
+        {
+            Icon = new System.Windows.Media.Imaging.BitmapImage(
+                new Uri("pack://application:,,,/TablePlus;component/Resources/Icons/TablePlus32x32.png", UriKind.Absolute));
+        }
+        catch
+        {
+            // Silently continue with XAML declaration
+        }
+
         // Wire close request from ViewModel
         _viewModel.RequestClose = () =>
         {

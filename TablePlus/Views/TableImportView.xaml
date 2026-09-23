@@ -17,7 +17,7 @@
         AllowDrop="True"
         DragOver="Window_DragOver"
         Drop="Window_Drop"
-        Icon="pack://application:,,,/TablePlus;component/Resources/Icons/RibbonIcon32.png">
+        Icon="pack://application:,,,/TablePlus;component/Resources/Icons/TablePlus32x32.png">
 
     <Window.Resources>
         <!-- COLOR PALETTE BRUSHES -->

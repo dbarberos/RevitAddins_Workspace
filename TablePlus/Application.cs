@@ -73,10 +73,42 @@ public class Application : ExternalApplication
         if (panel != null)
         {
             var button = panel.AddPushButton<CmdImportTable>("Import\nExcel");
-            button.SetImage("/TablePlus;component/Resources/Icons/RibbonIcon16.png");
-            button.SetLargeImage("/TablePlus;component/Resources/Icons/RibbonIcon32.png");
+            button.SetImage("/TablePlus;component/Resources/Icons/TablePlus16x16.png");
+            button.SetLargeImage("/TablePlus;component/Resources/Icons/TablePlus32x32.png");
             button.ToolTip = "TablePlus — Import Excel Spreadsheet";
             button.LongDescription = "Import Excel spreadsheets (.xlsx, .xls, .csv) into native Revit Drafting Views or Legend Views as editable 2D vector tables with cell fills, borders, and text formatting.";
+
+            // Contextual F1 Help configuration
+            try
+            {
+                var assemblyDir = System.IO.Path.GetDirectoryName(typeof(Application).Assembly.Location) ?? string.Empty;
+                var helpPath = System.IO.Path.Combine(assemblyDir, "Resources", "help.html");
+                if (!System.IO.File.Exists(helpPath))
+                {
+                    var helpPathCapitalized = System.IO.Path.Combine(assemblyDir, "Resources", "Help.html");
+                    if (System.IO.File.Exists(helpPathCapitalized))
+                    {
+                        helpPath = helpPathCapitalized;
+                    }
+                    else
+                    {
+                        var bundleHelp = System.IO.Path.GetFullPath(System.IO.Path.Combine(assemblyDir, "..", "Resources", "help.html"));
+                        if (System.IO.File.Exists(bundleHelp))
+                        {
+                            helpPath = bundleHelp;
+                        }
+                    }
+                }
+
+                if (System.IO.File.Exists(helpPath))
+                {
+                    button.SetContextualHelp(new ContextualHelp(ContextualHelpType.Url, helpPath));
+                }
+            }
+            catch
+            {
+                // Silently ignore help resolution failures
+            }
         }
     }
 }
