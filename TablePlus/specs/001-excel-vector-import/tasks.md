@@ -55,7 +55,7 @@
   - Implement methods to stamp and retrieve `SourceFilePath`, `WorksheetName`, `CellRange`, and `Timestamp`.
 
 ### Phase 6: Modern WPF Presentation Layer (FilterPlus Theme)
-- [ ] **T6: Implement TableImportViewModel with CommunityToolkit.Mvvm** (Maps to: `RF-1`, `RF-2`, `RF-3`)
+- [x] **T6: Implement TableImportViewModel with CommunityToolkit.Mvvm** (Maps to: `RF-1`, `RF-2`, `RF-3`)
   - Create `TablePlus/ViewModels/TableImportViewModel.cs`.
   - Implement asynchronous file loading, worksheet selection, and range validation.
   - Implement `[RelayCommand]` for browsing files and executing the import.
