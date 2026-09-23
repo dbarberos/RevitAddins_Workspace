@@ -88,14 +88,14 @@ BIM Managers, structural engineers, and architects frequently need to present st
 
 ## 5. Acceptance Criteria (AC)
 
-- [ ] **AC-1 (matches RF-1):** Loading a multi-sheet `.xlsx` file populates the worksheet list within 1.5 seconds without freezing the UI.
-- [ ] **AC-2 (matches RF-2):** Selecting `A1:D10` correctly scopes the extraction to exactly 10 rows and 4 columns.
-- [ ] **AC-3 (matches RF-3):** Selecting "Legend View" creates a view under Revit's *Legends* project browser category that can be placed on multiple sheets simultaneously.
-- [ ] **AC-4 (matches RF-4):** Generated tables display crisp detail lines matching column widths, text notes with correct formatting, and solid color backgrounds for shaded cells.
-- [ ] **AC-5 (matches RF-4.5):** Merged cells render as a single unified cell without intersecting interior grid lines.
-- [ ] **AC-6 (matches RF-5):** Querying the view with Revit Lookup or Extensible Storage API reveals the stamped `TablePlus` metadata.
-- [ ] **AC-7 (matches RF-6):** The UI seamlessly adopts the active Revit light/dark theme without hardcoded black/white contrast defects.
-- [ ] **AC-8 (matches RF-6.4):** Clicking the "Import Excel" button on the Revit Ribbon opens the `TableImportView` modal window ready for interaction.
+- [x] **AC-1 (matches RF-1):** Loading a multi-sheet `.xlsx` file populates the worksheet list within 1.5 seconds without freezing the UI.
+- [x] **AC-2 (matches RF-2):** Selecting `A1:D10` correctly scopes the extraction to exactly 10 rows and 4 columns.
+- [x] **AC-3 (matches RF-3):** Selecting "Legend View" creates a view under Revit's *Legends* project browser category that can be placed on multiple sheets simultaneously.
+- [x] **AC-4 (matches RF-4):** Generated tables display crisp detail lines matching column widths, text notes with correct formatting, and solid color backgrounds for shaded cells.
+- [x] **AC-5 (matches RF-4.5):** Merged cells render as a single unified cell without intersecting interior grid lines.
+- [x] **AC-6 (matches RF-5):** Querying the view with Revit Lookup or Extensible Storage API reveals the stamped `TablePlus` metadata.
+- [x] **AC-7 (matches RF-6):** The UI seamlessly adopts the active Revit light/dark theme without hardcoded black/white contrast defects.
+- [x] **AC-8 (matches RF-6.4):** Clicking the "Import Excel" button on the Revit Ribbon opens the `TableImportView` modal window ready for interaction.
 
 ---
 

@@ -3,9 +3,9 @@
 **Spec ID:** `001-excel-vector-import`  
 **Target Add-in:** `TablePlus`  
 **Feature Branch:** `TablePlus`  
-**Status:** DRAFT FOR USER REVIEW (PHASE GATE 4)  
+**Status:** COMPLETED & VALIDATED (PHASE GATE 5)  
 **Architect:** SDD Architect  
-**Date:** 2026-09-22  
+**Date:** 2026-09-23  
 **Language:** English (Official Engineering Standard)  
 
 ---
@@ -71,6 +71,6 @@
   - Wire `AppDomain.CurrentDomain.AssemblyResolve` hook for .NET 8 / Revit 2025+ support.
 
 ### Phase 8: Compilation, Validation & Final Verification
-- [ ] **T9: Full Build Validation & Acceptance Criteria Verification** (Maps to: `AC-1` through `AC-8`)
+- [x] **T9: Full Build Validation & Acceptance Criteria Verification** (Maps to: `AC-1` through `AC-8`)
   - Compile `TablePlus.csproj` across active configurations.
   - Verify zero warnings, valid `.addin` file, and ready-to-test state in Revit.
