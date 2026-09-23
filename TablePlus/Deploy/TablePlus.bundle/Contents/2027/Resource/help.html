@@ -25,75 +25,146 @@
     <h1>TablePlus</h1>
     <p>
         <span class="badge">Version 1.0.0</span> &nbsp;
-        <strong>Add-in ID (GUID):</strong> <code>C9281744-8B1A-4C23-9D01-B719E022F3AA</code>
+        <strong>Add-in ID (GUID):</strong> <code>C9281744-8B1A-4C23-9D01-B719E022F3AA</code> &nbsp;
+        <strong>Publisher:</strong> DBDev Solutions (<code>DBDev_dbarberos</code>)
     </p>
 
-    <h2>1. Overview</h2>
-    <p><strong>TablePlus</strong> is an enterprise Autodesk Revit add-in designed as a comprehensive tabular and spreadsheet management suite. It allows BIM managers, architects, and engineers to import Microsoft Excel spreadsheets (<code>.xlsx</code>, <code>.xlsm</code>, <code>.csv</code>) directly into Autodesk Revit as native vector <strong>Drafting Views</strong> or <strong>Legend Views</strong> without quality degradation.</p>
-    <p>Unlike rasterized screen captures or bitmap imports, TablePlus generates true parametric vector elements: crisp detail lines for borders, filled regions for cell background fills, and native Text Note elements configured with matched fonts, weights, colors, and alignments. All generated tables are stamped with an Extensible Storage schema for future synchronization and lifecycle management.</p>
+    <h2>1. General Description</h2>
+    <p><strong>TablePlus</strong> is an enterprise-grade Autodesk Revit add-in designed as a comprehensive tabular and spreadsheet management suite for BIM Managers, architects, structural engineers, and MEP designers. It resolves one of Revit's longest-standing visual documentation challenges: importing complex tabular data (finishes schedules, calculation sheets, door hardware matrices, structural bar schedules, code compliance tables, and drawing notes) directly into project documentation sheets with true graphic fidelity.</p>
+    <p>Traditional approaches rely on capturing raster screenshots or importing pixelated <code>.png</code>/<code>.jpg</code> images, resulting in blurry printouts, unselectable text, distorted line weights, and zero intelligence. <strong>TablePlus completely replaces raster imports with a native parametric vector geometry engine</strong>:</p>
+    <ul>
+        <li><strong>True 2D Vector Geometry</strong>: Generates crisp, scale-independent Revit detail lines (<code>DetailCurve</code>), solid filled regions (<code>FilledRegion</code>) for cell background shading, and native Revit text notes (<code>TextNote</code>).</li>
+        <li><strong>Typographic Precision</strong>: Extracts and preserves font families, font sizes, weights (bold), styles (italic), underlines, font colors (RGB), and multi-directional text alignments.</li>
+        <li><strong>Merged Cell Reconciliation</strong>: Accurately computes complex rectangular merged cell boundaries, unifying cell perimeters and centering text notes across merged spans.</li>
+        <li><strong>Multi-View Documentation Targets</strong>: Imports spreadsheets directly into <strong>New Drafting Views</strong> (1:1 scale for sheet placement), <strong>Existing Drafting Views</strong>, or <strong>Legend Views</strong> (allowing identical table graphics to be placed across multiple sheets simultaneously).</li>
+        <li><strong>Persistent Extensible Storage Tracking</strong>: Every generated table is stamped with a unique Revit Extensible Storage schema (<code>E3B21D40-6C9A-4E2F-8A11-92D0543B7A1C</code>), storing source workbook paths, sheet names, cell ranges, and timestamps for automated synchronization.</li>
+        <li><strong>Zero Microsoft Office Dependency</strong>: Operates entirely through high-performance, managed OpenXML libraries (<code>ClosedXML</code>), requiring zero client-side installation of Microsoft Excel or COM Interop dependencies.</li>
+    </ul>
 
     <h2>2. Requirements and Compatibility</h2>
     <div class="alert alert-warning">
         <strong>Compatibility:</strong> Supported on 64-bit Windows across Autodesk Revit 2024, 2025, 2026, and 2027.
     </div>
     <ul>
-        <li><strong>Platform</strong>: .NET Framework 4.8 (Revit 2024) / .NET 8.0 (Revit 2025, 2026, 2027).</li>
+        <li><strong>Operating System</strong>: Microsoft Windows 10 / Windows 11 (64-bit).</li>
         <li><strong>Host Application</strong>: Autodesk Revit 2024, 2025, 2026, 2027 (Win64).</li>
-        <li><strong>Office Dependency</strong>: None. TablePlus operates via managed OpenXML libraries (ClosedXML) and does not require Microsoft Office or Excel to be installed on the machine.</li>
+        <li><strong>Target Frameworks</strong>: .NET Framework 4.8 (Revit 2024) / .NET 8.0 (Revit 2025–2026) / .NET 9.0 (Revit 2027).</li>
+        <li><strong>Microsoft Office Dependency</strong>: None. Operates completely through managed OpenXML libraries (ClosedXML).</li>
     </ul>
 
     <h2>3. Installation & Uninstallation</h2>
     <p>The installer that ran when you downloaded this plug-in from the Autodesk App Store has already installed the plug-in. You may need to restart the Autodesk product to activate the plug-in.</p>
     <p>To uninstall this plug-in, exit the Autodesk product if you are currently running it, simply rerun the installer by downloading it again from the Autodesk App Store, and select the 'Uninstall' button, or you can uninstall it from 'Control Panel\Programs\Programs and Features' (Windows 10/11), just as you would uninstall any other application from your system.</p>
 
-    <h2>4. Ribbon Panel Integration</h2>
-    <p>By default, in accordance with Autodesk App Store single-command guidelines, TablePlus integrates into Revit's ribbon under the <strong>DBDev Tools</strong> tab (or the native <strong>Add-Ins</strong> tab):</p>
+    <h2>4. Commands and Features Guide</h2>
+    <h3>4.1. Ribbon Panel Integration</h3>
+    <p>TablePlus integrates into the Autodesk Revit ribbon under the dedicated <strong>DBDev Tools</strong> tab (or Revit's standard <strong>Add-Ins / Complementos</strong> tab):</p>
 
     <table>
         <tr>
-            <th>Command</th>
+            <th>Command Button</th>
             <th>Description</th>
             <th>Technical Class</th>
         </tr>
         <tr>
             <td><strong>Import Table</strong></td>
-            <td>Opens the interactive Excel Vector Table Import dialog to select workbooks, sheets, ranges, target views, and styling options.</td>
+            <td>Opens the interactive Excel Vector Table Import dialog to browse workbooks, select worksheets, configure cell ranges, set target views, and generate vector graphics.</td>
             <td><code>TablePlus.Commands.CmdImportTable</code></td>
         </tr>
     </table>
 
-    <h2>5. Key Features & Comprehensive Usage Guide</h2>
+    <h2>5. Comprehensive Usage Guide</h2>
 
-    <h3>5.1. Excel Vector Geometry Engine</h3>
-    <p>When an Excel workbook is imported, TablePlus calculates physical dimensions based on column widths and row heights converted into internal Revit imperial units (feet):</p>
+    <h3>5.1. Source Spreadsheet Selection & Inspection</h3>
+    <ol>
+        <li>Click the <strong>Import Table</strong> button in the <strong>DBDev Tools</strong> ribbon tab.</li>
+        <li>In the <strong>Excel Source File</strong> card:
+            <ul>
+                <li>Click <strong>Browse...</strong> to select your target spreadsheet (<code>.xlsx</code>, <code>.xlsm</code>, <code>.csv</code>).</li>
+                <li>The add-in asynchronously opens the workbook in read-only mode and discovers all available worksheets.</li>
+                <li>The active file path is displayed in a read-only path box with ellipsis trimming and full path tooltips.</li>
+            </ul>
+        </li>
+    </ol>
+    <div class="alert alert-info">
+        <strong>Macro-Enabled Workbooks Supported:</strong> TablePlus fully reads <code>.xlsm</code> files without triggering security warning dialogs or executing untrusted Excel VBA macros.
+    </div>
+
+    <h3>5.2. Worksheet & Cell Range Configuration</h3>
+    <ol>
+        <li>Select the desired worksheet from the <strong>Worksheet</strong> dropdown selector.</li>
+        <li>Upon selection, TablePlus inspects the worksheet dimensions and automatically populates the <strong>Cell Range</strong> field with the used range address (e.g. <code>A1:G35</code>).</li>
+        <li>You can either keep the entire used range or type a custom sub-range (e.g. <code>B2:E20</code>, <code>A1:M100</code>).</li>
+        <li><strong>Large Table Performance Ceiling:</strong> If the selected range exceeds <strong>3,000 cells</strong>, an informative warning badge is displayed, recommending splitting the table into multiple views to preserve optimal Revit viewport frame rates.</li>
+    </ol>
+
+    <h3>5.3. Target View Types & Sheet Placement</h3>
+    <table>
+        <tr>
+            <th>Target View Option</th>
+            <th>Revit View Class</th>
+            <th>Typical Use Case</th>
+        </tr>
+        <tr>
+            <td><strong>New Drafting View</strong></td>
+            <td><code>ViewDrafting</code></td>
+            <td>Creates a clean, isolated 1:1 Drafting View (e.g., <code>Table_DoorSchedule_20260923</code>). Ideal for standalone schedules, calculation matrices, and sheet details.</td>
+        </tr>
+        <tr>
+            <td><strong>Existing Drafting View</strong></td>
+            <td><code>ViewDrafting</code></td>
+            <td>Inserts the vector table directly into the currently active drafting view, allowing composite detail sheets combining CAD details, text, and tables.</td>
+        </tr>
+        <tr>
+            <td><strong>Legend View</strong></td>
+            <td><code>ViewLegend</code> / <code>ViewDrafting</code></td>
+            <td>Creates a reusable legend view. Unlike standard drafting views, Legend Views can be placed simultaneously across multiple documentation sheets without duplicating elements.</td>
+        </tr>
+    </table>
+    <p><strong>Scale Configuration:</strong> Default view scale is set to <code>1:1</code> to match physical millimeter/inch table dimensions directly to paper space.</p>
+
+    <h3>5.4. High-Fidelity Vector Rendering Engine</h3>
     <ul>
-        <li><strong>Cell Borders</strong>: Generated as clean, closed Revit detail lines. Multiple line weights, styles, and edge topologies (thin, medium, thick, double, dashed) are faithfully mapped.</li>
-        <li><strong>Cell Background Shading</strong>: Cells with background fill colors are rendered using solid <code>FilledRegion</code> elements with matched RGB color types.</li>
-        <li><strong>Merged Cells</strong>: Merged ranges are unified into combined boundary polygons with centered text note alignment across the full merged span.</li>
-        <li><strong>Typographic Fidelity</strong>: Text elements inherit the source font family, font size, bold, italic, underline, font color, horizontal alignment (Left, Center, Right), and vertical alignment (Top, Middle, Bottom).</li>
+        <li><strong>Parametric Detail Lines (Cell Borders):</strong> Every cell border is converted to a Revit <code>DetailCurve</code>. Line weights (1 to 16) and border patterns (thin, medium, thick, double, dashed) are mapped to matched project <code>GraphicsStyle</code> lines. Overlapping adjacent borders are reconciled into single line instances.</li>
+        <li><strong>Cell Background Fill Shading:</strong> Cells with fill colors are rendered as native Revit <code>FilledRegion</code> elements with solid fill patterns and exact 24-bit RGB color matching.</li>
+        <li><strong>Merged Cell Boundary Reconciliation:</strong> Rectangular merged cell ranges are unified into single bounding polygons. Dividing borders are eliminated, and text notes are dynamically centered across the merged span.</li>
+        <li><strong>Typographic Precision & Text Notes:</strong> Instantiated via <code>TextNote.Create()</code>, reproducing font family, size in points, bold, italic, underline, RGB colors, and horizontal/vertical alignments.</li>
+        <li><strong>Silent Failure Preprocessing (WarningSwallower):</strong> Non-fatal Revit warnings (microscopic line offsets or benign overlaps) are swallowed silently without halting execution.</li>
     </ul>
 
-    <h3>5.2. Target View Flexibility</h3>
-    <p>Users can import tables into:</p>
+    <h3>5.5. Extensible Storage Metadata Tracking</h3>
+    <p>Every view generated by TablePlus is permanently stamped with an Extensible Storage schema registered under GUID <code>E3B21D40-6C9A-4E2F-8A11-92D0543B7A1C</code>, storing <code>SourceFilePath</code>, <code>SheetName</code>, <code>RangeAddress</code>, <code>LastImportTimestampUtc</code>, and <code>UpdateBehavior</code>.</p>
+
+    <h3>5.6. Future Sync & Reload Roadmap</h3>
     <ul>
-        <li><strong>New Drafting View</strong>: Creates a dedicated Drafting View at 1:1 scale (e.g. <em>Table_GeneralNotes</em>), ideal for placing on multiple sheets.</li>
-        <li><strong>Existing Drafting View</strong>: Inserts or replaces tabular content within an active drafting view.</li>
-        <li><strong>Legend View</strong>: Creates a Legend View allowing tabular graphic standards to be placed simultaneously across multiple documentation sheets.</li>
+        <li><strong>UpdateDataOnly:</strong> Refreshes text values, numeric calculations, and background fills while keeping user-adjusted column widths and manual annotations in Revit intact.</li>
+        <li><strong>PreserveRevitColumnRowSizes:</strong> Updates all tabular content while preserving custom column and row dimensions set inside the Revit view.</li>
+        <li><strong>RecreateSchedule:</strong> Performs a full clean sweep and regenerates the table from scratch matching the modified spreadsheet dimensions.</li>
     </ul>
 
-    <h3>5.3. Extensible Storage Metadata Tracking</h3>
-    <p>Every view created by TablePlus is tagged with an invisible Extensible Storage schema (GUID: <code>E3B21D40-6C9A-4E2F-8A11-92D0543B7A1C</code>) recording:</p>
+    <h2>6. Multi-Version Architecture & Build Orchestration</h2>
+    <table>
+        <tr><th>Revit Version</th><th>.NET Runtime</th><th>Configuration</th><th>Output Assembly</th></tr>
+        <tr><td><strong>Revit 2024</strong></td><td>.NET Framework 4.8</td><td><code>Release.R24</code></td><td><code>bin/Release.R24/publish/TablePlus.dll</code></td></tr>
+        <tr><td><strong>Revit 2025</strong></td><td>.NET 8.0</td><td><code>Release.R25</code></td><td><code>bin/Release.R25/publish/TablePlus.dll</code></td></tr>
+        <tr><td><strong>Revit 2026</strong></td><td>.NET 8.0</td><td><code>Release.R26</code></td><td><code>bin/Release.R26/publish/TablePlus.dll</code></td></tr>
+        <tr><td><strong>Revit 2027</strong></td><td>.NET 9.0</td><td><code>Release.R27</code></td><td><code>bin/Release.R27/publish/TablePlus.dll</code></td></tr>
+    </table>
+
+    <h2>7. Version History (Changelog)</h2>
+    <h3>v1.0.0 - 2026-09-23</h3>
+    <h4>Added</h4>
     <ul>
-        <li>Source workbook file path.</li>
-        <li>Worksheet name and imported cell range address (e.g., <code>A1:G35</code>).</li>
-        <li>Last import UTC timestamp.</li>
-        <li>Active update behavior configuration.</li>
+        <li><strong>ClosedXML Managed Excel Engine:</strong> Integrated ClosedXML and DocumentFormat.OpenXml for reading <code>.xlsx</code>, <code>.xlsm</code>, and <code>.csv</code> files without requiring Microsoft Office installed.</li>
+        <li><strong>Native Vector Geometry Engine:</strong> Parametric detail lines, background fill shading via FilledRegions, merged cell polygon reconciliation, and typographic matching for Text Notes.</li>
+        <li><strong>Flexible View Targets:</strong> Support for creating new Drafting Views (1:1), existing Drafting Views, or Legend Views.</li>
+        <li><strong>Extensible Storage Metadata Service:</strong> Schema <code>E3B21D40-6C9A-4E2F-8A11-92D0543B7A1C</code> stamping view tracking data.</li>
+        <li><strong>Modern FilterPlus Card-Based WPF UI:</strong> Distinct cards for file browsing, sheet selection, and view configuration.</li>
+        <li><strong>Multi-Version Compatibility:</strong> Full support for Autodesk Revit 2024, 2025, 2026, and 2027.</li>
+        <li><strong>Autodesk App Store Bundle:</strong> Autoloader-compliant package with "R" series prefix (R2024..R2027) and isolated dependency bundling.</li>
     </ul>
 
-    <h3>5.4. Modern Card-Based User Interface</h3>
-    <p>The import dialog features the <strong>FilterPlus modern card-based theme</strong> with live validation, file browsing, automatic sheet discovery, range preview, and scale/view type selectors.</p>
-
-    <h2>6. Support and Contact</h2>
+    <h2>8. Support and Contact</h2>
     <p>For technical inquiries, bug reports, or feature suggestions:</p>
     <ul>
         <li><strong>Developer:</strong> DBDev_dbarberos</li>
