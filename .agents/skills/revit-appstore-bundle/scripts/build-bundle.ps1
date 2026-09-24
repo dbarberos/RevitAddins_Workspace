@@ -4,7 +4,8 @@ param(
     [string]$Author = "DBDev_dbarberos",
     [string]$Email = "dbarberos@outlook.com",
     [string[]]$TargetYears = @("2023", "2024", "2025", "2026", "2027"),
-    [string]$ProjectDir = "."
+    [string]$ProjectDir = ".",
+    [switch]$Rebuild = $true
 )
 
 $ErrorActionPreference = "Stop"
@@ -86,6 +87,21 @@ $ComponentsXml = ""
 foreach ($Year in $TargetYears) {
     $ShortYear = $Year.Substring(2) # "24", "25", etc.
     $ConfigName = "Release.R$ShortYear"
+    $Csproj = Join-Path $resolvedProjectDir "$AppName.csproj"
+
+    if ($Rebuild) {
+        Write-Host "Compiling fresh $ConfigName for Revit $Year..." -ForegroundColor Cyan
+        # Clean target bin folder for this configuration to prevent stale files
+        $ConfigBinDir = Join-Path $BinDir $ConfigName
+        if (Test-Path $ConfigBinDir) { Remove-Item -Path $ConfigBinDir -Recurse -Force -ErrorAction SilentlyContinue }
+        
+        try {
+            dotnet publish $Csproj -c $ConfigName /p:DeployAddin=false --verbosity minimal
+        } catch {
+            Write-Warning "Compilation failed for ${ConfigName}: $_"
+        }
+    }
+
     # Prioritize Release candidates strictly over Debug
     $ReleaseCandidates = @(
         (Join-Path $BinDir "$ConfigName\publish\$AppName"),
@@ -110,7 +126,6 @@ foreach ($Year in $TargetYears) {
         $Candidates = $DebugCandidates
     }
 
-
     $PublishDir = $null
     foreach ($cand in $Candidates) {
         $candidateDll = Join-Path $cand "$AppName.dll"
@@ -122,9 +137,8 @@ foreach ($Year in $TargetYears) {
 
     if (-not $PublishDir) {
         Write-Warning "Publish directory not found for Revit $Year ($ConfigName). Attempting compilation..."
-        $Csproj = Join-Path $resolvedProjectDir "$AppName.csproj"
         try {
-            dotnet publish $Csproj -c $ConfigName /p:DeployAddin=false
+            dotnet publish $Csproj -c $ConfigName /p:DeployAddin=false --verbosity minimal
         } catch {
             Write-Warning "Compilation failed for $ConfigName. Skipping $Year."
         }
