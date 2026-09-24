@@ -1,6 +1,6 @@
 # TablePlus
 
-> **Current Version:** v1.0.0  
+> **Current Version:** v1.1.0  
 > **Add-in ID (GUID):** `C9281744-8B1A-4C23-9D01-B719E022F3AA`  
 > **Target Autodesk Revit Versions:** 2024, 2025, 2026, 2027 (Win64)  
 > **Publisher:** DBDev Solutions (`DBDev_dbarberos`)  
@@ -9,15 +9,19 @@
 
 ## 1. General Description
 
-**TablePlus** is an enterprise-grade Autodesk Revit add-in designed as a comprehensive tabular and spreadsheet management suite for BIM Managers, architects, structural engineers, and MEP designers. It resolves one of Revit's longest-standing visual documentation challenges: importing complex tabular data (finishes schedules, calculation sheets, door hardware matrices, structural bar schedules, code compliance tables, and drawing notes) directly into project documentation sheets with true graphic fidelity.
+**TablePlus** is an enterprise-grade Autodesk Revit add-in designed as a comprehensive tabular and spreadsheet management suite for BIM Managers, architects, structural engineers, and MEP designers. It resolves one of Revit's longest-standing visual documentation challenges: managing and importing complex tabular data (finishes schedules, calculation sheets, door hardware matrices, structural bar schedules, code compliance tables, and drawing notes) directly into project documentation sheets with true graphic fidelity.
 
-Traditional approaches rely on capturing raster screenshots or importing pixelated `.png`/`.jpg` images, resulting in blurry printouts, unselectable text, distorted line weights, and zero intelligence. **TablePlus completely replaces raster imports with a native parametric vector geometry engine**:
+Traditional approaches rely on capturing raster screenshots or importing pixelated `.png`/`.jpg` images, resulting in blurry printouts, unselectable text, distorted line weights, and zero intelligence. **TablePlus completely replaces raster imports with a native parametric vector geometry engine and an interactive Master Table Dashboard**:
 
+- **Master Table Dashboard**: A centralized management interface providing a virtualized 11-column table inventory displaying all linked tables across the active project, their synchronization status, view types, scales, and source files.
 - **True 2D Vector Geometry**: Generates crisp, scale-independent Revit detail lines (`DetailCurve`), solid filled regions (`FilledRegion`) for cell background shading, and native Revit text notes (`TextNote`).
-- **Typographic Precision**: Extracts and preserves font families, font sizes, weights (bold), styles (italic), underlines, font colors (RGB), and multi-directional text alignments.
+- **Interactive Style & Header Mapping**: Full control over line styles, body cell typography, and header row overrides (custom text types, font colors, and background shading).
+- **In-Place Non-Destructive Synchronization**: Re-reads modified source spreadsheets and updates existing views in place, preserving sheets where views are already placed.
+- **Automated Background Synchronization**: Automatic quiet checking and updating of modified tables when opening a Revit project (`DocumentOpened`).
+- **Monochrome Black & White (B&W) Mode**: Instant toggle to strip background fills and force crisp black lines and texts for high-contrast technical drafting.
 - **Merged Cell Reconciliation**: Accurately computes complex rectangular merged cell boundaries, unifying cell perimeters and centering text notes across merged spans.
-- **Multi-View Documentation Targets**: Imports spreadsheets directly into **New Drafting Views** (1:1 scale for sheet placement), **Existing Drafting Views**, or **Legend Views** (allowing identical table graphics to be placed across multiple sheets simultaneously).
-- **Persistent Extensible Storage Tracking**: Every generated table is stamped with a unique Revit `Extensible Storage` schema (`E3B21D40-6C9A-4E2F-8A11-92D0543B7A1C`), storing source workbook paths, sheet names, cell ranges, and timestamps for automated synchronization.
+- **Multi-View Documentation Targets**: Imports spreadsheets directly into **New Drafting Views** (scale-independent for sheet placement) or **Legend Views** (allowing identical table graphics to be placed across multiple sheets simultaneously).
+- **Persistent Extensible Storage Tracking**: Every generated table is stamped with a unique Revit `Extensible Storage` schema (`E3B21D40-6C9A-4E2F-8A11-92D0543B7A1C`), storing source workbook paths, sheet names, cell ranges, styling parameters, and timestamps.
 - **Zero Microsoft Office Dependency**: Operates entirely through high-performance, managed OpenXML libraries (`ClosedXML`), requiring zero client-side installation of Microsoft Excel or COM Interop dependencies.
 
 ---
@@ -50,135 +54,85 @@ To uninstall this plug-in, exit the Autodesk product if you are currently runnin
 ## 4. Commands and Features Guide
 
 ### 4.1. Ribbon Panel Integration
-TablePlus integrates into the Autodesk Revit ribbon under the standard **Add-Ins / Complementos** tab:
+TablePlus integrates into the Autodesk Revit ribbon under the standard **Add-Ins / Complementos** tab, fully complying with Autodesk App Store single-command guidelines:
 
 | Command Button | Function | Technical Class |
 |---|---|---|
-| **Import Excel** | Opens the interactive Excel Vector Table Import dialog to browse workbooks, select worksheets, configure cell ranges, set target views, and generate vector graphics. | `TablePlus.Commands.CmdImportTable` |
+| **TablePlus Dashboard** | Opens the Master Table Dashboard to inspect, filter, synchronize, format, and add tables in the Revit model. | `TablePlus.Commands.CmdImportTable` |
 | *(Contextual F1)* | Launches the offline HTML user manual ([help.html](file:///c:/Users/david.barbero/Documents/DOCUMENTOS/ALTEN/Workbench/RevitAddins_Workspace/RevitAddins_Workspace/TablePlus/Resources/help.html)) with full usage instructions. | `TablePlus.Application` |
 
 ```text
 Ribbon Hierarchy:
 [Add-Ins / Complementos] (Tab)
  └── [TablePlus] (Panel)
-      └── [Import Excel] (Large PushButton 32x32 with ToolTip & F1 Help)
+      └── [TablePlus Dashboard] (Large PushButton 32x32 with ToolTip & F1 Help)
 ```
 
 ---
 
 ## 5. Comprehensive Usage Guide
 
-### 5.1. Source Spreadsheet Selection & Inspection
-1. Click the **Import Excel** button in the **Add-Ins / Complementos** ribbon tab.
-2. In the **Excel Source File** card:
-   - Click **Browse...** to select your target spreadsheet (`.xlsx`, `.xlsm`, `.csv`).
-   - The add-in asynchronously opens the workbook in read-only mode and discovers all available worksheets.
-   - The active file path is displayed in a read-only path box with ellipsis trimming and full path tooltips.
+### 5.1. Master Table Dashboard Overview
+When you click **TablePlus Dashboard**, the main interface displays:
 
-> [!TIP]
-> **Macro-Enabled Workbooks Supported**: TablePlus fully reads `.xlsm` files without triggering security warning dialogs or executing untrusted Excel VBA macros.
-
----
-
-### 5.2. Worksheet & Cell Range Configuration
-1. Select the desired worksheet from the **Worksheet** dropdown selector.
-2. Upon selection, TablePlus inspects the worksheet dimensions and automatically populates the **Cell Range** field with the used range address (e.g. `A1:G35`).
-3. You can either keep the entire used range or type a custom sub-range (e.g. `B2:E20`, `A1:M100`).
-4. **Large Table Performance Ceiling**: If the selected range exceeds **3,000 cells**, an informative warning badge is displayed, recommending splitting the table into multiple views to preserve optimal Revit viewport frame rates.
+1. **Upper Control Zone (Cards)**:
+   - **Table Actions Card**: Fast buttons for `+ Add Table`, `🔄 Sync Selected`, `👁️ Open View` (navigates active view in Revit), and `🗑️ Delete / Unlink` (removes views or metadata).
+   - **Filters & Search Card**: Live text search (by view name or source file) and dropdown filters by *View Type* (*All*, *Drafting Views*, *Legend Views*) and *Status* (*All*, *Up to Date*, *Modified*, *File Missing*).
+   - **System Status Card**: Real-time status diagnostics, background progress bar, and manual refresh button `🔄`.
+2. **Lower Data Zone (Virtualized DataGrid)**:
+   - An 11-column grid displaying all linked tables in the Revit model with high-performance virtualization.
+3. **Footer Zone**:
+   - Status summary counters (*Total Tables*, *Selected*, *Pending/Out of Date*), usage tips, and primary batch sync button.
 
 ---
 
-### 5.3. Target View Types & Sheet Placement
+### 5.2. Dashboard Columns Guide
 
-TablePlus provides three distinct target view configurations:
-
-| Target View Option | Revit View Class | Typical Use Case |
-|---|---|---|
-| **New Drafting View** | `ViewDrafting` | Creates a clean, isolated 1:1 Drafting View (e.g., `Table_DoorSchedule_20260923`). Ideal for standalone schedules, calculation matrices, and sheet details. |
-| **Existing Drafting View** | `ViewDrafting` | Inserts the vector table directly into the currently active drafting view, allowing composite detail sheets combining CAD details, text, and tables. |
-| **Legend View** | `ViewLegend` / `ViewDrafting` | Creates a reusable legend view. Unlike standard drafting views, Legend Views can be placed simultaneously across multiple documentation sheets without duplicating elements. |
-
-- **Scale Configuration**: Default view scale is set to `1:1` to match physical millimeter/inch table dimensions directly to paper space.
-
----
-
-### 5.4. High-Fidelity Vector Rendering Engine
-
-The core geometry engine converts cell bounds and formatting into native Revit database elements:
-
-#### A. Parametric Detail Lines (Cell Borders)
-- Every cell border is converted to a Revit `DetailCurve` (detail line).
-- **Line Style Mapping**: Thin, medium, thick, double, and dashed Excel borders are mapped to matched project `GraphicsStyle` lines (e.g., `<Thin Lines>`, `<Medium Lines>`, `<Wide Lines>`).
-- **Border Deduping**: Overlapping adjacent borders between neighboring cells are reconciled into single line instances to eliminate redundant visual weight and prevent graphics overlap warnings.
-
-#### B. Cell Background Fill Shading
-- Cells with fill colors are rendered as native Revit `FilledRegion` elements.
-- Uses solid fill patterns (`FillPatternElement`) with exact 24-bit RGB color matching.
-- Cells without background color are kept transparent, ensuring clean placement over titleblocks or sheet grids.
-
-#### C. Merged Cell Boundary Reconciliation
-- Rectangular merged cell ranges (e.g. `A1:D1` header titles) are unified into single bounding polygons.
-- Internal dividing borders are removed automatically.
-- Text note placement is dynamically centered across the full combined width and height of the merged boundary.
-
-#### D. Typographic Matching & Text Notes
-- Text notes are instantiated via `TextNote.Create()`.
-- Automatically extracts:
-  - Font family (falls back gracefully to Arial if the specified font is absent on the operating system).
-  - Font size in points, scaled to paper millimeters/feet.
-  - Bold and Italic font styles.
-  - Font foreground color (RGB).
-  - Horizontal Alignment: Left, Center, Right.
-  - Vertical Alignment: Top, Middle, Bottom.
-
-#### E. Silent Failure Preprocessing (`WarningSwallower`)
-All geometry creation transactions are guarded by an `IFailuresPreprocessor` (`WarningSwallower`). Non-fatal Revit warnings (such as microscopic line offsets or benign overlaps) are swallowed silently without halting execution or prompting annoying dialog popups.
+| Column | Description |
+|---|---|
+| **`[x]` (Select)** | Individual row selection checkbox with master header checkbox for *Select All / None*. |
+| **`Src`** | Badge indicating document source format (`XLSX`, `XLSM`, `CSV`, `PDF`, `DOC`). |
+| **`Status`** | Real-time synchronization indicator: 🟢 **Up to Date**, 🟠 **Modified** (source file edited externally), 🔴 **File Missing** (path broken). |
+| **`View Name`** | Name of the Drafting or Legend view in Revit. **Double-click any row** to immediately activate and display this view in Revit. |
+| **`View Type`** | Indicates whether the table is in a *Drafting View* or *Legend View*. |
+| **`Scale`** | View scale ratio (e.g. `1:1`, `1:20`). |
+| **`Source File`** | Filename of the linked spreadsheet, with full absolute file path in tooltip. |
+| **`Worksheet / Range`** | Interactive dropdown allowing you to reselect the active sheet/range directly from the grid and update the table in-place. |
+| **`Auto-Sync`** | Checkbox enabling automatic quiet background synchronization every time the Revit project is opened. |
+| **`B&W`** | Black & White checkbox forcing solid black text and line styles, suppressing cell background fills. |
+| **`Design`** | Button `[ 🎨 Design... ]` opening the dedicated style and header mapping modal dialog. |
 
 ---
 
-### 5.5. Extensible Storage Metadata Tracking
-
-Every view generated by TablePlus is permanently stamped with an Extensible Storage schema registered under GUID:
-```text
-Schema GUID: E3B21D40-6C9A-4E2F-8A11-92D0543B7A1C
-Schema Name: TablePlus_ImportMetadata
-```
-
-The schema stores:
-- `SourceFilePath` (`StringType`): Absolute path to the source Excel workbook.
-- `SheetName` (`StringType`): Name of the worksheet imported.
-- `RangeAddress` (`StringType`): Imported cell range address (e.g. `A1:F25`).
-- `LastImportTimestampUtc` (`StringType`): UTC timestamp of import (ISO 8601).
-- `UpdateBehavior` (`Int32Type`): Integer identifier representing the active sync strategy.
-
-This metadata enables automated table reloads, missing link detection, and batch model synchronization across project milestones.
+### 5.3. Importing a New Table (`+ Add Table`)
+1. In the Dashboard, click **+ Add Table** to open the Table Import modal window.
+2. Click **Browse...** to select your spreadsheet (`.xlsx`, `.xlsm`, `.csv`).
+3. Select the desired **Worksheet** and **Cell Range** (Entire Sheet, Named Range, or Custom Range such as `A1:G35`).
+4. Choose the target view type (**New Drafting View** or **Legend View**), specify the view name and scale.
+5. Click **Import Table**. The vector table is created in Revit and automatically registered in your Dashboard inventory.
 
 ---
 
-### 5.6. Future Sync & Reload Roadmap (Architectural Alignment)
+### 5.4. Customizing Table Styles & Headers (`[ 🎨 Design... ]`)
+Clicking **`🎨 Design...`** on any table row opens the **Table Graphic & Header Design** window:
 
-In alignment with the TablePlus Constitution and DiRoots TableGen reference patterns, future specifications will activate the following synchronization behaviors using the Extensible Storage schema:
-
-```mermaid
-graph TD
-    A[Excel File Modified on Disk] --> B{TablePlus Sync Engine}
-    B -->|UpdateDataOnly| C[Update Text Values & Cell Colors<br/>Preserve Manual Revit Dimensions]
-    B -->|PreserveRevitSizes| D[Update Values & Calculate Content<br/>Keep Customized Revit Row/Col Sizes]
-    B -->|RecreateSchedule| E[Full Re-generation<br/>Rebuild Entire Vector Grid]
-```
-
-- **UpdateDataOnly**: Refreshes text values, numeric calculations, and background fills while keeping user-adjusted column widths and manual annotations in Revit intact.
-- **PreserveRevitColumnRowSizes**: Updates all tabular content while preserving custom column and row dimensions set inside the Revit view.
-- **RecreateSchedule**: Performs a full clean sweep and regenerates the table from scratch matching the modified spreadsheet dimensions.
+1. **Card 1: Table Gridlines**:
+   - Select any Revit Line Style from `BuiltInCategory.OST_Lines` (e.g. `<Thin Lines>`, `<Medium Lines>`, or custom company line styles) to draw exterior table borders and interior cell dividers.
+2. **Card 2: Body Cell Typography**:
+   - Select the Revit `TextNoteType` assigned to standard data cells across the table body.
+3. **Card 3: Header Row Overrides**:
+   - Toggle **Enable Header Custom Style** to apply unique styling to the topmost header row.
+   - Select a distinct Header `TextNoteType` (e.g., larger font or bold weight).
+   - Set **Header Background Shading** (hex color or one-click architectural preset swatches: *Charcoal, Slate, Navy, Ocean Blue, Teal, Forest Green, Amber, Crimson, White*).
+   - Set **Header Text Color** (hex color or preset swatch).
+   - Review your design in the **Live Mini Preview** box.
+4. Click **Apply & Save**. The table view in Revit is immediately synchronized with the new styles.
 
 ---
 
-### 5.7. Modern FilterPlus Card-Based User Interface
-
-The user interface is built on the **FilterPlus modern design system**:
-- **Visual Separation**: Features organized cards for *Excel Source File*, *Worksheet & Range*, and *Target View Configuration*.
-- **Inline XAML Resources**: Zero external resource dictionary dependencies (`pack://application:,,,/`), eliminating Revit unmanaged host `XamlParseException` crashes.
-- **Real-Time Validation**: Submit button (`Import`) is disabled until a valid file, worksheet, and view configuration are supplied, with clear validation status messages.
+### 5.5. In-Place Synchronization & Auto-Sync
+- **Batch Sync**: Check one or more rows and click **🔄 Sync Selected**. TablePlus re-reads the source files and updates the existing Revit views in place without recreating or deleting the views, preserving all sheets where the tables are placed.
+- **Auto-Sync on Project Open**: Check the **Auto-Sync** box for any critical table. When any team member opens the Revit project, TablePlus automatically detects if the source spreadsheet was modified and updates the table silently in the background.
 
 ---
 
@@ -200,9 +154,6 @@ Developers can compile and package the add-in locally via the interactive orches
 ```powershell
 .\TablePlus\build-and-pack.ps1
 ```
-Prompts for:
-1. **Production**: Builds `Release.R24` with automated Obfuscar anti-tampering protection.
-2. **Development**: Builds `Debug.R24` with full PDB symbols and verbose diagnostic logs.
 
 ### 6.3. Autodesk App Store Bundle Packaging
 The entire multi-version deliverable is packaged using the standardized automated builder:
@@ -210,46 +161,32 @@ The entire multi-version deliverable is packaged using the standardized automate
 powershell -ExecutionPolicy Bypass -Command "& .\.agents\skills\revit-appstore-bundle\scripts\build-bundle.ps1 -AppName 'TablePlus' -Version '1.0.0' -Author 'DBDev_dbarberos' -Email 'dbarberos@outlook.com' -ProjectDir '.\TablePlus' -TargetYears @('2024', '2025', '2026', '2027')"
 ```
 
-#### Bundle Structure:
-```text
-TablePlus.bundle/
-├── PackageContents.xml       # Autoloader manifest with SeriesMin/SeriesMax "R2024".."R2027"
-└── Contents/
-    ├── Resources/            # Shared Icons (16x16, 32x32) and help.html
-    ├── 2024/                 # Complete .NET 4.8 binaries, ClosedXML, and TablePlus.addin
-    ├── 2025/                 # Complete .NET 8 binaries, ClosedXML, and TablePlus.addin
-    ├── 2026/                 # Complete .NET 8 binaries, ClosedXML, and TablePlus.addin
-    └── 2027/                 # Complete .NET 9 binaries, ClosedXML, and TablePlus.addin
-```
-
 ---
 
 ## 7. Version History (Changelog)
 
-### v1.0.0 - 2026-09-23
+### v1.1.0 - 2026-09-23
 
 #### Added
-- **ClosedXML Managed Excel Engine**: Integrated `ClosedXML` and `DocumentFormat.OpenXml` for reading `.xlsx`, `.xlsm`, and `.csv` files without requiring Microsoft Office or Excel COM Interop installed.
-- **Native Vector Geometry Engine (`TableGeometryService`)**:
-  - Parametric cell grid generation using Revit detail lines (`DetailCurve`).
-  - Solid background fill shading using Revit `FilledRegion` with true 24-bit RGB colors.
-  - Rectangular merged cell boundary reconciliation and centered multi-cell text placement.
-  - Typographic precision reproducing font family, font size, bold, italic, underline, text color, and alignments.
-- **Flexible View Placement**: Support for creating new **Drafting Views** (1:1 scale), targeting active **Existing Drafting Views**, or generating **Legend Views** for multi-sheet reuse.
-- **Extensible Storage Metadata Service (`SchemaService`)**:
-  - Registered schema `E3B21D40-6C9A-4E2F-8A11-92D0543B7A1C` stamping source file path, sheet name, cell range, UTC timestamp, and update mode onto created views.
-- **Modern FilterPlus Card-Based WPF UI (`TableImportView`)**:
-  - Three distinct functional cards for file browsing, sheet selection, and view configuration.
-  - Inline resource declarations eliminating `pack://application:,,,/` crashes.
-  - Asynchronous background file inspection with reactive UI bindings via `CommunityToolkit.Mvvm`.
-- **Silent Warning Swallower (`WarningSwallower`)**: Automatic suppression of non-fatal geometry warnings via `IFailuresPreprocessor`.
-- **Multi-Version Architecture (Revit 2024–2027)**:
-  - Full support and clean compilation for Autodesk Revit 2024, 2025, 2026, and 2027.
-  - Autoloader-compliant `TablePlus.bundle` package with `"R"` series prefix (`R2024`, `R2025`, `R2026`, `R2027`).
-  - Isolated dependency bundling for each Revit version folder.
-- **Autodesk App Store Publish Suite**:
-  - Complete publish metadata package (`AppDescription.md`, `PrivacyPolicy.md`, `Steps.md`, `DigitalSignatureInfo.md`, `WebsiteInfo.txt`).
-  - Standardized Ribbon icons (`Icon16.png`, `Icon32.png`) and offline HTML help ([help.html](file:///c:/Users/david.barbero/Documents/DOCUMENTOS/ALTEN/Workbench/RevitAddins_Workspace/RevitAddins_Workspace/TablePlus/Resources/help.html)).
+- **Master Table Dashboard (`MainWindowView.xaml` & `MainWindowViewModel.cs`)**:
+  - Centralized management dashboard featuring the signature FilterPlus card-based layout.
+  - Three upper functional cards: Table Actions, Multi-criteria Filters & Search, and System Diagnostics.
+  - High-performance virtualized 11-column DataGrid displaying selection, source badge, live sync status badge, view name, view type, scale, source file, worksheet selector, auto-sync toggle, monochrome B&W mode toggle, and design launcher.
+  - Double-click row navigation to instantly activate views in Revit.
+- **Table Graphic & Header Design Modal (`TableStyleMappingView.xaml` & ViewModel)**:
+  - Custom line style mapping from `BuiltInCategory.OST_Lines`.
+  - Body text typography selector from Revit `TextNoteType`s.
+  - Header row overrides for custom text styles, text color, and background fill shading with 10 architectural presets and live mini-preview.
+- **In-Place Non-Destructive View Updates (`UpdateTableInView`)**:
+  - Re-generates 2D vector elements inside existing drafting/legend views without deleting the view element, preserving placed sheet viewports.
+- **Background Auto-Synchronization (`DocumentOpened`)**:
+  - Automatic quiet verification and batch synchronization of modified tables upon opening Revit projects.
+- **Extensible Storage v2 Tracking (`TableRegistryService`)**:
+  - Discovers stamped tables, checks disk timestamps against imported timestamps, and populates worksheet options.
+  - Added `RemoveTableMetadata` for clean unlinking while preserving vector graphics.
+
+### v1.0.0 - 2026-09-23
+- Initial release with closed-XML vector table import, detail curves, text notes, filled regions, and multi-version bundle packaging for Revit 2024–2027.
 
 ---
 

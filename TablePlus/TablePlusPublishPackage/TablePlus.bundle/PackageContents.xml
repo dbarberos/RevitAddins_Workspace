@@ -1,11 +1,11 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <ApplicationPackage
   SchemaVersion="1.0"
-  AppVersion="1.0.0"
+  AppVersion="1.1.0"
   Author="DBDev_dbarberos"
   Description="TablePlus"
   Name="TablePlus"
-  ProductCode="5FCD563D-00FD-4D69-BC7C-14A69D2370AE"
+  ProductCode="BB418966-C653-4430-AEC6-739C2DC0C05F"
   OnlineDocumentation="https://dbdev-dbarberos.github.io/PrivacyPolicy/"
   ProductType="Application"
   Icon="./Contents/Resources/Icon32.png"
@@ -19,19 +19,19 @@
   <!-- Components injected dynamically by build-bundle.ps1 -->
   <Components Description="TablePlus Add-in for Revit 2024">
     <RuntimeRequirements OS="Win64" Platform="Revit" SeriesMin="R2024" SeriesMax="R2024" />
-    <ComponentEntry AppName="TablePlus" Version="1.0.0" ModuleName="./Contents/2024/TablePlus.addin" AppDescription="DBDev Solutions" LoadOnRevitStartup="True" />
+    <ComponentEntry AppName="TablePlus" Version="1.1.0" ModuleName="./Contents/2024/TablePlus.addin" AppDescription="DBDev Solutions" LoadOnRevitStartup="True" />
   </Components>
   <Components Description="TablePlus Add-in for Revit 2025">
     <RuntimeRequirements OS="Win64" Platform="Revit" SeriesMin="R2025" SeriesMax="R2025" />
-    <ComponentEntry AppName="TablePlus" Version="1.0.0" ModuleName="./Contents/2025/TablePlus.addin" AppDescription="DBDev Solutions" LoadOnRevitStartup="True" />
+    <ComponentEntry AppName="TablePlus" Version="1.1.0" ModuleName="./Contents/2025/TablePlus.addin" AppDescription="DBDev Solutions" LoadOnRevitStartup="True" />
   </Components>
   <Components Description="TablePlus Add-in for Revit 2026">
     <RuntimeRequirements OS="Win64" Platform="Revit" SeriesMin="R2026" SeriesMax="R2026" />
-    <ComponentEntry AppName="TablePlus" Version="1.0.0" ModuleName="./Contents/2026/TablePlus.addin" AppDescription="DBDev Solutions" LoadOnRevitStartup="True" />
+    <ComponentEntry AppName="TablePlus" Version="1.1.0" ModuleName="./Contents/2026/TablePlus.addin" AppDescription="DBDev Solutions" LoadOnRevitStartup="True" />
   </Components>
   <Components Description="TablePlus Add-in for Revit 2027">
     <RuntimeRequirements OS="Win64" Platform="Revit" SeriesMin="R2027" SeriesMax="R2027" />
-    <ComponentEntry AppName="TablePlus" Version="1.0.0" ModuleName="./Contents/2027/TablePlus.addin" AppDescription="DBDev Solutions" LoadOnRevitStartup="True" />
+    <ComponentEntry AppName="TablePlus" Version="1.1.0" ModuleName="./Contents/2027/TablePlus.addin" AppDescription="DBDev Solutions" LoadOnRevitStartup="True" />
   </Components>
 
 </ApplicationPackage>

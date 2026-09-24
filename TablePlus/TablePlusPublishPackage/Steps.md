@@ -1,4 +1,4 @@
-# Final Steps for Publishing TablePlus v1.0.0 to Autodesk App Store
+# Final Steps for Publishing TablePlus v1.1.0 to Autodesk App Store
 
 Follow these steps to submit the **TablePlus** add-in to the Autodesk App Store Developer Portal:
 
@@ -19,10 +19,10 @@ Follow these steps to submit the **TablePlus** add-in to the Autodesk App Store 
 ## 2. Package Deliverable
 The compressed bundle package can be generated at any time using the automated script:
 ```powershell
-.\.agents\skills\revit-appstore-bundle\scripts\build-bundle.ps1 -AppName "TablePlus" -Version "1.0.0" -ProjectDir ".\TablePlus" -TargetYears @("2024", "2025", "2026", "2027")
+.\.agents\skills\revit-appstore-bundle\scripts\build-bundle.ps1 -AppName "TablePlus" -Version "1.1.0" -ProjectDir ".\TablePlus" -TargetYears @("2024", "2025", "2026", "2027")
 ```
 The resulting deliverable will be located at:
-* **`TablePlus\TablePlusPublishPackage\TablePlus.bundle.zip`** (and `TablePlus\Deploy\TablePlus_v1.0.0.zip`).
+* **`TablePlus\TablePlusPublishPackage\TablePlus.bundle.zip`** (and `TablePlus\Deploy\TablePlus_v1.1.0.zip`).
 
 ---
 
