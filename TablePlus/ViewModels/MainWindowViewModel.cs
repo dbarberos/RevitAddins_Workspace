@@ -277,6 +277,20 @@ public partial class MainWindowViewModel : ObservableObject
     }
 
     [RelayCommand]
+    public void OpenConfiguration()
+    {
+        try
+        {
+            var configView = new ConfigurationView();
+            configView.ShowDialog();
+        }
+        catch (Exception ex)
+        {
+            TaskDialog.Show("TablePlus Error", $"Failed to open Configuration window: {ex.Message}");
+        }
+    }
+
+    [RelayCommand]
     public async Task SyncSelectedAsync()
     {
         var targets = Tables.Where(t => t.IsSelected).ToList();
