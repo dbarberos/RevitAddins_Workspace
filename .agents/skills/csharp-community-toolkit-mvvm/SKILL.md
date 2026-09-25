@@ -14,7 +14,7 @@ Instructs the agent on how to write modern, boiler-plate-free MVVM code using Mi
 - When resolving ViewModels and Services using Dependency Injection.
 
 ## Mandatory Rules
-- **NuGet Requirement**: The project `.csproj` must have `<PackageReference Include="CommunityToolkit.Mvvm" Version="8.2.*" />` (or latest).
+- **NuGet Requirement & Version Pinning**: The project `.csproj` must strictly use `<PackageReference Include="CommunityToolkit.Mvvm" Version="8.2.2" />`. **DO NOT** use higher versions (8.4+) in isolation. In Revit 2025+ (.NET 8 CoreCLR), all add-ins share `AssemblyLoadContext.Default`; requesting a higher version than an already-loaded add-in triggers `FileLoadException (0x80131621)` due to CoreCLR's downward binding prohibition. The agent MUST warn the developer before proposing any version bumps.
 - **Class Modifiers**: ViewModels using source generators (`[ObservableProperty]`, `[RelayCommand]`) **MUST** be `partial` classes.
 - **Base Classes**: Inherit from `ObservableObject` (or `ObservableRecipient` if using Messenger).
 - **Field Naming**: Backing fields for `[ObservableProperty]` must be `lowerCamelCase` (e.g. `_firstName`).
@@ -24,6 +24,7 @@ Instructs the agent on how to write modern, boiler-plate-free MVVM code using Mi
 - [Toolkit Core Generators](file:///b:/REVIT/C%23/RevitAddins_Workspace/.agents/skills/csharp-community-toolkit-mvvm/references/toolkit_core.md)
 - [Dependency Injection Setup](file:///b:/REVIT/C%23/RevitAddins_Workspace/.agents/skills/csharp-community-toolkit-mvvm/references/toolkit_di.md)
 - [Messenger Pub/Sub](file:///b:/REVIT/C%23/RevitAddins_Workspace/.agents/skills/csharp-community-toolkit-mvvm/references/toolkit_messenger.md)
+- [Version Pinning & Host Collision Prevention](file:///b:/REVIT/C%23/RevitAddins_Workspace/.agents/skills/csharp-community-toolkit-mvvm/references/version_pinning_and_host_collision_prevention.md)
 
 ## Assets
 - [MvvmTemplates.cs](file:///b:/REVIT/C%23/RevitAddins_Workspace/.agents/skills/csharp-community-toolkit-mvvm/assets/MvvmTemplates.cs): C# boilerplate for ViewModels, DI Host builder, and Messaging.

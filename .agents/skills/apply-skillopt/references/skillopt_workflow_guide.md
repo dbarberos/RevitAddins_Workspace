@@ -94,4 +94,5 @@ Before completing a SkillOpt run, the agent must verify:
 - [ ] Bug resolutions are written in the `references/debugging_[keywords]_[YYYY-MM-DD].md` standard.
 - [ ] Reusable code is isolated in a native-extension file inside `assets/`.
 - [ ] The target skill's index `SKILL.md` is updated and remains under 50 lines (metadata index only).
+- [ ] Shared host dependency compatibility is verified: NuGet packages (e.g. `CommunityToolkit.Mvvm 8.2.2`) are not upgraded in isolation, preventing CoreCLR 0x80131621 runtime collisions in Revit 2025+.
 - [ ] The generated contents are fully in English to maximize token-saving and LLM consistency.
