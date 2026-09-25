@@ -154,7 +154,7 @@ public class Application : ExternalApplication
 
         if (panel != null)
         {
-            var button = panel.AddPushButton<CmdImportTable>("TablePlus\nDashboard");
+            var button = panel.AddPushButton<CmdImportTable>("TablePlus");
             button.SetImage("/TablePlus;component/Resources/Icons/TablePlus16x16.png");
             button.SetLargeImage("/TablePlus;component/Resources/Icons/TablePlus32x32.png");
             button.ToolTip = "TablePlus — Master Table Dashboard";
