@@ -10,7 +10,8 @@
         "dependencies": {
           "AWSSDK.S3": "3.7.511.8",
           "Azure.Storage.Blobs": "12.23.0",
-          "CommunityToolkit.Mvvm": "8.4.2",
+          "CommunityToolkit.Mvvm": "8.2.2",
+          "JetBrains.Annotations": "2025.2.4",
           "Nice3point.Revit.Extensions": "2026.1.4",
           "Nice3point.Revit.Toolkit": "2026.1.0",
           "System.Drawing.Common": "8.0.4"
@@ -74,11 +75,19 @@
           }
         }
       },
-      "CommunityToolkit.Mvvm/8.4.2": {
+      "CommunityToolkit.Mvvm/8.2.2": {
         "runtime": {
-          "lib/net8.0/CommunityToolkit.Mvvm.dll": {
-            "assemblyVersion": "8.4.0.0",
-            "fileVersion": "8.4.2.1"
+          "lib/net6.0/CommunityToolkit.Mvvm.dll": {
+            "assemblyVersion": "8.2.0.0",
+            "fileVersion": "8.2.2.1"
+          }
+        }
+      },
+      "JetBrains.Annotations/2025.2.4": {
+        "runtime": {
+          "lib/netstandard2.0/JetBrains.Annotations.dll": {
+            "assemblyVersion": "4242.42.42.42",
+            "fileVersion": "2025.2.4.0"
           }
         }
       },
@@ -184,12 +193,19 @@
       "path": "azure.storage.common/12.22.0",
       "hashPath": "azure.storage.common.12.22.0.nupkg.sha512"
     },
-    "CommunityToolkit.Mvvm/8.4.2": {
+    "CommunityToolkit.Mvvm/8.2.2": {
       "type": "package",
       "serviceable": true,
-      "sha512": "sha512-WadCzGEc2U+3e20avRLng4qNtt4zoOGWrdUISqJWrHe3/FSnrYjuM5Sb4yQb09LhkBXrrI4Zt3dLKgRMbItsrg==",
-      "path": "communitytoolkit.mvvm/8.4.2",
-      "hashPath": "communitytoolkit.mvvm.8.4.2.nupkg.sha512"
+      "sha512": "sha512-r0g0k9tGYdrnz8R7T3x5UiokDffeevzK/2P/9SBL6fqLgN8B157MIi/bVUWI1KAz6ZorZrK9AdABCWUeXZZsvA==",
+      "path": "communitytoolkit.mvvm/8.2.2",
+      "hashPath": "communitytoolkit.mvvm.8.2.2.nupkg.sha512"
+    },
+    "JetBrains.Annotations/2025.2.4": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-TwbgxAkXxY+vNEhNVx/QXjJ4vqxmepOjsgRvvImQPbHkHMMb4W+ahL3laMsxXKtNT7iMy+E1B3xkqao2hf1n3A==",
+      "path": "jetbrains.annotations/2025.2.4",
+      "hashPath": "jetbrains.annotations.2025.2.4.nupkg.sha512"
     },
     "Microsoft.Bcl.AsyncInterfaces/6.0.0": {
       "type": "package",
