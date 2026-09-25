@@ -11,28 +11,28 @@
         Width="1180" Height="780"
         MinWidth="1000" MinHeight="620"
         WindowStartupLocation="CenterScreen"
-        Background="#F8FAFC"
-        Foreground="#0F172A"
+        Background="#FAFAFA"
+        Foreground="#333333"
         FontFamily="Segoe UI, Inter, Arial"
         FontSize="13"
         Icon="pack://application:,,,/TablePlus;component/Resources/Icons/TablePlus32x32.png">
 
     <Window.Resources>
         <!-- PALETTE BRUSHES -->
-        <SolidColorBrush x:Key="WindowBgBrush" Color="#F8FAFC"/>
+        <SolidColorBrush x:Key="WindowBgBrush" Color="#FAFAFA"/>
         <SolidColorBrush x:Key="CardBgBrush" Color="#FFFFFF"/>
-        <SolidColorBrush x:Key="CardBorderBrush" Color="#E2E8F0"/>
+        <SolidColorBrush x:Key="CardBorderBrush" Color="#E0E0E0"/>
         <SolidColorBrush x:Key="CardBorderHoverBrush" Color="#CBD5E1"/>
-        <SolidColorBrush x:Key="PrimaryBrush" Color="#0284C7"/>
-        <SolidColorBrush x:Key="PrimaryHoverBrush" Color="#0369A1"/>
-        <SolidColorBrush x:Key="PrimaryPressedBrush" Color="#075985"/>
+        <SolidColorBrush x:Key="PrimaryBrush" Color="#007ACC"/>
+        <SolidColorBrush x:Key="PrimaryHoverBrush" Color="#0062A3"/>
+        <SolidColorBrush x:Key="PrimaryPressedBrush" Color="#004F85"/>
         <SolidColorBrush x:Key="SuccessBrush" Color="#10B981"/>
         <SolidColorBrush x:Key="SuccessHoverBrush" Color="#059669"/>
         <SolidColorBrush x:Key="DangerBrush" Color="#EF4444"/>
         <SolidColorBrush x:Key="DangerHoverBrush" Color="#DC2626"/>
-        <SolidColorBrush x:Key="TextPrimaryBrush" Color="#0F172A"/>
-        <SolidColorBrush x:Key="TextSecondaryBrush" Color="#475569"/>
-        <SolidColorBrush x:Key="TextMutedBrush" Color="#94A3B8"/>
+        <SolidColorBrush x:Key="TextPrimaryBrush" Color="#333333"/>
+        <SolidColorBrush x:Key="TextSecondaryBrush" Color="#555555"/>
+        <SolidColorBrush x:Key="TextMutedBrush" Color="#888888"/>
 
         <!-- CONVERTERS -->
         <BooleanToVisibilityConverter x:Key="BoolToVis"/>
@@ -216,29 +216,43 @@
             <EventSetter Event="MouseDoubleClick" Handler="DataGridRow_MouseDoubleClick"/>
             <Setter Property="Cursor" Value="Hand"/>
             <Setter Property="Background" Value="White"/>
-            <Setter Property="BorderBrush" Value="#F1F5F9"/>
+            <Setter Property="BorderBrush" Value="#F0F0F0"/>
             <Setter Property="BorderThickness" Value="0,0,0,1"/>
+            <Setter Property="MinHeight" Value="26"/>
             <Style.Triggers>
                 <Trigger Property="IsMouseOver" Value="True">
                     <Setter Property="Background" Value="#F8FAFC"/>
                 </Trigger>
                 <Trigger Property="IsSelected" Value="True">
-                    <Setter Property="Background" Value="#E0F2FE"/>
-                    <Setter Property="Foreground" Value="#0369A1"/>
+                    <Setter Property="Background" Value="#CCE8FF"/>
+                    <Setter Property="Foreground" Value="#007ACC"/>
                 </Trigger>
             </Style.Triggers>
         </Style>
 
-        <!-- Table Column Header Style -->
+        <!-- Table Column Header Style (Matches TransferPlus Elements Explorer Header) -->
         <Style x:Key="TableHeaderStyle" TargetType="DataGridColumnHeader">
-            <Setter Property="Background" Value="#F1F5F9"/>
-            <Setter Property="Foreground" Value="#475569"/>
+            <Setter Property="Background" Value="#F0F0F0"/>
+            <Setter Property="Foreground" Value="#555555"/>
             <Setter Property="FontWeight" Value="SemiBold"/>
             <Setter Property="FontSize" Value="11.5"/>
-            <Setter Property="Padding" Value="8,8"/>
-            <Setter Property="BorderBrush" Value="{StaticResource CardBorderBrush}"/>
+            <Setter Property="Padding" Value="8,6"/>
+            <Setter Property="BorderBrush" Value="#DDDDDD"/>
             <Setter Property="BorderThickness" Value="0,0,1,1"/>
             <Setter Property="HorizontalContentAlignment" Value="Left"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="DataGridColumnHeader">
+                        <Border Background="{TemplateBinding Background}" 
+                                BorderBrush="{TemplateBinding BorderBrush}" 
+                                BorderThickness="{TemplateBinding BorderThickness}" 
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" 
+                                              VerticalAlignment="Center"/>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
         </Style>
 
         <Style x:Key="CenteredTableHeaderStyle" TargetType="DataGridColumnHeader" BasedOn="{StaticResource TableHeaderStyle}">
@@ -351,7 +365,7 @@
         </Grid>
 
         <!-- ROW 1: LOWER DATA ZONE (VIRTUALIZED DATAGRID WITH 11 COLUMNS) -->
-        <Border Grid.Row="1" Style="{StaticResource CardBorderStyle}" Padding="0" Margin="0,0,0,12">
+        <Border Grid.Row="1" Background="White" BorderBrush="#DDDDDD" BorderThickness="1" CornerRadius="0" Padding="0" Margin="0,0,0,12">
             <DataGrid x:Name="TablesDataGrid"
                       ItemsSource="{Binding FilteredTables}"
                       SelectedItem="{Binding SelectedTable}"
@@ -360,7 +374,7 @@
                       CanUserDeleteRows="False"
                       CanUserResizeRows="False"
                       GridLinesVisibility="Horizontal"
-                      HorizontalGridLinesBrush="#E2E8F0"
+                      HorizontalGridLinesBrush="#F0F0F0"
                       HeadersVisibility="Column"
                       BorderThickness="0"
                       Background="White"
@@ -521,9 +535,9 @@
                     <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
 
-                <!-- Bottom Left: Configuration & Sources Cog and Tables Selected Card -->
-                <StackPanel Grid.Column="0" Orientation="Horizontal" HorizontalAlignment="Left" VerticalAlignment="Center">
-                    <Button Command="{Binding OpenConfigurationCommand}" Margin="0,0,10,0" VerticalAlignment="Center" Cursor="Hand" ToolTip="Configuration &amp; Sources">
+                <!-- Bottom Left: Configuration & Sources Cog and Tables Selected Card (Flush to Bottom) -->
+                <StackPanel Grid.Column="0" Orientation="Horizontal" HorizontalAlignment="Left" VerticalAlignment="Bottom">
+                    <Button Command="{Binding OpenConfigurationCommand}" Margin="0,0,10,0" VerticalAlignment="Bottom" Cursor="Hand" ToolTip="Configuration &amp; Sources">
                         <Button.Template>
                             <ControlTemplate TargetType="Button">
                                 <Border x:Name="border" Background="Transparent" CornerRadius="12" Padding="4">
@@ -544,23 +558,23 @@
                         </Button.Template>
                     </Button>
 
-                    <Border Background="#ffffff" CornerRadius="8" Padding="15,5" BorderBrush="#e0e0e0" BorderThickness="1" VerticalAlignment="Center">
-                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                            <TextBlock Text="{Binding SelectedCount}" FontSize="24" FontWeight="Medium" VerticalAlignment="Center" Foreground="#333"/>
-                            <TextBlock Text=" / " FontSize="16" FontWeight="Normal" VerticalAlignment="Center" Foreground="#888" Margin="4,0,4,0"/>
-                            <TextBlock Text="{Binding TotalCount}" FontSize="16" FontWeight="Normal" VerticalAlignment="Center" Foreground="#666" Margin="0,0,10,0"/>
-                            <TextBlock Text="tables selected" VerticalAlignment="Center" Foreground="#666" FontWeight="SemiBold" FontSize="13"/>
+                    <Border Background="#ffffff" CornerRadius="8" Padding="15,6" BorderBrush="#e0e0e0" BorderThickness="1" VerticalAlignment="Bottom">
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Bottom">
+                            <TextBlock Text="{Binding SelectedCount}" FontSize="24" FontWeight="Medium" VerticalAlignment="Bottom" Foreground="#333" Margin="0,0,0,0"/>
+                            <TextBlock Text=" / " FontSize="16" FontWeight="Normal" VerticalAlignment="Bottom" Foreground="#888" Margin="4,0,4,2"/>
+                            <TextBlock Text="{Binding TotalCount}" FontSize="16" FontWeight="Normal" VerticalAlignment="Bottom" Foreground="#666" Margin="0,0,10,2"/>
+                            <TextBlock Text="tables selected" VerticalAlignment="Bottom" Foreground="#666" FontWeight="SemiBold" FontSize="13" Margin="0,0,0,3"/>
                         </StackPanel>
                     </Border>
                 </StackPanel>
 
                 <!-- Bottom Right: Execution Buttons -->
-                <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+                <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Bottom">
                     <Button Style="{StaticResource GhostButtonStyle}" Content="Close" Margin="0,0,8,0"
-                            Click="CloseButton_Click"/>
+                            VerticalAlignment="Bottom" Height="32" Click="CloseButton_Click"/>
 
                     <Button Style="{StaticResource SuccessButtonStyle}" Content="🔄 Sync Selected"
-                            Command="{Binding SyncSelectedCommand}"/>
+                            VerticalAlignment="Bottom" Height="32" Command="{Binding SyncSelectedCommand}"/>
                 </StackPanel>
             </Grid>
         </Border>
