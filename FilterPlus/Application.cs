@@ -64,7 +64,23 @@ public class Application : ExternalApplication
             }
             else if (settings.SelectedTabOption == TabOption.Custom && !string.IsNullOrWhiteSpace(settings.CustomTabName))
             {
-                panel = Application.CreatePanel("FilterPlus", settings.CustomTabName);
+                string tabName = settings.CustomTabName;
+                if (!tabName.Equals("Modify", StringComparison.OrdinalIgnoreCase) &&
+                    !tabName.Equals("Add-Ins", StringComparison.OrdinalIgnoreCase) &&
+                    !tabName.Equals("AddIns", StringComparison.OrdinalIgnoreCase) &&
+                    !tabName.Equals("Manage", StringComparison.OrdinalIgnoreCase))
+                {
+                    try
+                    {
+                        Application.CreateRibbonTab(tabName);
+                    }
+                    catch
+                    {
+                        // Tab already exists in current Revit session
+                    }
+                }
+
+                panel = Application.CreatePanel("FilterPlus", tabName);
             }
             else
             {

@@ -1,4 +1,4 @@
-# Final Steps for Publishing FilterPlus v1.6.0 to Autodesk App Store
+# Final Steps for Publishing FilterPlus v1.7.0 to Autodesk App Store
 
 You have completed the generation of the **FilterPlus.bundle** package. Follow these steps to upload the package to the Autodesk App Store Developer Portal:
 
@@ -18,7 +18,7 @@ You have completed the generation of the **FilterPlus.bundle** package. Follow t
 
 ## 2. Package Deliverable
 The compressed bundle package is generated and ready at:
-* **`FilterPlus\FilterPlusPublishPackage\FilterPlus.bundle.zip`** (or `FilterPlus\Deploy\FilterPlus_v1.6.0.zip`).
+* **`FilterPlus\FilterPlusPublishPackage\FilterPlus.bundle.zip`** (or `FilterPlus\Deploy\FilterPlus_v1.7.0.zip`).
 
 ---
 
@@ -40,7 +40,7 @@ The compressed bundle package is generated and ready at:
 Before submitting, you can test the bundle locally:
 1. Copy the folder `FilterPlus.bundle` to `%AppData%\Autodesk\ApplicationPlugins\`.
 2. Launch Revit (2023, 2024, 2025, 2026 or 2027).
-3. Confirm that the **DBDev** tab appears in the ribbon, the **FilterPlus** panel loads without warnings, and clicking the button opens the UI cleanly.
+3. Confirm that the **Add-Ins (Complementos)** tab contains the **FilterPlus** panel without warnings, and clicking the button opens the UI cleanly.
 4. Remove the folder from `%AppData%\Autodesk\ApplicationPlugins\` after verification.
 
 ---
