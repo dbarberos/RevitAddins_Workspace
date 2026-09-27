@@ -1,0 +1,111 @@
+<Window x:Class="TablePlus.Views.ConfirmTableDeleteWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:models="clr-namespace:TablePlus.Models"
+        Title="Confirm Table Deletion - Active Model"
+        Icon="pack://application:,,,/TablePlus;component/Resources/Icons/TablePlus32x32.png"
+        Height="420" Width="660"
+        MinHeight="350" MinWidth="520"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="CanResizeWithGrip"
+        Background="#F0F0F0"
+        FontFamily="Segoe UI"
+        FontSize="11.5">
+
+    <Grid Margin="16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/> <!-- Header -->
+            <RowDefinition Height="*"/>    <!-- List of Tables -->
+            <RowDefinition Height="Auto"/> <!-- Footer / Summary + Buttons -->
+        </Grid.RowDefinitions>
+
+        <!-- Header -->
+        <Grid Grid.Row="0" Margin="0,0,0,12">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- Warning Icon -->
+            <Path Grid.Column="0" 
+                  Data="M12,2L1,21H23L12,2M12,6L19.53,19H4.47L12,6M11,10V14H13V10H11M11,16V18H13V16H11Z" 
+                  Fill="#D32F2F" Width="26" Height="26" Stretch="Uniform" Margin="0,0,12,0" VerticalAlignment="Top"/>
+
+            <!-- Header Text -->
+            <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                <TextBlock Text="Confirm Table Deletion from Active Model" 
+                           FontWeight="Bold" FontSize="13" Foreground="#D32F2F" Margin="0,0,0,3"/>
+                <TextBlock Text="The following table(s) and their associated Revit view(s) will be permanently deleted from the active Revit model." 
+                           FontSize="11.5" Foreground="#333333" TextWrapping="Wrap"/>
+                <TextBlock Text="This action cannot be undone. All lines, text notes, and TablePlus metadata in these views will be removed." 
+                           FontSize="11" FontWeight="SemiBold" Foreground="#666666" TextWrapping="Wrap" Margin="0,2,0,0"/>
+            </StackPanel>
+        </Grid>
+
+        <!-- List of Tables to Delete -->
+        <Border Grid.Row="1" Background="White" BorderBrush="#D0D0D0" BorderThickness="1" CornerRadius="3" Margin="0,0,0,12">
+            <ListView x:Name="TablesListView" BorderThickness="0" Background="Transparent" Padding="4"
+                      ScrollViewer.HorizontalScrollBarVisibility="Disabled" ScrollViewer.VerticalScrollBarVisibility="Auto">
+                <ListView.ItemContainerStyle>
+                    <Style TargetType="ListViewItem">
+                        <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                        <Setter Property="Padding" Value="6,4"/>
+                        <Setter Property="Margin" Value="0,1"/>
+                        <Setter Property="BorderThickness" Value="0,0,0,1"/>
+                        <Setter Property="BorderBrush" Value="#F5F5F5"/>
+                    </Style>
+                </ListView.ItemContainerStyle>
+                <ListView.ItemTemplate>
+                    <DataTemplate DataType="{x:Type models:TableItemModel}">
+                        <Grid Margin="2,2,2,2">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+
+                            <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                                <TextBlock Text="•" FontWeight="Bold" Foreground="#D32F2F" Margin="0,0,8,0" VerticalAlignment="Center" FontSize="14"/>
+                                <Border Background="#EDE7F6" BorderBrush="#D1C4E9" BorderThickness="1" CornerRadius="3" Padding="5,1" Margin="0,0,8,0" VerticalAlignment="Center">
+                                    <TextBlock Text="{Binding ViewType}" FontSize="9.5" FontWeight="Bold" Foreground="#512DA8"/>
+                                </Border>
+                                <TextBlock Text="{Binding ViewName}" FontWeight="Bold" Foreground="#111111" VerticalAlignment="Center"/>
+                            </StackPanel>
+
+                            <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" Margin="14,0,0,0">
+                                <TextBlock Text="{Binding SourceFileName, StringFormat='Source: {0}'}" Foreground="#666666" FontSize="10.5" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" ToolTip="{Binding SourceFilePath}"/>
+                            </StackPanel>
+
+                            <Border Grid.Column="2" Background="#FFEBEE" BorderBrush="#FFCDD2" BorderThickness="1" CornerRadius="3" Padding="6,1" Margin="8,0,4,0" VerticalAlignment="Center">
+                                <TextBlock Text="To be deleted" FontSize="9.5" FontWeight="Bold" Foreground="#D32F2F"/>
+                            </Border>
+                        </Grid>
+                    </DataTemplate>
+                </ListView.ItemTemplate>
+            </ListView>
+        </Border>
+
+        <!-- Footer / Summary and Action Buttons -->
+        <Grid Grid.Row="2">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- Summary Count -->
+            <TextBlock Grid.Column="0" x:Name="SummaryTextBlock" 
+                       Text="Total: 0 tables to delete." 
+                       FontWeight="SemiBold" Foreground="#333333" VerticalAlignment="Center"/>
+
+            <!-- Buttons -->
+            <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right">
+                <Button Content="Cancel" Width="90" Height="28" Click="Cancel_Click" 
+                        Background="#E0E0E0" BorderBrush="#CCCCCC" BorderThickness="1" FontWeight="SemiBold"
+                        IsCancel="True" Cursor="Hand"/>
+                <Button Content="Delete Tables" Width="130" Height="28" Margin="10,0,0,0" Click="Delete_Click" 
+                        Background="#D32F2F" Foreground="White" BorderThickness="0" FontWeight="Bold"
+                        IsDefault="True" Cursor="Hand"/>
+            </StackPanel>
+        </Grid>
+    </Grid>
+</Window>

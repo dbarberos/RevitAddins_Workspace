@@ -141,6 +141,10 @@
                             <Trigger Property="IsPressed" Value="True">
                                 <Setter TargetName="bdr" Property="Background" Value="#E2E8F0"/>
                             </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="bdr" Property="Opacity" Value="0.4"/>
+                                <Setter Property="Cursor" Value="Arrow"/>
+                            </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
                 </Setter.Value>
@@ -167,6 +171,10 @@
                             <Trigger Property="IsMouseOver" Value="True">
                                 <Setter TargetName="bdr" Property="Background" Value="#FEF2F2"/>
                                 <Setter TargetName="bdr" Property="BorderBrush" Value="{StaticResource DangerBrush}"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="bdr" Property="Opacity" Value="0.4"/>
+                                <Setter Property="Cursor" Value="Arrow"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -259,6 +267,117 @@
             <Setter Property="HorizontalContentAlignment" Value="Center"/>
         </Style>
 
+        <!-- Header Icon Flat Button Style (Matches TransferPlus) -->
+        <Style x:Key="HeaderIconButtonStyle" TargetType="Button">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Margin" Value="2,0"/>
+            <Setter Property="Width" Value="20"/>
+            <Setter Property="Height" Value="20"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="border" Background="Transparent" CornerRadius="10" Padding="4">
+                            <Viewbox Width="10" Height="10" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                <ContentPresenter />
+                            </Viewbox>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="#e0e0e0"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="#d0d0d0"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- TransferPlus Secondary Action Button Style (Cancel, Sync, Delete) -->
+        <Style x:Key="TransferSecondaryButtonStyle" TargetType="Button">
+            <Setter Property="Background" Value="#E1E1E1"/>
+            <Setter Property="BorderBrush" Value="#707070"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Foreground" Value="#000000"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="FontSize" Value="11.5"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Height" Value="30"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="bdr" Background="{TemplateBinding Background}" 
+                                BorderBrush="{TemplateBinding BorderBrush}" 
+                                BorderThickness="{TemplateBinding BorderThickness}" 
+                                CornerRadius="4">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="bdr" Property="Background" Value="#CCE8FF"/>
+                                <Setter TargetName="bdr" Property="BorderBrush" Value="#007ACC"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="bdr" Property="Background" Value="#C5C5C5"/>
+                                <Setter TargetName="bdr" Property="BorderBrush" Value="#303030"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="bdr" Property="Background" Value="#F3F3F3"/>
+                                <Setter TargetName="bdr" Property="BorderBrush" Value="Transparent"/>
+                                <Setter Property="Foreground" Value="#B0B0B0"/>
+                                <Setter Property="Cursor" Value="Arrow"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- TransferPlus Primary Action Button Style (Add Table / Transfer Now) -->
+        <Style x:Key="TransferPrimaryButtonStyle" TargetType="Button">
+            <Setter Property="Background" Value="#007ACC"/>
+            <Setter Property="BorderBrush" Value="#007ACC"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Foreground" Value="#FFFFFF"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="FontSize" Value="11.5"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Height" Value="30"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="bdr" Background="{TemplateBinding Background}" 
+                                BorderBrush="{TemplateBinding BorderBrush}" 
+                                BorderThickness="{TemplateBinding BorderThickness}" 
+                                CornerRadius="4">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="bdr" Property="Background" Value="#CCE8FF"/>
+                                <Setter TargetName="bdr" Property="BorderBrush" Value="#007ACC"/>
+                                <Setter Property="Foreground" Value="#007ACC"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="bdr" Property="Background" Value="#005B9A"/>
+                                <Setter TargetName="bdr" Property="BorderBrush" Value="#005B9A"/>
+                                <Setter Property="Foreground" Value="#FFFFFF"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="bdr" Property="Background" Value="#F3F3F3"/>
+                                <Setter TargetName="bdr" Property="BorderBrush" Value="Transparent"/>
+                                <Setter Property="Foreground" Value="#B0B0B0"/>
+                                <Setter Property="Cursor" Value="Arrow"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
     </Window.Resources>
 
     <Grid Margin="20,16,20,16">
@@ -268,40 +387,15 @@
             <RowDefinition Height="Auto"/> <!-- FOOTER -->
         </Grid.RowDefinitions>
 
-        <!-- ROW 0: UPPER CONTROL ZONE (3 ACTION CARDS) -->
+        <!-- ROW 0: UPPER CONTROL ZONE (FILTERS & STATUS CARDS) -->
         <Grid Grid.Row="0" Margin="0,0,0,14">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="2.2*"/> <!-- CARD 1: ACTIONS -->
-                <ColumnDefinition Width="2.2*"/> <!-- CARD 2: FILTERS & SEARCH -->
-                <ColumnDefinition Width="1.6*"/> <!-- CARD 3: REFRESH & DIAGNOSTICS -->
+                <ColumnDefinition Width="3*"/>   <!-- CARD 1: FILTERS & SEARCH -->
+                <ColumnDefinition Width="1.8*"/> <!-- CARD 2: REFRESH & DIAGNOSTICS -->
             </Grid.ColumnDefinitions>
 
-            <!-- CARD 1: ACTIONS -->
+            <!-- CARD 1: FILTERS & SEARCH -->
             <Border Grid.Column="0" Style="{StaticResource CardBorderStyle}" Margin="0,0,8,0">
-                <StackPanel>
-                    <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
-                        <TextBlock Text="⚡" FontSize="13" Margin="0,0,6,0" VerticalAlignment="Center"/>
-                        <TextBlock Text="Table Actions" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource TextPrimaryBrush}" VerticalAlignment="Center"/>
-                    </StackPanel>
-
-                    <WrapPanel Orientation="Horizontal">
-                        <Button Style="{StaticResource PrimaryButtonStyle}" Content="+ Add Table" Margin="0,0,6,6"
-                                Command="{Binding AddTableCommand}" ToolTip="Import a new Excel spreadsheet into a Revit Drafting or Legend view"/>
-
-                        <Button Style="{StaticResource SuccessButtonStyle}" Content="🔄 Sync Selected" Margin="0,0,6,6"
-                                Command="{Binding SyncSelectedCommand}" ToolTip="Re-read source files and update Revit views for all checked rows"/>
-
-                        <Button Style="{StaticResource GhostButtonStyle}" Content="👁️ Open View" Margin="0,0,6,6"
-                                Command="{Binding OpenSelectedViewCommand}" ToolTip="Switch the active Revit view to the selected table"/>
-
-                        <Button Style="{StaticResource DangerGhostButtonStyle}" Content="🗑️ Delete / Unlink" Margin="0,0,0,6"
-                                Command="{Binding DeleteSelectedCommand}" ToolTip="Permanently delete Revit view or unlink TablePlus metadata"/>
-                    </WrapPanel>
-                </StackPanel>
-            </Border>
-
-            <!-- CARD 2: FILTERS & SEARCH -->
-            <Border Grid.Column="1" Style="{StaticResource CardBorderStyle}" Margin="4,0,8,0">
                 <StackPanel>
                     <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
                         <TextBlock Text="🔍" FontSize="13" Margin="0,0,6,0" VerticalAlignment="Center"/>
@@ -333,8 +427,8 @@
                 </StackPanel>
             </Border>
 
-            <!-- CARD 3: STATUS & DIAGNOSTICS -->
-            <Border Grid.Column="2" Style="{StaticResource CardBorderStyle}" Margin="4,0,0,0">
+            <!-- CARD 2: STATUS & DIAGNOSTICS -->
+            <Border Grid.Column="1" Style="{StaticResource CardBorderStyle}" Margin="4,0,0,0">
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
@@ -380,19 +474,94 @@
                       Background="White"
                       RowStyle="{StaticResource TableRowStyle}"
                       ColumnHeaderStyle="{StaticResource TableHeaderStyle}"
-                      VirtualizingStackPanel.IsVirtualizing="True"
-                      VirtualizingStackPanel.VirtualizationMode="Recycling"
+                      VirtualizingPanel.IsVirtualizing="True"
+                      VirtualizingPanel.IsVirtualizingWhenGrouping="True"
+                      VirtualizingPanel.VirtualizationMode="Recycling"
                       ScrollViewer.CanContentScroll="True"
                       EnableRowVirtualization="True">
 
+                <DataGrid.GroupStyle>
+                    <GroupStyle>
+                        <GroupStyle.ContainerStyle>
+                            <Style TargetType="{x:Type GroupItem}">
+                                <Setter Property="Template">
+                                    <Setter.Value>
+                                        <ControlTemplate TargetType="{x:Type GroupItem}">
+                                            <Expander IsExpanded="{Binding DataContext.IsAllGroupExpanded, RelativeSource={RelativeSource AncestorType=Window}, Mode=TwoWay}"
+                                                      BorderThickness="0">
+                                                <Expander.Template>
+                                                    <ControlTemplate TargetType="{x:Type Expander}">
+                                                        <DockPanel>
+                                                            <Border DockPanel.Dock="Top" 
+                                                                    Background="#F4F6F8" 
+                                                                    BorderBrush="#E2E8F0" 
+                                                                    BorderThickness="0,0,0,1" 
+                                                                    MinHeight="26" 
+                                                                    Padding="0,2">
+                                                                <Grid>
+                                                                    <Grid.ColumnDefinitions>
+                                                                        <ColumnDefinition Width="42"/>
+                                                                        <ColumnDefinition Width="Auto"/>
+                                                                        <ColumnDefinition Width="*"/>
+                                                                    </Grid.ColumnDefinitions>
+
+                                                                    <!-- Group CheckBox at Column 0 (Width 42) -->
+                                                                    <CheckBox Grid.Column="0" 
+                                                                              IsChecked="{Binding DataContext.IsSelectAllChecked, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                                              IsThreeState="True"
+                                                                              HorizontalAlignment="Center" 
+                                                                              VerticalAlignment="Center"/>
+
+                                                                    <!-- Group Expander Toggle at Column 1 start -->
+                                                                    <ToggleButton Grid.Column="1" 
+                                                                                  IsChecked="{Binding IsExpanded, RelativeSource={RelativeSource AncestorType=Expander}}"
+                                                                                  ClickMode="Press"
+                                                                                  VerticalAlignment="Center"
+                                                                                  Margin="2,0,4,0">
+                                                                        <ToggleButton.Template>
+                                                                            <ControlTemplate TargetType="ToggleButton">
+                                                                                <Border Width="18" Height="20" Background="Transparent" Cursor="Hand">
+                                                                                    <TextBlock x:Name="ExpanderText" Text="▶" VerticalAlignment="Center" HorizontalAlignment="Center" FontSize="10" Foreground="#555555"/>
+                                                                                </Border>
+                                                                                <ControlTemplate.Triggers>
+                                                                                    <Trigger Property="IsChecked" Value="True">
+                                                                                        <Setter TargetName="ExpanderText" Property="Text" Value="▼"/>
+                                                                                    </Trigger>
+                                                                                </ControlTemplate.Triggers>
+                                                                            </ControlTemplate>
+                                                                        </ToggleButton.Template>
+                                                                    </ToggleButton>
+
+                                                                    <!-- Group Name ('All') & Item Count -->
+                                                                    <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                                                                        <TextBlock Text="{Binding Name}" FontWeight="Bold" FontSize="12" Foreground="#333333" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                                                                        <TextBlock Text="{Binding ItemCount, StringFormat='({0})'}" FontSize="11" Foreground="#888888" VerticalAlignment="Center"/>
+                                                                    </StackPanel>
+                                                                </Grid>
+                                                            </Border>
+                                                            <ContentPresenter x:Name="ExpandSite" Content="{TemplateBinding Content}" ContentTemplate="{TemplateBinding ContentTemplate}" DockPanel.Dock="Bottom" Focusable="False" Visibility="Visible"/>
+                                                        </DockPanel>
+                                                        <ControlTemplate.Triggers>
+                                                            <Trigger Property="IsExpanded" Value="False">
+                                                                <Setter TargetName="ExpandSite" Property="Visibility" Value="Collapsed"/>
+                                                            </Trigger>
+                                                        </ControlTemplate.Triggers>
+                                                    </ControlTemplate>
+                                                </Expander.Template>
+                                                <ItemsPresenter />
+                                            </Expander>
+                                        </ControlTemplate>
+                                    </Setter.Value>
+                                </Setter>
+                            </Style>
+                        </GroupStyle.ContainerStyle>
+                    </GroupStyle>
+                </DataGrid.GroupStyle>
+
                 <DataGrid.Columns>
 
-                    <!-- COL 1: SELECTION CHECKBOX WITH HEADER CHECKBOX -->
-                    <DataGridTemplateColumn Width="42" HeaderStyle="{StaticResource CenteredTableHeaderStyle}">
-                        <DataGridTemplateColumn.Header>
-                            <CheckBox IsChecked="{Binding DataContext.IsSelectAllChecked, RelativeSource={RelativeSource AncestorType=Window}}"
-                                      ToolTip="Select All / None" HorizontalAlignment="Center"/>
-                        </DataGridTemplateColumn.Header>
+                    <!-- COL 1: SELECTION CHECKBOX (EMPTY HEADER) -->
+                    <DataGridTemplateColumn Header="" Width="42" HeaderStyle="{StaticResource CenteredTableHeaderStyle}">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
                                 <CheckBox IsChecked="{Binding IsSelected, UpdateSourceTrigger=PropertyChanged}"
@@ -401,7 +570,31 @@
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
 
-                    <!-- COL 2: SOURCE TYPE BADGE -->
+                    <!-- COL 2: REVIT VIEW NAME WITH EXPAND/COLLAPSE HIERARCHY CONTROLS -->
+                    <DataGridTemplateColumn Width="180">
+                        <DataGridTemplateColumn.Header>
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                <TextBlock Text="View Name" FontWeight="SemiBold" FontSize="11.5" Foreground="#555555" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                                <Button Command="{Binding DataContext.CollapseAllCommand, RelativeSource={RelativeSource AncestorType=Window}}" 
+                                        Style="{StaticResource HeaderIconButtonStyle}" ToolTip="Collapse All" VerticalAlignment="Center">
+                                    <Path Data="M5,0 L10,8 L0,8 Z" Fill="#666" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                </Button>
+                                <Button Command="{Binding DataContext.ExpandAllCommand, RelativeSource={RelativeSource AncestorType=Window}}" 
+                                        Style="{StaticResource HeaderIconButtonStyle}" ToolTip="Expand All" VerticalAlignment="Center">
+                                    <Path Data="M0,0 L10,0 L5,8 Z" Fill="#666" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                </Button>
+                            </StackPanel>
+                        </DataGridTemplateColumn.Header>
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding ViewName}" FontWeight="SemiBold" Foreground="{StaticResource TextPrimaryBrush}" 
+                                           VerticalAlignment="Center" Margin="16,0,6,0" TextTrimming="CharacterEllipsis"
+                                           ToolTip="Double-click to open this view"/>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+
+                    <!-- COL 3: SOURCE TYPE BADGE -->
                     <DataGridTemplateColumn Header="Src" Width="55" HeaderStyle="{StaticResource CenteredTableHeaderStyle}">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
@@ -412,7 +605,7 @@
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
 
-                    <!-- COL 3: STATUS BADGE -->
+                    <!-- COL 4: STATUS BADGE -->
                     <DataGridTemplateColumn Header="Status" Width="115">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
@@ -429,17 +622,6 @@
                                                    Foreground="{Binding Status, Converter={StaticResource StatusToBrush}}" VerticalAlignment="Center"/>
                                     </StackPanel>
                                 </Border>
-                            </DataTemplate>
-                        </DataGridTemplateColumn.CellTemplate>
-                    </DataGridTemplateColumn>
-
-                    <!-- COL 4: REVIT VIEW NAME -->
-                    <DataGridTemplateColumn Header="View Name" Width="170">
-                        <DataGridTemplateColumn.CellTemplate>
-                            <DataTemplate>
-                                <TextBlock Text="{Binding ViewName}" FontWeight="SemiBold" Foreground="{StaticResource TextPrimaryBrush}" 
-                                           VerticalAlignment="Center" Margin="6,0" TextTrimming="CharacterEllipsis"
-                                           ToolTip="Double-click to open this view"/>
                             </DataTemplate>
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
@@ -527,8 +709,8 @@
             </DataGrid>
         </Border>
 
-        <!-- ROW 2: FOOTER ZONE -->
-        <Border Grid.Row="2" BorderBrush="{StaticResource CardBorderBrush}" BorderThickness="0,1,0,0" Padding="0,12,0,0">
+        <!-- ROW 2: FOOTER ZONE (WITHOUT DIVIDING SEPARATOR LINE) -->
+        <Border Grid.Row="2" BorderThickness="0" Padding="0,12,0,0">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto"/>
@@ -568,13 +750,25 @@
                     </Border>
                 </StackPanel>
 
-                <!-- Bottom Right: Execution Buttons -->
+                <!-- Bottom Right: Action Buttons (Cancel, Sync, Delete, Add Table - TransferPlus Style) -->
                 <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Bottom">
-                    <Button Style="{StaticResource GhostButtonStyle}" Content="Close" Margin="0,0,8,0"
-                            VerticalAlignment="Bottom" Height="32" Click="CloseButton_Click"/>
+                    <Button Style="{StaticResource TransferSecondaryButtonStyle}" Content="Cancel" Margin="0,0,5,0"
+                            Width="90" Height="30" Click="CloseButton_Click" IsCancel="True"
+                            ToolTip="Close TablePlus dashboard"/>
 
-                    <Button Style="{StaticResource SuccessButtonStyle}" Content="🔄 Sync Selected"
-                            VerticalAlignment="Bottom" Height="32" Command="{Binding SyncSelectedCommand}"/>
+                    <Button Style="{StaticResource TransferSecondaryButtonStyle}" Content="Sync" Margin="0,0,5,0"
+                            Width="80" Height="30" Command="{Binding SyncSelectedCommand}"
+                            IsEnabled="{Binding HasSelectedTables}"
+                            ToolTip="Synchronize selected tables with source files"/>
+
+                    <Button Style="{StaticResource TransferSecondaryButtonStyle}" Content="Delete" Margin="0,0,5,0"
+                            Width="80" Height="30" Command="{Binding DeleteSelectedCommand}"
+                            IsEnabled="{Binding HasSelectedTables}"
+                            ToolTip="Permanently delete selected tables and their Revit views"/>
+
+                    <Button Style="{StaticResource TransferPrimaryButtonStyle}" Content="Add Table" Margin="0"
+                            Width="120" Height="30" Command="{Binding AddTableCommand}"
+                            ToolTip="Import a new Excel spreadsheet into a Revit Drafting or Legend view"/>
                 </StackPanel>
             </Grid>
         </Border>

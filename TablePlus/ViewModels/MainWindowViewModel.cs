@@ -47,13 +47,18 @@ public partial class MainWindowViewModel : ObservableObject
     private TableItemModel? _selectedTable;
 
     [ObservableProperty]
-    private bool _isSelectAllChecked;
+    private bool? _isSelectAllChecked = false;
+
+    [ObservableProperty]
+    private bool _isAllGroupExpanded = true;
 
     [ObservableProperty]
     private int _totalCount;
 
     [ObservableProperty]
     private int _selectedCount;
+
+    public bool HasSelectedTables => SelectedCount > 0;
 
     [ObservableProperty]
     private int _outOfDateCount;
@@ -99,24 +104,36 @@ public partial class MainWindowViewModel : ObservableObject
 
         FilteredTables = CollectionViewSource.GetDefaultView(Tables);
         FilteredTables.Filter = FilterPredicate;
+        FilteredTables.GroupDescriptions.Add(new PropertyGroupDescription(nameof(TableItemModel.GroupName)));
     }
+
+    [RelayCommand]
+    public void ExpandAll() => IsAllGroupExpanded = true;
+
+    [RelayCommand]
+    public void CollapseAll() => IsAllGroupExpanded = false;
+
+    public IEnumerable<TableItemModel> GetFilteredItems() => Tables.Where(FilterPredicate);
 
     partial void OnSearchTextChanged(string value) => RefreshFilter();
     partial void OnSelectedViewTypeFilterChanged(string value) => RefreshFilter();
     partial void OnSelectedStatusFilterChanged(string value) => RefreshFilter();
 
-    partial void OnIsSelectAllCheckedChanged(bool value)
+    partial void OnIsSelectAllCheckedChanged(bool? value)
     {
         if (_isUpdatingSelectAll) return;
         _isUpdatingSelectAll = true;
 
-        foreach (var item in FilteredTables.Cast<TableItemModel>())
+        bool target = value == true;
+
+        foreach (var item in GetFilteredItems())
         {
-            item.IsSelected = value;
+            item.IsSelected = target;
         }
 
         UpdateCounters();
         _isUpdatingSelectAll = false;
+        UpdateSelectAllState();
     }
 
     private void RefreshFilter()
@@ -162,8 +179,23 @@ public partial class MainWindowViewModel : ObservableObject
         if (_isUpdatingSelectAll) return;
         _isUpdatingSelectAll = true;
 
-        var list = FilteredTables.Cast<TableItemModel>().ToList();
-        IsSelectAllChecked = list.Count > 0 && list.All(i => i.IsSelected);
+        var list = GetFilteredItems().ToList();
+        if (list.Count == 0)
+        {
+            IsSelectAllChecked = false;
+        }
+        else if (list.All(i => i.IsSelected))
+        {
+            IsSelectAllChecked = true;
+        }
+        else if (list.Any(i => i.IsSelected))
+        {
+            IsSelectAllChecked = null;
+        }
+        else
+        {
+            IsSelectAllChecked = false;
+        }
 
         _isUpdatingSelectAll = false;
     }
@@ -173,6 +205,9 @@ public partial class MainWindowViewModel : ObservableObject
         TotalCount = Tables.Count;
         SelectedCount = Tables.Count(t => t.IsSelected);
         OutOfDateCount = Tables.Count(t => t.Status is TableSyncStatus.Modified or TableSyncStatus.FileNotFound);
+        OnPropertyChanged(nameof(HasSelectedTables));
+        SyncSelectedCommand.NotifyCanExecuteChanged();
+        DeleteSelectedCommand.NotifyCanExecuteChanged();
     }
 
     private void OnItemPropertyChanged(object? sender, PropertyChangedEventArgs e)
@@ -290,22 +325,11 @@ public partial class MainWindowViewModel : ObservableObject
         }
     }
 
-    [RelayCommand]
+    [RelayCommand(CanExecute = nameof(HasSelectedTables))]
     public async Task SyncSelectedAsync()
     {
         var targets = Tables.Where(t => t.IsSelected).ToList();
-        if (targets.Count == 0)
-        {
-            if (SelectedTable != null)
-            {
-                targets.Add(SelectedTable);
-            }
-            else
-            {
-                TaskDialog.Show("TablePlus", "Please select at least one table to synchronize.");
-                return;
-            }
-        }
+        if (targets.Count == 0) return;
 
         try
         {
@@ -418,42 +442,22 @@ public partial class MainWindowViewModel : ObservableObject
         }
     }
 
-    [RelayCommand]
+    [RelayCommand(CanExecute = nameof(HasSelectedTables))]
     public async Task DeleteSelectedAsync()
     {
         var targets = Tables.Where(t => t.IsSelected).ToList();
-        if (targets.Count == 0 && SelectedTable != null)
-        {
-            targets.Add(SelectedTable);
-        }
+        if (targets.Count == 0) return;
 
-        if (targets.Count == 0)
-        {
-            TaskDialog.Show("TablePlus", "Please select at least one table to delete or unlink.");
-            return;
-        }
+        var confirmDialog = new ConfirmTableDeleteWindow(targets);
+        var result = confirmDialog.ShowDialog();
+        if (result != true) return;
 
-        var td = new TaskDialog("TablePlus — Remove Tables")
-        {
-            MainInstruction = $"Remove {targets.Count} selected table(s)?",
-            MainContent = "You can permanently delete the Revit views from the project, or unlink them to remove TablePlus metadata while preserving the graphical lines and text.",
-            CommonButtons = TaskDialogCommonButtons.Cancel
-        };
-
-        td.AddCommandLink(TaskDialogCommandLinkId.CommandLink1, "Delete Revit Views", "Permanently delete the Drafting/Legend views from the Revit project.");
-        td.AddCommandLink(TaskDialogCommandLinkId.CommandLink2, "Unlink Tables Only", "Remove TablePlus sync tracking but keep existing lines, fills, and text notes in Revit.");
-
-        var res = td.Show();
-        if (res == TaskDialogResult.Cancel) return;
-
-        bool deleteView = res == TaskDialogResult.CommandLink1;
-
-        using var tx = new Transaction(_doc, deleteView ? "TablePlus: Delete Table Views" : "TablePlus: Unlink Tables");
+        using var tx = new Transaction(_doc, "TablePlus: Delete Table Views");
         tx.Start();
 
         foreach (var item in targets)
         {
-            _registryService.DeleteOrUnlinkTable(_doc, item, deleteView);
+            _registryService.DeleteOrUnlinkTable(_doc, item, deleteView: true);
         }
 
         tx.Commit();

@@ -95,4 +95,10 @@ public partial class TableItemModel : ObservableObject
         TableSyncStatus.FileNotFound => "Missing",
         _ => "Unlinked"
     };
+
+    /// <summary>
+    /// Master grouping key for table explorer hierarchical display.
+    /// </summary>
+    public string GroupName => "All";
 }
+
