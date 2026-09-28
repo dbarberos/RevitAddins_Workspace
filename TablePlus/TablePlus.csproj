@@ -10,7 +10,7 @@
         <DefaultItemExcludes>$(DefaultItemExcludes);Deploy\**;TablePlusPublishPackage\**</DefaultItemExcludes>
         <Configurations>Debug.R24;Debug.R25;Debug.R26;Debug.R27</Configurations>
         <Configurations>$(Configurations);Release.R24;Release.R25;Release.R26;Release.R27</Configurations>
-        <Version>1.1.0</Version>
+        <Version>1.2.0</Version>
         <Company>DBDev_dbarberos</Company>
         <Authors>DBDev_dbarberos</Authors>
         <Copyright>Copyright © 2026 DBDev_dbarberos</Copyright>
@@ -24,7 +24,8 @@
     <ItemGroup>
         <!-- Revit Dependencies -->
         <PackageReference Include="Nice3point.Revit.Toolkit" Version="$(RevitVersion).*"/>
-        <PackageReference Include="Nice3point.Revit.Extensions" Version="$(RevitVersion).*"/>
+        <PackageReference Include="Nice3point.Revit.Extensions" Version="2025.2.4" Condition="'$(RevitVersion)' == '2025'"/>
+        <PackageReference Include="Nice3point.Revit.Extensions" Version="$(RevitVersion).*" Condition="'$(RevitVersion)' != '2025'"/>
         <PackageReference Include="Nice3point.Revit.Api.RevitAPI" Version="$(RevitVersion).*"/>
         <PackageReference Include="Nice3point.Revit.Api.RevitAPIUI" Version="$(RevitVersion).*"/>
 
@@ -33,8 +34,14 @@
         <PackageReference Include="Polyfill" Version="10.0.0" PrivateAssets="all"/>
         <PackageReference Include="CommunityToolkit.Mvvm" Version="8.2.2"/>
         <PackageReference Include="System.Text.Json" Version="8.0.5" Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'"/>
+        <PackageReference Include="Azure.Storage.Blobs" Version="12.23.0"/>
+        <PackageReference Include="AWSSDK.S3" Version="3.7.*"/>
         <PackageReference Include="ClosedXML" Version="0.104.2"/>
         <PackageReference Include="Obfuscar" Version="2.2.50" PrivateAssets="all"/>
+    </ItemGroup>
+
+    <ItemGroup>
+        <Reference Include="System.Security" Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'"/>
     </ItemGroup>
 
     <ItemGroup>

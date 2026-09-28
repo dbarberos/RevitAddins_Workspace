@@ -36,6 +36,8 @@ public class CmdImportTable : ExternalCommand
 
         try
         {
+            LoggerService.LogInfo("CmdImportTable: Initializing TablePlus Master Dashboard...");
+
             // Instantiate decoupled services
             var excelService = new ExcelReaderService();
             var schemaService = new SchemaService();
@@ -50,7 +52,7 @@ public class CmdImportTable : ExternalCommand
         }
         catch (Exception ex)
         {
-            TaskDialog.Show("TablePlus Error", $"An unexpected error occurred while launching TablePlus: {ex.Message}");
+            LoggerService.LogError("CmdImportTable.Execute", ex);
         }
     }
 }

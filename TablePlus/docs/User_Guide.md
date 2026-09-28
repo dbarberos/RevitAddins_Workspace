@@ -1,6 +1,6 @@
 # TablePlus
 
-> **Current Version:** v1.1.0  
+> **Current Version:** v1.2.0  
 > **Add-in ID (GUID):** `C9281744-8B1A-4C23-9D01-B719E022F3AA`  
 > **Target Autodesk Revit Versions:** 2024, 2025, 2026, 2027 (Win64)  
 > **Publisher:** DBDev Solutions (`DBDev_dbarberos`)  
@@ -136,6 +136,32 @@ Clicking **`🎨 Design...`** on any table row opens the **Table Graphic & Heade
 
 ---
 
+### 5.6. Configuration & External Sources Settings (Gear Icon)
+Clicking the gear icon in the lower-left corner of the dashboard opens the **Configuration & Sources Settings** window:
+
+1. **Tab Option Card**:
+   - **Place TablePlus on Add-Ins tab (default)**: Pushes the panel to the standard Autodesk `Add-Ins / Complementos` tab.
+   - **Place on Revit Manage tab (Manage Project)**: Places the panel within the native Revit Manage tab (`Gestionar proyecto` in Spanish editions).
+   - **Place on tab named**: Assigns the panel to an existing or custom-created ribbon tab.
+2. **Contextual Context Menu Toggle**:
+   - **Create new linked table from right-click context menu**: Enables quick table creation directly from Revit canvas right-click context menus (available on Revit 2025+).
+3. **External Sources Management (CAD & Details Sources Parity)**:
+   - **Soft Green Header Banner**: Highlights management of supported spreadsheet formats (`.xlsx, .xlsm, .xls, .csv`), activation states, and dynamic availability inside the **+ Add Table** import dialog.
+   - **Action Toolbar**:
+     - `+` (Add Source): Launches the source provider type selector.
+     - Pencil (Edit Source): Edits the selected source connection parameters.
+     - Trashcan (Remove Source): Safely unlinks the selected external source.
+   - **Supported External Providers**:
+     - **Autodesk Docs (APS / Forma)**: 3-legged OAuth 2.0 PKCE authentication with local loopback callback, enabling direct exploration of Hubs, Projects, and Cloud Folders (`Project Files`).
+     - **Azure Storage**: Direct connection to Azure Blob Containers with SAS/Connection Strings and root path prefixes.
+     - **AWS S3**: Cloud bucket access with credentials and support for custom endpoints (MinIO, Floci, LocalStack).
+     - **Favorite Directories**: Pinned local and network directory shortcuts for quick access.
+   - **Security**: All API keys, secrets, and tokens are protected using the Windows Data Protection API (DPAPI). Remote files are downloaded into a secure, isolated sandbox cache preventing path traversal.
+4. **Debug Logging Window Toggle**:
+   - Dedicated **Logs Window** button to toggle the live diagnostic log window on and off during session troubleshooting.
+
+---
+
 ## 6. Multi-Version Architecture & Build Orchestration
 
 TablePlus is engineered for enterprise monorepo deployment covering four major Autodesk Revit releases:
@@ -158,12 +184,30 @@ Developers can compile and package the add-in locally via the interactive orches
 ### 6.3. Autodesk App Store Bundle Packaging
 The entire multi-version deliverable is packaged using the standardized automated builder:
 ```powershell
-powershell -ExecutionPolicy Bypass -Command "& .\.agents\skills\revit-appstore-bundle\scripts\build-bundle.ps1 -AppName 'TablePlus' -Version '1.0.0' -Author 'DBDev_dbarberos' -Email 'dbarberos@outlook.com' -ProjectDir '.\TablePlus' -TargetYears @('2024', '2025', '2026', '2027')"
+powershell -ExecutionPolicy Bypass -Command "& .\.agents\skills\revit-appstore-bundle\scripts\build-bundle.ps1 -AppName 'TablePlus' -Version '1.2.0' -Author 'DBDev_dbarberos' -Email 'dbarberos@outlook.com' -ProjectDir '.\TablePlus' -TargetYears @('2024', '2025', '2026', '2027')"
 ```
 
 ---
 
 ## 7. Version History (Changelog)
+
+### v1.2.0 - 2026-09-28
+
+#### Added
+- **Configuration & External Sources Management (`ConfigurationView.xaml` & `ConfigurationViewModel.cs`)**:
+  - Full parity with TransferPlus CAD & Details Sources Settings.
+  - Ribbon tab options: Add-Ins tab, Revit Manage tab (`Manage Project` / `Gestionar proyecto`), and custom tab names.
+  - Canvas right-click context menu toggle for Revit 2025+.
+  - Dedicated **Logs Window** toggle for real-time diagnostic inspection across both Debug and Production builds.
+  - External table sources manager with soft green guidance banner, action toolbar (`+`, edit, remove), and virtualized data list.
+  - Modal dialogs for 4 source providers: Autodesk Docs (APS OAuth 2.0 PKCE tree navigation), Azure Storage, AWS S3 (with custom endpoints), and Favorite Directories.
+  - Secure credential storage using Windows DPAPI (`ProtectedData`).
+  - Isolated temporary caching with Zero-Trust path traversal validation (`TableFileManager`).
+- **Dynamic Source Selection in Add Table (`TableImportView.xaml` & ViewModel)**:
+  - Source Location selector displaying all active configured sources.
+  - Cloud file fetching and safe download to local cache before vector import.
+- **Compact Filter Card in Master Dashboard**:
+  - Refined TransferPlus Filter card styling constrained to half row width.
 
 ### v1.1.0 - 2026-09-23
 

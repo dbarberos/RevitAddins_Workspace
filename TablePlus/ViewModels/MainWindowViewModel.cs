@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.IO;
+using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Data;
 using Autodesk.Revit.DB;
@@ -35,7 +36,25 @@ public partial class MainWindowViewModel : ObservableObject
     public ICollectionView FilteredTables { get; }
 
     [ObservableProperty]
-    private string _searchText = string.Empty;
+    private string _searchFilter = string.Empty;
+
+    public string SearchText
+    {
+        get => SearchFilter;
+        set => SearchFilter = value;
+    }
+
+    [ObservableProperty]
+    private bool _filterUseOr;
+
+    [ObservableProperty]
+    private bool _filterOnlyNames;
+
+    [ObservableProperty]
+    private bool _filterUseRegex;
+
+    private readonly HashSet<TableItemModel> _matchedItems = new();
+    private bool _isFilterActive;
 
     [ObservableProperty]
     private string _selectedViewTypeFilter = "All";
@@ -115,9 +134,137 @@ public partial class MainWindowViewModel : ObservableObject
 
     public IEnumerable<TableItemModel> GetFilteredItems() => Tables.Where(FilterPredicate);
 
-    partial void OnSearchTextChanged(string value) => RefreshFilter();
+    partial void OnSearchFilterChanged(string value)
+    {
+        ApplyFilterCommand.NotifyCanExecuteChanged();
+        if (string.IsNullOrWhiteSpace(value) && _isFilterActive)
+        {
+            _isFilterActive = false;
+            _matchedItems.Clear();
+            RefreshFilter();
+            BusyStatusMessage = "Ready";
+        }
+    }
+
+    partial void OnFilterOnlyNamesChanged(bool value)
+    {
+        if (_isFilterActive) ApplyFilter();
+    }
+
+    partial void OnFilterUseRegexChanged(bool value)
+    {
+        if (_isFilterActive) ApplyFilter();
+    }
+
+    partial void OnFilterUseOrChanged(bool value)
+    {
+        if (_isFilterActive && !value) ApplyFilter();
+    }
+
+
     partial void OnSelectedViewTypeFilterChanged(string value) => RefreshFilter();
     partial void OnSelectedStatusFilterChanged(string value) => RefreshFilter();
+
+    private bool CanApplyFilter() => !string.IsNullOrWhiteSpace(SearchFilter) || _isFilterActive;
+
+    [RelayCommand(CanExecute = nameof(CanApplyFilter))]
+    private void ApplyFilter()
+    {
+        string searchText = SearchFilter?.Trim() ?? string.Empty;
+
+        if (string.IsNullOrWhiteSpace(searchText))
+        {
+            _isFilterActive = false;
+            _matchedItems.Clear();
+            RefreshFilter();
+            BusyStatusMessage = "Filter cleared. All tables displayed.";
+            return;
+        }
+
+        Regex? compiledRegex = null;
+        if (FilterUseRegex)
+        {
+            try
+            {
+                compiledRegex = new Regex(
+                    searchText,
+                    RegexOptions.IgnoreCase | RegexOptions.Compiled,
+                    TimeSpan.FromSeconds(2));
+            }
+            catch (Exception)
+            {
+                BusyStatusMessage = "Invalid Regex Pattern";
+                return;
+            }
+        }
+
+        _isFilterActive = true;
+
+        if (!FilterUseOr)
+        {
+            _matchedItems.Clear();
+        }
+
+        bool isNegativeFilter = FilterUseRegex && compiledRegex != null && (searchText.Contains("(?!") || searchText.Contains("(?<!"));
+
+        foreach (var item in Tables)
+        {
+            bool match = false;
+            if (compiledRegex != null)
+            {
+                try
+                {
+                    match = compiledRegex.IsMatch(item.ViewName ?? string.Empty);
+                    if (!match && !FilterOnlyNames)
+                    {
+                        match = compiledRegex.IsMatch(item.SourceFileName ?? string.Empty) ||
+                                compiledRegex.IsMatch(item.SourceFilePath ?? string.Empty);
+                    }
+                }
+                catch
+                {
+                    // Timeout or evaluation error guard
+                }
+            }
+            else
+            {
+                match = (item.ViewName ?? string.Empty).IndexOf(searchText, StringComparison.OrdinalIgnoreCase) >= 0;
+                if (!match && !FilterOnlyNames)
+                {
+                    match = (item.SourceFileName ?? string.Empty).IndexOf(searchText, StringComparison.OrdinalIgnoreCase) >= 0 ||
+                            (item.SourceFilePath ?? string.Empty).IndexOf(searchText, StringComparison.OrdinalIgnoreCase) >= 0;
+                }
+            }
+
+            if (match)
+            {
+                _matchedItems.Add(item);
+            }
+        }
+
+        RefreshFilter();
+        BusyStatusMessage = $"Filter applied. {_matchedItems.Count} of {Tables.Count} tables matched.";
+    }
+
+    public IRelayCommand FilterTreeCommand => ApplyFilterCommand;
+
+    [RelayCommand]
+    private void InsertFilterRegexHelper(string snippet)
+    {
+        if (snippet.Contains("text") && !string.IsNullOrWhiteSpace(SearchFilter) && !SearchFilter.Contains("(?") && !SearchFilter.Contains(".*"))
+        {
+            SearchFilter = snippet.Replace("text", SearchFilter.Trim());
+        }
+        else
+        {
+            SearchFilter = string.IsNullOrWhiteSpace(SearchFilter) ? snippet : (SearchFilter + snippet);
+        }
+        FilterUseRegex = true;
+        if (snippet.Contains("(?"))
+        {
+            FilterOnlyNames = true;
+        }
+    }
 
     partial void OnIsSelectAllCheckedChanged(bool? value)
     {
@@ -147,14 +294,9 @@ public partial class MainWindowViewModel : ObservableObject
     {
         if (obj is not TableItemModel item) return false;
 
-        // 1. Text search
-        if (!string.IsNullOrWhiteSpace(SearchText))
+        if (_isFilterActive && !_matchedItems.Contains(item))
         {
-            string query = SearchText.Trim();
-            bool matchName = item.ViewName.Contains(query, StringComparison.OrdinalIgnoreCase);
-            bool matchFile = item.SourceFileName.Contains(query, StringComparison.OrdinalIgnoreCase) ||
-                             item.SourceFilePath.Contains(query, StringComparison.OrdinalIgnoreCase);
-            if (!matchName && !matchFile) return false;
+            return false;
         }
 
         // 2. View Type filter
@@ -273,9 +415,16 @@ public partial class MainWindowViewModel : ObservableObject
                 Tables.Add(item);
             }
 
-            FilteredTables.Refresh();
-            UpdateSelectAllState();
-            UpdateCounters();
+            if (_isFilterActive)
+            {
+                ApplyFilter();
+            }
+            else
+            {
+                FilteredTables.Refresh();
+                UpdateSelectAllState();
+                UpdateCounters();
+            }
 
             BusyStatusMessage = $"Discovered {Tables.Count} table(s).";
             ProgressValue = 100;
@@ -317,11 +466,16 @@ public partial class MainWindowViewModel : ObservableObject
         try
         {
             var configView = new ConfigurationView();
+            var activeWindow = System.Windows.Application.Current?.Windows.OfType<MainWindowView>().FirstOrDefault();
+            if (activeWindow != null)
+            {
+                configView.Owner = activeWindow;
+            }
             configView.ShowDialog();
         }
         catch (Exception ex)
         {
-            TaskDialog.Show("TablePlus Error", $"Failed to open Configuration window: {ex.Message}");
+            LoggerService.LogError("OpenConfiguration", ex);
         }
     }
 

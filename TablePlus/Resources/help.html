@@ -24,7 +24,7 @@
 
     <h1>TablePlus</h1>
     <p>
-        <span class="badge">Version 1.1.0</span> &nbsp;
+        <span class="badge">Version 1.2.0</span> &nbsp;
         <strong>Add-in ID (GUID):</strong> <code>C9281744-8B1A-4C23-9D01-B719E022F3AA</code> &nbsp;
         <strong>Publisher:</strong> DBDev Solutions (<code>DBDev_dbarberos</code>)
     </p>
@@ -115,6 +115,23 @@
     <ul>
         <li><strong>Batch Sync:</strong> Select rows in the grid and click <strong>🔄 Sync Selected</strong>. TablePlus updates existing views in place without deleting them, keeping sheet viewports intact.</li>
         <li><strong>Auto-Sync on Project Open:</strong> Check the <strong>Auto-Sync</strong> box for any table. When any user opens the Revit project, TablePlus automatically detects external changes to the spreadsheet and updates the table silently in the background.</li>
+    </ul>
+
+    <h3>5.5. Configuration &amp; External Sources Management (Gear Icon)</h3>
+    <ul>
+        <li><strong>Ribbon Tab Options:</strong> Switch TablePlus location between the standard <em>Add-Ins</em> tab, the native Revit <em>Manage</em> tab (<em>Manage Project / Gestionar proyecto</em>), or a user-defined custom tab.</li>
+        <li><strong>Right-Click Context Menu:</strong> Toggle creating linked tables directly from the canvas right-click context menu (Revit 2025+).</li>
+        <li><strong>Logs Window:</strong> Toggle the live diagnostic logging window to troubleshoot sessions in real time.</li>
+        <li><strong>External Sources Manager:</strong> Manage external connections for <code>.xlsx</code>, <code>.xlsm</code>, <code>.xls</code>, and <code>.csv</code> spreadsheet files across:
+            <ul>
+                <li><strong>Autodesk Docs (APS / Forma):</strong> Explore cloud Hubs, Projects, and Folders via secure OAuth 2.0 PKCE authentication.</li>
+                <li><strong>Azure Storage:</strong> Connect to Azure Blob containers via connection strings or SAS tokens.</li>
+                <li><strong>AWS S3:</strong> Access S3 buckets with custom endpoint support (MinIO, Floci).</li>
+                <li><strong>Favorite Directories:</strong> Bookmark local and network folder paths.</li>
+            </ul>
+        </li>
+        <li><strong>Add Table Integration:</strong> Active sources are selectable in the <em>Add Table</em> import window, allowing cloud spreadsheet exploration and secure downloading into an isolated sandbox cache.</li>
+        <li><strong>DPAPI Encryption:</strong> All sensitive credentials, tokens, and keys are encrypted at rest using Windows DPAPI.</li>
     </ul>
 
     <h2>6. Support and Contact</h2>

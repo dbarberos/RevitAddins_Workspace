@@ -259,7 +259,31 @@
                             <TextBlock Text="Source Spreadsheet" FontWeight="SemiBold" FontSize="14" Foreground="{StaticResource TextPrimaryBrush}" Margin="8,0,0,0" VerticalAlignment="Center"/>
                         </StackPanel>
 
+                        <!-- Source Location Selector -->
+                        <TextBlock Text="Source Location:" FontWeight="Medium" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,4"/>
+                        <ComboBox ItemsSource="{Binding SourceOptions}" SelectedItem="{Binding SelectedSourceOption}"
+                                  DisplayMemberPath="DisplayName"
+                                  Style="{StaticResource VirtualizedComboBoxStyle}" Margin="0,0,0,8"/>
+
+                        <!-- Cloud / Directory Quick File Picker (when files available) -->
+                        <Grid Margin="0,0,0,8" Visibility="{Binding HasSourceFiles, Converter={StaticResource BoolToVis}}">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <ComboBox Grid.Column="0" ItemsSource="{Binding AvailableSpreadsheets}" SelectedItem="{Binding SelectedSpreadsheetItem}"
+                                      DisplayMemberPath="Name"
+                                      Style="{StaticResource VirtualizedComboBoxStyle}" Margin="0,0,8,0"/>
+                            <Button Grid.Column="1" Content="Load" Command="{Binding LoadSelectedSourceFileCommand}" Style="{StaticResource PrimaryButtonStyle}" Padding="14,6"/>
+                        </Grid>
+
+                        <!-- Cloud Fetch Button (when cloud source selected) -->
+                        <StackPanel Margin="0,0,0,8" Visibility="{Binding IsCloudSource, Converter={StaticResource BoolToVis}}">
+                            <Button Content="☁️ Fetch Spreadsheets from Cloud Source" Command="{Binding FetchCloudFilesCommand}" Style="{StaticResource GhostButtonStyle}" HorizontalAlignment="Left"/>
+                        </StackPanel>
+
                         <!-- File Browse Row -->
+                        <TextBlock Text="Selected Spreadsheet File:" FontWeight="Medium" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,4"/>
                         <Grid Margin="0,0,0,8">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*"/>

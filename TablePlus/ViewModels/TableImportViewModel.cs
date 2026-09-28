@@ -10,6 +10,22 @@ using TablePlus.Services;
 
 namespace TablePlus.ViewModels;
 
+public class TableSourceOption
+{
+    public string DisplayName { get; set; } = string.Empty;
+    public TableSourceItemModel? SourceModel { get; set; }
+    public bool IsLocalDisk => SourceModel == null;
+    public override string ToString() => DisplayName;
+}
+
+public class CloudSpreadsheetItem
+{
+    public string Name { get; set; } = string.Empty;
+    public string KeyOrPath { get; set; } = string.Empty;
+    public string Details { get; set; } = string.Empty;
+    public override string ToString() => Name;
+}
+
 /// <summary>
 /// Presentation logic for the TablePlus Excel Vector Import modal window.
 /// Governs file selection, worksheet inspection, range configuration, view creation options,
@@ -43,8 +59,32 @@ public partial class TableImportViewModel : ObservableObject
         SelectedScale = 1;
         CustomRangeText = "A1:G20";
         StatusMessage = "Select an Excel spreadsheet to begin.";
+
+        InitializeSources();
         UpdateCanImport();
     }
+
+    #region Observable Properties - Configured External Sources
+
+    [ObservableProperty]
+    private ObservableCollection<TableSourceOption> _sourceOptions = new();
+
+    [ObservableProperty]
+    private TableSourceOption? _selectedSourceOption;
+
+    [ObservableProperty]
+    private ObservableCollection<CloudSpreadsheetItem> _availableSpreadsheets = new();
+
+    [ObservableProperty]
+    private CloudSpreadsheetItem? _selectedSpreadsheetItem;
+
+    [ObservableProperty]
+    private bool _hasSourceFiles;
+
+    [ObservableProperty]
+    private bool _isCloudSource;
+
+    #endregion
 
     #region Observable Properties - Source File
 
@@ -267,6 +307,242 @@ public partial class TableImportViewModel : ObservableObject
 
     #endregion
 
+    #region Source Management Logic
+
+    private void InitializeSources()
+    {
+        SourceOptions.Clear();
+        SourceOptions.Add(new TableSourceOption
+        {
+            DisplayName = "💻 Local Disk / File Explorer (Custom)",
+            SourceModel = null
+        });
+
+        try
+        {
+            var savedSources = TableSourceConfigService.LoadSources().Where(s => s.IsActive).ToList();
+            foreach (var src in savedSources)
+            {
+                string icon = src.SourceType switch
+                {
+                    ExternalTableSourceType.Directory => "📁",
+                    ExternalTableSourceType.AutodeskDocs => "☁️ ACC:",
+                    ExternalTableSourceType.AzureStorage => "☁️ Azure:",
+                    ExternalTableSourceType.AwsS3 => "☁️ AWS S3:",
+                    _ => "📄"
+                };
+
+                SourceOptions.Add(new TableSourceOption
+                {
+                    DisplayName = $"{icon} {src.Name} ({src.SourceDescription})",
+                    SourceModel = src
+                });
+            }
+        }
+        catch (Exception ex)
+        {
+            TelemetryLogger.LogError("Error loading active table sources into TableImportViewModel", ex);
+        }
+
+        SelectedSourceOption = SourceOptions.FirstOrDefault();
+    }
+
+    partial void OnSelectedSourceOptionChanged(TableSourceOption? value)
+    {
+        AvailableSpreadsheets.Clear();
+        SelectedSpreadsheetItem = null;
+
+        if (value == null || value.IsLocalDisk)
+        {
+            HasSourceFiles = false;
+            IsCloudSource = false;
+            return;
+        }
+
+        var model = value.SourceModel;
+        if (model == null) return;
+
+        if (model.SourceType == ExternalTableSourceType.Directory)
+        {
+            IsCloudSource = false;
+            if (!string.IsNullOrWhiteSpace(model.Path) && Directory.Exists(model.Path))
+            {
+                try
+                {
+                    var files = Directory.GetFiles(model.Path, "*.*", SearchOption.TopDirectoryOnly)
+                        .Where(f =>
+                        {
+                            var ext = Path.GetExtension(f).ToLowerInvariant();
+                            return ext is ".xlsx" or ".xlsm" or ".xls" or ".csv";
+                        })
+                        .OrderBy(Path.GetFileName);
+
+                    foreach (var file in files)
+                    {
+                        var fi = new FileInfo(file);
+                        AvailableSpreadsheets.Add(new CloudSpreadsheetItem
+                        {
+                            Name = Path.GetFileName(file),
+                            KeyOrPath = file,
+                            Details = $"{fi.Length / 1024.0:F1} KB"
+                        });
+                    }
+                }
+                catch (Exception ex)
+                {
+                    TelemetryLogger.LogError($"Error enumerating directory '{model.Path}'", ex);
+                }
+            }
+
+            HasSourceFiles = AvailableSpreadsheets.Count > 0;
+            if (HasSourceFiles)
+            {
+                SelectedSpreadsheetItem = AvailableSpreadsheets[0];
+            }
+        }
+        else
+        {
+            // Cloud Source (Azure, AWS S3, ACC)
+            IsCloudSource = true;
+            HasSourceFiles = false;
+            _ = FetchCloudFilesAsync();
+        }
+    }
+
+    [RelayCommand]
+    public async Task FetchCloudFilesAsync()
+    {
+        var model = SelectedSourceOption?.SourceModel;
+        if (model == null || SelectedSourceOption?.IsLocalDisk == true) return;
+
+        try
+        {
+            IsBusy = true;
+            StatusMessage = $"Fetching spreadsheets from {model.Name}...";
+            AvailableSpreadsheets.Clear();
+            SelectedSpreadsheetItem = null;
+
+            if (model.SourceType == ExternalTableSourceType.AzureStorage)
+            {
+                var blobs = await AzureStorageService.GetAvailableSpreadsheetsAsync(model.ConnectionString, model.ContainerName, model.RootPath);
+                foreach (var blob in blobs)
+                {
+                    AvailableSpreadsheets.Add(new CloudSpreadsheetItem
+                    {
+                        Name = blob.FileName + "." + blob.Extension,
+                        KeyOrPath = blob.BlobName,
+                        Details = blob.FormattedSize
+                    });
+                }
+            }
+            else if (model.SourceType == ExternalTableSourceType.AwsS3)
+            {
+                var s3Objs = await AwsS3StorageService.GetAvailableSpreadsheetsAsync(model);
+                foreach (var obj in s3Objs)
+                {
+                    AvailableSpreadsheets.Add(new CloudSpreadsheetItem
+                    {
+                        Name = obj.FileName + "." + obj.Extension,
+                        KeyOrPath = obj.ObjectKey,
+                        Details = obj.FormattedSize
+                    });
+                }
+            }
+            else if (model.SourceType == ExternalTableSourceType.AutodeskDocs)
+            {
+                if (!string.IsNullOrWhiteSpace(model.AccessToken) && !string.IsNullOrWhiteSpace(model.ProjectId) && !string.IsNullOrWhiteSpace(model.FolderId))
+                {
+                    var (_, items) = await AutodeskDocsService.GetFolderSpreadsheetContentsAsync(model.AccessToken, model.ProjectId, model.FolderId);
+                    foreach (var item in items)
+                    {
+                        AvailableSpreadsheets.Add(new CloudSpreadsheetItem
+                        {
+                            Name = item.DisplayName,
+                            KeyOrPath = item.Id,
+                            Details = $"{item.ContentLength / 1024.0:F1} KB"
+                        });
+                    }
+                }
+            }
+
+            HasSourceFiles = AvailableSpreadsheets.Count > 0;
+            if (HasSourceFiles)
+            {
+                SelectedSpreadsheetItem = AvailableSpreadsheets[0];
+                StatusMessage = $"Loaded {AvailableSpreadsheets.Count} spreadsheet(s) from {model.Name}.";
+            }
+            else
+            {
+                StatusMessage = $"No spreadsheets found in {model.Name}.";
+            }
+        }
+        catch (Exception ex)
+        {
+            TelemetryLogger.LogError($"Error fetching cloud files from '{model.Name}'", ex);
+            HasError = true;
+            ErrorMessage = $"Failed to fetch files from cloud source: {ex.Message}";
+        }
+        finally
+        {
+            IsBusy = false;
+        }
+    }
+
+    [RelayCommand]
+    public async Task LoadSelectedSourceFileAsync()
+    {
+        if (SelectedSpreadsheetItem == null) return;
+        var model = SelectedSourceOption?.SourceModel;
+
+        try
+        {
+            if (model == null || model.SourceType == ExternalTableSourceType.Directory)
+            {
+                await LoadFileAsync(SelectedSpreadsheetItem.KeyOrPath);
+                return;
+            }
+
+            IsBusy = true;
+            StatusMessage = $"Downloading {SelectedSpreadsheetItem.Name}...";
+
+            string localPath = string.Empty;
+            if (model.SourceType == ExternalTableSourceType.AzureStorage)
+            {
+                localPath = await AzureStorageService.DownloadSpreadsheetBlobAsync(model.ConnectionString, model.ContainerName, SelectedSpreadsheetItem.KeyOrPath);
+            }
+            else if (model.SourceType == ExternalTableSourceType.AwsS3)
+            {
+                localPath = await AwsS3StorageService.DownloadSpreadsheetAsync(model, SelectedSpreadsheetItem.KeyOrPath);
+            }
+            else if (model.SourceType == ExternalTableSourceType.AutodeskDocs)
+            {
+                string? downloadUrl = await AutodeskDocsService.GetLatestVersionDownloadUrlAsync(model.AccessToken, model.ProjectId, SelectedSpreadsheetItem.KeyOrPath);
+                if (string.IsNullOrWhiteSpace(downloadUrl))
+                {
+                    throw new InvalidOperationException($"Could not get download URL for {SelectedSpreadsheetItem.Name} from Autodesk Docs.");
+                }
+                localPath = await AutodeskDocsService.DownloadAccSpreadsheetAsync(model.AccessToken, downloadUrl!, SelectedSpreadsheetItem.Name);
+            }
+
+            if (!string.IsNullOrWhiteSpace(localPath))
+            {
+                await LoadFileAsync(localPath);
+            }
+        }
+        catch (Exception ex)
+        {
+            TelemetryLogger.LogError($"Error loading selected source spreadsheet '{SelectedSpreadsheetItem.Name}'", ex);
+            HasError = true;
+            ErrorMessage = $"Failed to load source file: {ex.Message}";
+        }
+        finally
+        {
+            IsBusy = false;
+        }
+    }
+
+    #endregion
+
     #region Commands
 
     /// <summary>
@@ -282,6 +558,13 @@ public partial class TableImportViewModel : ObservableObject
             Multiselect = false,
             CheckFileExists = true
         };
+
+        if (SelectedSourceOption?.SourceModel?.SourceType == ExternalTableSourceType.Directory &&
+            !string.IsNullOrWhiteSpace(SelectedSourceOption.SourceModel.Path) &&
+            Directory.Exists(SelectedSourceOption.SourceModel.Path))
+        {
+            dialog.InitialDirectory = SelectedSourceOption.SourceModel.Path;
+        }
 
         if (dialog.ShowDialog() == true)
         {
