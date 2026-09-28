@@ -1,0 +1,15 @@
+<Project Sdk="Nice3point.Revit.Sdk/6.2.1">
+
+    <PropertyGroup>
+        <OutputType>Exe</OutputType>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Configurations>Debug.R24;Debug.R25;Debug.R26;Debug.R27</Configurations>
+        <Configurations>$(Configurations);Release.R24;Release.R25;Release.R26;Release.R27</Configurations>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <!-- Nice3point TUnit In-Process Revit Testing Framework -->
+        <PackageReference Include="Nice3point.TUnit.Revit" Version="$(RevitVersion).*"/>
+    </ItemGroup>
+
+</Project>

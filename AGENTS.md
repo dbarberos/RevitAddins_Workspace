@@ -136,6 +136,13 @@ Before drafting any implementation plan or modifying code, the agent **MUST** re
 - **Shared Host Dependency Harmonization & Version Pinning (`csharp-community-toolkit-mvvm`, `revit-appstore-bundle`)**: In Revit 2025+ (.NET 8 CoreCLR), all add-ins share `AssemblyLoadContext.Default`. CoreCLR strictly prohibits downward assembly version binding ($V_{loaded} < V_{requested}$). If Addin A loads first with `CommunityToolkit.Mvvm 8.2.0.0`, any Addin B requiring a higher version (e.g. `8.4.0.0`) crashes immediately with `FileLoadException (0x80131621)`. Therefore, shared NuGet dependencies (`CommunityToolkit.Mvvm`, `System.Text.Json`, etc.) must be pinned to the monorepo baseline (`8.2.2`). The agent MUST NEVER bump or introduce a higher dependency version in isolation for a single add-in. If a new add-in or requirement contemplates higher versions, the agent MUST explicitly warn the developer of runtime incompatibility with existing installed add-ins and coordinate a global, synchronized monorepo update.
 
 
+### 6.2. Autonomous In-Process Testing Gate (Nice3point.TUnit.Revit)
+Before marking any feature, provider, command, or UI control as completed, the agent **MUST** validate the implementation using in-process automated testing under `Nice3point.TUnit.Revit` (TUnit & Microsoft.Testing.Platform). Do not wait for explicit user instructions to run or create tests:
+- **Continuous Validation**: When creating or modifying Revit functionality (Drafting views, Family/CAD providers, DB transactions, Ribbon panels/buttons), verify or write the corresponding test class inheriting from `RevitApiTest`. Always mark test methods with `[Test]` and `[TestExecutor<RevitThreadExecutor>]`, and lifecycle hooks with `[HookExecutor<RevitThreadExecutor>]`.
+- **Command Execution via Terminal**: Launch the test suite using `dotnet run --project [TestProject] -c "Release.R2X"` or `dotnet test`.
+- **Autonomous Self-Healing Loop**: If a test fails, the agent **must not** ask the user what to do. The agent must parse the console stack trace, identify the defect (e.g. STA thread violation, unhandled modal warning, missing `WarningSwallower`, null reference, or dirty document state), correct the source code, and re-execute until 100% of the tests pass. Only notify the user once the code is stable and all tests are green.
+- **Reference**: Consult the `.agents/skills/revit-tunit-testing/` skill for project templates, UI assertions, and document isolation patterns.
+
 ---
 
 ## 6. Available Skills
@@ -158,6 +165,7 @@ The agent has modular skills organized under `.agents/skills/`:
 
 | `revit-addin-helpers` | `.agents/skills/revit-addin-helpers/` | C# / Python helpers and extensions ready to copy. |
 | `revit-addin-testing` | `.agents/skills/revit-addin-testing/` | xUnit testing strategies, Moq, and interface injection. |
+| `revit-tunit-testing` | `.agents/skills/revit-tunit-testing/` | In-process automated UI & DB integration testing with Nice3point.TUnit.Revit (TUnit / Microsoft.Testing.Platform). |
 | `revit-private-nuget-feed` | `.agents/skills/revit-private-nuget-feed/` | Private NuGet Feed: extract official Revit DLLs, build private NuGet feeds, configure nuget.config, version pinning, and CI/CD caching. |
 | `revit-addin-doc-manager` | `.agents/skills/revit-addin-doc-manager/` | Autonomous management of guides and Git changelogs. |
 | `revit-addin-icon-manager` | `.agents/skills/revit-addin-icon-manager/` | Icon integration, pack:// URIs, and .csproj. |
