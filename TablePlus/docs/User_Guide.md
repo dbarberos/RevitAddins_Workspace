@@ -241,4 +241,4 @@ To report bugs, suggest features, or request technical support:
 * **Company**: DBDev Solutions
 * **Support Email**: [dbarberos@outlook.com](mailto:dbarberos@outlook.com)
 * **Website**: [https://dbdev-dbarberos.github.io](https://dbdev-dbarberos.github.io)
-* **Documentation & Privacy Policy**: [https://dbdev-dbarberos.github.io/PrivacyPolicy/](https://dbdev-dbarberos.github.io/PrivacyPolicy/)
+* **Documentation & Privacy Policy**: [https://dbdev-dbarberos.github.io/PrivacyPolicy/TablePlus/](https://dbdev-dbarberos.github.io/PrivacyPolicy/TablePlus/)

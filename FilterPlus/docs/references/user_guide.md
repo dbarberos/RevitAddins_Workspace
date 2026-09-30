@@ -3,7 +3,7 @@
 **Current Version:** 1.7.0  
 **Developer:** DBDev_dbarberos  
 **Publisher Website:** [Autodesk App Store Profile](https://apps.autodesk.com/en/Publisher/PublisherHomepage) *(Publisher profile URL)*  
-**Privacy Policy:** [https://dbdev-dbarberos.github.io/PrivacyPolicy/](https://dbdev-dbarberos.github.io/PrivacyPolicy/)  
+**Privacy Policy:** [https://dbdev-dbarberos.github.io/PrivacyPolicy/FilterPlus/](https://dbdev-dbarberos.github.io/PrivacyPolicy/FilterPlus/)  
 
 ---
 

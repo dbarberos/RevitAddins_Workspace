@@ -47,6 +47,8 @@
         <local:StatusToBrushConverter x:Key="StatusToBrush"/>
         <local:StatusToBgBrushConverter x:Key="StatusToBg"/>
         <local:ViewTypeToTextConverter x:Key="ViewTypeToText"/>
+        <local:GroupItemToIndentMarginConverter x:Key="GroupItemToIndentMargin"/>
+        <local:GroupItemToBackgroundConverter x:Key="GroupItemToBg"/>
 
         <!-- Card Container Style -->
         <Style x:Key="CardBorderStyle" TargetType="Border">
@@ -150,6 +152,31 @@
                             <Trigger Property="IsEnabled" Value="False">
                                 <Setter TargetName="bdr" Property="Opacity" Value="0.4"/>
                                 <Setter Property="Cursor" Value="Arrow"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Clean Badge Button Style -->
+        <Style x:Key="CleanBadgeButtonStyle" TargetType="Button">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="bdr" Background="Transparent" CornerRadius="10">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="bdr" Property="Opacity" Value="0.8"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="bdr" Property="Opacity" Value="0.6"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -436,11 +463,11 @@
             <RowDefinition Height="Auto"/> <!-- FOOTER -->
         </Grid.RowDefinitions>
 
-        <!-- ROW 0: UPPER CONTROL ZONE (FILTERS & STATUS CARDS) -->
+        <!-- ROW 0: UPPER CONTROL ZONE (FILTER & ORGANIZE CARDS) -->
         <Grid Grid.Row="0" Margin="0,0,0,14">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="Auto"/> <!-- CARD 1: FILTERS & SEARCH (COMPACT HALF-WIDTH) -->
-                <ColumnDefinition Width="Auto"/> <!-- CARD 2: REFRESH & DIAGNOSTICS -->
+                <ColumnDefinition Width="Auto"/> <!-- CARD 1: FILTER -->
+                <ColumnDefinition Width="Auto"/> <!-- CARD 2: ORGANIZE -->
                 <ColumnDefinition Width="*"/>    <!-- OPEN SPACE (PREVENTS CARDS FROM STRETCHING ACROSS ROW) -->
             </Grid.ColumnDefinitions>
 
@@ -815,32 +842,111 @@
                 </Grid>
             </Border>
 
-            <!-- CARD 2: STATUS & DIAGNOSTICS -->
-            <Border Grid.Column="1" Style="{StaticResource CardBorderStyle}" Width="260" Margin="0,0,0,0">
+            <!-- CARD 2: ORGANIZE (ORIGIN & ARRANGE) -->
+            <Border Grid.Column="1" Style="{StaticResource CardBorderStyle}" Width="350" Margin="0,0,10,0">
                 <Grid>
                     <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/> <!-- Row 0: Headers (Organize: & ARRANGE) -->
+                        <RowDefinition Height="*"/>    <!-- Row 1: Columns Content -->
                     </Grid.RowDefinitions>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/> <!-- Col 0: Origin -->
+                        <ColumnDefinition Width="1"/>    <!-- Col 1: Separator -->
+                        <ColumnDefinition Width="*"/>    <!-- Col 2: Arrange -->
+                    </Grid.ColumnDefinitions>
 
-                    <Grid Grid.Row="0" Margin="0,0,0,6">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="Auto"/>
-                        </Grid.ColumnDefinitions>
-                        <StackPanel Grid.Column="0" Orientation="Horizontal">
-                            <TextBlock Text="📊" FontSize="13" Margin="0,0,6,0" VerticalAlignment="Center"/>
-                            <TextBlock Text="System Status" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource TextPrimaryBrush}" VerticalAlignment="Center"/>
-                        </StackPanel>
-                        <Button Grid.Column="1" Style="{StaticResource GhostButtonStyle}" Padding="6,2" Content="🔄" 
-                                Command="{Binding RefreshInventoryCommand}" ToolTip="Rescan Revit document"/>
-                    </Grid>
+                    <!-- Row 0, Col 0: Title "Organize:" -->
+                    <TextBlock Grid.Row="0" Grid.Column="0" Text="Organize:" FontWeight="Bold" FontSize="12" Foreground="#999" Margin="0,0,12,6" VerticalAlignment="Center"/>
 
-                    <StackPanel Grid.Row="1" VerticalAlignment="Center">
-                        <TextBlock Text="{Binding BusyStatusMessage}" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" 
-                                   TextTrimming="CharacterEllipsis" Margin="0,0,0,4"/>
-                        <ProgressBar Height="4" IsIndeterminate="{Binding IsBusy}" Value="{Binding ProgressValue}" 
-                                     Foreground="{StaticResource PrimaryBrush}" Background="#E2E8F0" BorderThickness="0"/>
+                    <!-- Row 0, Col 2: Subtitle "ARRANGE" (Aligned with Organize: title) -->
+                    <TextBlock Grid.Row="0" Grid.Column="2" Text="ARRANGE" FontSize="9" FontWeight="SemiBold" Foreground="#999" Margin="12,0,0,6" VerticalAlignment="Center"/>
+
+                    <!-- Col 1: Vertical Separator (spanning rows 0 & 1) -->
+                    <Border Grid.Row="0" Grid.RowSpan="2" Grid.Column="1" Background="#E0E0E0" Margin="0,2,0,2"/>
+
+                    <!-- Row 1, Col 0: Origin Options -->
+                    <StackPanel Grid.Row="1" Grid.Column="0" Margin="0,0,12,0">
+                        <TextBlock Text="ORIGIN" FontSize="9" FontWeight="SemiBold" Foreground="#999" Margin="0,0,0,5"/>
+
+                        <CheckBox Content="Drafting Views (Table)" IsChecked="{Binding OriginDraftingViews}" FontSize="11" Margin="0,0,0,5">
+                            <CheckBox.ToolTip>
+                                <ToolTip MaxWidth="250">
+                                    <TextBlock TextWrapping="Wrap" FontSize="11.5" LineHeight="15" Foreground="#333333">
+                                        <Bold>Drafting Views (Table)</Bold><LineBreak/>
+                                        Collects 2D vector tables generated in standard Drafting Views.
+                                    </TextBlock>
+                                </ToolTip>
+                            </CheckBox.ToolTip>
+                        </CheckBox>
+
+                        <CheckBox Content="Legends" IsChecked="{Binding OriginLegends}" FontSize="11" Margin="0,0,0,5">
+                            <CheckBox.ToolTip>
+                                <ToolTip MaxWidth="250">
+                                    <TextBlock TextWrapping="Wrap" FontSize="11.5" LineHeight="15" Foreground="#333333">
+                                        <Bold>Legends (Legend Views)</Bold><LineBreak/>
+                                        Collects vector tables created in Legend Views, allowing placement across multiple sheets simultaneously.
+                                    </TextBlock>
+                                </ToolTip>
+                            </CheckBox.ToolTip>
+                        </CheckBox>
+
+                        <CheckBox Content="Schedules" IsChecked="{Binding OriginSchedules}" FontSize="11" Margin="0,0,0,0">
+                            <CheckBox.ToolTip>
+                                <ToolTip MaxWidth="250">
+                                    <TextBlock TextWrapping="Wrap" FontSize="11.5" LineHeight="15" Foreground="#333333">
+                                        <Bold>Schedules (Schedule Views)</Bold><LineBreak/>
+                                        Collects tabular data and calculation sheets imported into or managed as Schedule views.
+                                    </TextBlock>
+                                </ToolTip>
+                            </CheckBox.ToolTip>
+                        </CheckBox>
+                    </StackPanel>
+
+                    <!-- Row 1, Col 2: Arrange Switches -->
+                    <StackPanel Grid.Row="1" Grid.Column="2" Margin="12,0,0,0">
+                        <CheckBox Content="Sort by Category" IsChecked="{Binding SortByCategory}" Style="{StaticResource SwitchStyle}" FontSize="11" Margin="0,0,0,5">
+                            <CheckBox.ToolTip>
+                                <ToolTip MaxWidth="250">
+                                    <TextBlock TextWrapping="Wrap" FontSize="11.5" LineHeight="15" Foreground="#333333">
+                                        <Bold>Sort by Category</Bold><LineBreak/>
+                                        Groups table views by their target Revit category and view classification.
+                                    </TextBlock>
+                                </ToolTip>
+                            </CheckBox.ToolTip>
+                        </CheckBox>
+
+                        <CheckBox Content="Sort by Name" IsChecked="{Binding SortByName}" Style="{StaticResource SwitchStyle}" FontSize="11" Margin="0,0,0,5">
+                            <CheckBox.ToolTip>
+                                <ToolTip MaxWidth="250">
+                                    <TextBlock TextWrapping="Wrap" FontSize="11.5" LineHeight="15" Foreground="#333333">
+                                        <Bold>Sort by Name</Bold><LineBreak/>
+                                        Displays all collected tables in a flat alphabetical order sorted from A to Z.
+                                    </TextBlock>
+                                </ToolTip>
+                            </CheckBox.ToolTip>
+                        </CheckBox>
+
+                        <CheckBox Content="Sort by Sheet" IsChecked="{Binding SortBySheet}" Style="{StaticResource SwitchStyle}" FontSize="11" Margin="0,0,0,5">
+                            <CheckBox.ToolTip>
+                                <ToolTip MaxWidth="250">
+                                    <TextBlock TextWrapping="Wrap" FontSize="11.5" LineHeight="15" Foreground="#333333">
+                                        <Bold>Sort by Sheet</Bold><LineBreak/>
+                                        Organizes tables according to the sheet (Number - Name) where each table view is placed.
+                                    </TextBlock>
+                                </ToolTip>
+                            </CheckBox.ToolTip>
+                        </CheckBox>
+
+                        <CheckBox Content="Sort by View" IsChecked="{Binding SortByView}" Style="{StaticResource SwitchStyle}" FontSize="11" Margin="0,0,0,0">
+                            <CheckBox.ToolTip>
+                                <ToolTip MaxWidth="250">
+                                    <TextBlock TextWrapping="Wrap" FontSize="11.5" LineHeight="15" Foreground="#333333">
+                                        <Bold>Sort by View</Bold><LineBreak/>
+                                        Organizes tables directly under their parent host view hierarchy.
+                                    </TextBlock>
+                                </ToolTip>
+                            </CheckBox.ToolTip>
+                        </CheckBox>
                     </StackPanel>
                 </Grid>
             </Border>
@@ -871,23 +977,17 @@
 
                 <DataGrid.GroupStyle>
                     <GroupStyle>
-                        <GroupStyle.Panel>
-                            <ItemsPanelTemplate>
-                                <DataGridRowsPresenter/>
-                            </ItemsPanelTemplate>
-                        </GroupStyle.Panel>
                         <GroupStyle.ContainerStyle>
                             <Style TargetType="{x:Type GroupItem}">
                                 <Setter Property="Template">
                                     <Setter.Value>
                                         <ControlTemplate TargetType="{x:Type GroupItem}">
-                                            <Expander IsExpanded="{Binding DataContext.IsAllGroupExpanded, RelativeSource={RelativeSource AncestorType=Window}, Mode=TwoWay}"
-                                                      BorderThickness="0">
+                                            <Expander IsExpanded="True" BorderThickness="0">
                                                 <Expander.Template>
                                                     <ControlTemplate TargetType="{x:Type Expander}">
                                                         <DockPanel>
                                                             <Border DockPanel.Dock="Top" 
-                                                                    Background="#F4F6F8" 
+                                                                    Background="{Binding RelativeSource={RelativeSource Mode=FindAncestor, AncestorType={x:Type GroupItem}}, Converter={StaticResource GroupItemToBg}}" 
                                                                     BorderBrush="#E2E8F0" 
                                                                     BorderThickness="0,0,0,1" 
                                                                     MinHeight="26" 
@@ -901,7 +1001,8 @@
 
                                                                     <!-- Group CheckBox at Column 0 (Width 42) -->
                                                                     <CheckBox Grid.Column="0" 
-                                                                              IsChecked="{Binding DataContext.IsSelectAllChecked, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                                              Click="GroupCheckBox_Click"
+                                                                              Loaded="GroupCheckBox_Loaded"
                                                                               IsThreeState="True"
                                                                               HorizontalAlignment="Center" 
                                                                               VerticalAlignment="Center"/>
@@ -911,7 +1012,7 @@
                                                                                   IsChecked="{Binding IsExpanded, RelativeSource={RelativeSource AncestorType=Expander}}"
                                                                                   ClickMode="Press"
                                                                                   VerticalAlignment="Center"
-                                                                                  Margin="2,0,4,0">
+                                                                                  Margin="{Binding RelativeSource={RelativeSource Mode=FindAncestor, AncestorType={x:Type GroupItem}}, Converter={StaticResource GroupItemToIndentMargin}}">
                                                                         <ToggleButton.Template>
                                                                             <ControlTemplate TargetType="ToggleButton">
                                                                                 <Border Width="18" Height="20" Background="Transparent" Cursor="Hand">
@@ -926,7 +1027,7 @@
                                                                         </ToggleButton.Template>
                                                                     </ToggleButton>
 
-                                                                    <!-- Group Name ('All') & Item Count -->
+                                                                    <!-- Group Name & Item Count -->
                                                                     <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
                                                                         <TextBlock Text="{Binding Name}" FontWeight="Bold" FontSize="12" Foreground="#333333" VerticalAlignment="Center" Margin="0,0,6,0"/>
                                                                         <TextBlock Text="{Binding ItemCount, StringFormat='({0})'}" FontSize="11" Foreground="#888888" VerticalAlignment="Center"/>
@@ -1112,9 +1213,9 @@
                     <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
 
-                <!-- Bottom Left: Configuration & Sources Cog and Tables Selected Card (Flush to Bottom) -->
+                <!-- Bottom Left: Configuration Cog, Tables Selected Card, and Health Indicators (Clean Minimalist HUD) -->
                 <StackPanel Grid.Column="0" Orientation="Horizontal" HorizontalAlignment="Left" VerticalAlignment="Bottom">
-                    <Button Command="{Binding OpenConfigurationCommand}" Margin="0,0,10,0" VerticalAlignment="Bottom" Cursor="Hand" ToolTip="Configuration &amp; Sources">
+                    <Button Command="{Binding OpenConfigurationCommand}" Margin="0,0,10,0" VerticalAlignment="Center" Cursor="Hand" ToolTip="Configuration &amp; Sources">
                         <Button.Template>
                             <ControlTemplate TargetType="Button">
                                 <Border x:Name="border" Background="Transparent" CornerRadius="12" Padding="4">
@@ -1135,7 +1236,7 @@
                         </Button.Template>
                     </Button>
 
-                    <Border Background="#ffffff" CornerRadius="8" Padding="15,6" BorderBrush="#e0e0e0" BorderThickness="1" VerticalAlignment="Bottom">
+                    <Border Background="#ffffff" CornerRadius="8" Padding="15,6" BorderBrush="#e0e0e0" BorderThickness="1" VerticalAlignment="Center">
                         <StackPanel Orientation="Horizontal" VerticalAlignment="Bottom">
                             <TextBlock Text="{Binding SelectedCount}" FontSize="24" FontWeight="Medium" VerticalAlignment="Bottom" Foreground="#333" Margin="0,0,0,0"/>
                             <TextBlock Text=" / " FontSize="16" FontWeight="Normal" VerticalAlignment="Bottom" Foreground="#888" Margin="4,0,4,2"/>
@@ -1143,6 +1244,94 @@
                             <TextBlock Text="tables selected" VerticalAlignment="Bottom" Foreground="#666" FontWeight="SemiBold" FontSize="13" Margin="0,0,0,3"/>
                         </StackPanel>
                     </Border>
+
+                    <!-- System Health & Status Indicators (Clean Minimalist HUD, No Card Border) -->
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="14,0,0,0">
+                        <!-- Round Rescan Button (Matching Cog Style & Colors) -->
+                        <Button Command="{Binding RefreshInventoryCommand}" Margin="0,0,8,0" VerticalAlignment="Center" Cursor="Hand">
+                            <Button.ToolTip>
+                                <ToolTip MaxWidth="280">
+                                    <TextBlock TextWrapping="Wrap" FontSize="11.5" LineHeight="15" Foreground="#333333">
+                                        <Bold>Rescan Model (F5)</Bold><LineBreak/>
+                                        Scans the Revit document to discover new table views and re-checks Excel timestamps on disk.
+                                    </TextBlock>
+                                </ToolTip>
+                            </Button.ToolTip>
+                            <Button.Template>
+                                <ControlTemplate TargetType="Button">
+                                    <Border x:Name="border" Background="Transparent" CornerRadius="12" Padding="4">
+                                        <Viewbox Width="18" Height="18">
+                                            <Path Data="M12,4V1L8,5L12,9V6A6,6 0 0,1 18,12C18,13.22 17.64,14.36 17,15.31L18.46,16.76C19.43,15.37 20,13.75 20,12A8,8 0 0,0 12,4M12,18A6,6 0 0,1 6,12C6,10.78 6.36,9.64 7,8.69L5.54,7.24C4.57,8.63 4,10.25 4,12A8,8 0 0,0 12,20V23L16,19L12,15V18Z" 
+                                                  Fill="#777" x:Name="iconPath"/>
+                                        </Viewbox>
+                                    </Border>
+                                    <ControlTemplate.Triggers>
+                                        <Trigger Property="IsMouseOver" Value="True">
+                                            <Setter TargetName="border" Property="Background" Value="#eeeeee"/>
+                                            <Setter TargetName="iconPath" Property="Fill" Value="#333"/>
+                                        </Trigger>
+                                        <Trigger Property="IsPressed" Value="True">
+                                            <Setter TargetName="border" Property="Background" Value="#dddddd"/>
+                                        </Trigger>
+                                    </ControlTemplate.Triggers>
+                                </ControlTemplate>
+                            </Button.Template>
+                        </Button>
+
+                        <!-- Up to Date Circle Badge (Solid Green) -->
+                        <Button Command="{Binding FilterByStatusBadgeCommand}" CommandParameter="Up to Date" Style="{StaticResource CleanBadgeButtonStyle}" Margin="0,0,6,0" VerticalAlignment="Center">
+                            <Button.ToolTip>
+                                <ToolTip MaxWidth="260">
+                                    <TextBlock TextWrapping="Wrap" FontSize="11.5" LineHeight="15" Foreground="#333333">
+                                        <Bold>Up to Date</Bold><LineBreak/>
+                                        Tables fully synchronized with their source files on disk. Click to filter.
+                                    </TextBlock>
+                                </ToolTip>
+                            </Button.ToolTip>
+                            <Border Background="#10B981" Width="22" Height="22" CornerRadius="11">
+                                <TextBlock Text="{Binding UpToDateCount}" FontSize="11" FontWeight="Bold" Foreground="#FFFFFF" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+                        </Button>
+
+                        <!-- Modified Circle Badge (Solid Amber/Yellow) -->
+                        <Button Command="{Binding FilterByStatusBadgeCommand}" CommandParameter="Modified" Style="{StaticResource CleanBadgeButtonStyle}" Margin="0,0,6,0" VerticalAlignment="Center">
+                            <Button.ToolTip>
+                                <ToolTip MaxWidth="260">
+                                    <TextBlock TextWrapping="Wrap" FontSize="11.5" LineHeight="15" Foreground="#333333">
+                                        <Bold>Modified</Bold><LineBreak/>
+                                        Tables whose source Excel files on disk have been edited and require synchronization. Click to filter.
+                                    </TextBlock>
+                                </ToolTip>
+                            </Button.ToolTip>
+                            <Border Background="#F59E0B" Width="22" Height="22" CornerRadius="11">
+                                <TextBlock Text="{Binding ModifiedCount}" FontSize="11" FontWeight="Bold" Foreground="#FFFFFF" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+                        </Button>
+
+                        <!-- File Missing Circle Badge (Solid Red) -->
+                        <Button Command="{Binding FilterByStatusBadgeCommand}" CommandParameter="File Missing" Style="{StaticResource CleanBadgeButtonStyle}" Margin="0,0,10,0" VerticalAlignment="Center">
+                            <Button.ToolTip>
+                                <ToolTip MaxWidth="260">
+                                    <TextBlock TextWrapping="Wrap" FontSize="11.5" LineHeight="15" Foreground="#333333">
+                                        <Bold>File Missing</Bold><LineBreak/>
+                                        Tables whose source Excel file cannot be found at the specified path. Click to filter.
+                                    </TextBlock>
+                                </ToolTip>
+                            </Button.ToolTip>
+                            <Border Background="#EF4444" Width="22" Height="22" CornerRadius="11">
+                                <TextBlock Text="{Binding FileNotFoundCount}" FontSize="11" FontWeight="Bold" Foreground="#FFFFFF" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+                        </Button>
+
+                        <!-- Live Telemetry / Status Message in Light Gray -->
+                        <StackPanel VerticalAlignment="Center" Margin="0,0,0,0" MaxWidth="320">
+                            <TextBlock Text="{Binding BusyStatusMessage}" FontSize="11.5" Foreground="#888888" 
+                                       TextTrimming="CharacterEllipsis" VerticalAlignment="Center" ToolTip="{Binding BusyStatusMessage}"/>
+                            <ProgressBar Height="2.5" IsIndeterminate="{Binding IsBusy}" Value="{Binding ProgressValue}" 
+                                         Foreground="{StaticResource PrimaryBrush}" Background="#E2E8F0" BorderThickness="0" Margin="0,2,0,0"
+                                         Visibility="{Binding IsBusy, Converter={StaticResource BoolToVis}}"/>
+                        </StackPanel>
+                    </StackPanel>
                 </StackPanel>
 
                 <!-- Bottom Right: Action Buttons (Cancel, Sync, Delete, Add Table - TransferPlus Style) -->

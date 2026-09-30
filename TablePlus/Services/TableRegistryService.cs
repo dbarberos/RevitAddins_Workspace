@@ -28,11 +28,14 @@ public class TableRegistryService : ITableRegistryService
 
         var discoveredItems = new List<TableItemModel>();
 
-        // 1. Query candidate Drafting and Legend views
+        // 1. Build ViewId -> Sheet mapping from Viewports and ScheduleSheetInstances
+        var viewToSheetMap = BuildViewToSheetMapping(doc);
+
+        // 2. Query candidate Drafting, Legend, and Schedule views
         var candidateViews = new FilteredElementCollector(doc)
             .OfClass(typeof(View))
             .Cast<View>()
-            .Where(v => !v.IsTemplate && (v.ViewType == ViewType.DraftingView || v.ViewType == ViewType.Legend))
+            .Where(v => !v.IsTemplate && (v.ViewType == ViewType.DraftingView || v.ViewType == ViewType.Legend || v.ViewType == ViewType.Schedule))
             .ToList();
 
         foreach (var view in candidateViews)
@@ -80,7 +83,10 @@ public class TableRegistryService : ITableRegistryService
                 SourceType = sourceType,
                 IsAutoSyncEnabled = config.IsAutoSyncEnabled,
                 IsBlackAndWhite = config.BlackAndWhiteMode,
-                Config = config
+                Config = config,
+                SheetName = viewToSheetMap.TryGetValue(view.Id, out var sheet) && !string.IsNullOrWhiteSpace(sheet)
+                    ? sheet
+                    : "Unplaced"
             };
 
             // Evaluate live file status and sheet catalog
@@ -90,6 +96,69 @@ public class TableRegistryService : ITableRegistryService
         }
 
         return discoveredItems;
+    }
+
+    private static Dictionary<ElementId, string> BuildViewToSheetMapping(Document doc)
+    {
+        var mapping = new Dictionary<ElementId, string>();
+        if (doc == null) return mapping;
+
+        try
+        {
+            // 1. Viewports (Drafting Views and Legends)
+            var viewports = new FilteredElementCollector(doc)
+                .OfClass(typeof(Viewport))
+                .Cast<Viewport>();
+
+            foreach (var vp in viewports)
+            {
+                if (doc.GetElement(vp.SheetId) is ViewSheet sheet)
+                {
+                    string sheetLabel = $"{sheet.SheetNumber} - {sheet.Name}";
+                    if (mapping.TryGetValue(vp.ViewId, out var existing))
+                    {
+                        if (!existing.Contains(sheetLabel))
+                        {
+                            mapping[vp.ViewId] = $"{existing}, {sheetLabel}";
+                        }
+                    }
+                    else
+                    {
+                        mapping[vp.ViewId] = sheetLabel;
+                    }
+                }
+            }
+
+            // 2. ScheduleSheetInstances (Schedules placed on sheets)
+            var scheduleInstances = new FilteredElementCollector(doc)
+                .OfClass(typeof(ScheduleSheetInstance))
+                .Cast<ScheduleSheetInstance>();
+
+            foreach (var ssi in scheduleInstances)
+            {
+                if (doc.GetElement(ssi.OwnerViewId) is ViewSheet sheet)
+                {
+                    string sheetLabel = $"{sheet.SheetNumber} - {sheet.Name}";
+                    if (mapping.TryGetValue(ssi.ScheduleId, out var existing))
+                    {
+                        if (!existing.Contains(sheetLabel))
+                        {
+                            mapping[ssi.ScheduleId] = $"{existing}, {sheetLabel}";
+                        }
+                    }
+                    else
+                    {
+                        mapping[ssi.ScheduleId] = sheetLabel;
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            LoggerService.LogError("BuildViewToSheetMapping", ex);
+        }
+
+        return mapping;
     }
 
     /// <inheritdoc />

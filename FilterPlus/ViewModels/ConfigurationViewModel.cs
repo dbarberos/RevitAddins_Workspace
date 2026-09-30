@@ -84,7 +84,7 @@ public partial class ConfigurationViewModel : ObservableObject
         {
             System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
             {
-                FileName = "https://dbdev-dbarberos.github.io/PrivacyPolicy/",
+                FileName = "https://dbdev-dbarberos.github.io/PrivacyPolicy/FilterPlus/",
                 UseShellExecute = true
             });
         }

@@ -97,8 +97,32 @@ public partial class TableItemModel : ObservableObject
     };
 
     /// <summary>
+    /// The Revit Sheet where this table view is placed (e.g. "A101 - Floor Plan"), or "Unplaced".
+    /// </summary>
+    [ObservableProperty]
+    private string _sheetName = "Unplaced";
+
+    /// <summary>
     /// Master grouping key for table explorer hierarchical display.
     /// </summary>
     public string GroupName => "All";
+
+    /// <summary>
+    /// Category / View classification name for hierarchical grouping.
+    /// </summary>
+    public string CategoryName => ViewType switch
+    {
+        TargetViewType.DraftingView => "Drafting Views",
+        TargetViewType.LegendView => "Legends",
+        TargetViewType.ScheduleView => "Schedules",
+        _ => "Other Views"
+    };
+
+    /// <summary>
+    /// Table / Source File Name for hierarchical grouping.
+    /// </summary>
+    public string TableName => !string.IsNullOrWhiteSpace(SourceFileName) && SourceFileName != "Unknown.xlsx"
+        ? SourceFileName
+        : (string.IsNullOrWhiteSpace(ViewName) ? "Unnamed Table" : ViewName);
 }
 

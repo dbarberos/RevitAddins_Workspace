@@ -1,8 +1,10 @@
 using System.Diagnostics;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Interop;
+using System.Windows.Media;
 using TablePlus.Models;
 using TablePlus.ViewModels;
 
@@ -28,6 +30,16 @@ public partial class MainWindowView : Window
 
         // Register UI dispatcher for real-time log streaming
         TablePlus.Services.LoggerService.SetDispatcher(this.Dispatcher);
+
+        // Wire up group expander and checkbox synchronization
+        _viewModel.RequestSetAllGroupsExpanded = SetAllGroupsExpanded;
+        _viewModel.PropertyChanged += (s, e) =>
+        {
+            if (e.PropertyName is nameof(MainWindowViewModel.SelectedCount) or nameof(MainWindowViewModel.IsSelectAllChecked))
+            {
+                Dispatcher.BeginInvoke(new Action(UpdateGroupCheckboxes));
+            }
+        };
 
         TablesDataGrid.LayoutUpdated += TablesDataGrid_LayoutUpdated;
 
@@ -121,5 +133,128 @@ public partial class MainWindowView : Window
     private void CloseButton_Click(object sender, RoutedEventArgs e)
     {
         Close();
+    }
+
+    private void SetAllGroupsExpanded(bool isExpanded)
+    {
+        foreach (var expander in FindVisualChildren<Expander>(TablesDataGrid))
+        {
+            expander.IsExpanded = isExpanded;
+        }
+    }
+
+    private void GroupCheckBox_Loaded(object sender, RoutedEventArgs e)
+    {
+        if (sender is CheckBox checkBox && checkBox.DataContext is CollectionViewGroup group)
+        {
+            UpdateGroupCheckBoxState(checkBox, group);
+        }
+    }
+
+    private void GroupCheckBox_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is CheckBox checkBox && checkBox.DataContext is CollectionViewGroup group)
+        {
+            bool target = checkBox.IsChecked == true;
+            var leafItems = GetLeafItems(group).ToList();
+            foreach (var item in leafItems)
+            {
+                item.IsSelected = target;
+            }
+            Dispatcher.BeginInvoke(new Action(UpdateGroupCheckboxes));
+        }
+    }
+
+    private void UpdateGroupCheckboxes()
+    {
+        var groupItems = FindVisualChildren<GroupItem>(TablesDataGrid);
+        foreach (var groupItem in groupItems)
+        {
+            if (groupItem.DataContext is CollectionViewGroup group)
+            {
+                var checkBox = FindVisualChild<CheckBox>(groupItem);
+                if (checkBox != null)
+                {
+                    UpdateGroupCheckBoxState(checkBox, group);
+                }
+            }
+        }
+    }
+
+    private static void UpdateGroupCheckBoxState(CheckBox checkBox, CollectionViewGroup group)
+    {
+        var leafItems = GetLeafItems(group).ToList();
+        if (leafItems.Count == 0)
+        {
+            checkBox.IsChecked = false;
+        }
+        else if (leafItems.All(i => i.IsSelected))
+        {
+            checkBox.IsChecked = true;
+        }
+        else if (leafItems.Any(i => i.IsSelected))
+        {
+            checkBox.IsChecked = null;
+        }
+        else
+        {
+            checkBox.IsChecked = false;
+        }
+    }
+
+    private static IEnumerable<TableItemModel> GetLeafItems(CollectionViewGroup group)
+    {
+        foreach (var item in group.Items)
+        {
+            if (item is TableItemModel tableItem)
+            {
+                yield return tableItem;
+            }
+            else if (item is CollectionViewGroup subGroup)
+            {
+                foreach (var leaf in GetLeafItems(subGroup))
+                {
+                    yield return leaf;
+                }
+            }
+        }
+    }
+
+    private static IEnumerable<T> FindVisualChildren<T>(DependencyObject depObj) where T : DependencyObject
+    {
+        if (depObj == null) yield break;
+        int childCount = VisualTreeHelper.GetChildrenCount(depObj);
+        for (int i = 0; i < childCount; i++)
+        {
+            var child = VisualTreeHelper.GetChild(depObj, i);
+            if (child is T t)
+            {
+                yield return t;
+            }
+            foreach (var childOfChild in FindVisualChildren<T>(child))
+            {
+                yield return childOfChild;
+            }
+        }
+    }
+
+    private static T? FindVisualChild<T>(DependencyObject parent) where T : DependencyObject
+    {
+        if (parent == null) return null;
+        int childCount = VisualTreeHelper.GetChildrenCount(parent);
+        for (int i = 0; i < childCount; i++)
+        {
+            var child = VisualTreeHelper.GetChild(parent, i);
+            if (child is T typedChild)
+            {
+                return typedChild;
+            }
+            var result = FindVisualChild<T>(child);
+            if (result != null)
+            {
+                return result;
+            }
+        }
+        return null;
     }
 }

@@ -1,4 +1,6 @@
 using System.Globalization;
+using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Media;
 using TablePlus.Models;
@@ -153,10 +155,70 @@ public class ViewTypeToTextConverter : IValueConverter
             {
                 TargetViewType.DraftingView => "Drafting",
                 TargetViewType.LegendView => "Legend",
+                TargetViewType.ScheduleView => "Schedule",
                 _ => viewType.ToString()
             };
         }
         return string.Empty;
+    }
+
+    public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture) =>
+        throw new NotSupportedException();
+}
+
+/// <summary>
+/// Calculates indentation margin for nested GroupItems based on their visual depth.
+/// </summary>
+public class GroupItemToIndentMarginConverter : IValueConverter
+{
+    public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+    {
+        if (value is DependencyObject obj)
+        {
+            int level = 0;
+            DependencyObject? parent = VisualTreeHelper.GetParent(obj);
+            while (parent != null)
+            {
+                if (parent is System.Windows.Controls.GroupItem) level++;
+                parent = VisualTreeHelper.GetParent(parent);
+            }
+            return new System.Windows.Thickness(level * 16, 0, 4, 0);
+        }
+        return new System.Windows.Thickness(0, 0, 4, 0);
+    }
+
+    public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture) =>
+        throw new NotSupportedException();
+}
+
+/// <summary>
+/// Calculates header background brush for nested GroupItems based on their visual depth.
+/// </summary>
+public class GroupItemToBackgroundConverter : IValueConverter
+{
+    private static readonly SolidColorBrush Level0Bg = new(MediaColor.FromRgb(241, 245, 249)); // #F1F5F9 Slate 100
+    private static readonly SolidColorBrush Level1Bg = new(MediaColor.FromRgb(248, 250, 252)); // #F8FAFC Slate 50
+    private static readonly SolidColorBrush Level2Bg = Brushes.White;
+
+    public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+    {
+        if (value is DependencyObject obj)
+        {
+            int level = 0;
+            DependencyObject? parent = VisualTreeHelper.GetParent(obj);
+            while (parent != null)
+            {
+                if (parent is System.Windows.Controls.GroupItem) level++;
+                parent = VisualTreeHelper.GetParent(parent);
+            }
+            return level switch
+            {
+                0 => Level0Bg,
+                1 => Level1Bg,
+                _ => Level2Bg
+            };
+        }
+        return Level0Bg;
     }
 
     public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture) =>

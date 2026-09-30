@@ -6,7 +6,8 @@ namespace TablePlus.Models;
 public enum TargetViewType
 {
     DraftingView,
-    LegendView
+    LegendView,
+    ScheduleView
 }
 
 /// <summary>

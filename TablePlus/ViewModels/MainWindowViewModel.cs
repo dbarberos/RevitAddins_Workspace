@@ -53,6 +53,31 @@ public partial class MainWindowViewModel : ObservableObject
     [ObservableProperty]
     private bool _filterUseRegex;
 
+    #region Select Details/Table Card Properties (Origin & Organize)
+
+    [ObservableProperty]
+    private bool _originDraftingViews = true;
+
+    [ObservableProperty]
+    private bool _originLegends = true;
+
+    [ObservableProperty]
+    private bool _originSchedules = true;
+
+    [ObservableProperty]
+    private bool _sortByCategory;
+
+    [ObservableProperty]
+    private bool _sortByName;
+
+    [ObservableProperty]
+    private bool _sortBySheet;
+
+    [ObservableProperty]
+    private bool _sortByView;
+
+    #endregion
+
     private readonly HashSet<TableItemModel> _matchedItems = new();
     private bool _isFilterActive;
 
@@ -81,6 +106,15 @@ public partial class MainWindowViewModel : ObservableObject
 
     [ObservableProperty]
     private int _outOfDateCount;
+
+    [ObservableProperty]
+    private int _upToDateCount;
+
+    [ObservableProperty]
+    private int _modifiedCount;
+
+    [ObservableProperty]
+    private int _fileNotFoundCount;
 
     [ObservableProperty]
     private bool _isBusy;
@@ -123,14 +157,29 @@ public partial class MainWindowViewModel : ObservableObject
 
         FilteredTables = CollectionViewSource.GetDefaultView(Tables);
         FilteredTables.Filter = FilterPredicate;
-        FilteredTables.GroupDescriptions.Add(new PropertyGroupDescription(nameof(TableItemModel.GroupName)));
+        ApplyGroupings();
+    }
+
+    private readonly List<string> _activeGroupings = new();
+
+    /// <summary>
+    /// Action callback provided by the View to expand or collapse all group containers.
+    /// </summary>
+    public Action<bool>? RequestSetAllGroupsExpanded { get; set; }
+
+    [RelayCommand]
+    public void ExpandAll()
+    {
+        IsAllGroupExpanded = true;
+        RequestSetAllGroupsExpanded?.Invoke(true);
     }
 
     [RelayCommand]
-    public void ExpandAll() => IsAllGroupExpanded = true;
-
-    [RelayCommand]
-    public void CollapseAll() => IsAllGroupExpanded = false;
+    public void CollapseAll()
+    {
+        IsAllGroupExpanded = false;
+        RequestSetAllGroupsExpanded?.Invoke(false);
+    }
 
     public IEnumerable<TableItemModel> GetFilteredItems() => Tables.Where(FilterPredicate);
 
@@ -164,6 +213,75 @@ public partial class MainWindowViewModel : ObservableObject
 
     partial void OnSelectedViewTypeFilterChanged(string value) => RefreshFilter();
     partial void OnSelectedStatusFilterChanged(string value) => RefreshFilter();
+    partial void OnOriginDraftingViewsChanged(bool value) => RefreshFilter();
+    partial void OnOriginLegendsChanged(bool value) => RefreshFilter();
+    partial void OnOriginSchedulesChanged(bool value) => RefreshFilter();
+
+    partial void OnSortByCategoryChanged(bool value) => UpdateGrouping("Category", value);
+    partial void OnSortByNameChanged(bool value) => UpdateGrouping("Name", value);
+    partial void OnSortBySheetChanged(bool value) => UpdateGrouping("Sheet", value);
+    partial void OnSortByViewChanged(bool value) => UpdateGrouping("View", value);
+
+    private void UpdateGrouping(string groupingName, bool isAdded)
+    {
+        if (isAdded)
+        {
+            if (!_activeGroupings.Contains(groupingName))
+                _activeGroupings.Add(groupingName);
+        }
+        else
+        {
+            _activeGroupings.Remove(groupingName);
+        }
+
+        ApplyGroupings();
+    }
+
+    private void ApplyGroupings()
+    {
+        if (FilteredTables == null) return;
+
+        using (FilteredTables.DeferRefresh())
+        {
+            FilteredTables.GroupDescriptions.Clear();
+            FilteredTables.SortDescriptions.Clear();
+
+            if (_activeGroupings.Count == 0)
+            {
+                FilteredTables.GroupDescriptions.Add(new PropertyGroupDescription(nameof(TableItemModel.GroupName)));
+            }
+            else
+            {
+                foreach (var grouping in _activeGroupings)
+                {
+                    switch (grouping)
+                    {
+                        case "Category":
+                            FilteredTables.GroupDescriptions.Add(new PropertyGroupDescription(nameof(TableItemModel.CategoryName)));
+                            break;
+                        case "Sheet":
+                            FilteredTables.GroupDescriptions.Add(new PropertyGroupDescription(nameof(TableItemModel.SheetName)));
+                            break;
+                        case "View":
+                            FilteredTables.GroupDescriptions.Add(new PropertyGroupDescription(nameof(TableItemModel.ViewName)));
+                            break;
+                        case "Name":
+                            FilteredTables.GroupDescriptions.Add(new PropertyGroupDescription(nameof(TableItemModel.TableName)));
+                            break;
+                    }
+                }
+            }
+
+            if (SortByName)
+            {
+                FilteredTables.SortDescriptions.Add(new SortDescription(nameof(TableItemModel.TableName), ListSortDirection.Ascending));
+            }
+            else
+            {
+                FilteredTables.SortDescriptions.Add(new SortDescription(nameof(TableItemModel.ViewName), ListSortDirection.Ascending));
+            }
+        }
+    }
 
     private bool CanApplyFilter() => !string.IsNullOrWhiteSpace(SearchFilter) || _isFilterActive;
 
@@ -299,10 +417,16 @@ public partial class MainWindowViewModel : ObservableObject
             return false;
         }
 
-        // 2. View Type filter
-        if (SelectedViewTypeFilter == "Drafting Views" && item.ViewType != TargetViewType.DraftingView)
-            return false;
-        if (SelectedViewTypeFilter == "Legend Views" && item.ViewType != TargetViewType.LegendView)
+        // 2. View Type (Origin) filter - allows selecting one or multiple simultaneously
+        bool matchesOrigin = false;
+        if (OriginDraftingViews && item.ViewType == TargetViewType.DraftingView)
+            matchesOrigin = true;
+        if (OriginLegends && item.ViewType == TargetViewType.LegendView)
+            matchesOrigin = true;
+        if (OriginSchedules && item.ViewType == TargetViewType.ScheduleView)
+            matchesOrigin = true;
+
+        if (!matchesOrigin)
             return false;
 
         // 3. Status filter
@@ -346,10 +470,26 @@ public partial class MainWindowViewModel : ObservableObject
     {
         TotalCount = Tables.Count;
         SelectedCount = Tables.Count(t => t.IsSelected);
-        OutOfDateCount = Tables.Count(t => t.Status is TableSyncStatus.Modified or TableSyncStatus.FileNotFound);
+        UpToDateCount = Tables.Count(t => t.Status == TableSyncStatus.UpToDate);
+        ModifiedCount = Tables.Count(t => t.Status == TableSyncStatus.Modified);
+        FileNotFoundCount = Tables.Count(t => t.Status == TableSyncStatus.FileNotFound);
+        OutOfDateCount = ModifiedCount + FileNotFoundCount;
         OnPropertyChanged(nameof(HasSelectedTables));
         SyncSelectedCommand.NotifyCanExecuteChanged();
         DeleteSelectedCommand.NotifyCanExecuteChanged();
+    }
+
+    [RelayCommand]
+    public void FilterByStatusBadge(string status)
+    {
+        if (SelectedStatusFilter == status)
+        {
+            SelectedStatusFilter = "All";
+        }
+        else
+        {
+            SelectedStatusFilter = status;
+        }
     }
 
     private void OnItemPropertyChanged(object? sender, PropertyChangedEventArgs e)

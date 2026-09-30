@@ -177,9 +177,13 @@ public class SchemaService : ISchemaService
             }
         }
 
-        fallbackConfig.TargetViewType = view.ViewType == ViewType.DraftingView
-            ? TargetViewType.DraftingView
-            : TargetViewType.LegendView;
+        fallbackConfig.TargetViewType = view.ViewType switch
+        {
+            ViewType.DraftingView => TargetViewType.DraftingView,
+            ViewType.Legend => TargetViewType.LegendView,
+            ViewType.Schedule => TargetViewType.ScheduleView,
+            _ => TargetViewType.DraftingView
+        };
 
         return fallbackConfig;
     }
