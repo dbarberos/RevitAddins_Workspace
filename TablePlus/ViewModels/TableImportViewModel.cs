@@ -373,7 +373,7 @@ public partial class TableImportViewModel : ObservableObject
                         .Where(f =>
                         {
                             var ext = Path.GetExtension(f).ToLowerInvariant();
-                            return ext is ".xlsx" or ".xlsm" or ".xls" or ".csv";
+                            return ext is ".xlsx" or ".xlsm" or ".xls" or ".csv" or ".txt" or ".tsv" or ".tab" or ".prn" or ".dat" or ".log" or ".asc" or ".pdf" or ".docx" or ".doc" or ".rtf" or ".md" or ".markdown";
                         })
                         .OrderBy(Path.GetFileName);
 
@@ -553,8 +553,8 @@ public partial class TableImportViewModel : ObservableObject
     {
         var dialog = new OpenFileDialog
         {
-            Title = "TablePlus — Select Source Spreadsheet",
-            Filter = "Excel Workbooks (*.xlsx;*.xls;*.csv)|*.xlsx;*.xls;*.csv|All Files (*.*)|*.*",
+            Title = "TablePlus — Select Source Spreadsheet or Document",
+            Filter = "All Supported Tables (*.xlsx;*.xls;*.csv;*.xlsm;*.txt;*.tsv;*.tab;*.prn;*.pdf;*.docx;*.doc;*.rtf;*.md;*.markdown)|*.xlsx;*.xls;*.csv;*.xlsm;*.txt;*.tsv;*.tab;*.prn;*.pdf;*.docx;*.doc;*.rtf;*.md;*.markdown|Excel Workbooks (*.xlsx;*.xls;*.xlsm;*.xltx;*.xltm)|*.xlsx;*.xls;*.xlsm;*.xltx;*.xltm|Markdown Files (*.md;*.markdown)|*.md;*.markdown|Word & RTF Documents (*.docx;*.doc;*.rtf)|*.docx;*.doc;*.rtf|PDF Documents (*.pdf)|*.pdf|Text & Delimited Files (*.txt;*.csv;*.tsv;*.tab;*.prn;*.dat;*.log;*.asc)|*.txt;*.csv;*.tsv;*.tab;*.prn;*.dat;*.log;*.asc|All Files (*.*)|*.*",
             Multiselect = false,
             CheckFileExists = true
         };
@@ -575,19 +575,19 @@ public partial class TableImportViewModel : ObservableObject
     /// <summary>
     /// Handles drag and drop file path input.
     /// </summary>
-    public async Task HandleFileDropAsync(string droppedPath)
+    public async Task HandleFileDropAsync(string? droppedPath)
     {
         if (string.IsNullOrWhiteSpace(droppedPath)) return;
 
         var ext = Path.GetExtension(droppedPath).ToLowerInvariant();
-        if (ext is ".xlsx" or ".xls" or ".csv")
+        if (ext is ".xlsx" or ".xls" or ".csv" or ".xlsm" or ".xltx" or ".xltm" or ".txt" or ".tsv" or ".tab" or ".prn" or ".dat" or ".log" or ".asc" or ".pdf" or ".docx" or ".doc" or ".rtf" or ".md" or ".markdown")
         {
-            await LoadFileAsync(droppedPath);
+            await LoadFileAsync(droppedPath!);
         }
         else
         {
             HasError = true;
-            ErrorMessage = "Unsupported file type. Please select an Excel workbook (.xlsx, .xls) or CSV file.";
+            ErrorMessage = "Unsupported file type. Please select an Excel workbook (.xlsx, .xls, .xlsm), Word document (.docx, .doc, .rtf), Markdown file (.md), PDF (.pdf), or Text file (.txt, .csv, .tsv).";
         }
     }
 
@@ -701,6 +701,19 @@ public partial class TableImportViewModel : ObservableObject
             StatusMessage = $"Generating Revit vector table ({cells.Count} cells)...";
             ProgressPercent = 65;
 
+            // Infer source type from extension
+            var ext = Path.GetExtension(filePath).ToLowerInvariant();
+            var inferredSourceType = ext switch
+            {
+                ".xlsm" => TableSourceType.ExcelXlsm,
+                ".csv" => TableSourceType.Csv,
+                ".txt" or ".tsv" or ".tab" or ".prn" or ".dat" or ".log" or ".asc" => TableSourceType.TextFile,
+                ".pdf" => TableSourceType.PdfDocument,
+                ".docx" or ".doc" or ".rtf" => TableSourceType.WordDocument,
+                ".md" or ".markdown" => TableSourceType.MarkdownDocument,
+                _ => TableSourceType.ExcelXlsx
+            };
+
             var config = new TableImportConfig
             {
                 SourceFilePath = filePath,
@@ -712,7 +725,8 @@ public partial class TableImportViewModel : ObservableObject
                 ViewName = ViewName.Trim(),
                 ViewScale = Math.Max(SelectedScale, 1),
                 PreserveBackgroundFills = PreserveBackgroundFills,
-                BlackAndWhiteMode = BlackAndWhiteMode
+                BlackAndWhiteMode = BlackAndWhiteMode,
+                SourceType = inferredSourceType
             };
 
             // Geometry generation operates in Revit external command context

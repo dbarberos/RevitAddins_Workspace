@@ -21,6 +21,7 @@ Migrated the **System Status** component from the upper card zone (Row 0) to a c
   - **Modified Circle (`#F59E0B` Amber/Yellow)**: Count of modified tables (`{ModifiedCount}`). Tooltip: *"Tables whose source Excel files on disk have been edited and require synchronization. Click to filter."*
   - **File Missing Circle (`#EF4444` Red)**: Count of tables missing source files (`{FileNotFoundCount}`). Tooltip: *"Tables whose source Excel file cannot be found at the specified path. Click to filter."*
 - **Light Gray Telemetry Text**: `BusyStatusMessage` displayed directly after the status badge circles in light gray (`#888888`), accompanied by a discrete 2.5px progress bar when background tasks are active.
+- **Flush Bottom Alignment**: All bottom bar controls (configuration cog, tables selected card, round rescan button, circular badges, and telemetry text) are aligned to the bottom (`VerticalAlignment="Bottom"`), ensuring a solid, consistent baseline flush with the bottom edge of the window.
 - Configured each status badge with `FilterByStatusBadgeCommand`: clicking any badge toggles filtering the DataGrid directly to that status (or clears back to `"All"`).
 
 ### 3. ViewModel Logic (`MainWindowViewModel.cs`)

@@ -47,14 +47,24 @@ public enum TableSourceType
     Csv,
 
     /// <summary>
-    /// Reserved for future spec: Adobe PDF document (.pdf).
+    /// Plain or delimited text file (.txt, .tsv, .tab, .prn).
+    /// </summary>
+    TextFile,
+
+    /// <summary>
+    /// Adobe PDF document (.pdf).
     /// </summary>
     PdfDocument,
 
     /// <summary>
-    /// Reserved for future spec: Microsoft Word document (.docx).
+    /// Microsoft Word or rich text document (.docx, .doc, .rtf).
     /// </summary>
     WordDocument,
+
+    /// <summary>
+    /// Markdown document with tables or rich text notes (.md, .markdown).
+    /// </summary>
+    MarkdownDocument,
 
     /// <summary>
     /// Reserved for future spec: Native Revit Schedule View (.rvt).

@@ -63,6 +63,10 @@ public class TableRegistryService : ITableRegistryService
                 var ext = Path.GetExtension(filePath).ToLowerInvariant();
                 if (ext == ".xlsm") sourceType = TableSourceType.ExcelXlsm;
                 else if (ext == ".csv") sourceType = TableSourceType.Csv;
+                else if (ext is ".txt" or ".tsv" or ".tab" or ".prn" or ".dat" or ".log" or ".asc") sourceType = TableSourceType.TextFile;
+                else if (ext == ".pdf") sourceType = TableSourceType.PdfDocument;
+                else if (ext is ".docx" or ".doc" or ".rtf") sourceType = TableSourceType.WordDocument;
+                else if (ext is ".md" or ".markdown") sourceType = TableSourceType.MarkdownDocument;
             }
 
             var item = new TableItemModel

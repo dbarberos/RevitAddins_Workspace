@@ -300,9 +300,15 @@
                                 ToolTip="Drag an Excel file from Windows Explorer and drop it anywhere inside this window">
                             <TextBlock HorizontalAlignment="Center" Foreground="{StaticResource TextMutedBrush}" FontSize="12">
                                 <Run Text="💡 Drag &amp; drop an "/>
-                                <Run Text=".xlsx, .xls" FontWeight="SemiBold"/>
+                                <Run Text="Excel" FontWeight="SemiBold"/>
+                                <Run Text=", "/>
+                                <Run Text="Word" FontWeight="SemiBold"/>
+                                <Run Text=", "/>
+                                <Run Text="Markdown (.md)" FontWeight="SemiBold"/>
+                                <Run Text=", "/>
+                                <Run Text="Text" FontWeight="SemiBold"/>
                                 <Run Text=" or "/>
-                                <Run Text=".csv" FontWeight="SemiBold"/>
+                                <Run Text="PDF" FontWeight="SemiBold"/>
                                 <Run Text=" file directly into this window"/>
                             </TextBlock>
                         </Border>

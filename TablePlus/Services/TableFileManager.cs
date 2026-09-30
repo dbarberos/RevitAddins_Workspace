@@ -44,7 +44,7 @@ public static class TableFileManager
         // Sanitize file name by stripping invalid characters
         string safeFileName = string.Join("_", rawFileName.Split(Path.GetInvalidFileNameChars()));
         string ext = Path.GetExtension(safeFileName).ToLowerInvariant();
-        if (ext is not (".xlsx" or ".xlsm" or ".xls" or ".csv"))
+        if (ext is not (".xlsx" or ".xlsm" or ".xls" or ".csv" or ".txt" or ".tsv" or ".tab" or ".prn" or ".dat" or ".log" or ".asc" or ".pdf" or ".docx" or ".doc" or ".rtf" or ".md" or ".markdown"))
         {
             safeFileName += ".xlsx";
         }

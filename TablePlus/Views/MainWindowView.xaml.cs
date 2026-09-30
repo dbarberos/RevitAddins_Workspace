@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
@@ -122,6 +123,11 @@ public partial class MainWindowView : Window
                 _lastCalculatedMinWidth = totalColumnsWidth;
                 scrollContent.MinWidth = totalColumnsWidth;
             }
+        }
+
+        if (DropOverlay != null && DropOverlay.Visibility == System.Windows.Visibility.Visible)
+        {
+            UpdateDropOverlayBounds();
         }
     }
 
@@ -257,4 +263,154 @@ public partial class MainWindowView : Window
         }
         return null;
     }
+
+    #region Drag and Drop Table Files
+
+    private static readonly HashSet<string> SupportedTableExtensions = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ".xlsx",
+        ".xls",
+        ".csv",
+        ".xlsm",
+        ".xltx",
+        ".xltm",
+        ".txt",
+        ".tsv",
+        ".tab",
+        ".prn",
+        ".dat",
+        ".log",
+        ".asc",
+        ".pdf",
+        ".docx",
+        ".doc",
+        ".rtf",
+        ".md",
+        ".markdown"
+    };
+
+    private static bool IsAuthorizedTableFile(string filePath)
+    {
+        if (string.IsNullOrWhiteSpace(filePath)) return false;
+        var ext = Path.GetExtension(filePath);
+        return !string.IsNullOrEmpty(ext) && SupportedTableExtensions.Contains(ext);
+    }
+
+    private void TablesDataGrid_DragEnter(object sender, DragEventArgs e)
+    {
+        UpdateDataGridDropEffect(e);
+    }
+
+    private void TablesDataGrid_DragOver(object sender, DragEventArgs e)
+    {
+        UpdateDataGridDropEffect(e);
+    }
+
+    private void TablesDataGrid_DragLeave(object sender, DragEventArgs e)
+    {
+        ResetDataGridDropFeedback();
+    }
+
+    private void UpdateDataGridDropEffect(DragEventArgs e)
+    {
+        if (e.Data.GetDataPresent(DataFormats.FileDrop))
+        {
+            if (e.Data.GetData(DataFormats.FileDrop) is string[] files && files.Length > 0)
+            {
+                var targetFile = files.FirstOrDefault(f => !string.IsNullOrWhiteSpace(f) && IsAuthorizedTableFile(f));
+                if (targetFile != null)
+                {
+                    e.Effects = DragDropEffects.Copy;
+                    e.Handled = true;
+                    SetDataGridDropFeedback(true);
+                    return;
+                }
+            }
+        }
+
+        e.Effects = DragDropEffects.None;
+        e.Handled = true;
+        SetDataGridDropFeedback(false);
+    }
+
+    private async void TablesDataGrid_Drop(object sender, DragEventArgs e)
+    {
+        ResetDataGridDropFeedback();
+
+        if (e.Data.GetDataPresent(DataFormats.FileDrop))
+        {
+            if (e.Data.GetData(DataFormats.FileDrop) is string[] files && files.Length > 0)
+            {
+                var targetFile = files.FirstOrDefault(f => !string.IsNullOrWhiteSpace(f) && IsAuthorizedTableFile(f));
+                if (targetFile != null)
+                {
+                    e.Handled = true;
+                    await _viewModel.AddTableAsync(targetFile);
+                }
+            }
+        }
+    }
+
+    private void SetDataGridDropFeedback(bool isValid)
+    {
+        if (isValid)
+        {
+            if (DropOverlay != null)
+            {
+                UpdateDropOverlayBounds();
+                DropOverlay.Visibility = System.Windows.Visibility.Visible;
+            }
+        }
+        else
+        {
+            ResetDataGridDropFeedback();
+        }
+    }
+
+    private void ResetDataGridDropFeedback()
+    {
+        if (DropOverlay != null)
+        {
+            DropOverlay.Visibility = System.Windows.Visibility.Collapsed;
+        }
+    }
+
+    private void UpdateDropOverlayBounds()
+    {
+        if (DropOverlay == null) return;
+
+        try
+        {
+            if (_dataGridScrollViewer == null)
+            {
+                _dataGridScrollViewer = TablesDataGrid.Template?.FindName("DG_ScrollViewer", TablesDataGrid) as ScrollViewer;
+            }
+
+            if (_dataGridScrollViewer != null)
+            {
+                var presenter = FindVisualChild<ScrollContentPresenter>(_dataGridScrollViewer);
+                if (presenter != null && presenter.ActualWidth > 0 && presenter.ActualHeight > 0)
+                {
+                    var transform = presenter.TransformToAncestor(DataGridContainer);
+                    var topLeft = transform.Transform(new System.Windows.Point(0, 0));
+
+                    double topMargin = Math.Max(0, topLeft.Y);
+                    double leftMargin = Math.Max(0, topLeft.X);
+                    double rightMargin = Math.Max(0, DataGridContainer.ActualWidth - (topLeft.X + presenter.ActualWidth));
+                    double bottomMargin = Math.Max(0, DataGridContainer.ActualHeight - (topLeft.Y + presenter.ActualHeight));
+
+                    DropOverlay.Margin = new Thickness(leftMargin, topMargin, rightMargin, bottomMargin);
+                    return;
+                }
+            }
+        }
+        catch
+        {
+            // Silently fallback
+        }
+
+        DropOverlay.Margin = new Thickness(0, 29, 10, 10);
+    }
+
+    #endregion
 }

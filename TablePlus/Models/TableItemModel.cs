@@ -69,8 +69,10 @@ public partial class TableItemModel : ObservableObject
         TableSourceType.ExcelXlsx => "XLSX",
         TableSourceType.ExcelXlsm => "XLSM",
         TableSourceType.Csv => "CSV",
+        TableSourceType.TextFile => "TXT",
         TableSourceType.PdfDocument => "PDF",
         TableSourceType.WordDocument => "DOC",
+        TableSourceType.MarkdownDocument => "MD",
         _ => "TBL"
     };
 

@@ -72,7 +72,7 @@ public static class AwsS3StorageService
 
         var spreadsheetExtensions = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
         {
-            ".xlsx", ".xlsm", ".xls", ".csv"
+            ".xlsx", ".xlsm", ".xls", ".csv", ".txt", ".tsv", ".tab", ".prn", ".pdf", ".docx", ".doc", ".rtf", ".md", ".markdown"
         };
 
         try

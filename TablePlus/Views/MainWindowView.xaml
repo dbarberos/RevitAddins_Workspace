@@ -953,9 +953,20 @@
         </Grid>
 
         <!-- ROW 1: LOWER DATA ZONE (VIRTUALIZED DATAGRID WITH 11 COLUMNS) -->
-        <Border Grid.Row="1" Background="White" BorderBrush="#DDDDDD" BorderThickness="1" CornerRadius="0" Padding="0" Margin="0,0,0,12">
-            <DataGrid x:Name="TablesDataGrid"
-                      ItemsSource="{Binding FilteredTables}"
+        <Border Grid.Row="1" x:Name="DataGridContainer" Background="White" BorderBrush="#DDDDDD" BorderThickness="1" CornerRadius="0" Padding="0" Margin="0,0,0,12"
+                AllowDrop="True"
+                DragEnter="TablesDataGrid_DragEnter"
+                DragOver="TablesDataGrid_DragOver"
+                DragLeave="TablesDataGrid_DragLeave"
+                Drop="TablesDataGrid_Drop">
+            <Grid>
+                <DataGrid x:Name="TablesDataGrid"
+                          AllowDrop="True"
+                          DragEnter="TablesDataGrid_DragEnter"
+                          DragOver="TablesDataGrid_DragOver"
+                          DragLeave="TablesDataGrid_DragLeave"
+                          Drop="TablesDataGrid_Drop"
+                          ItemsSource="{Binding FilteredTables}"
                       SelectedItem="{Binding SelectedTable}"
                       AutoGenerateColumns="False"
                       CanUserAddRows="False"
@@ -1203,7 +1214,23 @@
 
                 </DataGrid.Columns>
             </DataGrid>
-        </Border>
+
+            <!-- Drag & Drop Visual Overlay (Lighter translucent gray background with white inner card) -->
+            <Border x:Name="DropOverlay" Background="#60E0E0E0" BorderThickness="0" 
+                    Margin="0,29,10,10"
+                    Visibility="Collapsed" IsHitTestVisible="False">
+                <Border Background="#FFFFFF" CornerRadius="8" BorderThickness="0" 
+                        HorizontalAlignment="Center" VerticalAlignment="Center" Padding="15">
+                    <Border.Effect>
+                        <DropShadowEffect BlurRadius="8" ShadowDepth="2" Opacity="0.08" Color="#000000"/>
+                    </Border.Effect>
+                    <TextBlock Text="Drop your file here to create or link a table" 
+                               FontWeight="Bold" FontSize="12" Foreground="#999" 
+                               HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                </Border>
+            </Border>
+        </Grid>
+    </Border>
 
         <!-- ROW 2: FOOTER ZONE (WITHOUT DIVIDING SEPARATOR LINE) -->
         <Border Grid.Row="2" BorderThickness="0" Padding="0,12,0,0">
@@ -1213,9 +1240,9 @@
                     <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
 
-                <!-- Bottom Left: Configuration Cog, Tables Selected Card, and Health Indicators (Clean Minimalist HUD) -->
+                <!-- Bottom Left: Configuration Cog, Tables Selected Card, and Health Indicators (Clean Minimalist HUD, Flush to Bottom) -->
                 <StackPanel Grid.Column="0" Orientation="Horizontal" HorizontalAlignment="Left" VerticalAlignment="Bottom">
-                    <Button Command="{Binding OpenConfigurationCommand}" Margin="0,0,10,0" VerticalAlignment="Center" Cursor="Hand" ToolTip="Configuration &amp; Sources">
+                    <Button Command="{Binding OpenConfigurationCommand}" Margin="0,0,10,0" VerticalAlignment="Bottom" Cursor="Hand" ToolTip="Configuration &amp; Sources">
                         <Button.Template>
                             <ControlTemplate TargetType="Button">
                                 <Border x:Name="border" Background="Transparent" CornerRadius="12" Padding="4">
@@ -1236,7 +1263,7 @@
                         </Button.Template>
                     </Button>
 
-                    <Border Background="#ffffff" CornerRadius="8" Padding="15,6" BorderBrush="#e0e0e0" BorderThickness="1" VerticalAlignment="Center">
+                    <Border Background="#ffffff" CornerRadius="8" Padding="15,6" BorderBrush="#e0e0e0" BorderThickness="1" VerticalAlignment="Bottom">
                         <StackPanel Orientation="Horizontal" VerticalAlignment="Bottom">
                             <TextBlock Text="{Binding SelectedCount}" FontSize="24" FontWeight="Medium" VerticalAlignment="Bottom" Foreground="#333" Margin="0,0,0,0"/>
                             <TextBlock Text=" / " FontSize="16" FontWeight="Normal" VerticalAlignment="Bottom" Foreground="#888" Margin="4,0,4,2"/>
@@ -1245,10 +1272,10 @@
                         </StackPanel>
                     </Border>
 
-                    <!-- System Health & Status Indicators (Clean Minimalist HUD, No Card Border) -->
-                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="14,0,0,0">
+                    <!-- System Health & Status Indicators (Clean Minimalist HUD, No Card Border, Flush to Bottom) -->
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Bottom" Margin="14,0,0,0">
                         <!-- Round Rescan Button (Matching Cog Style & Colors) -->
-                        <Button Command="{Binding RefreshInventoryCommand}" Margin="0,0,8,0" VerticalAlignment="Center" Cursor="Hand">
+                        <Button Command="{Binding RefreshInventoryCommand}" Margin="0,0,8,0" VerticalAlignment="Bottom" Cursor="Hand">
                             <Button.ToolTip>
                                 <ToolTip MaxWidth="280">
                                     <TextBlock TextWrapping="Wrap" FontSize="11.5" LineHeight="15" Foreground="#333333">
@@ -1279,7 +1306,7 @@
                         </Button>
 
                         <!-- Up to Date Circle Badge (Solid Green) -->
-                        <Button Command="{Binding FilterByStatusBadgeCommand}" CommandParameter="Up to Date" Style="{StaticResource CleanBadgeButtonStyle}" Margin="0,0,6,0" VerticalAlignment="Center">
+                        <Button Command="{Binding FilterByStatusBadgeCommand}" CommandParameter="Up to Date" Style="{StaticResource CleanBadgeButtonStyle}" Margin="0,0,6,2" VerticalAlignment="Bottom">
                             <Button.ToolTip>
                                 <ToolTip MaxWidth="260">
                                     <TextBlock TextWrapping="Wrap" FontSize="11.5" LineHeight="15" Foreground="#333333">
@@ -1294,7 +1321,7 @@
                         </Button>
 
                         <!-- Modified Circle Badge (Solid Amber/Yellow) -->
-                        <Button Command="{Binding FilterByStatusBadgeCommand}" CommandParameter="Modified" Style="{StaticResource CleanBadgeButtonStyle}" Margin="0,0,6,0" VerticalAlignment="Center">
+                        <Button Command="{Binding FilterByStatusBadgeCommand}" CommandParameter="Modified" Style="{StaticResource CleanBadgeButtonStyle}" Margin="0,0,6,2" VerticalAlignment="Bottom">
                             <Button.ToolTip>
                                 <ToolTip MaxWidth="260">
                                     <TextBlock TextWrapping="Wrap" FontSize="11.5" LineHeight="15" Foreground="#333333">
@@ -1309,7 +1336,7 @@
                         </Button>
 
                         <!-- File Missing Circle Badge (Solid Red) -->
-                        <Button Command="{Binding FilterByStatusBadgeCommand}" CommandParameter="File Missing" Style="{StaticResource CleanBadgeButtonStyle}" Margin="0,0,10,0" VerticalAlignment="Center">
+                        <Button Command="{Binding FilterByStatusBadgeCommand}" CommandParameter="File Missing" Style="{StaticResource CleanBadgeButtonStyle}" Margin="0,0,10,2" VerticalAlignment="Bottom">
                             <Button.ToolTip>
                                 <ToolTip MaxWidth="260">
                                     <TextBlock TextWrapping="Wrap" FontSize="11.5" LineHeight="15" Foreground="#333333">
@@ -1323,10 +1350,10 @@
                             </Border>
                         </Button>
 
-                        <!-- Live Telemetry / Status Message in Light Gray -->
-                        <StackPanel VerticalAlignment="Center" Margin="0,0,0,0" MaxWidth="320">
+                        <!-- Live Telemetry / Status Message in Light Gray (Aligned to Bottom) -->
+                        <StackPanel VerticalAlignment="Bottom" Margin="0,0,0,4" MaxWidth="320">
                             <TextBlock Text="{Binding BusyStatusMessage}" FontSize="11.5" Foreground="#888888" 
-                                       TextTrimming="CharacterEllipsis" VerticalAlignment="Center" ToolTip="{Binding BusyStatusMessage}"/>
+                                       TextTrimming="CharacterEllipsis" VerticalAlignment="Bottom" ToolTip="{Binding BusyStatusMessage}"/>
                             <ProgressBar Height="2.5" IsIndeterminate="{Binding IsBusy}" Value="{Binding ProgressValue}" 
                                          Foreground="{StaticResource PrimaryBrush}" Background="#E2E8F0" BorderThickness="0" Margin="0,2,0,0"
                                          Visibility="{Binding IsBusy, Converter={StaticResource BoolToVis}}"/>

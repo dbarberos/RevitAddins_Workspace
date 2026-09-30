@@ -580,18 +580,29 @@ public partial class MainWindowViewModel : ObservableObject
     }
 
     [RelayCommand]
-    public void AddTable()
+    public async Task AddTableAsync(string? initialFilePath = null)
     {
         try
         {
             var importVm = new TableImportViewModel(_doc, _excelReader, _geometryService, _schemaService);
+
+            if (!string.IsNullOrWhiteSpace(initialFilePath) && File.Exists(initialFilePath))
+            {
+                await importVm.HandleFileDropAsync(initialFilePath!);
+            }
+
             var importView = new TableImportView(importVm);
+            var activeWindow = System.Windows.Application.Current?.Windows.OfType<MainWindowView>().FirstOrDefault();
+            if (activeWindow != null)
+            {
+                importView.Owner = activeWindow;
+            }
 
             var result = importView.ShowDialog();
             if (result == true || importVm.CreatedView != null)
             {
                 // Refresh inventory to discover the newly imported table view
-                _ = RefreshInventoryAsync();
+                await RefreshInventoryAsync();
             }
         }
         catch (Exception ex)

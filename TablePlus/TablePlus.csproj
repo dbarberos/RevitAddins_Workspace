@@ -42,6 +42,8 @@
 
     <ItemGroup>
         <Reference Include="System.Security" Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'"/>
+        <Reference Include="System.IO.Compression" Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'"/>
+        <Reference Include="System.IO.Compression.FileSystem" Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'"/>
     </ItemGroup>
 
     <ItemGroup>

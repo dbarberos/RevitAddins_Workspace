@@ -409,7 +409,7 @@ public static class AutodeskDocsService
 
         var extensions = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
         {
-            ".xlsx", ".xlsm", ".xls", ".csv"
+            ".xlsx", ".xlsm", ".xls", ".csv", ".txt", ".tsv", ".tab", ".prn", ".pdf", ".docx", ".doc", ".rtf", ".md", ".markdown"
         };
 
         try
