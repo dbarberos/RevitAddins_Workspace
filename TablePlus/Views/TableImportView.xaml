@@ -8,13 +8,13 @@
         mc:Ignorable="d"
         x:Name="TableImportWindow"
         Title="TablePlus — Add Tables"
-        Width="1100" Height="650"
-        MinWidth="880" MinHeight="500"
+        Width="550" Height="325"
+        MinWidth="460" MinHeight="260"
         WindowStartupLocation="CenterScreen"
-        Background="#F8FAFC"
-        Foreground="#0F172A"
+        Background="#FAFAFA"
+        Foreground="#333333"
         FontFamily="Segoe UI, Inter, -apple-system, sans-serif"
-        FontSize="13"
+        FontSize="12.5"
         AllowDrop="True"
         DragOver="Window_DragOver"
         Drop="Window_Drop"
@@ -22,9 +22,9 @@
 
     <Window.Resources>
         <!-- COLOR PALETTE BRUSHES -->
-        <SolidColorBrush x:Key="WindowBgBrush" Color="#F8FAFC"/>
+        <SolidColorBrush x:Key="WindowBgBrush" Color="#FAFAFA"/>
         <SolidColorBrush x:Key="CardBgBrush" Color="#FFFFFF"/>
-        <SolidColorBrush x:Key="CardBorderBrush" Color="#E2E8F0"/>
+        <SolidColorBrush x:Key="CardBorderBrush" Color="#E0E0E0"/>
         <SolidColorBrush x:Key="CardBorderHoverBrush" Color="#CBD5E1"/>
         <SolidColorBrush x:Key="PrimaryBrush" Color="#007ACC"/>
         <SolidColorBrush x:Key="PrimaryHoverBrush" Color="#0062A3"/>
@@ -41,6 +41,43 @@
         <!-- CONVERTERS -->
         <BooleanToVisibilityConverter x:Key="BoolToVis"/>
         <views:EnumDisplayConverter x:Key="EnumDisplayConverter"/>
+        <views:InverseBooleanConverter x:Key="InverseBooleanConverter"/>
+
+        <!-- Expand / Collapse Chevron Toggle Template -->
+        <ControlTemplate x:Key="ChevronToggleTemplate" TargetType="ToggleButton">
+            <Border Background="Transparent" Width="18" Height="18">
+                <Path x:Name="Arrow" Data="M 0 0 L 4 4 L 0 8 Z" Fill="#64748B" 
+                      HorizontalAlignment="Center" VerticalAlignment="Center" Stretch="Uniform" Width="6" Height="8"
+                      RenderTransformOrigin="0.5,0.5">
+                    <Path.RenderTransform>
+                        <RotateTransform Angle="0"/>
+                    </Path.RenderTransform>
+                </Path>
+            </Border>
+            <ControlTemplate.Triggers>
+                <Trigger Property="IsChecked" Value="True">
+                    <Setter TargetName="Arrow" Property="RenderTransform">
+                        <Setter.Value>
+                            <RotateTransform Angle="90"/>
+                        </Setter.Value>
+                    </Setter>
+                    <Setter TargetName="Arrow" Property="Fill" Value="{StaticResource PrimaryBrush}"/>
+                </Trigger>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter TargetName="Arrow" Property="Fill" Value="{StaticResource PrimaryBrush}"/>
+                </Trigger>
+            </ControlTemplate.Triggers>
+        </ControlTemplate>
+
+        <!-- Path Column Context Menu for Absolute / Relative Switching -->
+        <ContextMenu x:Key="PathContextMenu">
+            <MenuItem Header="Absolute Path" 
+                      IsChecked="{Binding IsRelativePath, Converter={StaticResource InverseBooleanConverter}}"
+                      Command="{Binding SwitchToAbsolutePathCommand}"/>
+            <MenuItem Header="Relative Path" 
+                      IsChecked="{Binding IsRelativePath}"
+                      Command="{Binding SwitchToRelativePathCommand}"/>
+        </ContextMenu>
 
         <!-- Card Container Border Style -->
         <Style x:Key="CardBorderStyle" TargetType="Border">
@@ -145,17 +182,17 @@
         </Style>
     </Window.Resources>
 
-    <Grid Margin="18">
+    <Grid Margin="12,12,12,10">
         <Grid.RowDefinitions>
             <RowDefinition Height="*"/>    <!-- 0: Batch Items DataGrid (First element) -->
             <RowDefinition Height="Auto"/> <!-- 1: Error & Progress -->
             <RowDefinition Height="Auto"/> <!-- 2: Footer with Selection, Cancel & Apply -->
         </Grid.RowDefinitions>
 
-        <!-- ROW 0: BATCH ITEMS DATAGRID -->
+        <!-- ROW 0: BATCH FILES DATAGRID -->
         <Border Grid.Row="0" Style="{StaticResource CardBorderStyle}">
-            <DataGrid ItemsSource="{Binding BatchItems}" 
-                      SelectedItem="{Binding SelectedBatchItem}"
+            <DataGrid ItemsSource="{Binding BatchFiles}" 
+                      SelectedItem="{Binding SelectedBatchFile}"
                       AutoGenerateColumns="False" 
                       CanUserAddRows="False" 
                       CanUserDeleteRows="False"
@@ -165,120 +202,133 @@
                       HorizontalGridLinesBrush="#F1F5F9"
                       Background="White"
                       BorderThickness="0"
-                      RowHeight="36"
+                      RowHeight="32"
+                      RowHeaderWidth="0"
                       SelectionMode="Single"
-                      VirtualizingPanel.IsVirtualizing="True"
-                      VirtualizingPanel.VirtualizationMode="Recycling"
-                      ScrollViewer.CanContentScroll="True">
+                      RowDetailsVisibilityMode="Visible">
+                <DataGrid.RowStyle>
+                    <Style TargetType="DataGridRow">
+                        <Setter Property="Background" Value="White"/>
+                        <Setter Property="DetailsVisibility" Value="{Binding IsExpanded, Converter={StaticResource BoolToVis}}"/>
+                        <Setter Property="SnapsToDevicePixels" Value="True"/>
+                        <Style.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background" Value="#F8FAFC"/>
+                            </Trigger>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter Property="Background" Value="#F1F5F9"/>
+                            </Trigger>
+                        </Style.Triggers>
+                    </Style>
+                </DataGrid.RowStyle>
+
+                <DataGrid.RowDetailsTemplate>
+                    <DataTemplate>
+                        <Border Background="#F8FAFC" BorderBrush="#E2E8F0" BorderThickness="0,0,0,1" Padding="32,4,12,5">
+                            <ItemsControl ItemsSource="{Binding Sheets}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Grid Margin="0,2" Height="26">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="Auto"/>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+
+                                            <!-- Checkbox for sheet selection -->
+                                            <CheckBox Grid.Column="0" 
+                                                      IsChecked="{Binding IsSelected, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                      VerticalAlignment="Center" Margin="0,0,8,0" Cursor="Hand"/>
+
+                                            <!-- Sheet Name with subtle sheet bullet icon -->
+                                            <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                                                <Image Source="pack://application:,,,/TablePlus;component/Resources/Icons/SheetHeader16.png" 
+                                                       Width="13" Height="13" Margin="0,0,5,0" Opacity="0.75" VerticalAlignment="Center"/>
+                                                <TextBlock Text="{Binding SheetName}" FontSize="11.5" FontWeight="Medium" 
+                                                           Foreground="#334155" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                                            </StackPanel>
+
+                                            <!-- Printable Area / Region dropdown at the far right -->
+                                            <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center" Margin="8,0,0,0">
+                                                <TextBlock Text="Area:" FontSize="11" Foreground="#64748B" 
+                                                           VerticalAlignment="Center" Margin="0,0,6,0"/>
+                                                <Border BorderBrush="#CBD5E1" BorderThickness="1" CornerRadius="3" Background="White" Height="24">
+                                                    <ComboBox ItemsSource="{Binding AvailableRegions}"
+                                                              SelectedItem="{Binding SelectedRegion, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                              Width="145" Height="22"
+                                                              BorderThickness="0" Background="Transparent"
+                                                              VerticalContentAlignment="Center" FontSize="11" Padding="4,0"/>
+                                                </Border>
+                                            </StackPanel>
+                                        </Grid>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </Border>
+                    </DataTemplate>
+                </DataGrid.RowDetailsTemplate>
+
                 <DataGrid.Columns>
-                    <!-- Col 0: CheckBox -->
-                    <DataGridTemplateColumn Width="44">
+                    <!-- Col 0: Views (Count + Arrow) -->
+                    <DataGridTemplateColumn Header="Views" Width="68">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
-                                <CheckBox IsChecked="{Binding IsSelected, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" 
-                                          HorizontalAlignment="Center" VerticalAlignment="Center" Cursor="Hand"/>
+                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="8,0,4,0">
+                                    <TextBlock Text="{Binding ViewsCount}" FontWeight="Bold" FontSize="12" 
+                                               Foreground="{StaticResource TextPrimaryBrush}" VerticalAlignment="Center" 
+                                               MinWidth="16" TextAlignment="Center"/>
+                                    <ToggleButton IsChecked="{Binding IsExpanded, Mode=TwoWay}"
+                                                  Visibility="{Binding HasMultipleSheets, Converter={StaticResource BoolToVis}}"
+                                                  Width="16" Height="16" Margin="4,0,0,0"
+                                                  Cursor="Hand" Background="Transparent" BorderThickness="0"
+                                                  ToolTip="Show / Hide sheets"
+                                                  Template="{StaticResource ChevronToggleTemplate}"/>
+                                </StackPanel>
                             </DataTemplate>
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
 
-                    <!-- Col 1: File Name -->
-                    <DataGridTemplateColumn Header="File Name" Width="180">
+                    <!-- Col 1: Sheet Icon Header / File Type Icon in cell -->
+                    <DataGridTemplateColumn Width="36">
+                        <DataGridTemplateColumn.Header>
+                            <Image Source="pack://application:,,,/TablePlus;component/Resources/Icons/SheetHeader16.png"
+                                   Width="15" Height="15" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                   ToolTip="File Type"/>
+                        </DataGridTemplateColumn.Header>
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
-                                <TextBlock Text="{Binding FileName}" VerticalAlignment="Center" Margin="6,0" 
-                                           FontWeight="Medium" Foreground="{StaticResource TextPrimaryBrush}"
-                                           TextTrimming="CharacterEllipsis" ToolTip="{Binding FilePath}"/>
+                                <Image Source="{Binding FileTypeIconUri}" 
+                                       Width="15" Height="15" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                       ToolTip="{Binding SourceType}"/>
                             </DataTemplate>
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
 
-                    <!-- Col 2: Worksheet / Page -->
-                    <DataGridTemplateColumn Header="Worksheet / Page" Width="160">
+                    <!-- Col 2: File Name without extension -->
+                    <DataGridTemplateColumn Header="File" Width="150">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
-                                <ComboBox ItemsSource="{Binding AvailableWorksheets}" 
-                                          SelectedItem="{Binding SelectedWorksheet, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                          IsEnabled="{Binding IsExcelSource}"
-                                          BorderThickness="0" Background="Transparent" VerticalContentAlignment="Center"
-                                          FontSize="12" Margin="4,0"/>
+                                <TextBlock Text="{Binding FileNameWithoutExtension}" 
+                                           FontWeight="SemiBold" FontSize="12" 
+                                           Foreground="{StaticResource TextPrimaryBrush}" 
+                                           VerticalAlignment="Center" Margin="6,0"
+                                           TextTrimming="CharacterEllipsis"
+                                           ToolTip="{Binding FileName}"/>
                             </DataTemplate>
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
 
-                    <!-- Col 3: Region / Range -->
-                    <DataGridTemplateColumn Header="Region / Range" Width="160">
+                    <!-- Col 3: Path (with Right-Click Context Menu) -->
+                    <DataGridTemplateColumn Header="Path" Width="*">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
-                                <Grid Margin="4,0">
-                                    <ComboBox ItemsSource="{Binding AvailableRegionModes}" 
-                                              SelectedItem="{Binding SelectedRegionMode, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                              BorderThickness="0" Background="Transparent" VerticalContentAlignment="Center"
-                                              FontSize="12"/>
-                                </Grid>
-                            </DataTemplate>
-                        </DataGridTemplateColumn.CellTemplate>
-                    </DataGridTemplateColumn>
-
-                    <!-- Col 4: View Type -->
-                    <DataGridTemplateColumn Header="View Type" Width="135">
-                        <DataGridTemplateColumn.CellTemplate>
-                            <DataTemplate>
-                                <ComboBox ItemsSource="{Binding AvailableViewTypes}" 
-                                          SelectedItem="{Binding SelectedViewType, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                          BorderThickness="0" Background="Transparent" VerticalContentAlignment="Center"
-                                          FontSize="12" Margin="4,0">
-                                    <ComboBox.ItemTemplate>
-                                        <DataTemplate>
-                                            <TextBlock Text="{Binding Converter={StaticResource EnumDisplayConverter}, ConverterParameter=Compact}"/>
-                                        </DataTemplate>
-                                    </ComboBox.ItemTemplate>
-                                </ComboBox>
-                            </DataTemplate>
-                        </DataGridTemplateColumn.CellTemplate>
-                    </DataGridTemplateColumn>
-
-                    <!-- Col 5: Target View Name -->
-                    <DataGridTemplateColumn Header="View Name" Width="*">
-                        <DataGridTemplateColumn.CellTemplate>
-                            <DataTemplate>
-                                <TextBox Text="{Binding TargetViewName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" 
-                                         Style="{StaticResource DataGridTextBoxStyle}" Margin="4,2"/>
-                            </DataTemplate>
-                        </DataGridTemplateColumn.CellTemplate>
-                    </DataGridTemplateColumn>
-
-                    <!-- Col 6: Scale -->
-                    <DataGridTemplateColumn Header="Scale" Width="85">
-                        <DataGridTemplateColumn.CellTemplate>
-                            <DataTemplate>
-                                <ComboBox ItemsSource="{Binding AvailableScales}" 
-                                          SelectedItem="{Binding SelectedScale, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                          BorderThickness="0" Background="Transparent" VerticalContentAlignment="Center"
-                                          FontSize="12" Margin="4,0">
-                                    <ComboBox.ItemTemplate>
-                                        <DataTemplate>
-                                            <TextBlock Text="{Binding StringFormat='1:{0}'}"/>
-                                        </DataTemplate>
-                                    </ComboBox.ItemTemplate>
-                                </ComboBox>
-                            </DataTemplate>
-                        </DataGridTemplateColumn.CellTemplate>
-                    </DataGridTemplateColumn>
-
-                    <!-- Col 7: Import Type -->
-                    <DataGridTemplateColumn Header="Type" Width="90">
-                        <DataGridTemplateColumn.CellTemplate>
-                            <DataTemplate>
-                                <ComboBox ItemsSource="{Binding AvailableImportTypes}" 
-                                          SelectedItem="{Binding SelectedImportType, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                          BorderThickness="0" Background="Transparent" VerticalContentAlignment="Center"
-                                          FontSize="12" Margin="4,0">
-                                    <ComboBox.ItemTemplate>
-                                        <DataTemplate>
-                                            <TextBlock Text="{Binding Converter={StaticResource EnumDisplayConverter}, ConverterParameter=Compact}"/>
-                                        </DataTemplate>
-                                    </ComboBox.ItemTemplate>
-                                </ComboBox>
+                                <Border Background="Transparent" ContextMenu="{StaticResource PathContextMenu}">
+                                    <TextBlock Text="{Binding DisplayPath}" 
+                                               FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" 
+                                               VerticalAlignment="Center" Margin="6,0"
+                                               TextTrimming="CharacterEllipsis"
+                                               ToolTip="{Binding ToolTipPath}"/>
+                                </Border>
                             </DataTemplate>
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
@@ -287,18 +337,18 @@
         </Border>
 
         <!-- ROW 1: ERROR BANNER & PROGRESS -->
-        <StackPanel Grid.Row="1" Margin="0,8,0,0">
-            <Border Background="#FEF2F2" BorderBrush="#FCA5A5" BorderThickness="1" CornerRadius="4" Padding="10,6" Margin="0,0,0,6"
+        <StackPanel Grid.Row="1" Margin="0,6,0,0">
+            <Border Background="#FEF2F2" BorderBrush="#FCA5A5" BorderThickness="1" CornerRadius="4" Padding="8,4" Margin="0,0,0,4"
                     Visibility="{Binding HasError, Converter={StaticResource BoolToVis}}">
-                <TextBlock Text="{Binding ErrorMessage}" Foreground="#DC2626" FontSize="11.5" TextWrapping="Wrap"/>
+                <TextBlock Text="{Binding ErrorMessage}" Foreground="#DC2626" FontSize="11" TextWrapping="Wrap"/>
             </Border>
 
-            <ProgressBar IsIndeterminate="True" Height="4" Background="#E2E8F0" Foreground="{StaticResource PrimaryBrush}"
+            <ProgressBar IsIndeterminate="True" Height="3" Background="#E2E8F0" Foreground="{StaticResource PrimaryBrush}"
                          Visibility="{Binding IsBusy, Converter={StaticResource BoolToVis}}"/>
         </StackPanel>
 
         <!-- ROW 2: ACTION FOOTER -->
-        <Border Grid.Row="2" BorderBrush="{StaticResource CardBorderBrush}" BorderThickness="0,1,0,0" Padding="0,12,0,0" Margin="0,10,0,0">
+        <Border Grid.Row="2" BorderBrush="{StaticResource CardBorderBrush}" BorderThickness="0,1,0,0" Padding="0,8,0,0" Margin="0,8,0,0">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto"/>
@@ -309,30 +359,29 @@
 
                 <!-- Left: Selection Dropdown -->
                 <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
-                    <TextBlock Text="Selection:" FontWeight="SemiBold" FontSize="12" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" Margin="0,0,8,0"/>
-                    <Border BorderBrush="{StaticResource CardBorderBrush}" BorderThickness="1" CornerRadius="4" Background="White" Height="30" VerticalAlignment="Center">
+                    <TextBlock Text="Selection:" FontWeight="SemiBold" FontSize="11.5" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                    <Border BorderBrush="{StaticResource CardBorderBrush}" BorderThickness="1" CornerRadius="3" Background="White" Height="26" VerticalAlignment="Center">
                         <ComboBox ItemsSource="{Binding BatchSelectionOptions}"
                                   SelectedItem="{Binding SelectedBatchSelectionOption}"
                                   SelectionChanged="SelectionComboBox_SelectionChanged"
-                                  Width="135" Height="28"
+                                  Width="115" Height="24"
                                   BorderThickness="0" Background="Transparent"
-                                  VerticalContentAlignment="Center" FontSize="12" Padding="6,0"/>
+                                  VerticalContentAlignment="Center" FontSize="11" Padding="4,0"/>
                     </Border>
                 </StackPanel>
 
                 <!-- Center: Status / Selected count badge -->
-                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" Margin="16,0,0,0">
-                    <TextBlock Text="{Binding StatusMessage}" Foreground="{StaticResource TextSecondaryBrush}" FontSize="12" VerticalAlignment="Center"/>
-                    <Border Background="#E0F2FE" CornerRadius="3" Padding="6,2" Margin="10,0,0,0" VerticalAlignment="Center"
+                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" Margin="10,0,0,0">
+                    <Border Background="#E0F2FE" CornerRadius="3" Padding="6,2" VerticalAlignment="Center"
                             Visibility="{Binding CanImportBatch, Converter={StaticResource BoolToVis}}">
-                        <TextBlock Text="{Binding SelectedBatchCount, StringFormat='{}{0} selected to create'}" FontSize="11" FontWeight="SemiBold" Foreground="#0369A1"/>
+                        <TextBlock Text="{Binding SelectedBatchCount, StringFormat='{}{0} selected'}" FontSize="10.5" FontWeight="SemiBold" Foreground="#0369A1"/>
                     </Border>
                 </StackPanel>
 
                 <!-- Right: Cancel and Apply Buttons -->
-                <Button Grid.Column="2" Content="Cancel" Command="{Binding CancelCommand}" Style="{StaticResource GhostButtonStyle}" Margin="0,0,10,0" Height="32"/>
+                <Button Grid.Column="2" Content="Cancel" Command="{Binding CancelCommand}" Style="{StaticResource GhostButtonStyle}" Margin="0,0,8,0" Height="28" Padding="12,4"/>
                 <Button Grid.Column="3" Content="Apply" Command="{Binding ImportBatchTablesCommand}" 
-                        IsEnabled="{Binding CanImportBatch}" Style="{StaticResource PrimaryButtonStyle}"/>
+                        IsEnabled="{Binding CanImportBatch}" Style="{StaticResource PrimaryButtonStyle}" Height="28" Padding="16,4"/>
             </Grid>
         </Border>
     </Grid>

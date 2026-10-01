@@ -81,6 +81,22 @@ public class ExcelReaderService : IExcelReaderService
                 }
             }
 
+            try
+            {
+                foreach (var pa in ws.PageSetup.PrintAreas)
+                {
+                    var addr = pa.RangeAddress.ToStringRelative();
+                    if (!string.IsNullOrWhiteSpace(addr))
+                    {
+                        sheetModel.PrintAreas.Add($"Print Area ({addr})");
+                    }
+                }
+            }
+            catch
+            {
+                // Silently ignore if page setup print areas are not readable
+            }
+
             workbookModel.Sheets.Add(sheetModel);
         }
 

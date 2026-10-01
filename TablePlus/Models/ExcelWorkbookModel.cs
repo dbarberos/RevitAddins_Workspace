@@ -11,6 +11,7 @@ public class ExcelSheetModel
     public int RowCount { get; set; }
     public int ColumnCount { get; set; }
     public List<string> NamedRanges { get; set; } = [];
+    public List<string> PrintAreas { get; set; } = [];
 }
 
 /// <summary>

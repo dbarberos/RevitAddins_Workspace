@@ -251,6 +251,12 @@ public partial class TableImportViewModel : ObservableObject
     private bool _isRelativePath;
 
     [ObservableProperty]
+    private ObservableCollection<TableBatchFileModel> _batchFiles = new();
+
+    [ObservableProperty]
+    private TableBatchFileModel? _selectedBatchFile;
+
+    [ObservableProperty]
     private ObservableCollection<TableBatchImportItemModel> _batchItems = new();
 
     [ObservableProperty]
@@ -265,7 +271,7 @@ public partial class TableImportViewModel : ObservableObject
     [ObservableProperty]
     private string _batchSearchFilter = string.Empty;
 
-    public int SelectedBatchCount => BatchItems.Count(i => i.IsSelected);
+    public int SelectedBatchCount => BatchFiles.Count > 0 ? BatchFiles.Sum(f => f.ViewsCount) : BatchItems.Count(i => i.IsSelected);
     public bool CanImportBatch => SelectedBatchCount > 0 && !IsBusy;
 
     /// <summary>
@@ -959,10 +965,28 @@ public partial class TableImportViewModel : ObservableObject
         RequestClose?.Invoke();
     }
 
+    private string? GetProjectBaseDirectory()
+    {
+        try
+        {
+            if (!string.IsNullOrWhiteSpace(_doc.PathName))
+                return Path.GetDirectoryName(_doc.PathName);
+        }
+        catch { }
+        return null;
+    }
+
+    private void OnBatchSelectionChanged()
+    {
+        OnPropertyChanged(nameof(SelectedBatchCount));
+        OnPropertyChanged(nameof(CanImportBatch));
+    }
+
     public async Task InitializeBatchFilesAsync(IEnumerable<string> filePaths, bool isRelative = false, bool append = false)
     {
         if (!append)
         {
+            BatchFiles.Clear();
             BatchItems.Clear();
         }
 
@@ -974,90 +998,77 @@ public partial class TableImportViewModel : ObservableObject
             var fileName = Path.GetFileName(path);
             var baseName = Path.GetFileNameWithoutExtension(path);
 
-            var item = new TableBatchImportItemModel
-            {
-                FilePath = path,
-                FileName = fileName,
-                IsRelativePath = isRelative,
-                TargetViewName = baseName
-            };
+            var fileModel = new TableBatchFileModel(path, isRelative, GetProjectBaseDirectory, OnBatchSelectionChanged);
 
-            if (ext is ".xlsx" or ".xls" or ".xlsm")
+            if (ext is ".xlsx" or ".xls" or ".xlsm" or ".xlsb")
             {
-                item.SourceType = ext == ".xlsm" ? TableSourceType.ExcelXlsm : TableSourceType.ExcelXlsx;
-                item.IsExcelSource = true;
-                item.IsPagedDocument = false;
-
                 try
                 {
                     var wb = await Task.Run(() => _excelReaderService.InspectWorkbook(path));
                     foreach (var s in wb.Sheets)
                     {
-                        item.AvailableWorksheets.Add(s.Name);
+                        var sheetModel = new TableBatchSheetItemModel(fileModel, s.Name);
+                        sheetModel.AvailableRegions.Clear();
+                        sheetModel.AvailableRegions.Add("Entire Worksheet");
+
+                        foreach (var pa in s.PrintAreas)
+                        {
+                            if (!sheetModel.AvailableRegions.Contains(pa))
+                                sheetModel.AvailableRegions.Add(pa);
+                        }
+
                         foreach (var nr in s.NamedRanges)
                         {
-                            if (!item.AvailableNamedRanges.Contains(nr))
-                                item.AvailableNamedRanges.Add(nr);
+                            if (!sheetModel.AvailableRegions.Contains(nr))
+                                sheetModel.AvailableRegions.Add(nr);
                         }
-                    }
 
-                    if (item.AvailableWorksheets.Count > 0)
-                    {
-                        item.SelectedWorksheet = item.AvailableWorksheets[0];
-                        item.TargetViewName = $"{baseName}_{item.SelectedWorksheet}".Trim('_');
+                        sheetModel.SelectedRegion = sheetModel.AvailableRegions[0];
+                        fileModel.Sheets.Add(sheetModel);
                     }
                 }
                 catch (Exception ex)
                 {
                     TelemetryLogger.LogError($"Error inspecting workbook '{path}'", ex);
-                    item.AvailableWorksheets.Add("Sheet1");
-                    item.SelectedWorksheet = "Sheet1";
+                    var fallbackSheet = new TableBatchSheetItemModel(fileModel, "Sheet1");
+                    fileModel.Sheets.Add(fallbackSheet);
                 }
             }
             else if (ext is ".csv" or ".tsv" or ".txt" or ".tab" or ".prn" or ".dat" or ".log" or ".asc")
             {
-                item.SourceType = ext == ".csv" ? TableSourceType.Csv : TableSourceType.TextFile;
-                item.IsExcelSource = true;
-                item.IsPagedDocument = false;
-                item.AvailableWorksheets.Add(baseName);
-                item.SelectedWorksheet = baseName;
-                item.TargetViewName = baseName;
+                var sheetModel = new TableBatchSheetItemModel(fileModel, baseName);
+                sheetModel.AvailableRegions.Clear();
+                sheetModel.AvailableRegions.Add("Entire Sheet");
+                sheetModel.SelectedRegion = "Entire Sheet";
+                sheetModel.TargetViewName = baseName;
+                fileModel.Sheets.Add(sheetModel);
             }
             else
             {
                 // Word, PDF, Markdown
-                item.SourceType = ext switch
-                {
-                    ".pdf" => TableSourceType.PdfDocument,
-                    ".md" or ".markdown" => TableSourceType.MarkdownDocument,
-                    _ => TableSourceType.WordDocument
-                };
-                item.IsExcelSource = false;
-                item.IsPagedDocument = true;
-                item.AvailableWorksheets.Add(baseName);
-                item.SelectedWorksheet = baseName;
-                item.TargetViewName = baseName;
+                var sheetModel = new TableBatchSheetItemModel(fileModel, "All Pages");
+                sheetModel.AvailableRegions.Clear();
+                sheetModel.AvailableRegions.Add("All Pages");
+                sheetModel.SelectedRegion = "All Pages";
+                sheetModel.TargetViewName = baseName;
+                fileModel.Sheets.Add(sheetModel);
             }
 
-            item.PropertyChanged += (s, e) =>
+            if (fileModel.Sheets.Count == 1)
             {
-                if (e.PropertyName == nameof(TableBatchImportItemModel.IsSelected))
-                {
-                    OnPropertyChanged(nameof(SelectedBatchCount));
-                    OnPropertyChanged(nameof(CanImportBatch));
-                }
-            };
+                fileModel.Sheets[0].TargetViewName = baseName;
+            }
 
-            BatchItems.Add(item);
+            fileModel.UpdateViewsCount();
+            BatchFiles.Add(fileModel);
         }
 
-        if (BatchItems.Count > 0 && SelectedBatchItem == null)
+        if (BatchFiles.Count > 0 && SelectedBatchFile == null)
         {
-            SelectedBatchItem = BatchItems[0];
+            SelectedBatchFile = BatchFiles[0];
         }
 
-        OnPropertyChanged(nameof(SelectedBatchCount));
-        OnPropertyChanged(nameof(CanImportBatch));
+        OnBatchSelectionChanged();
     }
 
     [ObservableProperty]
@@ -1085,25 +1096,37 @@ public partial class TableImportViewModel : ObservableObject
     [RelayCommand]
     public void SelectAllBatch()
     {
+        foreach (var file in BatchFiles)
+        {
+            foreach (var sheet in file.Sheets) sheet.IsSelected = true;
+            file.UpdateViewsCount();
+        }
         foreach (var item in BatchItems) item.IsSelected = true;
-        OnPropertyChanged(nameof(SelectedBatchCount));
-        OnPropertyChanged(nameof(CanImportBatch));
+        OnBatchSelectionChanged();
     }
 
     [RelayCommand]
     public void DeselectAllBatch()
     {
+        foreach (var file in BatchFiles)
+        {
+            foreach (var sheet in file.Sheets) sheet.IsSelected = false;
+            file.UpdateViewsCount();
+        }
         foreach (var item in BatchItems) item.IsSelected = false;
-        OnPropertyChanged(nameof(SelectedBatchCount));
-        OnPropertyChanged(nameof(CanImportBatch));
+        OnBatchSelectionChanged();
     }
 
     [RelayCommand]
     public void InvertBatchSelection()
     {
+        foreach (var file in BatchFiles)
+        {
+            foreach (var sheet in file.Sheets) sheet.IsSelected = !sheet.IsSelected;
+            file.UpdateViewsCount();
+        }
         foreach (var item in BatchItems) item.IsSelected = !item.IsSelected;
-        OnPropertyChanged(nameof(SelectedBatchCount));
-        OnPropertyChanged(nameof(CanImportBatch));
+        OnBatchSelectionChanged();
     }
 
     [RelayCommand]
@@ -1227,8 +1250,19 @@ public partial class TableImportViewModel : ObservableObject
     [RelayCommand]
     public async Task ImportBatchTablesAsync()
     {
-        var itemsToImport = BatchItems.Where(i => i.IsSelected).ToList();
-        if (itemsToImport.Count == 0) return;
+        var itemsToImport = new List<(TableBatchFileModel file, TableBatchSheetItemModel sheet)>();
+        foreach (var file in BatchFiles)
+        {
+            foreach (var sheet in file.Sheets)
+            {
+                if (sheet.IsSelected)
+                {
+                    itemsToImport.Add((file, sheet));
+                }
+            }
+        }
+
+        if (itemsToImport.Count == 0 && BatchItems.Count(i => i.IsSelected) == 0) return;
 
         try
         {
@@ -1240,64 +1274,120 @@ public partial class TableImportViewModel : ObservableObject
             using var tg = new TransactionGroup(_doc, "TablePlus — Batch Create Tables");
             tg.Start();
 
-            int current = 0;
-            int total = itemsToImport.Count;
-
-            foreach (var item in itemsToImport)
+            if (itemsToImport.Count > 0)
             {
-                current++;
-                StatusMessage = $"Creating table {current} of {total}: {item.TargetViewName}...";
-                ProgressPercent = (int)((double)current / total * 100);
+                int current = 0;
+                int total = itemsToImport.Count;
 
-                string? rangeAddress = null;
-                if (item.IsCustomRange)
+                foreach (var (file, sheet) in itemsToImport)
                 {
-                    rangeAddress = item.CustomRangeText.Trim();
+                    current++;
+                    StatusMessage = $"Creating table {current} of {total}: {sheet.TargetViewName}...";
+                    ProgressPercent = (int)((double)current / total * 100);
+
+                    string? rangeAddress = null;
+                    if (!string.IsNullOrWhiteSpace(sheet.SelectedRegion) &&
+                        sheet.SelectedRegion != "Entire Worksheet" &&
+                        sheet.SelectedRegion != "Entire Sheet" &&
+                        sheet.SelectedRegion != "All Pages")
+                    {
+                        if (sheet.SelectedRegion.StartsWith("Print Area (", StringComparison.OrdinalIgnoreCase) && sheet.SelectedRegion.EndsWith(")"))
+                        {
+                            var start = sheet.SelectedRegion.IndexOf('(') + 1;
+                            var len = sheet.SelectedRegion.LastIndexOf(')') - start;
+                            rangeAddress = sheet.SelectedRegion.Substring(start, len).Trim();
+                        }
+                        else
+                        {
+                            rangeAddress = sheet.SelectedRegion.Trim();
+                        }
+                    }
+
+                    var sheetName = sheet.SheetName;
+                    var filePath = file.FilePath;
+
+                    var (cells, mergedRanges) = await Task.Run(() =>
+                    {
+                        var extractedCells = _excelReaderService.ExtractCells(filePath, sheetName, rangeAddress);
+                        var extractedMerges = _excelReaderService.ExtractMergedCells(filePath, sheetName);
+                        return (extractedCells, extractedMerges);
+                    });
+
+                    if (cells.Count == 0) continue;
+
+                    var targetName = GetUniqueViewName(sheet.TargetViewName);
+
+                    var config = new TableImportConfig
+                    {
+                        SourceFilePath = filePath,
+                        SelectedSheetName = sheetName,
+                        RangeMode = rangeAddress != null ? CellRangeSelectionMode.CustomRange : CellRangeSelectionMode.EntireSheet,
+                        CustomRangeAddress = rangeAddress,
+                        SelectedNamedRange = (rangeAddress != null && !rangeAddress.Contains(':')) ? rangeAddress : null,
+                        TargetViewType = sheet.SelectedViewType,
+                        ViewName = targetName,
+                        ViewScale = Math.Max(sheet.SelectedScale, 1),
+                        PreserveBackgroundFills = true,
+                        BlackAndWhiteMode = false,
+                        SourceType = file.SourceType,
+                        ImportType = sheet.SelectedImportType,
+                        IsRelativePath = file.IsRelativePath
+                    };
+
+                    var v = _geometryService.GenerateTable(_doc, config, cells, mergedRanges);
+                    if (v != null)
+                    {
+                        CreatedViews.Add(v);
+                        CreatedView = v;
+                    }
                 }
-                else if (item.IsNamedRange && !string.IsNullOrWhiteSpace(item.SelectedNamedRange))
+            }
+            else
+            {
+                var legacyItems = BatchItems.Where(i => i.IsSelected).ToList();
+                int current = 0;
+                int total = legacyItems.Count;
+                foreach (var item in legacyItems)
                 {
-                    rangeAddress = item.SelectedNamedRange!.Trim();
-                }
+                    current++;
+                    StatusMessage = $"Creating table {current} of {total}: {item.TargetViewName}...";
+                    ProgressPercent = (int)((double)current / total * 100);
 
-                var sheetName = item.SelectedWorksheet;
-                var filePath = item.FilePath;
+                    string? rangeAddress = null;
+                    if (item.IsCustomRange) rangeAddress = item.CustomRangeText.Trim();
+                    else if (item.IsNamedRange && !string.IsNullOrWhiteSpace(item.SelectedNamedRange)) rangeAddress = item.SelectedNamedRange!.Trim();
 
-                var (cells, mergedRanges) = await Task.Run(() =>
-                {
-                    var extractedCells = _excelReaderService.ExtractCells(filePath, sheetName, rangeAddress);
-                    var extractedMerges = _excelReaderService.ExtractMergedCells(filePath, sheetName);
-                    return (extractedCells, extractedMerges);
-                });
+                    var (cells, mergedRanges) = await Task.Run(() =>
+                    {
+                        var extractedCells = _excelReaderService.ExtractCells(item.FilePath, item.SelectedWorksheet, rangeAddress);
+                        var extractedMerges = _excelReaderService.ExtractMergedCells(item.FilePath, item.SelectedWorksheet);
+                        return (extractedCells, extractedMerges);
+                    });
 
-                if (cells.Count == 0) continue;
-
-                var targetName = GetUniqueViewName(item.TargetViewName);
-
-                var config = new TableImportConfig
-                {
-                    SourceFilePath = filePath,
-                    SelectedSheetName = sheetName,
-                    RangeMode = item.IsCustomRange ? CellRangeSelectionMode.CustomRange : CellRangeSelectionMode.EntireSheet,
-                    CustomRangeAddress = item.IsCustomRange ? item.CustomRangeText : null,
-                    SelectedNamedRange = item.IsNamedRange ? item.SelectedNamedRange : null,
-                    TargetViewType = item.SelectedViewType,
-                    ViewName = targetName,
-                    ViewScale = Math.Max(item.SelectedScale, 1),
-                    PreserveBackgroundFills = true,
-                    BlackAndWhiteMode = false,
-                    SourceType = item.SourceType,
-                    ImportType = item.SelectedImportType,
-                    DpiResolution = item.DpiResolution,
-                    PageOption = item.PageOption,
-                    SelectedPages = item.SelectedPages,
-                    IsRelativePath = item.IsRelativePath
-                };
-
-                var v = _geometryService.GenerateTable(_doc, config, cells, mergedRanges);
-                if (v != null)
-                {
-                    CreatedViews.Add(v);
-                    CreatedView = v;
+                    if (cells.Count == 0) continue;
+                    var targetName = GetUniqueViewName(item.TargetViewName);
+                    var config = new TableImportConfig
+                    {
+                        SourceFilePath = item.FilePath,
+                        SelectedSheetName = item.SelectedWorksheet,
+                        RangeMode = item.IsCustomRange ? CellRangeSelectionMode.CustomRange : CellRangeSelectionMode.EntireSheet,
+                        CustomRangeAddress = item.IsCustomRange ? item.CustomRangeText : null,
+                        SelectedNamedRange = item.IsNamedRange ? item.SelectedNamedRange : null,
+                        TargetViewType = item.SelectedViewType,
+                        ViewName = targetName,
+                        ViewScale = Math.Max(item.SelectedScale, 1),
+                        PreserveBackgroundFills = true,
+                        BlackAndWhiteMode = false,
+                        SourceType = item.SourceType,
+                        ImportType = item.SelectedImportType,
+                        IsRelativePath = item.IsRelativePath
+                    };
+                    var v = _geometryService.GenerateTable(_doc, config, cells, mergedRanges);
+                    if (v != null)
+                    {
+                        CreatedViews.Add(v);
+                        CreatedView = v;
+                    }
                 }
             }
 

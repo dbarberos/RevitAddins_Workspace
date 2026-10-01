@@ -143,6 +143,22 @@ public class InverseBooleanToVisibilityConverter : IValueConverter
 }
 
 /// <summary>
+/// Inverts a boolean value (true -> false, false -> true).
+/// </summary>
+public class InverseBooleanConverter : IValueConverter
+{
+    public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+    {
+        return value is bool b && !b;
+    }
+
+    public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+    {
+        return value is bool b && !b;
+    }
+}
+
+/// <summary>
 /// Converts TargetViewType to a short display label.
 /// </summary>
 public class ViewTypeToTextConverter : IValueConverter
