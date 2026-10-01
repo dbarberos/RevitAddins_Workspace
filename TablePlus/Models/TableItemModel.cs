@@ -48,6 +48,30 @@ public partial class TableItemModel : ObservableObject
     private ObservableCollection<string> _availableSheets = new();
 
     [ObservableProperty]
+    private ObservableCollection<string> _availableRegionModes = new() { "Entire Worksheet", "Named Range", "Custom Range" };
+
+    [ObservableProperty]
+    private string _selectedRegionMode = "Entire Worksheet";
+
+    [ObservableProperty]
+    private ObservableCollection<int> _availableScales = new() { 1, 2, 5, 10, 20, 25, 50, 100, 200, 500 };
+
+    [ObservableProperty]
+    private ObservableCollection<TargetViewType> _availableViewTypes = new()
+    {
+        TargetViewType.DraftingView,
+        TargetViewType.LegendView,
+        TargetViewType.ScheduleView
+    };
+
+    [ObservableProperty]
+    private ObservableCollection<TableImportType> _availableImportTypes = new()
+    {
+        TableImportType.Table,
+        TableImportType.Image
+    };
+
+    [ObservableProperty]
     private bool _isAutoSyncEnabled;
 
     [ObservableProperty]
@@ -68,6 +92,11 @@ public partial class TableItemModel : ObservableObject
     /// Human-readable ratio string for display in the DataGrid (e.g. "1:1", "1:20").
     /// </summary>
     public string FormattedScale => $"1:{ViewScale}";
+
+    partial void OnViewScaleChanged(int value)
+    {
+        OnPropertyChanged(nameof(FormattedScale));
+    }
 
     /// <summary>
     /// Short badge label for source type icon fallback.

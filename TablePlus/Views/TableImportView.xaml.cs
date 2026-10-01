@@ -1,4 +1,5 @@
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Interop;
 using TablePlus.Models;
 using TablePlus.ViewModels;
@@ -34,7 +35,7 @@ public partial class TableImportView : Window
         // Wire close request from ViewModel
         _viewModel.RequestClose = () =>
         {
-            DialogResult = _viewModel.CreatedView != null;
+            DialogResult = _viewModel.CreatedView != null || _viewModel.CreatedViews.Count > 0;
             Close();
         };
 
@@ -76,35 +77,18 @@ public partial class TableImportView : Window
             var files = e.Data.GetData(DataFormats.FileDrop) as string[];
             if (files != null && files.Length > 0)
             {
-                var targetFile = files[0];
-                await _viewModel.HandleFileDropAsync(targetFile);
+                await _viewModel.InitializeBatchFilesAsync(files, _viewModel.IsRelativePath, append: true);
             }
+        }
+    }
+
+    private void SelectionComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (sender is ComboBox cb && cb.SelectedItem is string option)
+        {
+            _viewModel.ExecuteSelectionOption(option);
+            Dispatcher.BeginInvoke(new Action(() => cb.SelectedIndex = -1));
         }
     }
 }
 
-/// <summary>
-/// Provides user-friendly descriptions for Enums in ComboBox dropdowns (TargetViewType, TableImportType, TablePageOption).
-/// </summary>
-public class EnumDisplayConverter : System.Windows.Data.IValueConverter
-{
-    public object Convert(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture)
-    {
-        return value switch
-        {
-            TargetViewType.DraftingView => "Drafting View (ViewDrafting)",
-            TargetViewType.LegendView => "Legend View (Multi-Sheet Placeable)",
-            TargetViewType.ScheduleView => "Schedule View (ViewSchedule)",
-            TableImportType.Table => "Table (Editable Vector Lines & Text)",
-            TableImportType.Image => "Image (High-Resolution Raster)",
-            TablePageOption.AllPages => "All Pages",
-            TablePageOption.SelectPages => "Select Pages...",
-            _ => value?.ToString() ?? string.Empty
-        };
-    }
-
-    public object ConvertBack(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture)
-    {
-        throw new NotSupportedException();
-    }
-}

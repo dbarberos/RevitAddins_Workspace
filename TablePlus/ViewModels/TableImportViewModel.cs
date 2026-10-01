@@ -7,6 +7,7 @@ using CommunityToolkit.Mvvm.Input;
 using Microsoft.Win32;
 using TablePlus.Models;
 using TablePlus.Services;
+using TablePlus.Views;
 
 namespace TablePlus.ViewModels;
 
@@ -248,6 +249,24 @@ public partial class TableImportViewModel : ObservableObject
 
     [ObservableProperty]
     private bool _isRelativePath;
+
+    [ObservableProperty]
+    private ObservableCollection<TableBatchImportItemModel> _batchItems = new();
+
+    [ObservableProperty]
+    private TableBatchImportItemModel? _selectedBatchItem;
+
+    [ObservableProperty]
+    private TargetViewType _batchTargetViewType = TargetViewType.DraftingView;
+
+    [ObservableProperty]
+    private int _batchScale = 1;
+
+    [ObservableProperty]
+    private string _batchSearchFilter = string.Empty;
+
+    public int SelectedBatchCount => BatchItems.Count(i => i.IsSelected);
+    public bool CanImportBatch => SelectedBatchCount > 0 && !IsBusy;
 
     /// <summary>
     /// Collection of all generated views (when NumberOfCopies >= 1).
@@ -938,6 +957,366 @@ public partial class TableImportViewModel : ObservableObject
     private void Cancel()
     {
         RequestClose?.Invoke();
+    }
+
+    public async Task InitializeBatchFilesAsync(IEnumerable<string> filePaths, bool isRelative = false, bool append = false)
+    {
+        if (!append)
+        {
+            BatchItems.Clear();
+        }
+
+        foreach (var path in filePaths)
+        {
+            if (string.IsNullOrWhiteSpace(path) || !File.Exists(path)) continue;
+
+            var ext = Path.GetExtension(path).ToLowerInvariant();
+            var fileName = Path.GetFileName(path);
+            var baseName = Path.GetFileNameWithoutExtension(path);
+
+            var item = new TableBatchImportItemModel
+            {
+                FilePath = path,
+                FileName = fileName,
+                IsRelativePath = isRelative,
+                TargetViewName = baseName
+            };
+
+            if (ext is ".xlsx" or ".xls" or ".xlsm")
+            {
+                item.SourceType = ext == ".xlsm" ? TableSourceType.ExcelXlsm : TableSourceType.ExcelXlsx;
+                item.IsExcelSource = true;
+                item.IsPagedDocument = false;
+
+                try
+                {
+                    var wb = await Task.Run(() => _excelReaderService.InspectWorkbook(path));
+                    foreach (var s in wb.Sheets)
+                    {
+                        item.AvailableWorksheets.Add(s.Name);
+                        foreach (var nr in s.NamedRanges)
+                        {
+                            if (!item.AvailableNamedRanges.Contains(nr))
+                                item.AvailableNamedRanges.Add(nr);
+                        }
+                    }
+
+                    if (item.AvailableWorksheets.Count > 0)
+                    {
+                        item.SelectedWorksheet = item.AvailableWorksheets[0];
+                        item.TargetViewName = $"{baseName}_{item.SelectedWorksheet}".Trim('_');
+                    }
+                }
+                catch (Exception ex)
+                {
+                    TelemetryLogger.LogError($"Error inspecting workbook '{path}'", ex);
+                    item.AvailableWorksheets.Add("Sheet1");
+                    item.SelectedWorksheet = "Sheet1";
+                }
+            }
+            else if (ext is ".csv" or ".tsv" or ".txt" or ".tab" or ".prn" or ".dat" or ".log" or ".asc")
+            {
+                item.SourceType = ext == ".csv" ? TableSourceType.Csv : TableSourceType.TextFile;
+                item.IsExcelSource = true;
+                item.IsPagedDocument = false;
+                item.AvailableWorksheets.Add(baseName);
+                item.SelectedWorksheet = baseName;
+                item.TargetViewName = baseName;
+            }
+            else
+            {
+                // Word, PDF, Markdown
+                item.SourceType = ext switch
+                {
+                    ".pdf" => TableSourceType.PdfDocument,
+                    ".md" or ".markdown" => TableSourceType.MarkdownDocument,
+                    _ => TableSourceType.WordDocument
+                };
+                item.IsExcelSource = false;
+                item.IsPagedDocument = true;
+                item.AvailableWorksheets.Add(baseName);
+                item.SelectedWorksheet = baseName;
+                item.TargetViewName = baseName;
+            }
+
+            item.PropertyChanged += (s, e) =>
+            {
+                if (e.PropertyName == nameof(TableBatchImportItemModel.IsSelected))
+                {
+                    OnPropertyChanged(nameof(SelectedBatchCount));
+                    OnPropertyChanged(nameof(CanImportBatch));
+                }
+            };
+
+            BatchItems.Add(item);
+        }
+
+        if (BatchItems.Count > 0 && SelectedBatchItem == null)
+        {
+            SelectedBatchItem = BatchItems[0];
+        }
+
+        OnPropertyChanged(nameof(SelectedBatchCount));
+        OnPropertyChanged(nameof(CanImportBatch));
+    }
+
+    [ObservableProperty]
+    private ObservableCollection<string> _batchSelectionOptions = new() { "Select All", "Deselect All", "Invert Selection" };
+
+    [ObservableProperty]
+    private string? _selectedBatchSelectionOption;
+
+    public void ExecuteSelectionOption(string option)
+    {
+        switch (option)
+        {
+            case "Select All":
+                SelectAllBatch();
+                break;
+            case "Deselect All":
+                DeselectAllBatch();
+                break;
+            case "Invert Selection":
+                InvertBatchSelection();
+                break;
+        }
+    }
+
+    [RelayCommand]
+    public void SelectAllBatch()
+    {
+        foreach (var item in BatchItems) item.IsSelected = true;
+        OnPropertyChanged(nameof(SelectedBatchCount));
+        OnPropertyChanged(nameof(CanImportBatch));
+    }
+
+    [RelayCommand]
+    public void DeselectAllBatch()
+    {
+        foreach (var item in BatchItems) item.IsSelected = false;
+        OnPropertyChanged(nameof(SelectedBatchCount));
+        OnPropertyChanged(nameof(CanImportBatch));
+    }
+
+    [RelayCommand]
+    public void InvertBatchSelection()
+    {
+        foreach (var item in BatchItems) item.IsSelected = !item.IsSelected;
+        OnPropertyChanged(nameof(SelectedBatchCount));
+        OnPropertyChanged(nameof(CanImportBatch));
+    }
+
+    [RelayCommand]
+    public void RemoveSelectedBatch()
+    {
+        var toRemove = BatchItems.Where(i => i.IsSelected).ToList();
+        foreach (var item in toRemove)
+        {
+            BatchItems.Remove(item);
+        }
+        OnPropertyChanged(nameof(SelectedBatchCount));
+        OnPropertyChanged(nameof(CanImportBatch));
+    }
+
+    [RelayCommand]
+    public async Task AddMoreFilesAsync(System.Windows.Window? ownerWindow)
+    {
+        var sourcePickerVm = new TableSourceSelectionViewModel();
+        var sourcePickerView = new TableSourceSelectionView(sourcePickerVm);
+
+        if (ownerWindow != null)
+        {
+            sourcePickerView.Owner = ownerWindow;
+        }
+
+        var result = sourcePickerView.ShowDialog();
+        if (result == true && sourcePickerVm.ResultFilePaths.Count > 0)
+        {
+            await InitializeBatchFilesAsync(sourcePickerVm.ResultFilePaths, sourcePickerVm.IsRelativePath, append: true);
+        }
+    }
+
+    [RelayCommand]
+    public void DuplicateRow(TableBatchImportItemModel? targetItem = null)
+    {
+        var item = targetItem ?? SelectedBatchItem;
+        if (item == null) return;
+
+        var copy = new TableBatchImportItemModel
+        {
+            FilePath = item.FilePath,
+            FileName = item.FileName,
+            SourceType = item.SourceType,
+            IsExcelSource = item.IsExcelSource,
+            IsPagedDocument = item.IsPagedDocument,
+            SelectedRegionMode = item.SelectedRegionMode,
+            CustomRangeText = item.CustomRangeText,
+            SelectedViewType = item.SelectedViewType,
+            SelectedScale = item.SelectedScale,
+            SelectedImportType = item.SelectedImportType,
+            DpiResolution = item.DpiResolution,
+            PageOption = item.PageOption,
+            SelectedPages = item.SelectedPages,
+            IsRelativePath = item.IsRelativePath
+        };
+
+        foreach (var ws in item.AvailableWorksheets)
+        {
+            copy.AvailableWorksheets.Add(ws);
+        }
+
+        foreach (var nr in item.AvailableNamedRanges)
+        {
+            copy.AvailableNamedRanges.Add(nr);
+        }
+
+        var currentIndex = item.AvailableWorksheets.IndexOf(item.SelectedWorksheet);
+        if (currentIndex >= 0 && currentIndex + 1 < item.AvailableWorksheets.Count)
+        {
+            copy.SelectedWorksheet = item.AvailableWorksheets[currentIndex + 1];
+        }
+        else
+        {
+            copy.SelectedWorksheet = item.SelectedWorksheet;
+        }
+
+        var baseName = Path.GetFileNameWithoutExtension(item.FilePath);
+        copy.TargetViewName = $"{baseName}_{copy.SelectedWorksheet}".Trim('_');
+
+        copy.PropertyChanged += (s, e) =>
+        {
+            if (e.PropertyName == nameof(TableBatchImportItemModel.IsSelected))
+            {
+                OnPropertyChanged(nameof(SelectedBatchCount));
+                OnPropertyChanged(nameof(CanImportBatch));
+            }
+        };
+
+        var index = BatchItems.IndexOf(item);
+        if (index >= 0)
+        {
+            BatchItems.Insert(index + 1, copy);
+        }
+        else
+        {
+            BatchItems.Add(copy);
+        }
+
+        OnPropertyChanged(nameof(SelectedBatchCount));
+        OnPropertyChanged(nameof(CanImportBatch));
+    }
+
+    [RelayCommand]
+    public void ApplyBatchViewType()
+    {
+        foreach (var item in BatchItems.Where(i => i.IsSelected))
+        {
+            item.SelectedViewType = BatchTargetViewType;
+        }
+    }
+
+    [RelayCommand]
+    public void ApplyBatchScale()
+    {
+        foreach (var item in BatchItems.Where(i => i.IsSelected))
+        {
+            item.SelectedScale = BatchScale;
+        }
+    }
+
+    [RelayCommand]
+    public async Task ImportBatchTablesAsync()
+    {
+        var itemsToImport = BatchItems.Where(i => i.IsSelected).ToList();
+        if (itemsToImport.Count == 0) return;
+
+        try
+        {
+            IsBusy = true;
+            HasError = false;
+            ErrorMessage = null;
+            CreatedViews.Clear();
+
+            using var tg = new TransactionGroup(_doc, "TablePlus — Batch Create Tables");
+            tg.Start();
+
+            int current = 0;
+            int total = itemsToImport.Count;
+
+            foreach (var item in itemsToImport)
+            {
+                current++;
+                StatusMessage = $"Creating table {current} of {total}: {item.TargetViewName}...";
+                ProgressPercent = (int)((double)current / total * 100);
+
+                string? rangeAddress = null;
+                if (item.IsCustomRange)
+                {
+                    rangeAddress = item.CustomRangeText.Trim();
+                }
+                else if (item.IsNamedRange && !string.IsNullOrWhiteSpace(item.SelectedNamedRange))
+                {
+                    rangeAddress = item.SelectedNamedRange!.Trim();
+                }
+
+                var sheetName = item.SelectedWorksheet;
+                var filePath = item.FilePath;
+
+                var (cells, mergedRanges) = await Task.Run(() =>
+                {
+                    var extractedCells = _excelReaderService.ExtractCells(filePath, sheetName, rangeAddress);
+                    var extractedMerges = _excelReaderService.ExtractMergedCells(filePath, sheetName);
+                    return (extractedCells, extractedMerges);
+                });
+
+                if (cells.Count == 0) continue;
+
+                var targetName = GetUniqueViewName(item.TargetViewName);
+
+                var config = new TableImportConfig
+                {
+                    SourceFilePath = filePath,
+                    SelectedSheetName = sheetName,
+                    RangeMode = item.IsCustomRange ? CellRangeSelectionMode.CustomRange : CellRangeSelectionMode.EntireSheet,
+                    CustomRangeAddress = item.IsCustomRange ? item.CustomRangeText : null,
+                    SelectedNamedRange = item.IsNamedRange ? item.SelectedNamedRange : null,
+                    TargetViewType = item.SelectedViewType,
+                    ViewName = targetName,
+                    ViewScale = Math.Max(item.SelectedScale, 1),
+                    PreserveBackgroundFills = true,
+                    BlackAndWhiteMode = false,
+                    SourceType = item.SourceType,
+                    ImportType = item.SelectedImportType,
+                    DpiResolution = item.DpiResolution,
+                    PageOption = item.PageOption,
+                    SelectedPages = item.SelectedPages,
+                    IsRelativePath = item.IsRelativePath
+                };
+
+                var v = _geometryService.GenerateTable(_doc, config, cells, mergedRanges);
+                if (v != null)
+                {
+                    CreatedViews.Add(v);
+                    CreatedView = v;
+                }
+            }
+
+            tg.Assimilate();
+
+            StatusMessage = $"{CreatedViews.Count} table(s) created successfully!";
+            ProgressPercent = 100;
+            RequestClose?.Invoke();
+        }
+        catch (Exception ex)
+        {
+            TelemetryLogger.LogError("Error in ImportBatchTablesAsync", ex);
+            HasError = true;
+            ErrorMessage = $"Import failed: {ex.Message}";
+        }
+        finally
+        {
+            IsBusy = false;
+        }
     }
 
     #endregion

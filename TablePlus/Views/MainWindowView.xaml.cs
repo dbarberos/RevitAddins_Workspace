@@ -92,6 +92,24 @@ public partial class MainWindowView : Window
         }
     }
 
+    private void ViewNameTextBox_LostFocus(object sender, RoutedEventArgs e)
+    {
+        if (sender is FrameworkElement { DataContext: TableItemModel item })
+        {
+            _ = _viewModel.RenameViewAsync(item);
+        }
+    }
+
+    private void ViewNameTextBox_KeyDown(object sender, KeyEventArgs e)
+    {
+        if (e.Key == Key.Enter && sender is TextBox tb)
+        {
+            var scope = FocusManager.GetFocusScope(tb);
+            FocusManager.SetFocusedElement(scope, null);
+            Keyboard.ClearFocus();
+        }
+    }
+
     private void TablesDataGrid_LayoutUpdated(object? sender, EventArgs e)
     {
         if (_dataGridScrollViewer == null)

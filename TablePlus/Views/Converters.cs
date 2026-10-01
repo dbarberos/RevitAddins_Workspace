@@ -225,3 +225,29 @@ public class GroupItemToBackgroundConverter : IValueConverter
         throw new NotSupportedException();
 }
 
+/// <summary>
+/// Provides user-friendly descriptions for Enums in ComboBox dropdowns (TargetViewType, TableImportType, TablePageOption).
+/// </summary>
+public class EnumDisplayConverter : IValueConverter
+{
+    public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+    {
+        bool isCompact = parameter is string p && p.Equals("Compact", StringComparison.OrdinalIgnoreCase);
+
+        return value switch
+        {
+            TargetViewType.DraftingView => isCompact ? "Drafting View" : "Drafting View (ViewDrafting)",
+            TargetViewType.LegendView => isCompact ? "Legend View" : "Legend View (Multi-Sheet Placeable)",
+            TargetViewType.ScheduleView => isCompact ? "Schedule View" : "Schedule View (ViewSchedule)",
+            TableImportType.Table => isCompact ? "Table" : "Table (Editable Vector Lines & Text)",
+            TableImportType.Image => isCompact ? "Image" : "Image (High-Resolution Raster)",
+            TablePageOption.AllPages => "All Pages",
+            TablePageOption.SelectPages => "Select Pages...",
+            _ => value?.ToString() ?? string.Empty
+        };
+    }
+
+    public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture) =>
+        throw new NotSupportedException();
+}
+

@@ -528,6 +528,58 @@ public partial class MainWindowViewModel : ObservableObject
                 }
             }
         }
+        else if (e.PropertyName == nameof(TableItemModel.ViewScale))
+        {
+            if (sender is TableItemModel item && item.ViewScale > 0)
+            {
+                item.Config.ViewScale = item.ViewScale;
+#if REVIT2024_OR_GREATER
+                var viewId = new ElementId(item.ViewId);
+#else
+                var viewId = new ElementId((int)item.ViewId);
+#endif
+                if (_doc.GetElement(viewId) is View view && view.Scale != item.ViewScale)
+                {
+                    try
+                    {
+                        using var tx = new Transaction(_doc, "TablePlus: Update View Scale");
+                        tx.Start();
+                        view.Scale = item.ViewScale;
+                        _schemaService.StampTableMetadata(view, item.Config, item.Config.SourceFilePath);
+                        tx.Commit();
+                    }
+                    catch (Exception ex)
+                    {
+                        TelemetryLogger.LogError("Error updating view scale in Revit", ex);
+                    }
+                }
+            }
+        }
+        else if (e.PropertyName == nameof(TableItemModel.SelectedRegionMode))
+        {
+            if (sender is TableItemModel item)
+            {
+                item.Config.RangeMode = item.SelectedRegionMode switch
+                {
+                    "Custom Range" => CellRangeSelectionMode.CustomRange,
+                    "Named Range" => CellRangeSelectionMode.NamedRange,
+                    _ => CellRangeSelectionMode.EntireSheet
+                };
+                item.Status = TableSyncStatus.Modified;
+                item.StatusTooltip = $"Region mode changed to '{item.SelectedRegionMode}'. Synchronize to apply.";
+                UpdateCounters();
+            }
+        }
+        else if (e.PropertyName == nameof(TableItemModel.ImportType))
+        {
+            if (sender is TableItemModel item)
+            {
+                item.Config.ImportType = item.ImportType;
+                item.Status = TableSyncStatus.Modified;
+                item.StatusTooltip = $"Import type changed to '{item.ImportType}'. Synchronize to apply.";
+                UpdateCounters();
+            }
+        }
     }
 
     [RelayCommand]
@@ -630,11 +682,7 @@ public partial class MainWindowViewModel : ObservableObject
             importVm.SelectedFilePaths = filesToLoad;
             importVm.IsRelativePath = isRelativePath;
 
-            // Load the primary selected file
-            if (filesToLoad.Count > 0 && File.Exists(filesToLoad[0]))
-            {
-                await importVm.HandleFileDropAsync(filesToLoad[0]);
-            }
+            await importVm.InitializeBatchFilesAsync(filesToLoad, isRelativePath);
 
             var importView = new TableImportView(importVm);
             var parentWin = System.Windows.Application.Current?.Windows.OfType<MainWindowView>().FirstOrDefault();
@@ -644,7 +692,7 @@ public partial class MainWindowViewModel : ObservableObject
             }
 
             var result = importView.ShowDialog();
-            if (result == true || importVm.CreatedView != null)
+            if (result == true || importVm.CreatedViews.Count > 0 || importVm.CreatedView != null)
             {
                 // Refresh inventory to discover the newly imported table view(s)
                 await RefreshInventoryAsync();
@@ -917,4 +965,53 @@ public partial class MainWindowViewModel : ObservableObject
             UpdateCounters();
         }
     }
+
+    [RelayCommand]
+    public async Task RenameViewAsync(TableItemModel? item)
+    {
+        if (item == null) return;
+
+        string newName = item.ViewName.Trim();
+        if (string.IsNullOrWhiteSpace(newName))
+        {
+            await RefreshInventoryAsync();
+            return;
+        }
+
+        char[] invalidChars = { '\\', ':', '{', '}', '[', ']', '|', ';', '<', '>', '?', '`', '~' };
+        if (newName.IndexOfAny(invalidChars) >= 0)
+        {
+            TaskDialog.Show("TablePlus", "View name cannot contain any of the following characters:\n\\ : { } [ ] | ; < > ? ` ~");
+            await RefreshInventoryAsync();
+            return;
+        }
+
+#if REVIT2024_OR_GREATER
+        var viewId = new ElementId(item.ViewId);
+#else
+        var viewId = new ElementId((int)item.ViewId);
+#endif
+        if (_doc.GetElement(viewId) is View view)
+        {
+            if (view.Name == newName) return;
+
+            try
+            {
+                using var tx = new Transaction(_doc, "TablePlus: Rename Table View");
+                tx.Start();
+                view.Name = newName;
+                item.Config.ViewName = newName;
+                _schemaService.StampTableMetadata(view, item.Config, item.Config.SourceFilePath);
+                tx.Commit();
+                item.ViewName = newName;
+            }
+            catch (Exception ex)
+            {
+                TelemetryLogger.LogError($"Error renaming view to '{newName}'", ex);
+                TaskDialog.Show("TablePlus", $"Could not rename view to '{newName}':\n{ex.Message}");
+                item.ViewName = view.Name; // Revert to Revit current name
+            }
+        }
+    }
 }
+

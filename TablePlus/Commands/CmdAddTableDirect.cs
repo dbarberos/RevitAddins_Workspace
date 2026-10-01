@@ -60,10 +60,7 @@ public class CmdAddTableDirect : ExternalCommand
             importVm.SelectedFilePaths = sourcePickerVm.ResultFilePaths;
             importVm.IsRelativePath = sourcePickerVm.IsRelativePath;
 
-            if (sourcePickerVm.ResultFilePaths.Count > 0 && File.Exists(sourcePickerVm.ResultFilePaths[0]))
-            {
-                importVm.HandleFileDropAsync(sourcePickerVm.ResultFilePaths[0]).GetAwaiter().GetResult();
-            }
+            importVm.InitializeBatchFilesAsync(sourcePickerVm.ResultFilePaths, sourcePickerVm.IsRelativePath).GetAwaiter().GetResult();
 
             var importView = new TableImportView(importVm);
 
@@ -73,9 +70,9 @@ public class CmdAddTableDirect : ExternalCommand
             }
 
             var result = importView.ShowDialog();
-            if (result == true || importVm.CreatedView != null)
+            if (result == true || importVm.CreatedViews.Count > 0 || importVm.CreatedView != null)
             {
-                LoggerService.LogInfo($"CmdAddTableDirect: Table successfully created: '{importVm.CreatedView?.Name ?? "OK"}'");
+                LoggerService.LogInfo($"CmdAddTableDirect: Table(s) successfully created: '{importVm.CreatedViews.Count}' tables.");
             }
         }
         catch (Exception ex)

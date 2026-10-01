@@ -47,8 +47,30 @@
         <local:StatusToBrushConverter x:Key="StatusToBrush"/>
         <local:StatusToBgBrushConverter x:Key="StatusToBg"/>
         <local:ViewTypeToTextConverter x:Key="ViewTypeToText"/>
+        <local:EnumDisplayConverter x:Key="EnumDisplayConverter"/>
         <local:GroupItemToIndentMarginConverter x:Key="GroupItemToIndentMargin"/>
         <local:GroupItemToBackgroundConverter x:Key="GroupItemToBg"/>
+
+        <!-- Clean DataGrid TextBox Style (matching TableImportView) -->
+        <Style x:Key="DataGridTextBoxStyle" TargetType="TextBox">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="BorderBrush" Value="Transparent"/>
+            <Setter Property="Padding" Value="4,2"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}"/>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="BorderBrush" Value="#CBD5E1"/>
+                    <Setter Property="Background" Value="#F8FAFC"/>
+                </Trigger>
+                <Trigger Property="IsFocused" Value="True">
+                    <Setter Property="BorderBrush" Value="{StaticResource PrimaryBrush}"/>
+                    <Setter Property="Background" Value="White"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
 
         <!-- Card Container Style -->
         <Style x:Key="CardBorderStyle" TargetType="Border">
@@ -1086,23 +1108,25 @@
                                           HorizontalAlignment="Center" VerticalAlignment="Center"/>
                             </DataTemplate>
                         </DataGridTemplateColumn.CellTemplate>
-                    </DataGridTemplateColumn>
-
-                    <!-- COL 2: REVIT VIEW NAME (FROZEN 2, CLEAN VIEW NAME HEADER) -->
-                    <DataGridTemplateColumn Header="View Name" Width="200" MinWidth="140" CanUserResize="True">
+                    </DataGridTemplateColumn>                    <!-- COL 2: REVIT VIEW NAME (FROZEN 2, EDITABLE TEXTBOX - OPTION B) -->
+                    <DataGridTemplateColumn Header="View Name" Width="190" MinWidth="140" CanUserResize="True">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
                                 <Border BorderBrush="#E2E8F0" BorderThickness="0,0,1,0" Padding="0">
-                                    <TextBlock Text="{Binding ViewName}" FontWeight="SemiBold" Foreground="{StaticResource TextPrimaryBrush}" 
-                                               VerticalAlignment="Center" Margin="16,0,6,0" TextTrimming="CharacterEllipsis"
-                                               ToolTip="Double-click to open this view"/>
+                                    <TextBox Text="{Binding ViewName, Mode=TwoWay, UpdateSourceTrigger=LostFocus}" 
+                                             Style="{StaticResource DataGridTextBoxStyle}" 
+                                             LostFocus="ViewNameTextBox_LostFocus" 
+                                             KeyDown="ViewNameTextBox_KeyDown"
+                                             FontWeight="SemiBold"
+                                             Margin="8,2,6,2"
+                                             ToolTip="Click to edit table view name in Revit. Press Enter or tab away to commit."/>
                                 </Border>
                             </DataTemplate>
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
 
                     <!-- COL 3: SOURCE TYPE BADGE -->
-                    <DataGridTemplateColumn Header="Src" Width="60" MinWidth="45" CanUserResize="True" HeaderStyle="{StaticResource CenteredTableHeaderStyle}">
+                    <DataGridTemplateColumn Header="Src" Width="55" MinWidth="45" CanUserResize="True" HeaderStyle="{StaticResource CenteredTableHeaderStyle}">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
                                 <Border Background="#F1F5F9" BorderBrush="{StaticResource CardBorderBrush}" BorderThickness="1" CornerRadius="4" Padding="5,2" HorizontalAlignment="Center" VerticalAlignment="Center">
@@ -1113,7 +1137,7 @@
                     </DataGridTemplateColumn>
 
                     <!-- COL 4: STATUS BADGE -->
-                    <DataGridTemplateColumn Header="Status" Width="120" MinWidth="85" CanUserResize="True">
+                    <DataGridTemplateColumn Header="Status" Width="115" MinWidth="85" CanUserResize="True">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
                                 <Border Background="{Binding Status, Converter={StaticResource StatusToBg}}"
@@ -1133,73 +1157,119 @@
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
 
-                    <!-- COL 5: VIEW TYPE -->
-                    <DataGridTemplateColumn Header="View Type" Width="110" MinWidth="85" CanUserResize="True">
+                    <!-- COL 5: SOURCE FILE -->
+                    <DataGridTemplateColumn Header="Source File" Width="220" MinWidth="110" CanUserResize="True">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
-                                <TextBlock Text="{Binding ViewType, Converter={StaticResource ViewTypeToText}}" 
-                                           Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" Margin="6,0"/>
+                                <TextBlock Text="{Binding SourceFileName}" VerticalAlignment="Center" Margin="6,0" 
+                                           FontWeight="Medium" Foreground="{StaticResource TextPrimaryBrush}"
+                                           TextTrimming="CharacterEllipsis" ToolTip="{Binding SourceFilePath}"/>
                             </DataTemplate>
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
 
-                    <!-- COL 6: VIEW SCALE -->
-                    <DataGridTemplateColumn Header="Scale" Width="70" MinWidth="55" CanUserResize="True" HeaderStyle="{StaticResource CenteredTableHeaderStyle}">
+                    <!-- COL 6: WORKSHEET DROPDOWN -->
+                    <DataGridTemplateColumn Header="Worksheet / Page" Width="150" MinWidth="120" CanUserResize="True">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
-                                <TextBlock Text="{Binding FormattedScale}" Foreground="{StaticResource TextSecondaryBrush}" 
-                                           HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                            </DataTemplate>
-                        </DataGridTemplateColumn.CellTemplate>
-                    </DataGridTemplateColumn>
-
-                    <!-- COL 7: SOURCE FILE -->
-                    <DataGridTemplateColumn Header="Source File" Width="260" MinWidth="110" CanUserResize="True">
-                        <DataGridTemplateColumn.CellTemplate>
-                            <DataTemplate>
-                                <TextBlock Text="{Binding SourceFileName}" Foreground="{StaticResource TextSecondaryBrush}" 
-                                           VerticalAlignment="Center" Margin="6,0" TextTrimming="CharacterEllipsis"
-                                           ToolTip="{Binding SourceFilePath}"/>
-                            </DataTemplate>
-                        </DataGridTemplateColumn.CellTemplate>
-                    </DataGridTemplateColumn>
-
-                    <!-- COL 8: WORKSHEET DROPDOWN -->
-                    <DataGridTemplateColumn Header="Worksheet / Range" Width="160" MinWidth="135" CanUserResize="True">
-                        <DataGridTemplateColumn.CellTemplate>
-                            <DataTemplate>
-                                <ComboBox Style="{StaticResource CleanComboBoxStyle}"
-                                          ItemsSource="{Binding AvailableSheets}"
-                                          SelectedItem="{Binding SelectedSheetName}"
+                                <ComboBox ItemsSource="{Binding AvailableSheets}" 
+                                          SelectedItem="{Binding SelectedSheetName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                           SelectionChanged="WorksheetComboBox_SelectionChanged"
-                                          Height="26" VerticalAlignment="Center" Margin="4,0"/>
+                                          BorderThickness="0" Background="Transparent" VerticalContentAlignment="Center"
+                                          FontSize="12" Margin="4,0"/>
                             </DataTemplate>
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
 
-                    <!-- COL 9: AUTO-SYNC CHECKBOX -->
-                    <DataGridTemplateColumn Header="Auto-Sync" Width="85" MinWidth="75" CanUserResize="True" HeaderStyle="{StaticResource CenteredTableHeaderStyle}">
+                    <!-- COL 7: REGION / RANGE DROPDOWN -->
+                    <DataGridTemplateColumn Header="Region / Range" Width="140" MinWidth="110" CanUserResize="True">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <ComboBox ItemsSource="{Binding AvailableRegionModes}" 
+                                          SelectedItem="{Binding SelectedRegionMode, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                          BorderThickness="0" Background="Transparent" VerticalContentAlignment="Center"
+                                          FontSize="12" Margin="4,0"/>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+
+                    <!-- COL 8: VIEW TYPE DROPDOWN -->
+                    <DataGridTemplateColumn Header="View Type" Width="115" MinWidth="90" CanUserResize="True">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <ComboBox ItemsSource="{Binding AvailableViewTypes}" 
+                                          SelectedItem="{Binding ViewType, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                          BorderThickness="0" Background="Transparent" VerticalContentAlignment="Center"
+                                          FontSize="12" Margin="4,0">
+                                    <ComboBox.ItemTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="{Binding Converter={StaticResource EnumDisplayConverter}, ConverterParameter=Compact}"/>
+                                        </DataTemplate>
+                                    </ComboBox.ItemTemplate>
+                                </ComboBox>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+
+                    <!-- COL 9: VIEW SCALE DROPDOWN -->
+                    <DataGridTemplateColumn Header="Scale" Width="75" MinWidth="60" CanUserResize="True" HeaderStyle="{StaticResource CenteredTableHeaderStyle}">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <ComboBox ItemsSource="{Binding AvailableScales}" 
+                                          SelectedItem="{Binding ViewScale, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                          BorderThickness="0" Background="Transparent" VerticalContentAlignment="Center"
+                                          FontSize="12" Margin="4,0">
+                                    <ComboBox.ItemTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="{Binding StringFormat='1:{0}'}"/>
+                                        </DataTemplate>
+                                    </ComboBox.ItemTemplate>
+                                </ComboBox>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+
+                    <!-- COL 10: IMPORT TYPE DROPDOWN -->
+                    <DataGridTemplateColumn Header="Type" Width="85" MinWidth="70" CanUserResize="True" HeaderStyle="{StaticResource CenteredTableHeaderStyle}">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <ComboBox ItemsSource="{Binding AvailableImportTypes}" 
+                                          SelectedItem="{Binding ImportType, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                          BorderThickness="0" Background="Transparent" VerticalContentAlignment="Center"
+                                          FontSize="12" Margin="4,0">
+                                    <ComboBox.ItemTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="{Binding Converter={StaticResource EnumDisplayConverter}, ConverterParameter=Compact}"/>
+                                        </DataTemplate>
+                                    </ComboBox.ItemTemplate>
+                                </ComboBox>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+
+                    <!-- COL 11: AUTO-SYNC CHECKBOX -->
+                    <DataGridTemplateColumn Header="Auto-Sync" Width="80" MinWidth="70" CanUserResize="True" HeaderStyle="{StaticResource CenteredTableHeaderStyle}">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
                                 <CheckBox IsChecked="{Binding IsAutoSyncEnabled, UpdateSourceTrigger=PropertyChanged}"
-                                          HorizontalAlignment="Center" VerticalAlignment="Center"
+                                          HorizontalAlignment="Center" VerticalAlignment="Center" Cursor="Hand"
                                           ToolTip="Check to automatically sync on project open"/>
                             </DataTemplate>
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
 
-                    <!-- COL 10: BLACK & WHITE CHECKBOX -->
-                    <DataGridTemplateColumn Header="B&amp;W" Width="58" MinWidth="48" CanUserResize="True" HeaderStyle="{StaticResource CenteredTableHeaderStyle}">
+                    <!-- COL 12: BLACK & WHITE CHECKBOX -->
+                    <DataGridTemplateColumn Header="B&amp;W" Width="55" MinWidth="45" CanUserResize="True" HeaderStyle="{StaticResource CenteredTableHeaderStyle}">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
                                 <CheckBox IsChecked="{Binding IsBlackAndWhite, UpdateSourceTrigger=PropertyChanged}"
-                                          HorizontalAlignment="Center" VerticalAlignment="Center"
+                                          HorizontalAlignment="Center" VerticalAlignment="Center" Cursor="Hand"
                                           ToolTip="Force solid black text/lines and suppress cell fills"/>
                             </DataTemplate>
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
 
-                    <!-- COL 11: DESIGN BUTTON -->
+                    <!-- COL 13: DESIGN BUTTON -->
                     <DataGridTemplateColumn Header="Design" Width="95" MinWidth="80" CanUserResize="True" HeaderStyle="{StaticResource CenteredTableHeaderStyle}">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
