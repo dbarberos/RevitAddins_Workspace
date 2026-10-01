@@ -71,3 +71,28 @@ public enum TableSourceType
     /// </summary>
     ScheduleView
 }
+
+/// <summary>
+/// Import format type (matches DiRoots TableGen ImportTypes).
+/// </summary>
+public enum TableImportType
+{
+    /// <summary>
+    /// Editable 2D vector table elements in Revit view.
+    /// </summary>
+    Table,
+
+    /// <summary>
+    /// High-resolution raster rendering image inserted into Revit view.
+    /// </summary>
+    Image
+}
+
+/// <summary>
+/// Page selection option for multi-page documents (Word, PDF, Markdown).
+/// </summary>
+public enum TablePageOption
+{
+    AllPages,
+    SelectPages
+}

@@ -1,5 +1,6 @@
 using System.Windows;
 using System.Windows.Interop;
+using TablePlus.Models;
 using TablePlus.ViewModels;
 
 namespace TablePlus.Views;
@@ -79,5 +80,31 @@ public partial class TableImportView : Window
                 await _viewModel.HandleFileDropAsync(targetFile);
             }
         }
+    }
+}
+
+/// <summary>
+/// Provides user-friendly descriptions for Enums in ComboBox dropdowns (TargetViewType, TableImportType, TablePageOption).
+/// </summary>
+public class EnumDisplayConverter : System.Windows.Data.IValueConverter
+{
+    public object Convert(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture)
+    {
+        return value switch
+        {
+            TargetViewType.DraftingView => "Drafting View (ViewDrafting)",
+            TargetViewType.LegendView => "Legend View (Multi-Sheet Placeable)",
+            TargetViewType.ScheduleView => "Schedule View (ViewSchedule)",
+            TableImportType.Table => "Table (Editable Vector Lines & Text)",
+            TableImportType.Image => "Image (High-Resolution Raster)",
+            TablePageOption.AllPages => "All Pages",
+            TablePageOption.SelectPages => "Select Pages...",
+            _ => value?.ToString() ?? string.Empty
+        };
+    }
+
+    public object ConvertBack(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture)
+    {
+        throw new NotSupportedException();
     }
 }

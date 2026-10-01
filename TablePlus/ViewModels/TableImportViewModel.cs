@@ -57,8 +57,26 @@ public partial class TableImportViewModel : ObservableObject
 
         AvailableScales = new ObservableCollection<int> { 1, 2, 5, 10, 20, 25, 50, 100, 200, 500 };
         SelectedScale = 1;
+
+        AvailableImportTypes = new ObservableCollection<TableImportType> { TableImportType.Table, TableImportType.Image };
+        SelectedImportType = TableImportType.Table;
+
+        AvailableDpiValues = new ObservableCollection<int> { 72, 96, 150, 300, 600 };
+        SelectedDpi = 300;
+
+        AvailablePageOptions = new ObservableCollection<TablePageOption> { TablePageOption.AllPages, TablePageOption.SelectPages };
+        SelectedPageOption = TablePageOption.AllPages;
+        SelectedPages = "1";
+
+        AvailableViewTypes = new ObservableCollection<TargetViewType> { TargetViewType.DraftingView, TargetViewType.LegendView, TargetViewType.ScheduleView };
+        SelectedViewType = TargetViewType.DraftingView;
+
+        AvailableRegionModes = new ObservableCollection<string> { "Entire Worksheet", "Named Range", "Custom Range" };
+        SelectedRegionMode = "Entire Worksheet";
+
+        NumberOfCopies = 1;
         CustomRangeText = "A1:G20";
-        StatusMessage = "Select an Excel spreadsheet to begin.";
+        StatusMessage = "Select an Excel spreadsheet or document to begin.";
 
         InitializeSources();
         UpdateCanImport();
@@ -164,6 +182,71 @@ public partial class TableImportViewModel : ObservableObject
 
     [ObservableProperty]
     private bool _blackAndWhiteMode;
+
+    #endregion
+
+    #region Observable Properties - DiRoots Form Controls & Options
+
+    [ObservableProperty]
+    private TableImportType _selectedImportType = TableImportType.Table;
+
+    [ObservableProperty]
+    private ObservableCollection<TableImportType> _availableImportTypes = new();
+
+    [ObservableProperty]
+    private int _selectedDpi = 300;
+
+    [ObservableProperty]
+    private ObservableCollection<int> _availableDpiValues = new();
+
+    [ObservableProperty]
+    private TablePageOption _selectedPageOption = TablePageOption.AllPages;
+
+    [ObservableProperty]
+    private ObservableCollection<TablePageOption> _availablePageOptions = new();
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(CanImport))]
+    private string _selectedPages = "1";
+
+    [ObservableProperty]
+    private TargetViewType _selectedViewType = TargetViewType.DraftingView;
+
+    [ObservableProperty]
+    private ObservableCollection<TargetViewType> _availableViewTypes = new();
+
+    [ObservableProperty]
+    private ObservableCollection<string> _availableRegionModes = new();
+
+    [ObservableProperty]
+    private string _selectedRegionMode = "Entire Worksheet";
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(CanImport))]
+    private int _numberOfCopies = 1;
+
+    [ObservableProperty]
+    private bool _isExcelSource = true;
+
+    [ObservableProperty]
+    private bool _isPagedDocument;
+
+    [ObservableProperty]
+    private bool _isImageImport;
+
+    [ObservableProperty]
+    private bool _isScaleEnabled = true;
+
+    [ObservableProperty]
+    private bool _isPageSelectionCustom;
+
+    [ObservableProperty]
+    private bool _isAutoSyncEnabled;
+
+    /// <summary>
+    /// Collection of all generated views (when NumberOfCopies >= 1).
+    /// </summary>
+    public List<View> CreatedViews { get; } = new();
 
     #endregion
 
@@ -302,6 +385,65 @@ public partial class TableImportViewModel : ObservableObject
 
     partial void OnViewNameChanged(string value)
     {
+        UpdateCanImport();
+    }
+
+    partial void OnSelectedImportTypeChanged(TableImportType value)
+    {
+        IsImageImport = value == TableImportType.Image;
+        UpdateCanImport();
+    }
+
+    partial void OnSelectedPageOptionChanged(TablePageOption value)
+    {
+        IsPageSelectionCustom = value == TablePageOption.SelectPages;
+        UpdateCanImport();
+    }
+
+    partial void OnSelectedPagesChanged(string value)
+    {
+        UpdateCanImport();
+    }
+
+    partial void OnSelectedViewTypeChanged(TargetViewType value)
+    {
+        TargetViewType = value;
+        IsDraftingView = value == TargetViewType.DraftingView;
+        IsLegendView = value == TargetViewType.LegendView;
+        IsScaleEnabled = value != TargetViewType.ScheduleView;
+        UpdateCanImport();
+    }
+
+    partial void OnSelectedRegionModeChanged(string value)
+    {
+        if (value == "Entire Worksheet")
+        {
+            RangeMode = CellRangeSelectionMode.EntireSheet;
+            IsEntireSheet = true;
+            IsNamedRange = false;
+            IsCustomRange = false;
+        }
+        else if (value == "Named Range")
+        {
+            RangeMode = CellRangeSelectionMode.NamedRange;
+            IsEntireSheet = false;
+            IsNamedRange = true;
+            IsCustomRange = false;
+        }
+        else if (value == "Custom Range")
+        {
+            RangeMode = CellRangeSelectionMode.CustomRange;
+            IsEntireSheet = false;
+            IsNamedRange = false;
+            IsCustomRange = true;
+        }
+        UpdateCanImport();
+    }
+
+    partial void OnNumberOfCopiesChanged(int value)
+    {
+        if (value < 1) NumberOfCopies = 1;
+        else if (value > 50) NumberOfCopies = 50;
         UpdateCanImport();
     }
 
@@ -616,6 +758,10 @@ public partial class TableImportViewModel : ObservableObject
             FilePath = fullPath;
             FileName = Path.GetFileName(fullPath);
 
+            var ext = Path.GetExtension(fullPath).ToLowerInvariant();
+            IsExcelSource = ext is ".xlsx" or ".xls" or ".xlsm";
+            IsPagedDocument = ext is ".docx" or ".doc" or ".rtf" or ".pdf" or ".md" or ".markdown";
+
             var workbookModel = await Task.Run(() => _excelReaderService.InspectWorkbook(fullPath));
 
             _currentWorkbook = workbookModel;
@@ -682,7 +828,7 @@ public partial class TableImportViewModel : ObservableObject
                 rangeAddress = SelectedNamedRange!.Trim();
             }
 
-            var sheetName = SelectedWorksheet!;
+            var sheetName = SelectedWorksheet ?? (Worksheets.Count > 0 ? Worksheets[0] : "Sheet1");
             var filePath = FilePath;
 
             // Extract cells asynchronously to prevent UI freeze
@@ -714,25 +860,54 @@ public partial class TableImportViewModel : ObservableObject
                 _ => TableSourceType.ExcelXlsx
             };
 
-            var config = new TableImportConfig
+            CreatedViews.Clear();
+            int totalCopies = Math.Clamp(NumberOfCopies, 1, 50);
+
+            for (int i = 1; i <= totalCopies; i++)
             {
-                SourceFilePath = filePath,
-                SelectedSheetName = sheetName,
-                RangeMode = RangeMode,
-                CustomRangeAddress = IsCustomRange ? rangeAddress : null,
-                SelectedNamedRange = IsNamedRange ? SelectedNamedRange : null,
-                TargetViewType = TargetViewType,
-                ViewName = ViewName.Trim(),
-                ViewScale = Math.Max(SelectedScale, 1),
-                PreserveBackgroundFills = PreserveBackgroundFills,
-                BlackAndWhiteMode = BlackAndWhiteMode,
-                SourceType = inferredSourceType
-            };
+                string targetName;
+                if (totalCopies > 1)
+                {
+                    targetName = GetUniqueViewName($"{ViewName.Trim()} {i:D3}");
+                }
+                else
+                {
+                    targetName = ViewName.Trim();
+                }
 
-            // Geometry generation operates in Revit external command context
-            CreatedView = _geometryService.GenerateTable(_doc, config, cells, mergedRanges);
+                var config = new TableImportConfig
+                {
+                    SourceFilePath = filePath,
+                    SelectedSheetName = sheetName,
+                    RangeMode = RangeMode,
+                    CustomRangeAddress = IsCustomRange ? rangeAddress : null,
+                    SelectedNamedRange = IsNamedRange ? SelectedNamedRange : null,
+                    TargetViewType = SelectedViewType,
+                    ViewName = targetName,
+                    ViewScale = Math.Max(SelectedScale, 1),
+                    PreserveBackgroundFills = PreserveBackgroundFills,
+                    BlackAndWhiteMode = BlackAndWhiteMode,
+                    SourceType = inferredSourceType,
+                    ImportType = SelectedImportType,
+                    DpiResolution = SelectedDpi,
+                    PageOption = SelectedPageOption,
+                    SelectedPages = SelectedPages,
+                    NumberOfCopies = totalCopies,
+                    IsAutoSyncEnabled = IsAutoSyncEnabled
+                };
 
-            StatusMessage = "Table created successfully!";
+                // Geometry generation operates in Revit external command context
+                var v = _geometryService.GenerateTable(_doc, config, cells, mergedRanges);
+                if (v != null)
+                {
+                    CreatedViews.Add(v);
+                    CreatedView = v;
+                }
+            }
+
+            StatusMessage = totalCopies > 1
+                ? $"{totalCopies} tables created successfully!"
+                : "Table created successfully!";
             ProgressPercent = 100;
 
             RequestClose?.Invoke();
@@ -771,7 +946,13 @@ public partial class TableImportViewModel : ObservableObject
             return;
         }
 
-        if (!IsFileLoaded || string.IsNullOrWhiteSpace(FilePath) || string.IsNullOrWhiteSpace(SelectedWorksheet))
+        if (!IsFileLoaded || string.IsNullOrWhiteSpace(FilePath))
+        {
+            CanImport = false;
+            return;
+        }
+
+        if (IsExcelSource && string.IsNullOrWhiteSpace(SelectedWorksheet))
         {
             CanImport = false;
             return;
@@ -783,20 +964,35 @@ public partial class TableImportViewModel : ObservableObject
             return;
         }
 
-        if (IsCustomRange)
+        if (NumberOfCopies < 1 || NumberOfCopies > 50)
         {
-            if (string.IsNullOrWhiteSpace(CustomRangeText) || !RangeRegex.IsMatch(CustomRangeText.Trim()))
-            {
-                CanImport = false;
-                return;
-            }
+            CanImport = false;
+            return;
         }
-        else if (IsNamedRange)
+
+        if (IsPagedDocument && IsPageSelectionCustom && string.IsNullOrWhiteSpace(SelectedPages))
         {
-            if (string.IsNullOrWhiteSpace(SelectedNamedRange))
+            CanImport = false;
+            return;
+        }
+
+        if (IsExcelSource)
+        {
+            if (IsCustomRange)
             {
-                CanImport = false;
-                return;
+                if (string.IsNullOrWhiteSpace(CustomRangeText) || !RangeRegex.IsMatch(CustomRangeText.Trim()))
+                {
+                    CanImport = false;
+                    return;
+                }
+            }
+            else if (IsNamedRange)
+            {
+                if (string.IsNullOrWhiteSpace(SelectedNamedRange))
+                {
+                    CanImport = false;
+                    return;
+                }
             }
         }
 

@@ -38,4 +38,11 @@ public class TableImportConfig
     public string? HeaderTextNoteTypeName { get; set; }
     public string? HeaderTextColorHex { get; set; }
     public string? HeaderFillColorHex { get; set; }
+
+    // DiRoots TableGen Parity Additions:
+    public TableImportType ImportType { get; set; } = TableImportType.Table;
+    public int DpiResolution { get; set; } = 300;
+    public TablePageOption PageOption { get; set; } = TablePageOption.AllPages;
+    public string? SelectedPages { get; set; }
+    public int NumberOfCopies { get; set; } = 1;
 }

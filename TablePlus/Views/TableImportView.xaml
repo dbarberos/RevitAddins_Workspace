@@ -3,16 +3,17 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:views="clr-namespace:TablePlus.Views"
         xmlns:viewmodels="clr-namespace:TablePlus.ViewModels"
         mc:Ignorable="d"
         x:Name="TableImportWindow"
-        Title="TablePlus — Import Excel Spreadsheet"
-        Width="700" Height="820"
-        MinWidth="640" MinHeight="750"
+        Title="TablePlus — Add Table"
+        Width="640" Height="720"
+        MinWidth="580" MinHeight="620"
         WindowStartupLocation="CenterScreen"
-        Background="#F5F7FA"
-        Foreground="#1E293B"
-        FontFamily="Segoe UI, Inter, Arial"
+        Background="#F8FAFC"
+        Foreground="#0F172A"
+        FontFamily="Segoe UI, Inter, -apple-system, sans-serif"
         FontSize="13"
         AllowDrop="True"
         DragOver="Window_DragOver"
@@ -39,6 +40,7 @@
 
         <!-- CONVERTERS -->
         <BooleanToVisibilityConverter x:Key="BoolToVis"/>
+        <views:EnumDisplayConverter x:Key="EnumDisplayConverter"/>
 
         <!-- CONTROL TEMPLATES AND STYLES -->
 
@@ -48,8 +50,7 @@
             <Setter Property="BorderBrush" Value="{StaticResource CardBorderBrush}"/>
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="CornerRadius" Value="8"/>
-            <Setter Property="Padding" Value="16"/>
-            <Setter Property="Margin" Value="0,0,0,12"/>
+            <Setter Property="Padding" Value="18,16"/>
             <Setter Property="Effect">
                 <Setter.Value>
                     <DropShadowEffect BlurRadius="6" ShadowDepth="1" Opacity="0.04" Color="#0F172A"/>
@@ -204,17 +205,17 @@
         </Style>
     </Window.Resources>
 
-    <!-- MAIN APPLICATION GRID -->
-    <Grid Margin="20">
+    <!-- MAIN DIALOG GRID -->
+    <Grid Margin="18">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/> <!-- Header -->
-            <RowDefinition Height="*"/>    <!-- Scrollable Cards Body -->
-            <RowDefinition Height="Auto"/> <!-- Error or Progress Banner -->
-            <RowDefinition Height="Auto"/> <!-- Bottom Action Bar -->
+            <RowDefinition Height="*"/>    <!-- 2-Column Form Body -->
+            <RowDefinition Height="Auto"/> <!-- Error / Progress -->
+            <RowDefinition Height="Auto"/> <!-- Action Footer -->
         </Grid.RowDefinitions>
 
         <!-- HEADER BAR -->
-        <Grid Grid.Row="0" Margin="0,0,0,16">
+        <Grid Grid.Row="0" Margin="0,0,0,14">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="Auto"/>
@@ -222,211 +223,222 @@
 
             <StackPanel Grid.Column="0" VerticalAlignment="Center">
                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                    <TextBlock Text="Table" FontWeight="Bold" FontSize="20" Foreground="{StaticResource TextPrimaryBrush}"/>
-                    <TextBlock Text="Plus" FontWeight="Bold" FontSize="20" Foreground="{StaticResource PrimaryBrush}"/>
+                    <TextBlock Text="Add " FontWeight="Bold" FontSize="18" Foreground="{StaticResource TextPrimaryBrush}"/>
+                    <TextBlock Text="Table" FontWeight="Bold" FontSize="18" Foreground="{StaticResource PrimaryBrush}"/>
                     <Border Background="#E0F2FE" CornerRadius="4" Padding="6,2" Margin="10,0,0,0" VerticalAlignment="Center">
-                        <TextBlock Text="VECTOR ENGINE" FontSize="10" FontWeight="Bold" Foreground="#0369A1"/>
+                        <TextBlock Text="VECTOR &amp; IMAGE ENGINE" FontSize="10" FontWeight="Bold" Foreground="#0369A1"/>
                     </Border>
                 </StackPanel>
-                <TextBlock Text="Import Excel worksheets as crisp, editable 2D vector tables in Revit drafting and legend views." 
+                <TextBlock Text="Configure table source, target Revit view, scale, and formatting options." 
                            Foreground="{StaticResource TextSecondaryBrush}" FontSize="12" Margin="0,3,0,0"/>
             </StackPanel>
 
             <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
                 <Border Background="#F1F5F9" CornerRadius="12" Padding="8,4">
-                    <TextBlock Text="v1.0" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource TextSecondaryBrush}"/>
+                    <TextBlock Text="DiRoots Parity" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource TextSecondaryBrush}"/>
                 </Border>
             </StackPanel>
         </Grid>
 
-        <!-- SCROLLABLE CARDS CONTAINER -->
-        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Margin="0,0,0,10">
-            <StackPanel Margin="0,0,8,0">
+        <!-- 2-COLUMN FORM BODY (INSIDE SCROLLVIEWER) -->
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+            <Border Style="{StaticResource CardBorderStyle}" Margin="0,0,4,0">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="135"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/> <!-- 0: Source -->
+                        <RowDefinition Height="Auto"/> <!-- 1: Source Files (if any) -->
+                        <RowDefinition Height="Auto"/> <!-- 2: Import Type -->
+                        <RowDefinition Height="Auto"/> <!-- 3: File Path -->
+                        <RowDefinition Height="Auto"/> <!-- 4: Worksheet (Excel) -->
+                        <RowDefinition Height="Auto"/> <!-- 5: Region / Range (Excel) -->
+                        <RowDefinition Height="Auto"/> <!-- 6: Page Options (Word/PDF/MD) -->
+                        <RowDefinition Height="Auto"/> <!-- 7: View Type -->
+                        <RowDefinition Height="Auto"/> <!-- 8: View Name -->
+                        <RowDefinition Height="Auto"/> <!-- 9: View Scale -->
+                        <RowDefinition Height="Auto"/> <!-- 10: Resolution DPI (Image) -->
+                        <RowDefinition Height="Auto"/> <!-- 11: Number of Copies -->
+                        <RowDefinition Height="Auto"/> <!-- 12: Options -->
+                    </Grid.RowDefinitions>
 
-                <!-- CARD 1: SOURCE SPREADSHEET -->
-                <Border Style="{StaticResource CardBorderStyle}">
-                    <StackPanel>
-                        <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
-                            <TextBlock Text="1" FontWeight="Bold" FontSize="14" Foreground="White" Width="22" Height="22" TextAlignment="Center" VerticalAlignment="Center">
-                                <TextBlock.Background>
-                                    <VisualBrush>
-                                        <VisualBrush.Visual>
-                                            <Ellipse Width="22" Height="22" Fill="{StaticResource PrimaryBrush}"/>
-                                        </VisualBrush.Visual>
-                                    </VisualBrush>
-                                </TextBlock.Background>
-                            </TextBlock>
-                            <TextBlock Text="Source Spreadsheet" FontWeight="SemiBold" FontSize="14" Foreground="{StaticResource TextPrimaryBrush}" Margin="8,0,0,0" VerticalAlignment="Center"/>
-                        </StackPanel>
+                    <!-- ROW 0: SOURCE LOCATION -->
+                    <TextBlock Grid.Row="0" Grid.Column="0" Text="Source:" FontWeight="SemiBold" 
+                               Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" Margin="0,0,12,12"/>
+                    <ComboBox Grid.Row="0" Grid.Column="1" ItemsSource="{Binding SourceOptions}" 
+                              SelectedItem="{Binding SelectedSourceOption}" DisplayMemberPath="DisplayName"
+                              Style="{StaticResource VirtualizedComboBoxStyle}" Margin="0,0,0,12"/>
 
-                        <!-- Source Location Selector -->
-                        <TextBlock Text="Source Location:" FontWeight="Medium" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,4"/>
-                        <ComboBox ItemsSource="{Binding SourceOptions}" SelectedItem="{Binding SelectedSourceOption}"
-                                  DisplayMemberPath="DisplayName"
-                                  Style="{StaticResource VirtualizedComboBoxStyle}" Margin="0,0,0,8"/>
+                    <!-- ROW 1: QUICK FILE PICKER (WHEN SOURCE HAS AVAILABLE FILES) -->
+                    <TextBlock Grid.Row="1" Grid.Column="0" Text="Select File:" FontWeight="SemiBold" 
+                               Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" Margin="0,0,12,12"
+                               Visibility="{Binding HasSourceFiles, Converter={StaticResource BoolToVis}}"/>
+                    <Grid Grid.Row="1" Grid.Column="1" Margin="0,0,0,12"
+                          Visibility="{Binding HasSourceFiles, Converter={StaticResource BoolToVis}}">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <ComboBox Grid.Column="0" ItemsSource="{Binding AvailableSpreadsheets}" 
+                                  SelectedItem="{Binding SelectedSpreadsheetItem}" DisplayMemberPath="Name"
+                                  Style="{StaticResource VirtualizedComboBoxStyle}" Margin="0,0,8,0"/>
+                        <Button Grid.Column="1" Content="Load" Command="{Binding LoadSelectedSourceFileCommand}" 
+                                Style="{StaticResource PrimaryButtonStyle}" Padding="14,6"/>
+                    </Grid>
 
-                        <!-- Cloud / Directory Quick File Picker (when files available) -->
-                        <Grid Margin="0,0,0,8" Visibility="{Binding HasSourceFiles, Converter={StaticResource BoolToVis}}">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="Auto"/>
-                            </Grid.ColumnDefinitions>
-                            <ComboBox Grid.Column="0" ItemsSource="{Binding AvailableSpreadsheets}" SelectedItem="{Binding SelectedSpreadsheetItem}"
-                                      DisplayMemberPath="Name"
-                                      Style="{StaticResource VirtualizedComboBoxStyle}" Margin="0,0,8,0"/>
-                            <Button Grid.Column="1" Content="Load" Command="{Binding LoadSelectedSourceFileCommand}" Style="{StaticResource PrimaryButtonStyle}" Padding="14,6"/>
-                        </Grid>
+                    <!-- ROW 2: IMPORT TYPE (TABLE VS IMAGE) -->
+                    <TextBlock Grid.Row="2" Grid.Column="0" Text="Import Type:" FontWeight="SemiBold" 
+                               Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" Margin="0,0,12,12"/>
+                    <ComboBox Grid.Row="2" Grid.Column="1" ItemsSource="{Binding AvailableImportTypes}" 
+                              SelectedItem="{Binding SelectedImportType}" Style="{StaticResource VirtualizedComboBoxStyle}" Margin="0,0,0,12">
+                        <ComboBox.ItemTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding Converter={StaticResource EnumDisplayConverter}}"/>
+                            </DataTemplate>
+                        </ComboBox.ItemTemplate>
+                    </ComboBox>
 
-                        <!-- Cloud Fetch Button (when cloud source selected) -->
-                        <StackPanel Margin="0,0,0,8" Visibility="{Binding IsCloudSource, Converter={StaticResource BoolToVis}}">
-                            <Button Content="☁️ Fetch Spreadsheets from Cloud Source" Command="{Binding FetchCloudFilesCommand}" Style="{StaticResource GhostButtonStyle}" HorizontalAlignment="Left"/>
-                        </StackPanel>
+                    <!-- ROW 3: FILE PATH + BROWSE BUTTON -->
+                    <TextBlock Grid.Row="3" Grid.Column="0" Text="File Path:" FontWeight="SemiBold" 
+                               Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" Margin="0,0,12,12"/>
+                    <Grid Grid.Row="3" Grid.Column="1" Margin="0,0,0,12">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBox Grid.Column="0" Text="{Binding FilePath, UpdateSourceTrigger=PropertyChanged}" 
+                                 IsReadOnly="True" Style="{StaticResource CleanTextBoxStyle}" 
+                                 ToolTip="{Binding FilePath}" Margin="0,0,8,0"/>
+                        <Button Grid.Column="1" Content="Browse..." Command="{Binding BrowseFileCommand}" 
+                                Style="{StaticResource GhostButtonStyle}"/>
+                    </Grid>
 
-                        <!-- File Browse Row -->
-                        <TextBlock Text="Selected Spreadsheet File:" FontWeight="Medium" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,4"/>
-                        <Grid Margin="0,0,0,8">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="Auto"/>
-                            </Grid.ColumnDefinitions>
-                            <TextBox Grid.Column="0" Text="{Binding FilePath, UpdateSourceTrigger=PropertyChanged}" 
-                                     Style="{StaticResource CleanTextBoxStyle}" Margin="0,0,8,0" IsReadOnly="True"
-                                     ToolTip="{Binding FilePath}"/>
-                            <Button Grid.Column="1" Content="Browse..." Command="{Binding BrowseFileCommand}" Style="{StaticResource GhostButtonStyle}"/>
-                        </Grid>
-
-                        <!-- Drag and Drop Zone Hint -->
-                        <Border BorderBrush="#CBD5E1" BorderThickness="1" CornerRadius="6" Background="#F8FAFC" Padding="12,10"
-                                ToolTip="Drag an Excel file from Windows Explorer and drop it anywhere inside this window">
-                            <TextBlock HorizontalAlignment="Center" Foreground="{StaticResource TextMutedBrush}" FontSize="12">
-                                <Run Text="💡 Drag &amp; drop an "/>
-                                <Run Text="Excel" FontWeight="SemiBold"/>
-                                <Run Text=", "/>
-                                <Run Text="Word" FontWeight="SemiBold"/>
-                                <Run Text=", "/>
-                                <Run Text="Markdown (.md)" FontWeight="SemiBold"/>
-                                <Run Text=", "/>
-                                <Run Text="Text" FontWeight="SemiBold"/>
-                                <Run Text=" or "/>
-                                <Run Text="PDF" FontWeight="SemiBold"/>
-                                <Run Text=" file directly into this window"/>
-                            </TextBlock>
-                        </Border>
-
-                        <!-- File Loaded Badge -->
-                        <Border Background="{StaticResource SuccessBgBrush}" BorderBrush="#A7F3D0" BorderThickness="1" CornerRadius="6" Padding="10,6" Margin="0,8,0,0"
-                                Visibility="{Binding IsFileLoaded, Converter={StaticResource BoolToVis}}">
-                            <StackPanel Orientation="Horizontal">
-                                <TextBlock Text="✓" Foreground="{StaticResource SuccessBrush}" FontWeight="Bold" Margin="0,0,6,0"/>
-                                <TextBlock Text="Loaded: " FontWeight="SemiBold" Foreground="#065F46"/>
-                                <TextBlock Text="{Binding FileName}" Foreground="#047857"/>
-                            </StackPanel>
-                        </Border>
-                    </StackPanel>
-                </Border>
-
-                <!-- CARD 2: WORKSHEET AND RANGE PICKER -->
-                <Border Style="{StaticResource CardBorderStyle}" IsEnabled="{Binding IsFileLoaded}">
-                    <StackPanel>
-                        <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
-                            <TextBlock Text="2" FontWeight="Bold" FontSize="14" Foreground="White" Width="22" Height="22" TextAlignment="Center" VerticalAlignment="Center">
-                                <TextBlock.Background>
-                                    <VisualBrush>
-                                        <VisualBrush.Visual>
-                                            <Ellipse Width="22" Height="22" Fill="{StaticResource PrimaryBrush}"/>
-                                        </VisualBrush.Visual>
-                                    </VisualBrush>
-                                </TextBlock.Background>
-                            </TextBlock>
-                            <TextBlock Text="Worksheet &amp; Cell Range" FontWeight="SemiBold" FontSize="14" Foreground="{StaticResource TextPrimaryBrush}" Margin="8,0,0,0" VerticalAlignment="Center"/>
-                        </StackPanel>
-
-                        <!-- Worksheet Selector -->
-                        <TextBlock Text="Worksheet:" FontWeight="Medium" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,4"/>
+                    <!-- ROW 4: WORKSHEET (EXCEL ONLY) -->
+                    <TextBlock Grid.Row="4" Grid.Column="0" Text="Worksheet:" FontWeight="SemiBold" 
+                               Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Top" Margin="0,8,12,12"
+                               Visibility="{Binding IsExcelSource, Converter={StaticResource BoolToVis}}"/>
+                    <StackPanel Grid.Row="4" Grid.Column="1" Margin="0,0,0,12"
+                                Visibility="{Binding IsExcelSource, Converter={StaticResource BoolToVis}}">
                         <ComboBox ItemsSource="{Binding Worksheets}" SelectedItem="{Binding SelectedWorksheet}"
-                                  Style="{StaticResource VirtualizedComboBoxStyle}" Margin="0,0,0,6"/>
-
-                        <!-- Range Preview -->
-                        <TextBlock Text="{Binding UsedRangePreview}" Foreground="{StaticResource TextMutedBrush}" FontSize="11" Margin="2,0,0,12"/>
-
-                        <!-- Range Selection Mode -->
-                        <TextBlock Text="Range Scope:" FontWeight="Medium" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,6"/>
-                        <StackPanel Margin="0,0,0,10">
-                            <!-- Entire Sheet Option -->
-                            <RadioButton Content="Entire Worksheet (Used Data Grid)" IsChecked="{Binding IsEntireSheet}" Margin="0,0,0,6" FontWeight="Medium"/>
-
-                            <!-- Named Range Option -->
-                            <RadioButton Content="Excel Defined Named Range" IsChecked="{Binding IsNamedRange}" Margin="0,0,0,6" FontWeight="Medium"/>
-                            <ComboBox ItemsSource="{Binding NamedRanges}" SelectedItem="{Binding SelectedNamedRange}" 
-                                      IsEnabled="{Binding IsNamedRange}" Style="{StaticResource VirtualizedComboBoxStyle}" Margin="24,0,0,8"/>
-
-                            <!-- Custom Range Option -->
-                            <RadioButton Content="Custom Cell Coordinates (e.g. A1:G25)" IsChecked="{Binding IsCustomRange}" Margin="0,0,0,6" FontWeight="Medium"/>
-                            <TextBox Text="{Binding CustomRangeText, UpdateSourceTrigger=PropertyChanged}" 
-                                     IsEnabled="{Binding IsCustomRange}" Style="{StaticResource CleanTextBoxStyle}" Margin="24,0,0,0"
-                                     ToolTip="Enter standard cell address or rectangle, e.g. A1:G20 or B5:F15"/>
-                        </StackPanel>
+                                  Style="{StaticResource VirtualizedComboBoxStyle}"/>
+                        <TextBlock Text="{Binding UsedRangePreview}" Foreground="{StaticResource TextMutedBrush}" 
+                                   FontSize="11" Margin="2,4,0,0"/>
                     </StackPanel>
-                </Border>
 
-                <!-- CARD 3: TARGET VIEW SETTINGS -->
-                <Border Style="{StaticResource CardBorderStyle}">
-                    <StackPanel>
-                        <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
-                            <TextBlock Text="3" FontWeight="Bold" FontSize="14" Foreground="White" Width="22" Height="22" TextAlignment="Center" VerticalAlignment="Center">
-                                <TextBlock.Background>
-                                    <VisualBrush>
-                                        <VisualBrush.Visual>
-                                            <Ellipse Width="22" Height="22" Fill="{StaticResource PrimaryBrush}"/>
-                                        </VisualBrush.Visual>
-                                    </VisualBrush>
-                                </TextBlock.Background>
-                            </TextBlock>
-                            <TextBlock Text="Revit View Configuration" FontWeight="SemiBold" FontSize="14" Foreground="{StaticResource TextPrimaryBrush}" Margin="8,0,0,0" VerticalAlignment="Center"/>
-                        </StackPanel>
-
-                        <!-- View Type (Drafting vs Legend) -->
-                        <TextBlock Text="Target View Type:" FontWeight="Medium" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,6"/>
-                        <Grid Margin="0,0,0,12">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
-                            <RadioButton Grid.Column="0" Content="Drafting View (ViewDrafting)" IsChecked="{Binding IsDraftingView}" FontWeight="Medium"
-                                         ToolTip="Creates a standard 2D drafting view under Drafting Views category"/>
-                            <RadioButton Grid.Column="1" Content="Legend View (Multi-Sheet Placeable)" IsChecked="{Binding IsLegendView}" FontWeight="Medium"
-                                         ToolTip="Creates a Legend view that can be placed on multiple sheets simultaneously"/>
-                        </Grid>
-
-                        <!-- View Name -->
-                        <TextBlock Text="View Name:" FontWeight="Medium" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,4"/>
-                        <TextBox Text="{Binding ViewName, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource CleanTextBoxStyle}" Margin="0,0,0,12"/>
-
-                        <!-- View Scale -->
-                        <TextBlock Text="View Scale (1:X):" FontWeight="Medium" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,4"/>
-                        <ComboBox ItemsSource="{Binding AvailableScales}" SelectedItem="{Binding SelectedScale}" 
-                                  Style="{StaticResource VirtualizedComboBoxStyle}" Margin="0,0,0,14"/>
-
-                        <!-- Visual Overrides and Toggles -->
-                        <TextBlock Text="Styling &amp; Formatting Options:" FontWeight="Medium" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,8"/>
-                        <StackPanel Margin="2,0,0,0">
-                            <CheckBox Content="Preserve Cell Background Fills (FilledRegions)" 
-                                      IsChecked="{Binding PreserveBackgroundFills}" 
-                                      Style="{StaticResource SwitchStyle}" Margin="0,0,0,10"
-                                      Foreground="{StaticResource TextSecondaryBrush}"/>
-                            <CheckBox Content="Black &amp; White High-Contrast Mode (Disregards Colors)" 
-                                      IsChecked="{Binding BlackAndWhiteMode}" 
-                                      Style="{StaticResource SwitchStyle}"
-                                      Foreground="{StaticResource TextSecondaryBrush}"/>
-                        </StackPanel>
+                    <!-- ROW 5: REGION / RANGE (EXCEL ONLY) -->
+                    <TextBlock Grid.Row="5" Grid.Column="0" Text="Region / Range:" FontWeight="SemiBold" 
+                               Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Top" Margin="0,8,12,12"
+                               Visibility="{Binding IsExcelSource, Converter={StaticResource BoolToVis}}"/>
+                    <StackPanel Grid.Row="5" Grid.Column="1" Margin="0,0,0,12"
+                                Visibility="{Binding IsExcelSource, Converter={StaticResource BoolToVis}}">
+                        <ComboBox ItemsSource="{Binding AvailableRegionModes}" SelectedItem="{Binding SelectedRegionMode}"
+                                  Style="{StaticResource VirtualizedComboBoxStyle}"/>
+                        <ComboBox ItemsSource="{Binding NamedRanges}" SelectedItem="{Binding SelectedNamedRange}"
+                                  Visibility="{Binding IsNamedRange, Converter={StaticResource BoolToVis}}"
+                                  Style="{StaticResource VirtualizedComboBoxStyle}" Margin="0,6,0,0"/>
+                        <TextBox Text="{Binding CustomRangeText, UpdateSourceTrigger=PropertyChanged}"
+                                 Visibility="{Binding IsCustomRange, Converter={StaticResource BoolToVis}}"
+                                 Style="{StaticResource CleanTextBoxStyle}" Margin="0,6,0,0"
+                                 ToolTip="Cell range coordinates (e.g. A1:G20)"/>
                     </StackPanel>
-                </Border>
 
-            </StackPanel>
+                    <!-- ROW 6: PAGE OPTIONS (WORD / PDF / MARKDOWN ONLY) -->
+                    <TextBlock Grid.Row="6" Grid.Column="0" Text="Page Options:" FontWeight="SemiBold" 
+                               Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" Margin="0,0,12,12"
+                               Visibility="{Binding IsPagedDocument, Converter={StaticResource BoolToVis}}"/>
+                    <Grid Grid.Row="6" Grid.Column="1" Margin="0,0,0,12"
+                          Visibility="{Binding IsPagedDocument, Converter={StaticResource BoolToVis}}">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <ComboBox Grid.Column="0" ItemsSource="{Binding AvailablePageOptions}" 
+                                  SelectedItem="{Binding SelectedPageOption}" Style="{StaticResource VirtualizedComboBoxStyle}" Margin="0,0,8,0">
+                            <ComboBox.ItemTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding Converter={StaticResource EnumDisplayConverter}}"/>
+                                </DataTemplate>
+                            </ComboBox.ItemTemplate>
+                        </ComboBox>
+                        <TextBox Grid.Column="1" Text="{Binding SelectedPages, UpdateSourceTrigger=PropertyChanged}" 
+                                 Visibility="{Binding IsPageSelectionCustom, Converter={StaticResource BoolToVis}}"
+                                 Style="{StaticResource CleanTextBoxStyle}" ToolTip="Page range (e.g. 1-3, 5)"/>
+                    </Grid>
+
+                    <!-- ROW 7: VIEW TYPE -->
+                    <TextBlock Grid.Row="7" Grid.Column="0" Text="View Type:" FontWeight="SemiBold" 
+                               Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" Margin="0,0,12,12"/>
+                    <ComboBox Grid.Row="7" Grid.Column="1" ItemsSource="{Binding AvailableViewTypes}" 
+                              SelectedItem="{Binding SelectedViewType}" Style="{StaticResource VirtualizedComboBoxStyle}" Margin="0,0,0,12">
+                        <ComboBox.ItemTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding Converter={StaticResource EnumDisplayConverter}}"/>
+                            </DataTemplate>
+                        </ComboBox.ItemTemplate>
+                    </ComboBox>
+
+                    <!-- ROW 8: VIEW NAME -->
+                    <TextBlock Grid.Row="8" Grid.Column="0" Text="View Name:" FontWeight="SemiBold" 
+                               Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" Margin="0,0,12,12"/>
+                    <TextBox Grid.Row="8" Grid.Column="1" Text="{Binding ViewName, UpdateSourceTrigger=PropertyChanged}" 
+                             Style="{StaticResource CleanTextBoxStyle}" Margin="0,0,0,12"/>
+
+                    <!-- ROW 9: VIEW SCALE -->
+                    <TextBlock Grid.Row="9" Grid.Column="0" Text="View Scale:" FontWeight="SemiBold" 
+                               Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" Margin="0,0,12,12"/>
+                    <ComboBox Grid.Row="9" Grid.Column="1" ItemsSource="{Binding AvailableScales}" 
+                              SelectedItem="{Binding SelectedScale}" IsEnabled="{Binding IsScaleEnabled}"
+                              Style="{StaticResource VirtualizedComboBoxStyle}" Margin="0,0,0,12">
+                        <ComboBox.ItemTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding StringFormat='1:{0}'}"/>
+                            </DataTemplate>
+                        </ComboBox.ItemTemplate>
+                    </ComboBox>
+
+                    <!-- ROW 10: RESOLUTION (DPI) (IMAGE IMPORT ONLY) -->
+                    <TextBlock Grid.Row="10" Grid.Column="0" Text="Resolution (DPI):" FontWeight="SemiBold" 
+                               Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" Margin="0,0,12,12"
+                               Visibility="{Binding IsImageImport, Converter={StaticResource BoolToVis}}"/>
+                    <ComboBox Grid.Row="10" Grid.Column="1" ItemsSource="{Binding AvailableDpiValues}" 
+                              SelectedItem="{Binding SelectedDpi}" Style="{StaticResource VirtualizedComboBoxStyle}" Margin="0,0,0,12"
+                              Visibility="{Binding IsImageImport, Converter={StaticResource BoolToVis}}">
+                        <ComboBox.ItemTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding StringFormat='{}{0} DPI'}"/>
+                            </DataTemplate>
+                        </ComboBox.ItemTemplate>
+                    </ComboBox>
+
+                    <!-- ROW 11: NUMBER OF COPIES -->
+                    <TextBlock Grid.Row="11" Grid.Column="0" Text="Number of Copies:" FontWeight="SemiBold" 
+                               Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" Margin="0,0,12,12"/>
+                    <StackPanel Grid.Row="11" Grid.Column="1" Orientation="Horizontal" Margin="0,0,0,12">
+                        <TextBox Text="{Binding NumberOfCopies, UpdateSourceTrigger=PropertyChanged}" 
+                                 Width="65" TextAlignment="Center" Style="{StaticResource CleanTextBoxStyle}"/>
+                        <TextBlock Text="(1 - 50 copies with auto-incremented numbering)" 
+                                   Foreground="{StaticResource TextMutedBrush}" FontSize="11" VerticalAlignment="Center" Margin="10,0,0,0"/>
+                    </StackPanel>
+
+                    <!-- ROW 12: OPTIONS (SWITCHES) -->
+                    <TextBlock Grid.Row="12" Grid.Column="0" Text="Options:" FontWeight="SemiBold" 
+                               Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Top" Margin="0,4,12,0"/>
+                    <StackPanel Grid.Row="12" Grid.Column="1">
+                        <CheckBox Content="Preserve Background Fills" IsChecked="{Binding PreserveBackgroundFills}" 
+                                  Style="{StaticResource SwitchStyle}" Margin="0,0,0,8" Foreground="{StaticResource TextSecondaryBrush}"/>
+                        <CheckBox Content="Black &amp; White High-Contrast Mode" IsChecked="{Binding BlackAndWhiteMode}" 
+                                  Style="{StaticResource SwitchStyle}" Margin="0,0,0,8" Foreground="{StaticResource TextSecondaryBrush}"/>
+                        <CheckBox Content="Enable Auto-Sync when file is modified" IsChecked="{Binding IsAutoSyncEnabled}" 
+                                  Style="{StaticResource SwitchStyle}" Foreground="{StaticResource TextSecondaryBrush}"/>
+                    </StackPanel>
+                </Grid>
+            </Border>
         </ScrollViewer>
 
         <!-- PROGRESS AND ERROR BANNER -->
-        <StackPanel Grid.Row="2" Margin="0,0,0,10">
+        <StackPanel Grid.Row="2" Margin="0,10,0,0">
             <!-- Error Banner -->
             <Border Background="{StaticResource ErrorBgBrush}" BorderBrush="#FCA5A5" BorderThickness="1" CornerRadius="6" Padding="12,8" Margin="0,0,0,8"
                     Visibility="{Binding HasError, Converter={StaticResource BoolToVis}}">
@@ -453,7 +465,7 @@
         </StackPanel>
 
         <!-- ACTION BAR (FOOTER) -->
-        <Border Grid.Row="3" BorderBrush="{StaticResource CardBorderBrush}" BorderThickness="0,1,0,0" Padding="0,14,0,0">
+        <Border Grid.Row="3" BorderBrush="{StaticResource CardBorderBrush}" BorderThickness="0,1,0,0" Padding="0,14,0,0" Margin="0,12,0,0">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
@@ -466,7 +478,7 @@
 
                 <Button Grid.Column="1" Content="Cancel" Command="{Binding CancelCommand}" Style="{StaticResource GhostButtonStyle}" Margin="0,0,10,0"/>
 
-                <Button Grid.Column="2" Content="Import Table" Command="{Binding ImportTableCommand}" 
+                <Button Grid.Column="2" Content="Add Table" Command="{Binding ImportTableCommand}" 
                         IsEnabled="{Binding CanImport}" Style="{StaticResource PrimaryButtonStyle}"/>
             </Grid>
         </Border>

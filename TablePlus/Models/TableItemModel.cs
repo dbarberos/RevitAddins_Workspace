@@ -54,7 +54,15 @@ public partial class TableItemModel : ObservableObject
     private bool _isBlackAndWhite;
 
     [ObservableProperty]
+    private TableImportType _importType = TableImportType.Table;
+
+    [ObservableProperty]
     private TableImportConfig _config = new();
+
+    /// <summary>
+    /// Badge text representing vector table (TBL) vs raster image (IMG).
+    /// </summary>
+    public string ImportTypeBadge => ImportType == TableImportType.Image ? "IMG" : "TBL";
 
     /// <summary>
     /// Human-readable ratio string for display in the DataGrid (e.g. "1:1", "1:20").
