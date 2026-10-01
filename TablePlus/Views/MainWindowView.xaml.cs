@@ -341,11 +341,18 @@ public partial class MainWindowView : Window
         {
             if (e.Data.GetData(DataFormats.FileDrop) is string[] files && files.Length > 0)
             {
-                var targetFile = files.FirstOrDefault(f => !string.IsNullOrWhiteSpace(f) && IsAuthorizedTableFile(f));
-                if (targetFile != null)
+                var validFiles = files.Where(f => !string.IsNullOrWhiteSpace(f) && IsAuthorizedTableFile(f)).ToList();
+                if (validFiles.Count > 0)
                 {
                     e.Handled = true;
-                    await _viewModel.AddTableAsync(targetFile);
+                    if (validFiles.Count == 1)
+                    {
+                        await _viewModel.AddTableAsync(validFiles[0]);
+                    }
+                    else
+                    {
+                        await _viewModel.AddTableWithFilesAsync(validFiles);
+                    }
                 }
             }
         }

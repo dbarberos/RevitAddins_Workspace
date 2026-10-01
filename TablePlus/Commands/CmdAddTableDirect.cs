@@ -1,3 +1,4 @@
+using System.IO;
 using Autodesk.Revit.Attributes;
 using Autodesk.Revit.UI;
 using JetBrains.Annotations;
@@ -35,13 +36,35 @@ public class CmdAddTableDirect : ExternalCommand
 
         try
         {
-            LoggerService.LogInfo("CmdAddTableDirect: Opening TableImportView wizard directly from context menu...");
+            LoggerService.LogInfo("CmdAddTableDirect: Opening TableSourceSelectionView from command...");
+
+            var sourcePickerVm = new TableSourceSelectionViewModel();
+            var sourcePickerView = new TableSourceSelectionView(sourcePickerVm);
+
+            if (Application.MainWindowHandle != IntPtr.Zero)
+            {
+                new System.Windows.Interop.WindowInteropHelper(sourcePickerView).Owner = Application.MainWindowHandle;
+            }
+
+            var pickerResult = sourcePickerView.ShowDialog();
+            if (pickerResult != true || sourcePickerVm.ResultFilePaths.Count == 0)
+            {
+                return;
+            }
 
             var excelService = new ExcelReaderService();
             var schemaService = new SchemaService();
             var geometryService = new TableGeometryService(schemaService);
 
             var importVm = new TableImportViewModel(doc, excelService, geometryService, schemaService);
+            importVm.SelectedFilePaths = sourcePickerVm.ResultFilePaths;
+            importVm.IsRelativePath = sourcePickerVm.IsRelativePath;
+
+            if (sourcePickerVm.ResultFilePaths.Count > 0 && File.Exists(sourcePickerVm.ResultFilePaths[0]))
+            {
+                importVm.HandleFileDropAsync(sourcePickerVm.ResultFilePaths[0]).GetAwaiter().GetResult();
+            }
+
             var importView = new TableImportView(importVm);
 
             if (Application.MainWindowHandle != IntPtr.Zero)

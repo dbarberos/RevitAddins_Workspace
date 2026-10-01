@@ -243,6 +243,12 @@ public partial class TableImportViewModel : ObservableObject
     [ObservableProperty]
     private bool _isAutoSyncEnabled;
 
+    [ObservableProperty]
+    private List<string> _selectedFilePaths = new();
+
+    [ObservableProperty]
+    private bool _isRelativePath;
+
     /// <summary>
     /// Collection of all generated views (when NumberOfCopies >= 1).
     /// </summary>

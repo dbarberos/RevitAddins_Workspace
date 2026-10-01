@@ -579,29 +579,74 @@ public partial class MainWindowViewModel : ObservableObject
         }
     }
 
+    public async Task AddTableWithFilesAsync(IEnumerable<string> filePaths)
+    {
+        var filesList = filePaths.Where(File.Exists).ToList();
+        if (filesList.Count == 0) return;
+        await OpenAddTableFlowAsync(filesList);
+    }
+
     [RelayCommand]
     public async Task AddTableAsync(string? initialFilePath = null)
     {
         try
         {
-            var importVm = new TableImportViewModel(_doc, _excelReader, _geometryService, _schemaService);
-
             if (!string.IsNullOrWhiteSpace(initialFilePath) && File.Exists(initialFilePath))
             {
-                await importVm.HandleFileDropAsync(initialFilePath!);
+                await OpenAddTableFlowAsync(new List<string> { initialFilePath! });
+                return;
             }
 
-            var importView = new TableImportView(importVm);
+            // Open intermediate source selection window
+            var sourcePickerVm = new TableSourceSelectionViewModel();
+            var sourcePickerView = new TableSourceSelectionView(sourcePickerVm);
+
             var activeWindow = System.Windows.Application.Current?.Windows.OfType<MainWindowView>().FirstOrDefault();
             if (activeWindow != null)
             {
-                importView.Owner = activeWindow;
+                sourcePickerView.Owner = activeWindow;
+            }
+
+            var pickerResult = sourcePickerView.ShowDialog();
+            if (pickerResult != true || sourcePickerVm.ResultFilePaths.Count == 0)
+            {
+                // User canceled source selection or file dialog
+                return;
+            }
+
+            await OpenAddTableFlowAsync(sourcePickerVm.ResultFilePaths, sourcePickerVm.IsRelativePath);
+        }
+        catch (Exception ex)
+        {
+            TaskDialog.Show("TablePlus Error", $"Failed to open Source Selection dialog: {ex.Message}");
+        }
+    }
+
+    private async Task OpenAddTableFlowAsync(List<string> filesToLoad, bool isRelativePath = false)
+    {
+        try
+        {
+            var importVm = new TableImportViewModel(_doc, _excelReader, _geometryService, _schemaService);
+            importVm.SelectedFilePaths = filesToLoad;
+            importVm.IsRelativePath = isRelativePath;
+
+            // Load the primary selected file
+            if (filesToLoad.Count > 0 && File.Exists(filesToLoad[0]))
+            {
+                await importVm.HandleFileDropAsync(filesToLoad[0]);
+            }
+
+            var importView = new TableImportView(importVm);
+            var parentWin = System.Windows.Application.Current?.Windows.OfType<MainWindowView>().FirstOrDefault();
+            if (parentWin != null)
+            {
+                importView.Owner = parentWin;
             }
 
             var result = importView.ShowDialog();
             if (result == true || importVm.CreatedView != null)
             {
-                // Refresh inventory to discover the newly imported table view
+                // Refresh inventory to discover the newly imported table view(s)
                 await RefreshInventoryAsync();
             }
         }

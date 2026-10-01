@@ -45,4 +45,5 @@ public class TableImportConfig
     public TablePageOption PageOption { get; set; } = TablePageOption.AllPages;
     public string? SelectedPages { get; set; }
     public int NumberOfCopies { get; set; } = 1;
+    public bool IsRelativePath { get; set; } = false;
 }
