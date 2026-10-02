@@ -1,6 +1,8 @@
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.IO;
 using System.Text.RegularExpressions;
+using System.Windows.Data;
 using Autodesk.Revit.DB;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -78,6 +80,9 @@ public partial class TableImportViewModel : ObservableObject
         NumberOfCopies = 1;
         CustomRangeText = "A1:G20";
         StatusMessage = "Select an Excel spreadsheet or document to begin.";
+
+        FilteredBatchFiles = CollectionViewSource.GetDefaultView(BatchFiles);
+        FilteredBatchFiles.Filter = BatchFilesFilterPredicate;
 
         InitializeSources();
         UpdateCanImport();
@@ -252,6 +257,49 @@ public partial class TableImportViewModel : ObservableObject
 
     [ObservableProperty]
     private ObservableCollection<TableBatchFileModel> _batchFiles = new();
+
+    public ICollectionView FilteredBatchFiles { get; }
+    private readonly HashSet<TableBatchFileModel> _matchedBatchFiles = new();
+    private bool _isBatchFilterActive;
+
+    [ObservableProperty]
+    private string _searchFilter = string.Empty;
+
+    [ObservableProperty]
+    private bool _filterUseOr;
+
+    [ObservableProperty]
+    private bool _filterOnlyNames;
+
+    [ObservableProperty]
+    private bool _filterUseRegex;
+
+    partial void OnSearchFilterChanged(string value)
+    {
+        ApplyFilterCommand.NotifyCanExecuteChanged();
+        if (string.IsNullOrWhiteSpace(value) && _isBatchFilterActive)
+        {
+            _isBatchFilterActive = false;
+            _matchedBatchFiles.Clear();
+            FilteredBatchFiles.Refresh();
+            StatusMessage = "Filter cleared. All files displayed.";
+        }
+    }
+
+    partial void OnFilterOnlyNamesChanged(bool value)
+    {
+        if (_isBatchFilterActive) ApplyFilter();
+    }
+
+    partial void OnFilterUseRegexChanged(bool value)
+    {
+        if (_isBatchFilterActive) ApplyFilter();
+    }
+
+    partial void OnFilterUseOrChanged(bool value)
+    {
+        if (_isBatchFilterActive && !value) ApplyFilter();
+    }
 
     [ObservableProperty]
     private TableBatchFileModel? _selectedBatchFile;
@@ -988,6 +1036,8 @@ public partial class TableImportViewModel : ObservableObject
         {
             BatchFiles.Clear();
             BatchItems.Clear();
+            _matchedBatchFiles.Clear();
+            _isBatchFilterActive = false;
         }
 
         foreach (var path in filePaths)
@@ -1069,6 +1119,15 @@ public partial class TableImportViewModel : ObservableObject
         }
 
         OnBatchSelectionChanged();
+
+        if (_isBatchFilterActive)
+        {
+            ApplyFilter();
+        }
+        else
+        {
+            FilteredBatchFiles?.Refresh();
+        }
     }
 
     [ObservableProperty]
@@ -1096,7 +1155,8 @@ public partial class TableImportViewModel : ObservableObject
     [RelayCommand]
     public void SelectAllBatch()
     {
-        foreach (var file in BatchFiles)
+        IEnumerable<TableBatchFileModel> targetFiles = _isBatchFilterActive ? _matchedBatchFiles : BatchFiles;
+        foreach (var file in targetFiles)
         {
             foreach (var sheet in file.Sheets) sheet.IsSelected = true;
             file.UpdateViewsCount();
@@ -1108,7 +1168,8 @@ public partial class TableImportViewModel : ObservableObject
     [RelayCommand]
     public void DeselectAllBatch()
     {
-        foreach (var file in BatchFiles)
+        IEnumerable<TableBatchFileModel> targetFiles = _isBatchFilterActive ? _matchedBatchFiles : BatchFiles;
+        foreach (var file in targetFiles)
         {
             foreach (var sheet in file.Sheets) sheet.IsSelected = false;
             file.UpdateViewsCount();
@@ -1120,13 +1181,199 @@ public partial class TableImportViewModel : ObservableObject
     [RelayCommand]
     public void InvertBatchSelection()
     {
-        foreach (var file in BatchFiles)
+        IEnumerable<TableBatchFileModel> targetFiles = _isBatchFilterActive ? _matchedBatchFiles : BatchFiles;
+        foreach (var file in targetFiles)
         {
             foreach (var sheet in file.Sheets) sheet.IsSelected = !sheet.IsSelected;
             file.UpdateViewsCount();
         }
         foreach (var item in BatchItems) item.IsSelected = !item.IsSelected;
         OnBatchSelectionChanged();
+    }
+
+    private bool CanApplyFilter() => !string.IsNullOrWhiteSpace(SearchFilter) || _isBatchFilterActive;
+
+    [RelayCommand(CanExecute = nameof(CanApplyFilter))]
+    public void ApplyFilter()
+    {
+        string searchText = SearchFilter?.Trim() ?? string.Empty;
+
+        if (string.IsNullOrWhiteSpace(searchText))
+        {
+            _isBatchFilterActive = false;
+            _matchedBatchFiles.Clear();
+            FilteredBatchFiles.Refresh();
+            StatusMessage = "Filter cleared. All files displayed.";
+            return;
+        }
+
+        Regex? compiledRegex = null;
+        if (FilterUseRegex)
+        {
+            try
+            {
+                compiledRegex = new Regex(
+                    searchText,
+                    RegexOptions.IgnoreCase | RegexOptions.Compiled,
+                    TimeSpan.FromSeconds(2));
+            }
+            catch (Exception)
+            {
+                StatusMessage = "Invalid Regex Pattern";
+                return;
+            }
+        }
+
+        _isBatchFilterActive = true;
+
+        if (!FilterUseOr)
+        {
+            _matchedBatchFiles.Clear();
+        }
+
+        bool MatchesText(string? target)
+        {
+            if (string.IsNullOrEmpty(target)) return false;
+            if (compiledRegex != null)
+            {
+                try
+                {
+                    return compiledRegex.IsMatch(target!);
+                }
+                catch
+                {
+                    return false;
+                }
+            }
+            return target!.IndexOf(searchText, StringComparison.OrdinalIgnoreCase) >= 0;
+        }
+
+        foreach (var file in BatchFiles)
+        {
+            // "usar or para mantener los ya seleccionados"
+            if (FilterUseOr && file.Sheets.Any(s => s.IsSelected))
+            {
+                _matchedBatchFiles.Add(file);
+                continue;
+            }
+
+            bool fileMatched = false;
+
+            // 1. File Name (with & without extension)
+            if (MatchesText(file.FileName) || MatchesText(file.FileNameWithoutExtension))
+            {
+                fileMatched = true;
+            }
+
+            // 2. File Path (only if not restricted to Only by name)
+            if (!fileMatched && !FilterOnlyNames)
+            {
+                if (MatchesText(file.FilePath) || MatchesText(file.DisplayPath))
+                {
+                    fileMatched = true;
+                }
+            }
+
+            // 3. Child sheets: Sheet Name, Range / Region, Element Type (Table/Image), View Type
+            bool anySheetMatched = false;
+            foreach (var sheet in file.Sheets)
+            {
+                bool sheetMatches = false;
+
+                // 3a. Sheet name
+                if (MatchesText(sheet.SheetName))
+                {
+                    sheetMatches = true;
+                }
+
+                // Other properties only if not FilterOnlyNames
+                if (!FilterOnlyNames)
+                {
+                    // 3b. Range / Region name (SelectedRegion and AvailableRegions)
+                    if (!sheetMatches)
+                    {
+                        if (MatchesText(sheet.SelectedRegion))
+                        {
+                            sheetMatches = true;
+                        }
+                        else if (sheet.AvailableRegions.Any(MatchesText))
+                        {
+                            sheetMatches = true;
+                        }
+                    }
+
+                    // 3c. Element type created (Table / Image)
+                    if (!sheetMatches)
+                    {
+                        string typeStr = sheet.SelectedImportType.ToString();
+                        if (MatchesText(typeStr))
+                        {
+                            sheetMatches = true;
+                        }
+                    }
+
+                    // 3d. View type (DraftingView, LegendView, ScheduleView)
+                    if (!sheetMatches)
+                    {
+                        string viewTypeStr = sheet.SelectedViewType.ToString();
+                        string friendlyViewType = sheet.SelectedViewType switch
+                        {
+                            TargetViewType.DraftingView => "Drafting View",
+                            TargetViewType.LegendView => "Legend View",
+                            TargetViewType.ScheduleView => "Schedule View",
+                            _ => viewTypeStr
+                        };
+
+                        if (MatchesText(viewTypeStr) || MatchesText(friendlyViewType))
+                        {
+                            sheetMatches = true;
+                        }
+                    }
+                }
+
+                if (sheetMatches)
+                {
+                    anySheetMatched = true;
+                }
+            }
+
+            if (fileMatched || anySheetMatched)
+            {
+                _matchedBatchFiles.Add(file);
+                if (anySheetMatched && file.HasMultipleSheets)
+                {
+                    file.IsExpanded = true;
+                }
+            }
+        }
+
+        FilteredBatchFiles.Refresh();
+        StatusMessage = $"Filter applied. {_matchedBatchFiles.Count} of {BatchFiles.Count} files matched.";
+    }
+
+    [RelayCommand]
+    private void InsertFilterRegexHelper(string snippet)
+    {
+        if (snippet.Contains("text") && !string.IsNullOrWhiteSpace(SearchFilter) && !SearchFilter.Contains("(?") && !SearchFilter.Contains(".*"))
+        {
+            SearchFilter = snippet.Replace("text", SearchFilter.Trim());
+        }
+        else
+        {
+            SearchFilter = string.IsNullOrWhiteSpace(SearchFilter) ? snippet : (SearchFilter + snippet);
+        }
+        FilterUseRegex = true;
+        if (snippet.Contains("(?"))
+        {
+            FilterOnlyNames = true;
+        }
+    }
+
+    private bool BatchFilesFilterPredicate(object obj)
+    {
+        if (obj is not TableBatchFileModel file) return false;
+        if (!_isBatchFilterActive) return true;
+        return _matchedBatchFiles.Contains(file);
     }
 
     [RelayCommand]

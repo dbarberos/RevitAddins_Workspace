@@ -90,5 +90,10 @@ public partial class TableImportView : Window
             Dispatcher.BeginInvoke(new Action(() => cb.SelectedIndex = -1));
         }
     }
+
+    private void CloseFilterRegexPopup(object sender, RoutedEventArgs e)
+    {
+        BtnFilterRegexHelper.IsChecked = false;
+    }
 }
 

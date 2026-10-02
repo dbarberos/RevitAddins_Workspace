@@ -5,11 +5,12 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:views="clr-namespace:TablePlus.Views"
         xmlns:viewmodels="clr-namespace:TablePlus.ViewModels"
+        xmlns:sys="clr-namespace:System;assembly=mscorlib"
         mc:Ignorable="d"
         x:Name="TableImportWindow"
         Title="TablePlus — Add Tables"
-        Width="550" Height="325"
-        MinWidth="460" MinHeight="260"
+        Width="550" Height="615"
+        MinWidth="460" MinHeight="450"
         WindowStartupLocation="CenterScreen"
         Background="#FAFAFA"
         Foreground="#333333"
@@ -21,6 +22,72 @@
         Icon="pack://application:,,,/TablePlus;component/Resources/Icons/TablePlus32x32.png">
 
     <Window.Resources>
+        <!-- TransferPlus / TablePlus ScrollBar Slim Parameters (10px Width & Height) -->
+        <sys:Double x:Key="{x:Static SystemParameters.VerticalScrollBarWidthKey}">10</sys:Double>
+        <sys:Double x:Key="{x:Static SystemParameters.HorizontalScrollBarHeightKey}">10</sys:Double>
+
+        <!-- Table Column Header Style (Matches MainWindow / TransferPlus) -->
+        <Style x:Key="TableHeaderStyle" TargetType="DataGridColumnHeader">
+            <Setter Property="Background" Value="#F0F0F0"/>
+            <Setter Property="Foreground" Value="#555555"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="FontSize" Value="11.5"/>
+            <Setter Property="Padding" Value="8,6"/>
+            <Setter Property="BorderBrush" Value="#DDDDDD"/>
+            <Setter Property="BorderThickness" Value="0,0,1,1"/>
+            <Setter Property="SeparatorBrush" Value="#CCCCCC"/>
+            <Setter Property="SeparatorVisibility" Value="Visible"/>
+            <Setter Property="HorizontalContentAlignment" Value="Left"/>
+            <Setter Property="MinHeight" Value="28"/>
+        </Style>
+
+        <Style x:Key="CenteredTableHeaderStyle" TargetType="DataGridColumnHeader" BasedOn="{StaticResource TableHeaderStyle}">
+            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+        </Style>
+        <!-- Custom Toggle Switch CheckBox Style (TransferPlus Style) -->
+        <Style x:Key="SwitchStyle" TargetType="{x:Type CheckBox}">
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type CheckBox}">
+                        <StackPanel Orientation="Horizontal" Cursor="Hand">
+                            <Border x:Name="Background" Width="28" Height="14" Background="#ddd" CornerRadius="7" Padding="2" Margin="0,0,8,0" VerticalAlignment="Center">
+                                <Ellipse x:Name="Dot" Width="10" Height="10" Fill="White" HorizontalAlignment="Left">
+                                    <Ellipse.RenderTransform>
+                                        <TranslateTransform X="0"/>
+                                    </Ellipse.RenderTransform>
+                                </Ellipse>
+                            </Border>
+                            <ContentPresenter VerticalAlignment="Center" Content="{TemplateBinding Content}"/>
+                        </StackPanel>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="Background" Property="Background" Value="#777"/>
+                                <Trigger.EnterActions>
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <DoubleAnimation Storyboard.TargetName="Dot" 
+                                                             Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.X)" 
+                                                             To="14" 
+                                                             Duration="0:0:0.15"/>
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </Trigger.EnterActions>
+                                <Trigger.ExitActions>
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <DoubleAnimation Storyboard.TargetName="Dot" 
+                                                             Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.X)" 
+                                                             To="0" 
+                                                             Duration="0:0:0.15"/>
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </Trigger.ExitActions>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
         <!-- COLOR PALETTE BRUSHES -->
         <SolidColorBrush x:Key="WindowBgBrush" Color="#FAFAFA"/>
         <SolidColorBrush x:Key="CardBgBrush" Color="#FFFFFF"/>
@@ -182,21 +249,399 @@
         </Style>
     </Window.Resources>
 
-    <Grid Margin="12,12,12,10">
+    <Grid Margin="12,10,12,10">
         <Grid.RowDefinitions>
-            <RowDefinition Height="*"/>    <!-- 0: Batch Items DataGrid (First element) -->
-            <RowDefinition Height="Auto"/> <!-- 1: Error & Progress -->
-            <RowDefinition Height="Auto"/> <!-- 2: Footer with Selection, Cancel & Apply -->
+            <RowDefinition Height="Auto"/> <!-- 0: Filter Card -->
+            <RowDefinition Height="*"/>    <!-- 1: Batch Items DataGrid -->
+            <RowDefinition Height="Auto"/> <!-- 2: Error & Progress -->
+            <RowDefinition Height="Auto"/> <!-- 3: Footer with Selection, Cancel & Apply -->
         </Grid.RowDefinitions>
 
-        <!-- ROW 0: BATCH FILES DATAGRID -->
-        <Border Grid.Row="0" Style="{StaticResource CardBorderStyle}">
-            <DataGrid ItemsSource="{Binding BatchFiles}" 
+        <!-- ROW 0: FILTER CARD (TRANSFERPLUS / TABLEPLUS STYLE) -->
+        <Border Grid.Row="0" Style="{StaticResource CardBorderStyle}" Padding="10,7" Margin="0,0,0,8">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/> <!-- Search Box -->
+                    <RowDefinition Height="Auto"/> <!-- Search Toggles -->
+                </Grid.RowDefinitions>
+
+                <!-- Search Row -->
+                <Grid Grid.Row="0" Margin="0,0,0,7">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Grid.Column="0" Text="Filter:" FontWeight="Bold" FontSize="12" Foreground="#999" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                    <TextBox Grid.Column="1" Text="{Binding SearchFilter, UpdateSourceTrigger=PropertyChanged}" VerticalAlignment="Center" Padding="4,2" BorderBrush="#e0e0e0" BorderThickness="1" Height="26">
+                        <TextBox.InputBindings>
+                            <KeyBinding Key="Return" Command="{Binding ApplyFilterCommand}"/>
+                        </TextBox.InputBindings>
+                    </TextBox>
+                    <StackPanel Grid.Column="2" Orientation="Horizontal" Margin="10,0,0,0" VerticalAlignment="Center">
+                        <Button Content="Apply" Command="{Binding ApplyFilterCommand}" Padding="12,3" VerticalAlignment="Center" Height="26">
+                            <Button.Style>
+                                <Style TargetType="Button">
+                                    <Setter Property="Background" Value="#007ACC"/>
+                                    <Setter Property="Foreground" Value="White"/>
+                                    <Setter Property="BorderThickness" Value="0"/>
+                                    <Setter Property="Cursor" Value="Hand"/>
+                                    <Setter Property="FontSize" Value="11.5"/>
+                                    <Setter Property="FontWeight" Value="SemiBold"/>
+                                    <Setter Property="Template">
+                                        <Setter.Value>
+                                            <ControlTemplate TargetType="Button">
+                                                <Border Background="{TemplateBinding Background}" CornerRadius="4" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" Padding="{TemplateBinding Padding}">
+                                                    <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                </Border>
+                                            </ControlTemplate>
+                                        </Setter.Value>
+                                    </Setter>
+                                    <Style.Triggers>
+                                        <Trigger Property="IsMouseOver" Value="True">
+                                            <Setter Property="Background" Value="#0062A3"/>
+                                        </Trigger>
+                                        <Trigger Property="IsEnabled" Value="False">
+                                            <Setter Property="Background" Value="#F3F3F3"/>
+                                            <Setter Property="Foreground" Value="#B0B0B0"/>
+                                            <Setter Property="BorderBrush" Value="Transparent"/>
+                                        </Trigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Button.Style>
+                        </Button>
+                    </StackPanel>
+                </Grid>
+
+                <!-- Search Toggles Row -->
+                <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Left" VerticalAlignment="Center">
+                    <CheckBox Content="Use OR" IsChecked="{Binding FilterUseOr}" Style="{StaticResource SwitchStyle}" FontSize="11" Margin="0,0,10,0"/>
+                    <CheckBox Content="Only by name" IsChecked="{Binding FilterOnlyNames}" Style="{StaticResource SwitchStyle}" FontSize="11" Margin="0,0,10,0"/>
+                    <CheckBox Content="Use Regex" IsChecked="{Binding FilterUseRegex}" Style="{StaticResource SwitchStyle}" FontSize="11" Margin="0,0,0,0"/>
+
+                    <!-- RegEx Helper Button for Filter -->
+                    <ToggleButton x:Name="BtnFilterRegexHelper" Width="18" Height="18" Margin="8,0,0,0" VerticalAlignment="Center" Cursor="Hand" ToolTip="Regex help" ToolTipService.InitialShowDelay="600">
+                        <ToggleButton.Template>
+                            <ControlTemplate TargetType="ToggleButton">
+                                <Border CornerRadius="9" Background="#F3F3F3" BorderThickness="1" BorderBrush="#E0E0E0">
+                                    <TextBlock Text="i" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="#555" FontWeight="SemiBold" FontSize="10" FontStyle="Italic"/>
+                                </Border>
+                            </ControlTemplate>
+                        </ToggleButton.Template>
+                    </ToggleButton>
+
+                    <Popup IsOpen="{Binding IsChecked, ElementName=BtnFilterRegexHelper, Mode=TwoWay}" StaysOpen="False" PlacementTarget="{Binding ElementName=BtnFilterRegexHelper}" Placement="Bottom" AllowsTransparency="True" Margin="0,5,0,0">
+                        <Border Background="White" BorderBrush="#ccc" BorderThickness="1" CornerRadius="4" Padding="10" Width="380" MaxHeight="450">
+                            <Border.Effect>
+                                <DropShadowEffect Color="Black" Opacity="0.1" BlurRadius="10" ShadowDepth="2"/>
+                            </Border.Effect>
+                            <ScrollViewer MaxHeight="400" VerticalScrollBarVisibility="Auto">
+                                <StackPanel>
+                                    <StackPanel.Resources>
+                                        <Style TargetType="Button">
+                                            <Setter Property="Background" Value="Transparent"/>
+                                            <Setter Property="BorderThickness" Value="0"/>
+                                            <Setter Property="Padding" Value="4"/>
+                                            <Setter Property="HorizontalContentAlignment" Value="Left"/>
+                                            <Setter Property="Cursor" Value="Hand"/>
+                                        </Style>
+                                    </StackPanel.Resources>
+                                    <TextBlock Text="Regex Help (Filter)" FontWeight="Bold" Margin="0,0,0,12" FontSize="13"/>
+                                    <!-- Category: Basic Matching &amp; Anchors -->
+                                    <TextBlock Text="Basic Matching &amp; Anchors" FontWeight="Bold" Foreground="#333" Margin="0,8,0,4" FontSize="11"/>
+                                    <Button Command="{Binding InsertFilterRegexHelperCommand}" CommandParameter="^[\w\s\W]+$" Click="CloseFilterRegexPopup" HorizontalAlignment="Stretch">
+                                        <Grid Margin="0,0,0,4" Width="335">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="105"/>
+                                                <ColumnDefinition Width="*"/>
+                                            </Grid.ColumnDefinitions>
+                                            <Border Grid.Column="0" Background="#F9F9F9" BorderBrush="#E0E0E0" BorderThickness="1" CornerRadius="4" Height="26" Margin="0,0,8,0">
+                                                <TextBlock Text="^[\w\s\W]+$" HorizontalAlignment="Center" VerticalAlignment="Center" FontWeight="SemiBold" FontSize="9.5" Foreground="#111"/>
+                                            </Border>
+                                            <TextBlock Grid.Column="1" Text="Selects the full title completely" VerticalAlignment="Center" TextWrapping="Wrap" Foreground="#555" FontSize="10"/>
+                                        </Grid>
+                                    </Button>
+                                    <Button Command="{Binding InsertFilterRegexHelperCommand}" CommandParameter="text" Click="CloseFilterRegexPopup" HorizontalAlignment="Stretch">
+                                        <Grid Margin="0,0,0,4" Width="335">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="105"/>
+                                                <ColumnDefinition Width="*"/>
+                                            </Grid.ColumnDefinitions>
+                                            <Border Grid.Column="0" Background="#F9F9F9" BorderBrush="#E0E0E0" BorderThickness="1" CornerRadius="4" Height="26" Margin="0,0,8,0">
+                                                <TextBlock Text="text" HorizontalAlignment="Center" VerticalAlignment="Center" FontWeight="SemiBold" FontSize="10" Foreground="#111"/>
+                                            </Border>
+                                            <TextBlock Grid.Column="1" Text="Matches the exact text" VerticalAlignment="Center" TextWrapping="Wrap" Foreground="#555" FontSize="10"/>
+                                        </Grid>
+                                    </Button>
+                                    <Button Command="{Binding InsertFilterRegexHelperCommand}" CommandParameter="c.sa" Click="CloseFilterRegexPopup" HorizontalAlignment="Stretch">
+                                        <Grid Margin="0,0,0,4" Width="335">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="105"/>
+                                                <ColumnDefinition Width="*"/>
+                                            </Grid.ColumnDefinitions>
+                                            <Border Grid.Column="0" Background="#F9F9F9" BorderBrush="#E0E0E0" BorderThickness="1" CornerRadius="4" Height="26" Margin="0,0,8,0">
+                                                <TextBlock Text="c.sa" HorizontalAlignment="Center" VerticalAlignment="Center" FontWeight="SemiBold" FontSize="10" Foreground="#111"/>
+                                            </Border>
+                                            <TextBlock Grid.Column="1" Text="Matches any single character (e.g. casa, cosa)" VerticalAlignment="Center" TextWrapping="Wrap" Foreground="#555" FontSize="10"/>
+                                        </Grid>
+                                    </Button>
+                                    <Button Command="{Binding InsertFilterRegexHelperCommand}" CommandParameter="^" Click="CloseFilterRegexPopup" HorizontalAlignment="Stretch">
+                                        <Grid Margin="0,0,0,4" Width="335">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="105"/>
+                                                <ColumnDefinition Width="*"/>
+                                            </Grid.ColumnDefinitions>
+                                            <Border Grid.Column="0" Background="#F9F9F9" BorderBrush="#E0E0E0" BorderThickness="1" CornerRadius="4" Height="26" Margin="0,0,8,0">
+                                                <TextBlock Text="^" HorizontalAlignment="Center" VerticalAlignment="Center" FontWeight="SemiBold" FontSize="10" Foreground="#111"/>
+                                            </Border>
+                                            <TextBlock Grid.Column="1" Text="Start of string anchor" VerticalAlignment="Center" TextWrapping="Wrap" Foreground="#555" FontSize="10"/>
+                                        </Grid>
+                                    </Button>
+                                    <Button Command="{Binding InsertFilterRegexHelperCommand}" CommandParameter="$" Click="CloseFilterRegexPopup" HorizontalAlignment="Stretch">
+                                        <Grid Margin="0,0,0,4" Width="335">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="105"/>
+                                                <ColumnDefinition Width="*"/>
+                                            </Grid.ColumnDefinitions>
+                                            <Border Grid.Column="0" Background="#F9F9F9" BorderBrush="#E0E0E0" BorderThickness="1" CornerRadius="4" Height="26" Margin="0,0,8,0">
+                                                <TextBlock Text="$" HorizontalAlignment="Center" VerticalAlignment="Center" FontWeight="SemiBold" FontSize="10" Foreground="#111"/>
+                                            </Border>
+                                            <TextBlock Grid.Column="1" Text="End of string anchor" VerticalAlignment="Center" TextWrapping="Wrap" Foreground="#555" FontSize="10"/>
+                                        </Grid>
+                                    </Button>
+                                    <Button Command="{Binding InsertFilterRegexHelperCommand}" CommandParameter="^text" Click="CloseFilterRegexPopup" HorizontalAlignment="Stretch">
+                                        <Grid Margin="0,0,0,4" Width="335">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="105"/>
+                                                <ColumnDefinition Width="*"/>
+                                            </Grid.ColumnDefinitions>
+                                            <Border Grid.Column="0" Background="#F9F9F9" BorderBrush="#E0E0E0" BorderThickness="1" CornerRadius="4" Height="26" Margin="0,0,8,0">
+                                                <TextBlock Text="^text" HorizontalAlignment="Center" VerticalAlignment="Center" FontWeight="SemiBold" FontSize="10" Foreground="#111"/>
+                                            </Border>
+                                            <TextBlock Grid.Column="1" Text="Starts with 'text'" VerticalAlignment="Center" TextWrapping="Wrap" Foreground="#555" FontSize="10"/>
+                                        </Grid>
+                                    </Button>
+                                    <Button Command="{Binding InsertFilterRegexHelperCommand}" CommandParameter="text$" Click="CloseFilterRegexPopup" HorizontalAlignment="Stretch">
+                                        <Grid Margin="0,0,0,4" Width="335">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="105"/>
+                                                <ColumnDefinition Width="*"/>
+                                            </Grid.ColumnDefinitions>
+                                            <Border Grid.Column="0" Background="#F9F9F9" BorderBrush="#E0E0E0" BorderThickness="1" CornerRadius="4" Height="26" Margin="0,0,8,0">
+                                                <TextBlock Text="text$" HorizontalAlignment="Center" VerticalAlignment="Center" FontWeight="SemiBold" FontSize="10" Foreground="#111"/>
+                                            </Border>
+                                            <TextBlock Grid.Column="1" Text="Ends with 'text'" VerticalAlignment="Center" TextWrapping="Wrap" Foreground="#555" FontSize="10"/>
+                                        </Grid>
+                                    </Button>
+                                    <Button Command="{Binding InsertFilterRegexHelperCommand}" CommandParameter=".*text.*" Click="CloseFilterRegexPopup" HorizontalAlignment="Stretch">
+                                        <Grid Margin="0,0,0,4" Width="335">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="105"/>
+                                                <ColumnDefinition Width="*"/>
+                                            </Grid.ColumnDefinitions>
+                                            <Border Grid.Column="0" Background="#F9F9F9" BorderBrush="#E0E0E0" BorderThickness="1" CornerRadius="4" Height="26" Margin="0,0,8,0">
+                                                <TextBlock Text=".*text.*" HorizontalAlignment="Center" VerticalAlignment="Center" FontWeight="SemiBold" FontSize="10" Foreground="#111"/>
+                                            </Border>
+                                            <TextBlock Grid.Column="1" Text="Contains 'text' anywhere" VerticalAlignment="Center" TextWrapping="Wrap" Foreground="#555" FontSize="10"/>
+                                        </Grid>
+                                    </Button>
+
+                                    <!-- Category: Character Classes -->
+                                    <TextBlock Text="Character Classes" FontWeight="Bold" Foreground="#333" Margin="0,12,0,4" FontSize="11"/>
+                                    <Button Command="{Binding InsertFilterRegexHelperCommand}" CommandParameter="\d" Click="CloseFilterRegexPopup" HorizontalAlignment="Stretch">
+                                        <Grid Margin="0,0,0,4" Width="335">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="105"/>
+                                                <ColumnDefinition Width="*"/>
+                                            </Grid.ColumnDefinitions>
+                                            <Border Grid.Column="0" Background="#F9F9F9" BorderBrush="#E0E0E0" BorderThickness="1" CornerRadius="4" Height="26" Margin="0,0,8,0">
+                                                <TextBlock Text="\d" HorizontalAlignment="Center" VerticalAlignment="Center" FontWeight="SemiBold" FontSize="10" Foreground="#111"/>
+                                            </Border>
+                                            <TextBlock Grid.Column="1" Text="Any single digit (0-9)" VerticalAlignment="Center" TextWrapping="Wrap" Foreground="#555" FontSize="10"/>
+                                        </Grid>
+                                    </Button>
+                                    <Button Command="{Binding InsertFilterRegexHelperCommand}" CommandParameter="\D" Click="CloseFilterRegexPopup" HorizontalAlignment="Stretch">
+                                        <Grid Margin="0,0,0,4" Width="335">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="105"/>
+                                                <ColumnDefinition Width="*"/>
+                                            </Grid.ColumnDefinitions>
+                                            <Border Grid.Column="0" Background="#F9F9F9" BorderBrush="#E0E0E0" BorderThickness="1" CornerRadius="4" Height="26" Margin="0,0,8,0">
+                                                <TextBlock Text="\D" HorizontalAlignment="Center" VerticalAlignment="Center" FontWeight="SemiBold" FontSize="10" Foreground="#111"/>
+                                            </Border>
+                                            <TextBlock Grid.Column="1" Text="Any non-digit character" VerticalAlignment="Center" TextWrapping="Wrap" Foreground="#555" FontSize="10"/>
+                                        </Grid>
+                                    </Button>
+                                    <Button Command="{Binding InsertFilterRegexHelperCommand}" CommandParameter="\w" Click="CloseFilterRegexPopup" HorizontalAlignment="Stretch">
+                                        <Grid Margin="0,0,0,4" Width="335">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="105"/>
+                                                <ColumnDefinition Width="*"/>
+                                            </Grid.ColumnDefinitions>
+                                            <Border Grid.Column="0" Background="#F9F9F9" BorderBrush="#E0E0E0" BorderThickness="1" CornerRadius="4" Height="26" Margin="0,0,8,0">
+                                                <TextBlock Text="\w" HorizontalAlignment="Center" VerticalAlignment="Center" FontWeight="SemiBold" FontSize="10" Foreground="#111"/>
+                                            </Border>
+                                            <TextBlock Grid.Column="1" Text="Word character (letter, digit, _)" VerticalAlignment="Center" TextWrapping="Wrap" Foreground="#555" FontSize="10"/>
+                                        </Grid>
+                                    </Button>
+                                    <Button Command="{Binding InsertFilterRegexHelperCommand}" CommandParameter="\s" Click="CloseFilterRegexPopup" HorizontalAlignment="Stretch">
+                                        <Grid Margin="0,0,0,4" Width="335">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="105"/>
+                                                <ColumnDefinition Width="*"/>
+                                            </Grid.ColumnDefinitions>
+                                            <Border Grid.Column="0" Background="#F9F9F9" BorderBrush="#E0E0E0" BorderThickness="1" CornerRadius="4" Height="26" Margin="0,0,8,0">
+                                                <TextBlock Text="\s" HorizontalAlignment="Center" VerticalAlignment="Center" FontWeight="SemiBold" FontSize="10" Foreground="#111"/>
+                                            </Border>
+                                            <TextBlock Grid.Column="1" Text="Whitespace character (space, tab)" VerticalAlignment="Center" TextWrapping="Wrap" Foreground="#555" FontSize="10"/>
+                                        </Grid>
+                                    </Button>
+                                    <Button Command="{Binding InsertFilterRegexHelperCommand}" CommandParameter="[aeiou]" Click="CloseFilterRegexPopup" HorizontalAlignment="Stretch">
+                                        <Grid Margin="0,0,0,4" Width="335">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="105"/>
+                                                <ColumnDefinition Width="*"/>
+                                            </Grid.ColumnDefinitions>
+                                            <Border Grid.Column="0" Background="#F9F9F9" BorderBrush="#E0E0E0" BorderThickness="1" CornerRadius="4" Height="26" Margin="0,0,8,0">
+                                                <TextBlock Text="[aeiou]" HorizontalAlignment="Center" VerticalAlignment="Center" FontWeight="SemiBold" FontSize="10" Foreground="#111"/>
+                                            </Border>
+                                            <TextBlock Grid.Column="1" Text="Any single character in set" VerticalAlignment="Center" TextWrapping="Wrap" Foreground="#555" FontSize="10"/>
+                                        </Grid>
+                                    </Button>
+                                    <Button Command="{Binding InsertFilterRegexHelperCommand}" CommandParameter="[^0-9]" Click="CloseFilterRegexPopup" HorizontalAlignment="Stretch">
+                                        <Grid Margin="0,0,0,4" Width="335">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="105"/>
+                                                <ColumnDefinition Width="*"/>
+                                            </Grid.ColumnDefinitions>
+                                            <Border Grid.Column="0" Background="#F9F9F9" BorderBrush="#E0E0E0" BorderThickness="1" CornerRadius="4" Height="26" Margin="0,0,8,0">
+                                                <TextBlock Text="[^0-9]" HorizontalAlignment="Center" VerticalAlignment="Center" FontWeight="SemiBold" FontSize="10" Foreground="#111"/>
+                                            </Border>
+                                            <TextBlock Grid.Column="1" Text="Any character NOT in set" VerticalAlignment="Center" TextWrapping="Wrap" Foreground="#555" FontSize="10"/>
+                                        </Grid>
+                                    </Button>
+                                    <Button Command="{Binding InsertFilterRegexHelperCommand}" CommandParameter="^[A-Za-z]+$" Click="CloseFilterRegexPopup" HorizontalAlignment="Stretch">
+                                        <Grid Margin="0,0,0,4" Width="335">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="105"/>
+                                                <ColumnDefinition Width="*"/>
+                                            </Grid.ColumnDefinitions>
+                                            <Border Grid.Column="0" Background="#F9F9F9" BorderBrush="#E0E0E0" BorderThickness="1" CornerRadius="4" Height="26" Margin="0,0,8,0">
+                                                <TextBlock Text="^[A-Za-z]+$" HorizontalAlignment="Center" VerticalAlignment="Center" FontWeight="SemiBold" FontSize="9.5" Foreground="#111"/>
+                                            </Border>
+                                            <TextBlock Grid.Column="1" Text="Only letters (no numbers/symbols)" VerticalAlignment="Center" TextWrapping="Wrap" Foreground="#555" FontSize="10"/>
+                                        </Grid>
+                                    </Button>
+                                    <Button Command="{Binding InsertFilterRegexHelperCommand}" CommandParameter="^\d+$" Click="CloseFilterRegexPopup" HorizontalAlignment="Stretch">
+                                        <Grid Margin="0,0,0,4" Width="335">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="105"/>
+                                                <ColumnDefinition Width="*"/>
+                                            </Grid.ColumnDefinitions>
+                                            <Border Grid.Column="0" Background="#F9F9F9" BorderBrush="#E0E0E0" BorderThickness="1" CornerRadius="4" Height="26" Margin="0,0,8,0">
+                                                <TextBlock Text="^\d+$" HorizontalAlignment="Center" VerticalAlignment="Center" FontWeight="SemiBold" FontSize="10" Foreground="#111"/>
+                                            </Border>
+                                            <TextBlock Grid.Column="1" Text="Only digits (no letters/symbols)" VerticalAlignment="Center" TextWrapping="Wrap" Foreground="#555" FontSize="10"/>
+                                        </Grid>
+                                    </Button>
+
+                                    <!-- Category: Quantifiers &amp; Multipliers -->
+                                    <TextBlock Text="Quantifiers &amp; Multipliers" FontWeight="Bold" Foreground="#333" Margin="0,12,0,4" FontSize="11"/>
+                                    <Button Command="{Binding InsertFilterRegexHelperCommand}" CommandParameter="+" Click="CloseFilterRegexPopup" HorizontalAlignment="Stretch">
+                                        <Grid Margin="0,0,0,4" Width="335">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="105"/>
+                                                <ColumnDefinition Width="*"/>
+                                            </Grid.ColumnDefinitions>
+                                            <Border Grid.Column="0" Background="#F9F9F9" BorderBrush="#E0E0E0" BorderThickness="1" CornerRadius="4" Height="26" Margin="0,0,8,0">
+                                                <TextBlock Text="+" HorizontalAlignment="Center" VerticalAlignment="Center" FontWeight="SemiBold" FontSize="10" Foreground="#111"/>
+                                            </Border>
+                                            <TextBlock Grid.Column="1" Text="One or more occurrences" VerticalAlignment="Center" TextWrapping="Wrap" Foreground="#555" FontSize="10"/>
+                                        </Grid>
+                                    </Button>
+                                    <Button Command="{Binding InsertFilterRegexHelperCommand}" CommandParameter="?" Click="CloseFilterRegexPopup" HorizontalAlignment="Stretch">
+                                        <Grid Margin="0,0,0,4" Width="335">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="105"/>
+                                                <ColumnDefinition Width="*"/>
+                                            </Grid.ColumnDefinitions>
+                                            <Border Grid.Column="0" Background="#F9F9F9" BorderBrush="#E0E0E0" BorderThickness="1" CornerRadius="4" Height="26" Margin="0,0,8,0">
+                                                <TextBlock Text="?" HorizontalAlignment="Center" VerticalAlignment="Center" FontWeight="SemiBold" FontSize="10" Foreground="#111"/>
+                                            </Border>
+                                            <TextBlock Grid.Column="1" Text="Zero or one occurrence (optional)" VerticalAlignment="Center" TextWrapping="Wrap" Foreground="#555" FontSize="10"/>
+                                        </Grid>
+                                    </Button>
+                                    <Button Command="{Binding InsertFilterRegexHelperCommand}" CommandParameter="*" Click="CloseFilterRegexPopup" HorizontalAlignment="Stretch">
+                                        <Grid Margin="0,0,0,4" Width="335">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="105"/>
+                                                <ColumnDefinition Width="*"/>
+                                            </Grid.ColumnDefinitions>
+                                            <Border Grid.Column="0" Background="#F9F9F9" BorderBrush="#E0E0E0" BorderThickness="1" CornerRadius="4" Height="26" Margin="0,0,8,0">
+                                                <TextBlock Text="*" HorizontalAlignment="Center" VerticalAlignment="Center" FontWeight="SemiBold" FontSize="10" Foreground="#111"/>
+                                            </Border>
+                                            <TextBlock Grid.Column="1" Text="Zero or more occurrences" VerticalAlignment="Center" TextWrapping="Wrap" Foreground="#555" FontSize="10"/>
+                                        </Grid>
+                                    </Button>
+                                    <Button Command="{Binding InsertFilterRegexHelperCommand}" CommandParameter="\d{3}" Click="CloseFilterRegexPopup" HorizontalAlignment="Stretch">
+                                        <Grid Margin="0,0,0,4" Width="335">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="105"/>
+                                                <ColumnDefinition Width="*"/>
+                                            </Grid.ColumnDefinitions>
+                                            <Border Grid.Column="0" Background="#F9F9F9" BorderBrush="#E0E0E0" BorderThickness="1" CornerRadius="4" Height="26" Margin="0,0,8,0">
+                                                <TextBlock Text="\d{3}" HorizontalAlignment="Center" VerticalAlignment="Center" FontWeight="SemiBold" FontSize="10" Foreground="#111"/>
+                                            </Border>
+                                            <TextBlock Grid.Column="1" Text="Exactly 3 digits" VerticalAlignment="Center" TextWrapping="Wrap" Foreground="#555" FontSize="10"/>
+                                        </Grid>
+                                    </Button>
+
+                                    <!-- Category: Or &amp; Grouping -->
+                                    <TextBlock Text="Or &amp; Grouping" FontWeight="Bold" Foreground="#333" Margin="0,12,0,4" FontSize="11"/>
+                                    <Button Command="{Binding InsertFilterRegexHelperCommand}" CommandParameter="gato|perro" Click="CloseFilterRegexPopup" HorizontalAlignment="Stretch">
+                                        <Grid Margin="0,0,0,4" Width="335">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="105"/>
+                                                <ColumnDefinition Width="*"/>
+                                            </Grid.ColumnDefinitions>
+                                            <Border Grid.Column="0" Background="#F9F9F9" BorderBrush="#E0E0E0" BorderThickness="1" CornerRadius="4" Height="26" Margin="0,0,8,0">
+                                                <TextBlock Text="gato|perro" HorizontalAlignment="Center" VerticalAlignment="Center" FontWeight="SemiBold" FontSize="10" Foreground="#111"/>
+                                            </Border>
+                                            <TextBlock Grid.Column="1" Text="Matches 'gato' OR 'perro'" VerticalAlignment="Center" TextWrapping="Wrap" Foreground="#555" FontSize="10"/>
+                                        </Grid>
+                                    </Button>
+
+                                    <!-- Category: Not Contain (Negative Matching) -->
+                                    <TextBlock Text="Not Contain (Negative Matching)" FontWeight="Bold" Foreground="#333" Margin="0,12,0,4" FontSize="11"/>
+                                    <Button Command="{Binding InsertFilterRegexHelperCommand}" CommandParameter="^(?!.*text).*$" Click="CloseFilterRegexPopup" HorizontalAlignment="Stretch">
+                                        <Grid Margin="0,0,0,4" Width="335">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="105"/>
+                                                <ColumnDefinition Width="*"/>
+                                            </Grid.ColumnDefinitions>
+                                            <Border Grid.Column="0" Background="#F9F9F9" BorderBrush="#E0E0E0" BorderThickness="1" CornerRadius="4" Height="26" Margin="0,0,8,0">
+                                                <TextBlock Text="^(?!.*text).*$" HorizontalAlignment="Center" VerticalAlignment="Center" FontWeight="SemiBold" FontSize="9" Foreground="#111"/>
+                                            </Border>
+                                            <TextBlock Grid.Column="1" Text="Does not contain 'text' (matches everything else)" VerticalAlignment="Center" TextWrapping="Wrap" Foreground="#555" FontSize="10"/>
+                                        </Grid>
+                                    </Button>
+                                </StackPanel>
+                            </ScrollViewer>
+                        </Border>
+                    </Popup>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- ROW 1: BATCH FILES DATAGRID -->
+        <Border Grid.Row="1" Style="{StaticResource CardBorderStyle}">
+            <DataGrid ItemsSource="{Binding FilteredBatchFiles}" 
                       SelectedItem="{Binding SelectedBatchFile}"
                       AutoGenerateColumns="False" 
                       CanUserAddRows="False" 
                       CanUserDeleteRows="False"
                       CanUserResizeRows="False"
+                      CanUserResizeColumns="True"
                       HeadersVisibility="Column"
                       GridLinesVisibility="Horizontal"
                       HorizontalGridLinesBrush="#F1F5F9"
@@ -205,7 +650,12 @@
                       RowHeight="32"
                       RowHeaderWidth="0"
                       SelectionMode="Single"
-                      RowDetailsVisibilityMode="Visible">
+                      RowDetailsVisibilityMode="Visible"
+                      ColumnHeaderStyle="{StaticResource TableHeaderStyle}"
+                      ScrollViewer.CanContentScroll="False"
+                      ScrollViewer.HorizontalScrollBarVisibility="Visible"
+                      ScrollViewer.VerticalScrollBarVisibility="Visible"
+                      EnableRowVirtualization="True">
                 <DataGrid.RowStyle>
                     <Style TargetType="DataGridRow">
                         <Setter Property="Background" Value="White"/>
@@ -289,7 +739,7 @@
                     </DataGridTemplateColumn>
 
                     <!-- Col 1: Sheet Icon Header / File Type Icon in cell -->
-                    <DataGridTemplateColumn Width="36">
+                    <DataGridTemplateColumn Width="36" HeaderStyle="{StaticResource CenteredTableHeaderStyle}">
                         <DataGridTemplateColumn.Header>
                             <Image Source="pack://application:,,,/TablePlus;component/Resources/Icons/SheetHeader16.png"
                                    Width="15" Height="15" HorizontalAlignment="Center" VerticalAlignment="Center"
@@ -319,7 +769,7 @@
                     </DataGridTemplateColumn>
 
                     <!-- Col 3: Path (with Right-Click Context Menu) -->
-                    <DataGridTemplateColumn Header="Path" Width="*">
+                    <DataGridTemplateColumn Header="Path" Width="*" MinWidth="220">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
                                 <Border Background="Transparent" ContextMenu="{StaticResource PathContextMenu}">
@@ -336,8 +786,8 @@
             </DataGrid>
         </Border>
 
-        <!-- ROW 1: ERROR BANNER & PROGRESS -->
-        <StackPanel Grid.Row="1" Margin="0,6,0,0">
+        <!-- ROW 2: ERROR BANNER & PROGRESS -->
+        <StackPanel Grid.Row="2" Margin="0,6,0,0">
             <Border Background="#FEF2F2" BorderBrush="#FCA5A5" BorderThickness="1" CornerRadius="4" Padding="8,4" Margin="0,0,0,4"
                     Visibility="{Binding HasError, Converter={StaticResource BoolToVis}}">
                 <TextBlock Text="{Binding ErrorMessage}" Foreground="#DC2626" FontSize="11" TextWrapping="Wrap"/>
@@ -347,8 +797,8 @@
                          Visibility="{Binding IsBusy, Converter={StaticResource BoolToVis}}"/>
         </StackPanel>
 
-        <!-- ROW 2: ACTION FOOTER -->
-        <Border Grid.Row="2" BorderBrush="{StaticResource CardBorderBrush}" BorderThickness="0,1,0,0" Padding="0,8,0,0" Margin="0,8,0,0">
+        <!-- ROW 3: ACTION FOOTER -->
+        <Border Grid.Row="3" BorderBrush="{StaticResource CardBorderBrush}" BorderThickness="0,1,0,0" Padding="0,8,0,0" Margin="0,8,0,0">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto"/>
