@@ -362,6 +362,7 @@ public partial class MainWindowViewModel : ObservableObject
 
         RefreshFilter();
         BusyStatusMessage = $"Filter applied. {_matchedItems.Count} of {Tables.Count} tables matched.";
+        LoggerService.LogInfo($"[MainWindowViewModel] Filter applied: '{searchText}' (Regex={FilterUseRegex}, NamesOnly={FilterOnlyNames}, UseOr={FilterUseOr}) -> Matched {_matchedItems.Count} of {Tables.Count} tables.");
     }
 
     public IRelayCommand FilterTreeCommand => ApplyFilterCommand;
@@ -506,6 +507,7 @@ public partial class MainWindowViewModel : ObservableObject
                 item.Config.BlackAndWhiteMode = item.IsBlackAndWhite;
                 item.Status = TableSyncStatus.Modified;
                 item.StatusTooltip = "Black & White mode changed. Synchronize to apply.";
+                LoggerService.LogInfo($"[MainWindowViewModel] Table '{item.ViewName}' B&W mode toggled to: {item.IsBlackAndWhite}");
                 UpdateCounters();
             }
         }
@@ -525,6 +527,7 @@ public partial class MainWindowViewModel : ObservableObject
                     tx.Start();
                     _schemaService.StampTableMetadata(view, item.Config, item.Config.SourceFilePath);
                     tx.Commit();
+                    LoggerService.LogInfo($"[MainWindowViewModel] Table '{item.ViewName}' AutoSync setting updated in Revit to: {item.IsAutoSyncEnabled}");
                 }
             }
         }
@@ -547,6 +550,7 @@ public partial class MainWindowViewModel : ObservableObject
                         view.Scale = item.ViewScale;
                         _schemaService.StampTableMetadata(view, item.Config, item.Config.SourceFilePath);
                         tx.Commit();
+                        LoggerService.LogInfo($"[MainWindowViewModel] Table '{item.ViewName}' scale updated in Revit to: 1:{item.ViewScale}");
                     }
                     catch (Exception ex)
                     {
@@ -567,6 +571,7 @@ public partial class MainWindowViewModel : ObservableObject
                 };
                 item.Status = TableSyncStatus.Modified;
                 item.StatusTooltip = $"Region mode changed to '{item.SelectedRegionMode}'. Synchronize to apply.";
+                LoggerService.LogInfo($"[MainWindowViewModel] Table '{item.ViewName}' RegionMode set to: '{item.SelectedRegionMode}'");
                 UpdateCounters();
             }
         }
@@ -577,6 +582,7 @@ public partial class MainWindowViewModel : ObservableObject
                 item.Config.ImportType = item.ImportType;
                 item.Status = TableSyncStatus.Modified;
                 item.StatusTooltip = $"Import type changed to '{item.ImportType}'. Synchronize to apply.";
+                LoggerService.LogInfo($"[MainWindowViewModel] Table '{item.ViewName}' ImportType set to: '{item.ImportType}'");
                 UpdateCounters();
             }
         }
@@ -590,6 +596,7 @@ public partial class MainWindowViewModel : ObservableObject
             IsBusy = true;
             BusyStatusMessage = "Discovering linked tables in Revit document...";
             ProgressValue = 10;
+            LoggerService.LogInfo($"[MainWindowViewModel] RefreshInventoryAsync started for document '{_doc.Title}'...");
 
             var discovered = await _registryService.DiscoverTablesAsync(_doc);
 
@@ -620,10 +627,12 @@ public partial class MainWindowViewModel : ObservableObject
 
             BusyStatusMessage = $"Discovered {Tables.Count} table(s).";
             ProgressValue = 100;
+            LoggerService.LogInfo($"[MainWindowViewModel] RefreshInventoryAsync finished: {Tables.Count} table(s) registered in dashboard (UpToDate={UpToDateCount}, Modified={ModifiedCount}, Missing={FileNotFoundCount}).");
         }
         catch (Exception ex)
         {
             BusyStatusMessage = $"Discovery failed: {ex.Message}";
+            LoggerService.LogError("[MainWindowViewModel] RefreshInventoryAsync failed", ex);
         }
         finally
         {
@@ -733,6 +742,7 @@ public partial class MainWindowViewModel : ObservableObject
         {
             IsBusy = true;
             ProgressValue = 0;
+            LoggerService.LogInfo($"[MainWindowViewModel] SyncSelectedAsync started for {targets.Count} selected table(s)...");
 
             using var tg = new TransactionGroup(_doc, "TablePlus: Batch Sync Tables");
             tg.Start();
@@ -745,6 +755,7 @@ public partial class MainWindowViewModel : ObservableObject
                 var item = targets[i];
                 BusyStatusMessage = $"Synchronizing table {i + 1} of {targets.Count}: {item.ViewName}...";
                 ProgressValue = (double)(i + 1) / targets.Count * 100.0;
+                LoggerService.LogInfo($"[MainWindowViewModel] Synchronizing table {i + 1}/{targets.Count}: '{item.ViewName}' from '{item.SourceFileName}' (Sheet: '{item.SelectedSheetName}', Region: '{item.CellRangeAddress}')...");
 
                 try
                 {
@@ -753,6 +764,7 @@ public partial class MainWindowViewModel : ObservableObject
                         item.Status = TableSyncStatus.FileNotFound;
                         item.StatusTooltip = $"Source file missing: {item.SourceFilePath}";
                         errorCount++;
+                        LoggerService.LogWarning($"[MainWindowViewModel] Table '{item.ViewName}' skipped: source file does not exist ('{item.SourceFilePath}')");
                         continue;
                     }
 
@@ -781,6 +793,7 @@ public partial class MainWindowViewModel : ObservableObject
                         item.Status = TableSyncStatus.Unlinked;
                         item.StatusTooltip = "Revit view no longer exists.";
                         errorCount++;
+                        LoggerService.LogWarning($"[MainWindowViewModel] Table '{item.ViewName}' view {item.ViewId} was deleted in Revit.");
                         continue;
                     }
 
@@ -794,11 +807,13 @@ public partial class MainWindowViewModel : ObservableObject
                     item.Status = TableSyncStatus.UpToDate;
                     item.StatusTooltip = $"Synchronized successfully on {DateTime.Now:g}";
                     successCount++;
+                    LoggerService.LogInfo($"[MainWindowViewModel] Table '{item.ViewName}' synchronized successfully ({cells.Count} cells, {mergedRanges.Count} merges).");
                 }
                 catch (Exception ex)
                 {
                     errorCount++;
                     item.StatusTooltip = $"Sync failed: {ex.Message}";
+                    LoggerService.LogError($"[MainWindowViewModel] Error synchronizing table '{item.ViewName}'", ex);
                 }
             }
 
@@ -806,10 +821,12 @@ public partial class MainWindowViewModel : ObservableObject
             UpdateCounters();
 
             BusyStatusMessage = $"Synchronization complete. {successCount} succeeded, {errorCount} failed.";
+            LoggerService.LogInfo($"[MainWindowViewModel] Batch sync finished. Succeeded: {successCount}, Failed: {errorCount}.");
         }
         catch (Exception ex)
         {
             BusyStatusMessage = $"Batch sync error: {ex.Message}";
+            LoggerService.LogError("[MainWindowViewModel] Batch sync encountered critical error", ex);
         }
         finally
         {
@@ -831,11 +848,13 @@ public partial class MainWindowViewModel : ObservableObject
         {
             try
             {
+                LoggerService.LogInfo($"[MainWindowViewModel] Activating view '{view.Name}' (Id: {view.Id}) in Revit UI...");
                 _uiDoc.ActiveView = view;
             }
             catch (Exception ex)
             {
                 TaskDialog.Show("TablePlus", $"Could not switch active view: {ex.Message}");
+                LoggerService.LogError($"[MainWindowViewModel] Error activating view '{view.Name}'", ex);
             }
         }
     }
@@ -848,17 +867,25 @@ public partial class MainWindowViewModel : ObservableObject
 
         var confirmDialog = new ConfirmTableDeleteWindow(targets);
         var result = confirmDialog.ShowDialog();
-        if (result != true) return;
+        if (result != true)
+        {
+            LoggerService.LogInfo("[MainWindowViewModel] Table deletion cancelled by user.");
+            return;
+        }
+
+        LoggerService.LogInfo($"[MainWindowViewModel] Deleting {targets.Count} selected table(s) from document...");
 
         using var tx = new Transaction(_doc, "TablePlus: Delete Table Views");
         tx.Start();
 
         foreach (var item in targets)
         {
+            LoggerService.LogInfo($"[MainWindowViewModel] Deleting table '{item.ViewName}' (ViewId: {item.ViewId})...");
             _registryService.DeleteOrUnlinkTable(_doc, item, deleteView: true);
         }
 
         tx.Commit();
+        LoggerService.LogInfo($"[MainWindowViewModel] Successfully deleted {targets.Count} table(s). Refreshing inventory...");
 
         await RefreshInventoryAsync();
     }
@@ -910,11 +937,13 @@ public partial class MainWindowViewModel : ObservableObject
         {
             IsBusy = true;
             BusyStatusMessage = $"Synchronizing {item.ViewName}...";
+            LoggerService.LogInfo($"[MainWindowViewModel] SyncSingleTableAsync started for table '{item.ViewName}' from '{item.SourceFileName}' (Sheet: '{item.SelectedSheetName}')...");
 
             if (!File.Exists(item.SourceFilePath))
             {
                 item.Status = TableSyncStatus.FileNotFound;
                 item.StatusTooltip = $"Source file missing: {item.SourceFilePath}";
+                LoggerService.LogWarning($"[MainWindowViewModel] Table '{item.ViewName}' source file not found: '{item.SourceFilePath}'");
                 return;
             }
 
@@ -941,6 +970,7 @@ public partial class MainWindowViewModel : ObservableObject
             {
                 item.Status = TableSyncStatus.Unlinked;
                 item.StatusTooltip = "Revit view no longer exists.";
+                LoggerService.LogWarning($"[MainWindowViewModel] Table '{item.ViewName}' view {item.ViewId} was deleted in Revit.");
                 return;
             }
 
@@ -953,11 +983,13 @@ public partial class MainWindowViewModel : ObservableObject
             item.Status = TableSyncStatus.UpToDate;
             item.StatusTooltip = $"Synchronized successfully on {DateTime.Now:g}";
             BusyStatusMessage = $"Table '{item.ViewName}' synchronized successfully.";
+            LoggerService.LogInfo($"[MainWindowViewModel] Single table '{item.ViewName}' synchronized successfully ({cells.Count} cells, {mergedRanges.Count} merges).");
         }
         catch (Exception ex)
         {
             item.StatusTooltip = $"Sync failed: {ex.Message}";
             BusyStatusMessage = $"Sync failed: {ex.Message}";
+            LoggerService.LogError($"[MainWindowViewModel] SyncSingleTableAsync failed for '{item.ViewName}'", ex);
         }
         finally
         {
@@ -997,6 +1029,7 @@ public partial class MainWindowViewModel : ObservableObject
 
             try
             {
+                LoggerService.LogInfo($"[MainWindowViewModel] Renaming view '{view.Name}' (Id: {viewId}) to '{newName}'...");
                 using var tx = new Transaction(_doc, "TablePlus: Rename Table View");
                 tx.Start();
                 view.Name = newName;
@@ -1004,6 +1037,7 @@ public partial class MainWindowViewModel : ObservableObject
                 _schemaService.StampTableMetadata(view, item.Config, item.Config.SourceFilePath);
                 tx.Commit();
                 item.ViewName = newName;
+                LoggerService.LogInfo($"[MainWindowViewModel] View renamed successfully to '{newName}'.");
             }
             catch (Exception ex)
             {

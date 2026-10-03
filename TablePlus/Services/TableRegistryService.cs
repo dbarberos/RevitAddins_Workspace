@@ -26,6 +26,8 @@ public class TableRegistryService : ITableRegistryService
     {
         if (doc == null) return [];
 
+        LoggerService.LogInfo($"[TableRegistryService] DiscoverTablesAsync started for document '{doc.Title}'.");
+
         var discoveredItems = new List<TableItemModel>();
 
         // 1. Build ViewId -> Sheet mapping from Viewports and ScheduleSheetInstances
@@ -37,6 +39,8 @@ public class TableRegistryService : ITableRegistryService
             .Cast<View>()
             .Where(v => !v.IsTemplate && (v.ViewType == ViewType.DraftingView || v.ViewType == ViewType.Legend || v.ViewType == ViewType.Schedule))
             .ToList();
+
+        LoggerService.LogInfo($"[TableRegistryService] Queried {candidateViews.Count} candidate views (Drafting, Legend, Schedule) in Revit document.");
 
         foreach (var view in candidateViews)
         {
@@ -97,8 +101,10 @@ public class TableRegistryService : ITableRegistryService
             await RefreshItemStatusAsync(item).ConfigureAwait(false);
 
             discoveredItems.Add(item);
+            LoggerService.LogInfo($"[TableRegistryService] Discovered table view '{view.Name}' (ID {viewIdVal}): Source='{fileName}', Sheet='{config.SelectedSheetName}', Range='{item.CellRangeAddress}', Placed='{item.SheetName}'.");
         }
 
+        LoggerService.LogInfo($"[TableRegistryService] DiscoverTablesAsync completed: {discoveredItems.Count} TablePlus table(s) registered in memory.");
         return discoveredItems;
     }
 
@@ -256,9 +262,12 @@ public class TableRegistryService : ITableRegistryService
         var view = doc.GetElement(elementId) as View;
         if (view == null) return false;
 
+        LoggerService.LogInfo($"[TableRegistryService] DeleteOrUnlinkTable: View='{item.ViewName}' (ID {item.ViewId}), deleteView={deleteView}");
+
         if (deleteView)
         {
             doc.Delete(elementId);
+            LoggerService.LogInfo($"[TableRegistryService] Deleted Revit view '{view.Name}' (ID {elementId}) from document.");
             return true;
         }
 
@@ -266,6 +275,7 @@ public class TableRegistryService : ITableRegistryService
         _schemaService.RemoveTableMetadata(view);
         item.Status = TableSyncStatus.Unlinked;
         item.StatusTooltip = "Metadata unlinked from Revit view.";
+        LoggerService.LogInfo($"[TableRegistryService] Unlinked TablePlus Extensible Storage metadata schema from Revit view '{view.Name}' (ID {elementId}).");
         return true;
     }
 }

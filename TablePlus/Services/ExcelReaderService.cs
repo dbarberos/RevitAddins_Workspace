@@ -67,14 +67,31 @@ public class ExcelReaderService : IExcelReaderService
             // Collect Named Ranges defined in this worksheet or globally targeting this sheet
             foreach (var nr in workbook.DefinedNames)
             {
+                if (nr.Name.StartsWith("_xlnm.", StringComparison.OrdinalIgnoreCase) ||
+                    nr.Name.Equals("Print_Area", StringComparison.OrdinalIgnoreCase) ||
+                    nr.Name.Equals("Print_Titles", StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
                 if (nr.Ranges.Any(r => r.Worksheet?.Name.Equals(ws.Name, StringComparison.OrdinalIgnoreCase) == true))
                 {
-                    sheetModel.NamedRanges.Add(nr.Name);
+                    if (!sheetModel.NamedRanges.Contains(nr.Name))
+                    {
+                        sheetModel.NamedRanges.Add(nr.Name);
+                    }
                 }
             }
 
             foreach (var nr in ws.DefinedNames)
             {
+                if (nr.Name.StartsWith("_xlnm.", StringComparison.OrdinalIgnoreCase) ||
+                    nr.Name.Equals("Print_Area", StringComparison.OrdinalIgnoreCase) ||
+                    nr.Name.Equals("Print_Titles", StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
                 if (!sheetModel.NamedRanges.Contains(nr.Name))
                 {
                     sheetModel.NamedRanges.Add(nr.Name);
@@ -95,6 +112,32 @@ public class ExcelReaderService : IExcelReaderService
             catch
             {
                 // Silently ignore if page setup print areas are not readable
+            }
+
+            // Fallback: check if defined names has a Print_Area for this sheet
+            if (sheetModel.PrintAreas.Count == 0)
+            {
+                var paNamed = ws.DefinedNames.FirstOrDefault(n => n.Name.Equals("Print_Area", StringComparison.OrdinalIgnoreCase) || n.Name.EndsWith("Print_Area", StringComparison.OrdinalIgnoreCase))
+                              ?? workbook.DefinedNames.FirstOrDefault(n => (n.Name.Equals("Print_Area", StringComparison.OrdinalIgnoreCase) || n.Name.EndsWith("Print_Area", StringComparison.OrdinalIgnoreCase))
+                                                                           && n.Ranges.Any(r => r.Worksheet?.Name.Equals(ws.Name, StringComparison.OrdinalIgnoreCase) == true));
+                if (paNamed != null)
+                {
+                    try
+                    {
+                        var firstRange = paNamed.Ranges.FirstOrDefault(r => r.Worksheet?.Name.Equals(ws.Name, StringComparison.OrdinalIgnoreCase) == true) ?? paNamed.Ranges.FirstOrDefault();
+                        if (firstRange != null)
+                        {
+                            var addr = firstRange.RangeAddress.ToStringRelative();
+                            if (!string.IsNullOrWhiteSpace(addr))
+                            {
+                                sheetModel.PrintAreas.Add($"Print Area ({addr})");
+                            }
+                        }
+                    }
+                    catch
+                    {
+                    }
+                }
             }
 
             workbookModel.Sheets.Add(sheetModel);

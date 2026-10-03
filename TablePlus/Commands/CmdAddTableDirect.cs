@@ -36,7 +36,7 @@ public class CmdAddTableDirect : ExternalCommand
 
         try
         {
-            LoggerService.LogInfo("CmdAddTableDirect: Opening TableSourceSelectionView from command...");
+            LoggerService.LogInfo($"CmdAddTableDirect: Starting linked table wizard in document '{doc.Title}'...");
 
             var sourcePickerVm = new TableSourceSelectionViewModel();
             var sourcePickerView = new TableSourceSelectionView(sourcePickerVm);
@@ -49,8 +49,11 @@ public class CmdAddTableDirect : ExternalCommand
             var pickerResult = sourcePickerView.ShowDialog();
             if (pickerResult != true || sourcePickerVm.ResultFilePaths.Count == 0)
             {
+                LoggerService.LogInfo("CmdAddTableDirect: Source selection cancelled by user or no files selected.");
                 return;
             }
+
+            LoggerService.LogInfo($"CmdAddTableDirect: User selected {sourcePickerVm.ResultFilePaths.Count} file(s). Initializing TableImportViewModel...");
 
             var excelService = new ExcelReaderService();
             var schemaService = new SchemaService();
@@ -72,7 +75,11 @@ public class CmdAddTableDirect : ExternalCommand
             var result = importView.ShowDialog();
             if (result == true || importVm.CreatedViews.Count > 0 || importVm.CreatedView != null)
             {
-                LoggerService.LogInfo($"CmdAddTableDirect: Table(s) successfully created: '{importVm.CreatedViews.Count}' tables.");
+                LoggerService.LogInfo($"CmdAddTableDirect: Import completed. Created: {importVm.CreatedViews.Count} table view(s).");
+            }
+            else
+            {
+                LoggerService.LogInfo("CmdAddTableDirect: Import dialog closed without creating tables.");
             }
         }
         catch (Exception ex)

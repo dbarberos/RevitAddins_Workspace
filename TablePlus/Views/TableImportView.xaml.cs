@@ -2,6 +2,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Interop;
 using TablePlus.Models;
+using TablePlus.Services;
 using TablePlus.ViewModels;
 
 namespace TablePlus.Views;
@@ -94,6 +95,24 @@ public partial class TableImportView : Window
     private void CloseFilterRegexPopup(object sender, RoutedEventArgs e)
     {
         BtnFilterRegexHelper.IsChecked = false;
+    }
+
+    private void ChevronButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is FrameworkElement fe && fe.DataContext is TableBatchFileModel fileModel)
+        {
+            LoggerService.LogInfo($"[TableImportView] ChevronButton_Click caught for file '{fileModel.FileName}'. Sheets: {fileModel.Sheets.Count}, HasSheets: {fileModel.HasSheets}, Current IsExpanded: {fileModel.IsExpanded}");
+            fileModel.ToggleExpand();
+            e.Handled = true;
+        }
+    }
+
+    private void SheetRow_PreviewMouseLeftButtonDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
+    {
+        if (sender is FrameworkElement fe && fe.DataContext is TableBatchSheetItemModel sheetModel)
+        {
+            _viewModel.SelectSheetRow(sheetModel);
+        }
     }
 }
 

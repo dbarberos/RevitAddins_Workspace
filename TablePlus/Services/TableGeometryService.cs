@@ -28,6 +28,8 @@ public class TableGeometryService : ITableGeometryService
         if (config == null) throw new ArgumentNullException(nameof(config));
         if (cells == null || cells.Count == 0) throw new ArgumentException("Cell list cannot be empty.", nameof(cells));
 
+        LoggerService.LogInfo($"[TableGeometryService] GenerateTable started: ViewName='{config.ViewName}', ViewType={config.TargetViewType}, Scale=1:{config.ViewScale}, Cells={cells.Count}, MergedRanges={mergedRanges.Count}");
+
         using var tx = new Transaction(doc, $"TablePlus: Import {config.ViewName}");
         var failureOpts = tx.GetFailureHandlingOptions();
         failureOpts.SetFailuresPreprocessor(new WarningSwallower());
@@ -37,16 +39,20 @@ public class TableGeometryService : ITableGeometryService
 
         // 1. Create target view
         var view = CreateTargetView(doc, config);
+        LoggerService.LogInfo($"[TableGeometryService] Created target view '{view.Name}' (ID {view.Id}, Family={view.ViewType}).");
 
         // 2. Render table contents
         RenderTableContents(doc, view, config, cells, mergedRanges);
+        LoggerService.LogInfo($"[TableGeometryService] Rendered 2D geometry elements (fills, lines, text notes) into '{view.Name}'.");
 
         // 3. Stamp Extensible Storage Metadata for tracking and future sync
         _schemaService.StampTableMetadata(view, config, config.SourceFilePath);
+        LoggerService.LogInfo($"[TableGeometryService] Stamped Extensible Storage metadata onto view '{view.Name}'.");
 
         doc.Regenerate();
         tx.Commit();
 
+        LoggerService.LogInfo($"[TableGeometryService] GenerateTable transaction committed successfully for view '{view.Name}'.");
         return view;
     }
 
@@ -86,6 +92,8 @@ public class TableGeometryService : ITableGeometryService
         IList<ExcelCellModel> cells,
         IList<MergedCellRange> mergedRanges)
     {
+        LoggerService.LogInfo($"[TableGeometryService] ExecuteUpdateTableInView started for view '{targetView.Name}' (ID {targetView.Id}): Cells={cells.Count}, Scale=1:{config.ViewScale}");
+
         // 1. Clean out existing 2D detail elements in targetView
         var elementsToDelete = new FilteredElementCollector(doc, targetView.Id)
             .WherePasses(new ElementMulticlassFilter(new List<Type>
@@ -100,6 +108,7 @@ public class TableGeometryService : ITableGeometryService
         if (elementsToDelete.Count > 0)
         {
             doc.Delete(elementsToDelete);
+            LoggerService.LogInfo($"[TableGeometryService] Purged {elementsToDelete.Count} obsolete 2D elements from view '{targetView.Name}'.");
         }
 
         // 2. Update view scale
@@ -107,9 +116,11 @@ public class TableGeometryService : ITableGeometryService
 
         // 3. Re-render table contents
         RenderTableContents(doc, targetView, config, cells, mergedRanges);
+        LoggerService.LogInfo($"[TableGeometryService] Re-rendered 2D geometry elements in view '{targetView.Name}'.");
 
         // 4. Update Extensible Storage metadata
         _schemaService.StampTableMetadata(targetView, config, config.SourceFilePath);
+        LoggerService.LogInfo($"[TableGeometryService] Updated Extensible Storage metadata timestamp on view '{targetView.Name}'.");
 
         doc.Regenerate();
     }

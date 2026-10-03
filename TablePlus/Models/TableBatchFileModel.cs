@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using TablePlus.Services;
 
 namespace TablePlus.Models;
 
@@ -37,6 +38,11 @@ public partial class TableBatchFileModel : ObservableObject
     [ObservableProperty]
     private bool _isExpanded;
 
+    partial void OnIsExpandedChanged(bool value)
+    {
+        LoggerService.LogInfo($"[TableBatchFileModel] '{FileName}' IsExpanded property changed -> {value}");
+    }
+
     [ObservableProperty]
     private ObservableCollection<TableBatchSheetItemModel> _sheets = new();
 
@@ -44,6 +50,35 @@ public partial class TableBatchFileModel : ObservableObject
     private int _viewsCount;
 
     public bool HasMultipleSheets => Sheets.Count > 1;
+    public bool HasSheets => Sheets.Count > 0;
+
+    /// <summary>
+    /// Tri-state selection for "All worksheets" header row.
+    /// Returns true if all sheets are selected, false if none are selected, null if partially selected.
+    /// </summary>
+    public bool? AreAllWorksheetsSelected
+    {
+        get
+        {
+            if (Sheets.Count == 0) return false;
+            var selectedCount = Sheets.Count(s => s.IsSelected);
+            if (selectedCount == Sheets.Count) return true;
+            if (selectedCount == 0) return false;
+            return null;
+        }
+        set
+        {
+            var selectAll = value ?? true;
+            LoggerService.LogInfo($"[TableBatchFileModel] AreAllWorksheetsSelected set to {selectAll} for '{FileName}'");
+            foreach (var sheet in Sheets)
+            {
+                sheet.IsSelected = selectAll;
+            }
+            UpdateViewsCount();
+            OnPropertyChanged(nameof(AreAllWorksheetsSelected));
+            _onStateChanged?.Invoke();
+        }
+    }
 
     public string FileTypeIconUri => SourceType switch
     {
@@ -99,14 +134,22 @@ public partial class TableBatchFileModel : ObservableObject
     {
         ViewsCount = Sheets.Count(s => s.IsSelected);
         OnPropertyChanged(nameof(HasMultipleSheets));
+        OnPropertyChanged(nameof(HasSheets));
+        OnPropertyChanged(nameof(AreAllWorksheetsSelected));
     }
 
     [RelayCommand]
     public void ToggleExpand()
     {
-        if (HasMultipleSheets)
+        LoggerService.LogInfo($"[TableBatchFileModel] ToggleExpand command received for '{FileName}'. HasSheets: {HasSheets}, Sheets.Count: {Sheets.Count}, Previous IsExpanded: {IsExpanded}");
+        if (HasSheets)
         {
             IsExpanded = !IsExpanded;
+            LoggerService.LogInfo($"[TableBatchFileModel] ToggleExpand finished for '{FileName}'. New IsExpanded: {IsExpanded}");
+        }
+        else
+        {
+            LoggerService.LogWarning($"[TableBatchFileModel] ToggleExpand skipped for '{FileName}': HasSheets is false.");
         }
     }
 

@@ -165,6 +165,7 @@ public partial class TableSourceSelectionViewModel : ObservableObject
             if (dialogResult == true && dialog.FileNames.Length > 0)
             {
                 ResultFilePaths = dialog.FileNames.ToList();
+                LoggerService.LogInfo($"[TableSourceSelectionViewModel] Selected {ResultFilePaths.Count} file(s) via File Explorer. IsRelativePath={IsRelativePath}");
                 RequestClose?.Invoke();
             }
         }
@@ -186,6 +187,7 @@ public partial class TableSourceSelectionViewModel : ObservableObject
             if (result == true && browserVm.DownloadedFilePaths.Count > 0)
             {
                 ResultFilePaths = browserVm.DownloadedFilePaths.ToList();
+                LoggerService.LogInfo($"[TableSourceSelectionViewModel] Downloaded/selected {ResultFilePaths.Count} file(s) from cloud source '{cloudModel.Name}'.");
                 RequestClose?.Invoke();
             }
         }

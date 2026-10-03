@@ -72,7 +72,7 @@ public partial class TableImportViewModel : ObservableObject
         SelectedPages = "1";
 
         AvailableViewTypes = new ObservableCollection<TargetViewType> { TargetViewType.DraftingView, TargetViewType.LegendView, TargetViewType.ScheduleView };
-        SelectedViewType = TargetViewType.DraftingView;
+        SelectedViewType = TargetViewType.LegendView;
 
         AvailableRegionModes = new ObservableCollection<string> { "Entire Worksheet", "Named Range", "Custom Range" };
         SelectedRegionMode = "Entire Worksheet";
@@ -303,6 +303,17 @@ public partial class TableImportViewModel : ObservableObject
 
     [ObservableProperty]
     private TableBatchFileModel? _selectedBatchFile;
+
+    partial void OnSelectedBatchFileChanged(TableBatchFileModel? value)
+    {
+        if (value != null && value.Sheets.Count > 0)
+        {
+            if (SelectedSheetRow == null || SelectedSheetRow.ParentFile != value)
+            {
+                SelectSheetRow(value.Sheets[0]);
+            }
+        }
+    }
 
     [ObservableProperty]
     private ObservableCollection<TableBatchImportItemModel> _batchItems = new();
@@ -829,6 +840,7 @@ public partial class TableImportViewModel : ObservableObject
             ProgressPercent = 25;
 
             var fullPath = Path.GetFullPath(path);
+            LoggerService.LogInfo($"[TableImportViewModel] Loading file: '{fullPath}'");
             if (!File.Exists(fullPath))
             {
                 throw new FileNotFoundException($"The specified file does not exist: {fullPath}");
@@ -859,6 +871,7 @@ public partial class TableImportViewModel : ObservableObject
             IsFileLoaded = true;
             StatusMessage = $"Workbook loaded successfully: {workbookModel.Sheets.Count} sheet(s) found.";
             ProgressPercent = 100;
+            LoggerService.LogInfo($"[TableImportViewModel] Successfully inspected '{FileName}': {workbookModel.Sheets.Count} sheet(s) loaded into UI.");
         }
         catch (IOException ioEx)
         {
@@ -866,6 +879,7 @@ public partial class TableImportViewModel : ObservableObject
             ErrorMessage = $"File access error: {ioEx.Message}. If open in Microsoft Excel, please save and close it first.";
             StatusMessage = "File loading failed.";
             IsFileLoaded = false;
+            LoggerService.LogWarning($"[TableImportViewModel] IOException loading '{path}': {ioEx.Message}");
         }
         catch (Exception ex)
         {
@@ -873,6 +887,7 @@ public partial class TableImportViewModel : ObservableObject
             ErrorMessage = $"Failed to parse Excel workbook: {ex.Message}";
             StatusMessage = "File loading failed.";
             IsFileLoaded = false;
+            LoggerService.LogError($"[TableImportViewModel] Failed to parse workbook '{path}': {ex.Message}");
         }
         finally
         {
@@ -910,6 +925,8 @@ public partial class TableImportViewModel : ObservableObject
             var sheetName = SelectedWorksheet ?? (Worksheets.Count > 0 ? Worksheets[0] : "Sheet1");
             var filePath = FilePath;
 
+            LoggerService.LogInfo($"[TableImportViewModel] ImportTableAsync started: File='{Path.GetFileName(filePath)}', Sheet='{sheetName}', RangeMode={RangeMode}, RangeAddress='{rangeAddress}', ViewType={SelectedViewType}, Scale=1:{SelectedScale}, Copies={NumberOfCopies}");
+
             // Extract cells asynchronously to prevent UI freeze
             var (cells, mergedRanges) = await Task.Run(() =>
             {
@@ -917,6 +934,8 @@ public partial class TableImportViewModel : ObservableObject
                 var extractedMerges = _excelReaderService.ExtractMergedCells(filePath, sheetName);
                 return (extractedCells, extractedMerges);
             });
+
+            LoggerService.LogInfo($"[TableImportViewModel] Extracted {cells.Count} cells and {mergedRanges.Count} merged ranges from '{sheetName}'.");
 
             if (cells.Count == 0)
             {
@@ -954,6 +973,8 @@ public partial class TableImportViewModel : ObservableObject
                     targetName = ViewName.Trim();
                 }
 
+                LoggerService.LogInfo($"[TableImportViewModel] Generating table copy {i}/{totalCopies} with view name '{targetName}'...");
+
                 var config = new TableImportConfig
                 {
                     SourceFilePath = filePath,
@@ -981,6 +1002,7 @@ public partial class TableImportViewModel : ObservableObject
                 {
                     CreatedViews.Add(v);
                     CreatedView = v;
+                    LoggerService.LogInfo($"[TableImportViewModel] Created Revit view '{v.Name}' (ID {v.Id}).");
                 }
             }
 
@@ -988,6 +1010,7 @@ public partial class TableImportViewModel : ObservableObject
                 ? $"{totalCopies} tables created successfully!"
                 : "Table created successfully!";
             ProgressPercent = 100;
+            LoggerService.LogInfo($"[TableImportViewModel] ImportTableAsync completed: {CreatedViews.Count} view(s) created in Revit.");
 
             RequestClose?.Invoke();
         }
@@ -996,6 +1019,7 @@ public partial class TableImportViewModel : ObservableObject
             HasError = true;
             ErrorMessage = $"Import failed: {ex.Message}";
             StatusMessage = "Table import encountered an error.";
+            LoggerService.LogError($"[TableImportViewModel] ImportTableAsync failed: {ex.Message}");
         }
         finally
         {
@@ -1059,6 +1083,8 @@ public partial class TableImportViewModel : ObservableObject
                     {
                         var sheetModel = new TableBatchSheetItemModel(fileModel, s.Name);
                         sheetModel.AvailableRegions.Clear();
+
+                        // 1. Printable Areas (Entire Worksheet & Page Setup Print Areas)
                         sheetModel.AvailableRegions.Add("Entire Worksheet");
 
                         foreach (var pa in s.PrintAreas)
@@ -1067,10 +1093,22 @@ public partial class TableImportViewModel : ObservableObject
                                 sheetModel.AvailableRegions.Add(pa);
                         }
 
-                        foreach (var nr in s.NamedRanges)
+                        // 2. Named Ranges (Regions) separated by a dividing line
+                        var validNamedRanges = s.NamedRanges
+                            .Where(nr => !nr.StartsWith("_xlnm.", StringComparison.OrdinalIgnoreCase) &&
+                                         !nr.Equals("Print_Area", StringComparison.OrdinalIgnoreCase) &&
+                                         !nr.Equals("Print_Titles", StringComparison.OrdinalIgnoreCase))
+                            .Distinct(StringComparer.OrdinalIgnoreCase)
+                            .ToList();
+
+                        if (validNamedRanges.Count > 0)
                         {
-                            if (!sheetModel.AvailableRegions.Contains(nr))
-                                sheetModel.AvailableRegions.Add(nr);
+                            sheetModel.AvailableRegions.Add(TableBatchSheetItemModel.SeparatorLine);
+                            foreach (var nr in validNamedRanges)
+                            {
+                                if (!sheetModel.AvailableRegions.Contains(nr))
+                                    sheetModel.AvailableRegions.Add(nr);
+                            }
                         }
 
                         sheetModel.SelectedRegion = sheetModel.AvailableRegions[0];
@@ -1110,12 +1148,18 @@ public partial class TableImportViewModel : ObservableObject
             }
 
             fileModel.UpdateViewsCount();
+            LoggerService.LogInfo($"[TableImportViewModel] Added batch file '{fileModel.FileName}': Sheets={fileModel.Sheets.Count}, HasSheets={fileModel.HasSheets}, Initial IsExpanded={fileModel.IsExpanded}");
             BatchFiles.Add(fileModel);
         }
 
         if (BatchFiles.Count > 0 && SelectedBatchFile == null)
         {
             SelectedBatchFile = BatchFiles[0];
+        }
+
+        if (SelectedSheetRow == null && BatchFiles.Count > 0 && BatchFiles[0].Sheets.Count > 0)
+        {
+            SelectSheetRow(BatchFiles[0].Sheets[0]);
         }
 
         OnBatchSelectionChanged();
@@ -1128,6 +1172,34 @@ public partial class TableImportViewModel : ObservableObject
         {
             FilteredBatchFiles?.Refresh();
         }
+    }
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasSelectedSheetRow))]
+    private TableBatchSheetItemModel? _selectedSheetRow;
+
+    public bool HasSelectedSheetRow => SelectedSheetRow != null;
+
+    public void SelectSheetRow(TableBatchSheetItemModel targetSheet)
+    {
+        if (targetSheet == null) return;
+
+        SelectedSheetRow = targetSheet;
+
+        if (targetSheet.ParentFile != null)
+        {
+            SelectedBatchFile = targetSheet.ParentFile;
+        }
+
+        foreach (var file in BatchFiles)
+        {
+            foreach (var sheet in file.Sheets)
+            {
+                sheet.IsRowSelected = (sheet == targetSheet);
+            }
+        }
+
+        LoggerService.LogInfo($"[TableImportViewModel] Sheet row selected: '{targetSheet.SheetName}' in '{targetSheet.ParentFile?.FileName}' (Origin={targetSheet.SelectedImportType}, ViewType={targetSheet.SelectedViewType}, Scale=1:{targetSheet.SelectedScale})");
     }
 
     [ObservableProperty]
@@ -1156,39 +1228,57 @@ public partial class TableImportViewModel : ObservableObject
     public void SelectAllBatch()
     {
         IEnumerable<TableBatchFileModel> targetFiles = _isBatchFilterActive ? _matchedBatchFiles : BatchFiles;
+        int count = 0;
         foreach (var file in targetFiles)
         {
-            foreach (var sheet in file.Sheets) sheet.IsSelected = true;
+            foreach (var sheet in file.Sheets)
+            {
+                sheet.IsSelected = true;
+                count++;
+            }
             file.UpdateViewsCount();
         }
         foreach (var item in BatchItems) item.IsSelected = true;
         OnBatchSelectionChanged();
+        LoggerService.LogInfo($"[TableImportViewModel] SelectAllBatch executed: {count} sheet(s) selected across target files.");
     }
 
     [RelayCommand]
     public void DeselectAllBatch()
     {
         IEnumerable<TableBatchFileModel> targetFiles = _isBatchFilterActive ? _matchedBatchFiles : BatchFiles;
+        int count = 0;
         foreach (var file in targetFiles)
         {
-            foreach (var sheet in file.Sheets) sheet.IsSelected = false;
+            foreach (var sheet in file.Sheets)
+            {
+                sheet.IsSelected = false;
+                count++;
+            }
             file.UpdateViewsCount();
         }
         foreach (var item in BatchItems) item.IsSelected = false;
         OnBatchSelectionChanged();
+        LoggerService.LogInfo($"[TableImportViewModel] DeselectAllBatch executed: {count} sheet(s) deselected.");
     }
 
     [RelayCommand]
     public void InvertBatchSelection()
     {
         IEnumerable<TableBatchFileModel> targetFiles = _isBatchFilterActive ? _matchedBatchFiles : BatchFiles;
+        int count = 0;
         foreach (var file in targetFiles)
         {
-            foreach (var sheet in file.Sheets) sheet.IsSelected = !sheet.IsSelected;
+            foreach (var sheet in file.Sheets)
+            {
+                sheet.IsSelected = !sheet.IsSelected;
+                count++;
+            }
             file.UpdateViewsCount();
         }
         foreach (var item in BatchItems) item.IsSelected = !item.IsSelected;
         OnBatchSelectionChanged();
+        LoggerService.LogInfo($"[TableImportViewModel] InvertBatchSelection executed: {count} sheet(s) inverted.");
     }
 
     private bool CanApplyFilter() => !string.IsNullOrWhiteSpace(SearchFilter) || _isBatchFilterActive;
@@ -1204,6 +1294,7 @@ public partial class TableImportViewModel : ObservableObject
             _matchedBatchFiles.Clear();
             FilteredBatchFiles.Refresh();
             StatusMessage = "Filter cleared. All files displayed.";
+            LoggerService.LogInfo("[TableImportViewModel] Filter cleared. Showing all batch files.");
             return;
         }
 
@@ -1217,9 +1308,10 @@ public partial class TableImportViewModel : ObservableObject
                     RegexOptions.IgnoreCase | RegexOptions.Compiled,
                     TimeSpan.FromSeconds(2));
             }
-            catch (Exception)
+            catch (Exception ex)
             {
                 StatusMessage = "Invalid Regex Pattern";
+                LoggerService.LogWarning($"[TableImportViewModel] Invalid regex filter pattern '{searchText}': {ex.Message}");
                 return;
             }
         }
@@ -1296,7 +1388,7 @@ public partial class TableImportViewModel : ObservableObject
                         {
                             sheetMatches = true;
                         }
-                        else if (sheet.AvailableRegions.Any(MatchesText))
+                        else if (sheet.AvailableRegions.Where(r => r != TableBatchSheetItemModel.SeparatorLine && r != "---").Any(MatchesText))
                         {
                             sheetMatches = true;
                         }
@@ -1349,6 +1441,7 @@ public partial class TableImportViewModel : ObservableObject
 
         FilteredBatchFiles.Refresh();
         StatusMessage = $"Filter applied. {_matchedBatchFiles.Count} of {BatchFiles.Count} files matched.";
+        LoggerService.LogInfo($"[TableImportViewModel] ApplyFilter: Pattern='{searchText}', Regex={FilterUseRegex}, OnlyNames={FilterOnlyNames}, UseOr={FilterUseOr} -> Matched {_matchedBatchFiles.Count} of {BatchFiles.Count} files.");
     }
 
     [RelayCommand]
@@ -1386,6 +1479,7 @@ public partial class TableImportViewModel : ObservableObject
         }
         OnPropertyChanged(nameof(SelectedBatchCount));
         OnPropertyChanged(nameof(CanImportBatch));
+        LoggerService.LogInfo($"[TableImportViewModel] RemoveSelectedBatch: Removed {toRemove.Count} item(s) from legacy batch list.");
     }
 
     [RelayCommand]
@@ -1402,6 +1496,7 @@ public partial class TableImportViewModel : ObservableObject
         var result = sourcePickerView.ShowDialog();
         if (result == true && sourcePickerVm.ResultFilePaths.Count > 0)
         {
+            LoggerService.LogInfo($"[TableImportViewModel] Adding {sourcePickerVm.ResultFilePaths.Count} more files from file dialog.");
             await InitializeBatchFilesAsync(sourcePickerVm.ResultFilePaths, sourcePickerVm.IsRelativePath, append: true);
         }
     }
@@ -1474,6 +1569,7 @@ public partial class TableImportViewModel : ObservableObject
 
         OnPropertyChanged(nameof(SelectedBatchCount));
         OnPropertyChanged(nameof(CanImportBatch));
+        LoggerService.LogInfo($"[TableImportViewModel] DuplicateRow: Duplicated item for '{item.FileName}' (Sheet='{copy.SelectedWorksheet}', TargetView='{copy.TargetViewName}').");
     }
 
     [RelayCommand]
@@ -1509,7 +1605,10 @@ public partial class TableImportViewModel : ObservableObject
             }
         }
 
-        if (itemsToImport.Count == 0 && BatchItems.Count(i => i.IsSelected) == 0) return;
+        int totalLegacy = BatchItems.Count(i => i.IsSelected);
+        if (itemsToImport.Count == 0 && totalLegacy == 0) return;
+
+        LoggerService.LogInfo($"[TableImportViewModel] ImportBatchTablesAsync started: {itemsToImport.Count} hierarchical sheet(s), {totalLegacy} legacy item(s) queued for generation.");
 
         try
         {
@@ -1535,8 +1634,11 @@ public partial class TableImportViewModel : ObservableObject
                     string? rangeAddress = null;
                     if (!string.IsNullOrWhiteSpace(sheet.SelectedRegion) &&
                         sheet.SelectedRegion != "Entire Worksheet" &&
+                        sheet.SelectedRegion != "<Used Range>" &&
                         sheet.SelectedRegion != "Entire Sheet" &&
-                        sheet.SelectedRegion != "All Pages")
+                        sheet.SelectedRegion != "All Pages" &&
+                        sheet.SelectedRegion != TableBatchSheetItemModel.SeparatorLine &&
+                        sheet.SelectedRegion != "---")
                     {
                         if (sheet.SelectedRegion.StartsWith("Print Area (", StringComparison.OrdinalIgnoreCase) && sheet.SelectedRegion.EndsWith(")"))
                         {
@@ -1553,6 +1655,8 @@ public partial class TableImportViewModel : ObservableObject
                     var sheetName = sheet.SheetName;
                     var filePath = file.FilePath;
 
+                    LoggerService.LogInfo($"[TableImportViewModel] Processing batch table [{current}/{total}]: File='{file.FileName}', Sheet='{sheetName}', Region='{sheet.SelectedRegion}', RangeAddress='{rangeAddress}', ViewType={sheet.SelectedViewType}, Scale=1:{sheet.SelectedScale}");
+
                     var (cells, mergedRanges) = await Task.Run(() =>
                     {
                         var extractedCells = _excelReaderService.ExtractCells(filePath, sheetName, rangeAddress);
@@ -1560,7 +1664,11 @@ public partial class TableImportViewModel : ObservableObject
                         return (extractedCells, extractedMerges);
                     });
 
-                    if (cells.Count == 0) continue;
+                    if (cells.Count == 0)
+                    {
+                        LoggerService.LogWarning($"[TableImportViewModel] Skipped '{sheet.TargetViewName}': 0 cells extracted from '{sheetName}'.");
+                        continue;
+                    }
 
                     var targetName = GetUniqueViewName(sheet.TargetViewName);
 
@@ -1586,6 +1694,7 @@ public partial class TableImportViewModel : ObservableObject
                     {
                         CreatedViews.Add(v);
                         CreatedView = v;
+                        LoggerService.LogInfo($"[TableImportViewModel] Created Revit view '{v.Name}' (ID {v.Id}) [{current}/{total}].");
                     }
                 }
             }
@@ -1604,6 +1713,8 @@ public partial class TableImportViewModel : ObservableObject
                     if (item.IsCustomRange) rangeAddress = item.CustomRangeText.Trim();
                     else if (item.IsNamedRange && !string.IsNullOrWhiteSpace(item.SelectedNamedRange)) rangeAddress = item.SelectedNamedRange!.Trim();
 
+                    LoggerService.LogInfo($"[TableImportViewModel] Processing legacy batch table [{current}/{total}]: File='{item.FileName}', Sheet='{item.SelectedWorksheet}', ViewType={item.SelectedViewType}, Scale=1:{item.SelectedScale}");
+
                     var (cells, mergedRanges) = await Task.Run(() =>
                     {
                         var extractedCells = _excelReaderService.ExtractCells(item.FilePath, item.SelectedWorksheet, rangeAddress);
@@ -1611,7 +1722,12 @@ public partial class TableImportViewModel : ObservableObject
                         return (extractedCells, extractedMerges);
                     });
 
-                    if (cells.Count == 0) continue;
+                    if (cells.Count == 0)
+                    {
+                        LoggerService.LogWarning($"[TableImportViewModel] Skipped '{item.TargetViewName}': 0 cells extracted.");
+                        continue;
+                    }
+
                     var targetName = GetUniqueViewName(item.TargetViewName);
                     var config = new TableImportConfig
                     {
@@ -1634,6 +1750,7 @@ public partial class TableImportViewModel : ObservableObject
                     {
                         CreatedViews.Add(v);
                         CreatedView = v;
+                        LoggerService.LogInfo($"[TableImportViewModel] Created Revit view '{v.Name}' (ID {v.Id}) [{current}/{total}].");
                     }
                 }
             }
@@ -1642,6 +1759,7 @@ public partial class TableImportViewModel : ObservableObject
 
             StatusMessage = $"{CreatedViews.Count} table(s) created successfully!";
             ProgressPercent = 100;
+            LoggerService.LogInfo($"[TableImportViewModel] ImportBatchTablesAsync completed successfully: {CreatedViews.Count} table view(s) created in Revit.");
             RequestClose?.Invoke();
         }
         catch (Exception ex)
@@ -1649,6 +1767,7 @@ public partial class TableImportViewModel : ObservableObject
             TelemetryLogger.LogError("Error in ImportBatchTablesAsync", ex);
             HasError = true;
             ErrorMessage = $"Import failed: {ex.Message}";
+            LoggerService.LogError($"[TableImportViewModel] ImportBatchTablesAsync failed: {ex.Message}");
         }
         finally
         {

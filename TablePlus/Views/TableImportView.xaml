@@ -9,8 +9,8 @@
         mc:Ignorable="d"
         x:Name="TableImportWindow"
         Title="TablePlus — Add Tables"
-        Width="550" Height="615"
-        MinWidth="460" MinHeight="450"
+        Width="550" Height="690"
+        MinWidth="460" MinHeight="520"
         WindowStartupLocation="CenterScreen"
         Background="#FAFAFA"
         Foreground="#333333"
@@ -93,6 +93,8 @@
         <SolidColorBrush x:Key="CardBgBrush" Color="#FFFFFF"/>
         <SolidColorBrush x:Key="CardBorderBrush" Color="#E0E0E0"/>
         <SolidColorBrush x:Key="CardBorderHoverBrush" Color="#CBD5E1"/>
+        <SolidColorBrush x:Key="FileRowBorderAndSheetBgBrush" Color="#E2E8F0"/>
+        <SolidColorBrush x:Key="RowHoverBrush" Color="#E0F2FE"/>
         <SolidColorBrush x:Key="PrimaryBrush" Color="#007ACC"/>
         <SolidColorBrush x:Key="PrimaryHoverBrush" Color="#0062A3"/>
         <SolidColorBrush x:Key="PrimaryPressedBrush" Color="#004C80"/>
@@ -110,9 +112,9 @@
         <views:EnumDisplayConverter x:Key="EnumDisplayConverter"/>
         <views:InverseBooleanConverter x:Key="InverseBooleanConverter"/>
 
-        <!-- Expand / Collapse Chevron Toggle Template -->
-        <ControlTemplate x:Key="ChevronToggleTemplate" TargetType="ToggleButton">
-            <Border Background="Transparent" Width="18" Height="18">
+        <!-- Expand / Collapse Chevron Button Template (Bound directly to IsExpanded) -->
+        <ControlTemplate x:Key="ChevronButtonTemplate" TargetType="Button">
+            <Border Background="Transparent" Width="20" Height="20" Cursor="Hand">
                 <Path x:Name="Arrow" Data="M 0 0 L 4 4 L 0 8 Z" Fill="#64748B" 
                       HorizontalAlignment="Center" VerticalAlignment="Center" Stretch="Uniform" Width="6" Height="8"
                       RenderTransformOrigin="0.5,0.5">
@@ -122,19 +124,59 @@
                 </Path>
             </Border>
             <ControlTemplate.Triggers>
-                <Trigger Property="IsChecked" Value="True">
+                <DataTrigger Binding="{Binding IsExpanded}" Value="True">
                     <Setter TargetName="Arrow" Property="RenderTransform">
                         <Setter.Value>
                             <RotateTransform Angle="90"/>
                         </Setter.Value>
                     </Setter>
                     <Setter TargetName="Arrow" Property="Fill" Value="{StaticResource PrimaryBrush}"/>
-                </Trigger>
+                </DataTrigger>
                 <Trigger Property="IsMouseOver" Value="True">
                     <Setter TargetName="Arrow" Property="Fill" Value="{StaticResource PrimaryBrush}"/>
                 </Trigger>
             </ControlTemplate.Triggers>
         </ControlTemplate>
+
+        <!-- Style for Area / Region ComboBox Items with Thin Separator Line -->
+        <Style x:Key="RegionComboBoxItemStyle" TargetType="{x:Type ComboBoxItem}">
+            <Setter Property="Height" Value="24"/>
+            <Setter Property="Padding" Value="6,2"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="FontSize" Value="11"/>
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding}" Value="───">
+                    <Setter Property="IsEnabled" Value="False"/>
+                    <Setter Property="Focusable" Value="False"/>
+                    <Setter Property="Height" Value="5"/>
+                    <Setter Property="MinHeight" Value="1"/>
+                    <Setter Property="Padding" Value="0"/>
+                    <Setter Property="Margin" Value="0,1"/>
+                    <Setter Property="Template">
+                        <Setter.Value>
+                            <ControlTemplate TargetType="{x:Type ComboBoxItem}">
+                                <Border BorderThickness="0,0,0,1" BorderBrush="#CBD5E1" Margin="2,2,2,2" SnapsToDevicePixels="True"/>
+                            </ControlTemplate>
+                        </Setter.Value>
+                    </Setter>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding}" Value="---">
+                    <Setter Property="IsEnabled" Value="False"/>
+                    <Setter Property="Focusable" Value="False"/>
+                    <Setter Property="Height" Value="5"/>
+                    <Setter Property="MinHeight" Value="1"/>
+                    <Setter Property="Padding" Value="0"/>
+                    <Setter Property="Margin" Value="0,1"/>
+                    <Setter Property="Template">
+                        <Setter.Value>
+                            <ControlTemplate TargetType="{x:Type ComboBoxItem}">
+                                <Border BorderThickness="0,0,0,1" BorderBrush="#CBD5E1" Margin="2,2,2,2" SnapsToDevicePixels="True"/>
+                            </ControlTemplate>
+                        </Setter.Value>
+                    </Setter>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
 
         <!-- Path Column Context Menu for Absolute / Relative Switching -->
         <ContextMenu x:Key="PathContextMenu">
@@ -253,8 +295,9 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/> <!-- 0: Filter Card -->
             <RowDefinition Height="*"/>    <!-- 1: Batch Items DataGrid -->
-            <RowDefinition Height="Auto"/> <!-- 2: Error & Progress -->
-            <RowDefinition Height="Auto"/> <!-- 3: Footer with Selection, Cancel & Apply -->
+            <RowDefinition Height="Auto"/> <!-- 2: Table Properties Card -->
+            <RowDefinition Height="Auto"/> <!-- 3: Error & Progress -->
+            <RowDefinition Height="Auto"/> <!-- 4: Footer with Selection, Cancel & Apply -->
         </Grid.RowDefinitions>
 
         <!-- ROW 0: FILTER CARD (TRANSFERPLUS / TABLEPLUS STYLE) -->
@@ -633,8 +676,8 @@
             </Grid>
         </Border>
 
-        <!-- ROW 1: BATCH FILES DATAGRID -->
-        <Border Grid.Row="1" Style="{StaticResource CardBorderStyle}">
+        <!-- ROW 1: BATCH FILES DATAGRID (STRAIGHT BORDERS - CORNER RADIUS 0) -->
+        <Border Grid.Row="1" Background="White" BorderBrush="{StaticResource CardBorderBrush}" BorderThickness="1" CornerRadius="0" Padding="0">
             <DataGrid ItemsSource="{Binding FilteredBatchFiles}" 
                       SelectedItem="{Binding SelectedBatchFile}"
                       AutoGenerateColumns="False" 
@@ -643,96 +686,201 @@
                       CanUserResizeRows="False"
                       CanUserResizeColumns="True"
                       HeadersVisibility="Column"
-                      GridLinesVisibility="Horizontal"
-                      HorizontalGridLinesBrush="#F1F5F9"
+                      GridLinesVisibility="None"
                       Background="White"
                       BorderThickness="0"
-                      RowHeight="32"
+                      MinRowHeight="32"
                       RowHeaderWidth="0"
                       SelectionMode="Single"
-                      RowDetailsVisibilityMode="Visible"
                       ColumnHeaderStyle="{StaticResource TableHeaderStyle}"
                       ScrollViewer.CanContentScroll="False"
                       ScrollViewer.HorizontalScrollBarVisibility="Visible"
                       ScrollViewer.VerticalScrollBarVisibility="Visible"
                       EnableRowVirtualization="True">
-                <DataGrid.RowStyle>
-                    <Style TargetType="DataGridRow">
-                        <Setter Property="Background" Value="White"/>
-                        <Setter Property="DetailsVisibility" Value="{Binding IsExpanded, Converter={StaticResource BoolToVis}}"/>
-                        <Setter Property="SnapsToDevicePixels" Value="True"/>
+
+                <DataGrid.Resources>
+                    <SolidColorBrush x:Key="{x:Static SystemColors.HighlightBrushKey}" Color="Transparent"/>
+                    <SolidColorBrush x:Key="{x:Static SystemColors.HighlightTextBrushKey}" Color="#0F172A"/>
+                    <SolidColorBrush x:Key="{x:Static SystemColors.InactiveSelectionHighlightBrushKey}" Color="Transparent"/>
+                    <SolidColorBrush x:Key="{x:Static SystemColors.InactiveSelectionHighlightTextBrushKey}" Color="#0F172A"/>
+                </DataGrid.Resources>
+
+                <DataGrid.CellStyle>
+                    <Style TargetType="DataGridCell">
+                        <Setter Property="BorderThickness" Value="0"/>
+                        <Setter Property="Background" Value="Transparent"/>
+                        <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
                         <Style.Triggers>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter Property="Background" Value="#F8FAFC"/>
-                            </Trigger>
                             <Trigger Property="IsSelected" Value="True">
-                                <Setter Property="Background" Value="#F1F5F9"/>
+                                <Setter Property="Background" Value="Transparent"/>
+                                <Setter Property="Foreground" Value="#0F172A"/>
                             </Trigger>
                         </Style.Triggers>
                     </Style>
+                </DataGrid.CellStyle>
+
+                <DataGrid.RowStyle>
+                    <Style TargetType="DataGridRow">
+                        <Setter Property="Background" Value="White"/>
+                        <Setter Property="SnapsToDevicePixels" Value="True"/>
+                        <Setter Property="Template">
+                            <Setter.Value>
+                                <ControlTemplate TargetType="{x:Type DataGridRow}">
+                                    <SelectiveScrollingGrid>
+                                        <SelectiveScrollingGrid.RowDefinitions>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
+                                        </SelectiveScrollingGrid.RowDefinitions>
+
+                                        <!-- File line: White background with Light Gray perimeter border -->
+                                        <Border Grid.Row="0" x:Name="FileRowBorder"
+                                                SelectiveScrollingGrid.SelectiveScrollingOrientation="Both"
+                                                Background="{TemplateBinding Background}"
+                                                BorderBrush="{StaticResource FileRowBorderAndSheetBgBrush}"
+                                                BorderThickness="1"
+                                                Margin="0,1,0,1"
+                                                MinHeight="32"
+                                                SnapsToDevicePixels="True">
+                                            <DataGridCellsPresenter ItemsPanel="{TemplateBinding ItemsPanel}" 
+                                                                    SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}"/>
+                                        </Border>
+
+                                        <!-- Sheet lines: Light Gray background with NO perimeter border, collapsed when IsExpanded is false -->
+                                        <Border Grid.Row="1" x:Name="SheetRowsBorder"
+                                                SelectiveScrollingGrid.SelectiveScrollingOrientation="Both"
+                                                Background="{StaticResource FileRowBorderAndSheetBgBrush}"
+                                                BorderThickness="0"
+                                                Margin="0,0,0,2"
+                                                Visibility="{Binding IsExpanded, Converter={StaticResource BoolToVis}}"
+                                                SnapsToDevicePixels="True">
+                                            <StackPanel Margin="0,2,0,5">
+                                                <!-- Master Row: "All worksheets" (Hierarchical select-all, visible when multiple sheets exist) -->
+                                                <Border BorderThickness="0" Padding="14,3,12,3"
+                                                        Visibility="{Binding HasMultipleSheets, Converter={StaticResource BoolToVis}}">
+                                                    <Border.Style>
+                                                        <Style TargetType="Border">
+                                                            <Setter Property="Background" Value="Transparent"/>
+                                                            <Style.Triggers>
+                                                                <Trigger Property="IsMouseOver" Value="True">
+                                                                    <Setter Property="Background" Value="{StaticResource RowHoverBrush}"/>
+                                                                </Trigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </Border.Style>
+                                                    <Grid Height="26">
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="Auto"/>
+                                                            <ColumnDefinition Width="*"/>
+                                                            <ColumnDefinition Width="Auto"/>
+                                                        </Grid.ColumnDefinitions>
+
+                                                        <!-- Tri-State CheckBox for All Worksheets -->
+                                                        <CheckBox Grid.Column="0" 
+                                                                  IsThreeState="True"
+                                                                  IsChecked="{Binding AreAllWorksheetsSelected, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                                  VerticalAlignment="Center" Margin="0,0,8,0" Cursor="Hand"
+                                                                  ToolTip="Select / Deselect all worksheets"/>
+
+                                                        <!-- Title: All worksheets -->
+                                                        <TextBlock Grid.Column="1" Text="All worksheets" 
+                                                                   FontWeight="SemiBold" FontSize="11.5" Foreground="#1E293B" 
+                                                                   VerticalAlignment="Center"/>
+
+                                                        <!-- Selection status count -->
+                                                        <TextBlock Grid.Column="2" 
+                                                                   Text="{Binding ViewsCount, StringFormat='{}{0} selected'}" 
+                                                                   FontSize="10.5" Foreground="#64748B" FontWeight="Medium"
+                                                                   VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                                    </Grid>
+                                                </Border>
+
+                                                <!-- Individual Worksheet Lines -->
+                                                <ItemsControl ItemsSource="{Binding Sheets}">
+                                                    <ItemsControl.ItemTemplate>
+                                                        <DataTemplate>
+                                                            <Border BorderThickness="0" Padding="32,2,12,2"
+                                                                    PreviewMouseLeftButtonDown="SheetRow_PreviewMouseLeftButtonDown"
+                                                                    Cursor="Hand">
+                                                                <Border.Style>
+                                                                    <Style TargetType="Border">
+                                                                        <Setter Property="Background" Value="Transparent"/>
+                                                                        <Style.Triggers>
+                                                                            <Trigger Property="IsMouseOver" Value="True">
+                                                                                <Setter Property="Background" Value="{StaticResource RowHoverBrush}"/>
+                                                                            </Trigger>
+                                                                            <DataTrigger Binding="{Binding IsRowSelected}" Value="True">
+                                                                                <Setter Property="Background" Value="{StaticResource RowHoverBrush}"/>
+                                                                            </DataTrigger>
+                                                                        </Style.Triggers>
+                                                                    </Style>
+                                                                </Border.Style>
+                                                                <Grid Height="26">
+                                                                    <Grid.ColumnDefinitions>
+                                                                        <ColumnDefinition Width="Auto"/>
+                                                                        <ColumnDefinition Width="*"/>
+                                                                        <ColumnDefinition Width="Auto"/>
+                                                                    </Grid.ColumnDefinitions>
+
+                                                                    <!-- Checkbox for sheet selection -->
+                                                                    <CheckBox Grid.Column="0" 
+                                                                              IsChecked="{Binding IsSelected, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                                              VerticalAlignment="Center" Margin="0,0,8,0" Cursor="Hand"/>
+
+                                                                    <!-- Sheet Name (clean text without icon) -->
+                                                                    <TextBlock Grid.Column="1" Text="{Binding SheetName}" FontSize="11.5" FontWeight="Medium" 
+                                                                               Foreground="#334155" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+
+                                                                    <!-- Printable Area / Region dropdown at the far right -->
+                                                                    <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center" Margin="8,0,0,0">
+                                                                        <TextBlock Text="Area:" FontSize="11" Foreground="#64748B" 
+                                                                                   VerticalAlignment="Center" Margin="0,0,6,0"/>
+                                                                        <Border BorderBrush="#CBD5E1" BorderThickness="1" CornerRadius="0" Background="White" Height="24">
+                                                                            <ComboBox ItemsSource="{Binding AvailableRegions}"
+                                                                                      SelectedItem="{Binding SelectedRegion, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                                                      ItemContainerStyle="{StaticResource RegionComboBoxItemStyle}"
+                                                                                      Width="145" Height="22"
+                                                                                      BorderThickness="0" Background="Transparent"
+                                                                                      VerticalContentAlignment="Center" FontSize="11" Padding="4,0"/>
+                                                                        </Border>
+                                                                    </StackPanel>
+                                                                </Grid>
+                                                            </Border>
+                                                        </DataTemplate>
+                                                    </ItemsControl.ItemTemplate>
+                                                </ItemsControl>
+                                            </StackPanel>
+                                        </Border>
+                                    </SelectiveScrollingGrid>
+                                    <ControlTemplate.Triggers>
+                                        <Trigger Property="IsMouseOver" Value="True">
+                                            <Setter TargetName="FileRowBorder" Property="Background" Value="{StaticResource RowHoverBrush}"/>
+                                        </Trigger>
+                                        <Trigger Property="IsSelected" Value="True">
+                                            <Setter TargetName="FileRowBorder" Property="Background" Value="White"/>
+                                        </Trigger>
+                                    </ControlTemplate.Triggers>
+                                </ControlTemplate>
+                            </Setter.Value>
+                        </Setter>
+                    </Style>
                 </DataGrid.RowStyle>
 
-                <DataGrid.RowDetailsTemplate>
-                    <DataTemplate>
-                        <Border Background="#F8FAFC" BorderBrush="#E2E8F0" BorderThickness="0,0,0,1" Padding="32,4,12,5">
-                            <ItemsControl ItemsSource="{Binding Sheets}">
-                                <ItemsControl.ItemTemplate>
-                                    <DataTemplate>
-                                        <Grid Margin="0,2" Height="26">
-                                            <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="Auto"/>
-                                                <ColumnDefinition Width="*"/>
-                                                <ColumnDefinition Width="Auto"/>
-                                            </Grid.ColumnDefinitions>
-
-                                            <!-- Checkbox for sheet selection -->
-                                            <CheckBox Grid.Column="0" 
-                                                      IsChecked="{Binding IsSelected, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                                      VerticalAlignment="Center" Margin="0,0,8,0" Cursor="Hand"/>
-
-                                            <!-- Sheet Name with subtle sheet bullet icon -->
-                                            <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
-                                                <Image Source="pack://application:,,,/TablePlus;component/Resources/Icons/SheetHeader16.png" 
-                                                       Width="13" Height="13" Margin="0,0,5,0" Opacity="0.75" VerticalAlignment="Center"/>
-                                                <TextBlock Text="{Binding SheetName}" FontSize="11.5" FontWeight="Medium" 
-                                                           Foreground="#334155" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
-                                            </StackPanel>
-
-                                            <!-- Printable Area / Region dropdown at the far right -->
-                                            <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center" Margin="8,0,0,0">
-                                                <TextBlock Text="Area:" FontSize="11" Foreground="#64748B" 
-                                                           VerticalAlignment="Center" Margin="0,0,6,0"/>
-                                                <Border BorderBrush="#CBD5E1" BorderThickness="1" CornerRadius="3" Background="White" Height="24">
-                                                    <ComboBox ItemsSource="{Binding AvailableRegions}"
-                                                              SelectedItem="{Binding SelectedRegion, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                                              Width="145" Height="22"
-                                                              BorderThickness="0" Background="Transparent"
-                                                              VerticalContentAlignment="Center" FontSize="11" Padding="4,0"/>
-                                                </Border>
-                                            </StackPanel>
-                                        </Grid>
-                                    </DataTemplate>
-                                </ItemsControl.ItemTemplate>
-                            </ItemsControl>
-                        </Border>
-                    </DataTemplate>
-                </DataGrid.RowDetailsTemplate>
-
                 <DataGrid.Columns>
-                    <!-- Col 0: Views (Count + Arrow) -->
+                    <!-- Col 0: Views (Arrow on Left + Count on Right) -->
                     <DataGridTemplateColumn Header="Views" Width="68">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
-                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="8,0,4,0">
+                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="6,0,4,0">
+                                    <Button Click="ChevronButton_Click"
+                                            Visibility="{Binding HasSheets, Converter={StaticResource BoolToVis}}"
+                                            Width="20" Height="20" Margin="0,0,4,0"
+                                            Cursor="Hand" Background="Transparent" BorderThickness="0"
+                                            Focusable="False" ClickMode="Press"
+                                            ToolTip="Expand / Collapse worksheets"
+                                            Template="{StaticResource ChevronButtonTemplate}"/>
                                     <TextBlock Text="{Binding ViewsCount}" FontWeight="Bold" FontSize="12" 
                                                Foreground="{StaticResource TextPrimaryBrush}" VerticalAlignment="Center" 
                                                MinWidth="16" TextAlignment="Center"/>
-                                    <ToggleButton IsChecked="{Binding IsExpanded, Mode=TwoWay}"
-                                                  Visibility="{Binding HasMultipleSheets, Converter={StaticResource BoolToVis}}"
-                                                  Width="16" Height="16" Margin="4,0,0,0"
-                                                  Cursor="Hand" Background="Transparent" BorderThickness="0"
-                                                  ToolTip="Show / Hide sheets"
-                                                  Template="{StaticResource ChevronToggleTemplate}"/>
                                 </StackPanel>
                             </DataTemplate>
                         </DataGridTemplateColumn.CellTemplate>
@@ -786,8 +934,77 @@
             </DataGrid>
         </Border>
 
-        <!-- ROW 2: ERROR BANNER & PROGRESS -->
-        <StackPanel Grid.Row="2" Margin="0,6,0,0">
+        <!-- ROW 2: TABLE PROPERTIES CARD -->
+        <Border Grid.Row="2" Style="{StaticResource CardBorderStyle}" CornerRadius="0" Padding="12,10" Margin="0,0,0,6">
+            <StackPanel Orientation="Vertical">
+                <!-- Card Header Title -->
+                <TextBlock Text="Table properties" FontWeight="Bold" FontSize="12" Foreground="#999" Margin="0,0,0,8"/>
+
+                <!-- Properties Stack -->
+                <Grid IsEnabled="{Binding HasSelectedSheetRow}">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/> <!-- Origin -->
+                        <RowDefinition Height="Auto"/> <!-- Type of view -->
+                        <RowDefinition Height="Auto"/> <!-- Scale -->
+                    </Grid.RowDefinitions>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="105"/>
+                        <ColumnDefinition Width="220"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+
+                    <!-- Row 0: Origin -->
+                    <TextBlock Grid.Row="0" Grid.Column="0" Text="Origin:" 
+                               FontWeight="SemiBold" FontSize="11.5" Foreground="{StaticResource TextSecondaryBrush}" 
+                               VerticalAlignment="Center" Margin="0,0,0,6"/>
+                    <Border Grid.Row="0" Grid.Column="1" BorderBrush="#CBD5E1" BorderThickness="1" CornerRadius="0" Background="White" Height="26" Margin="0,0,0,6">
+                        <ComboBox ItemsSource="{Binding AvailableImportTypes}"
+                                  SelectedItem="{Binding SelectedSheetRow.SelectedImportType, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                  BorderThickness="0" Background="Transparent"
+                                  VerticalContentAlignment="Center" FontSize="11.5" Padding="6,0">
+                            <ComboBox.ItemTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding Converter={StaticResource EnumDisplayConverter}, ConverterParameter=Compact}" 
+                                               FontSize="11.5" VerticalAlignment="Center"/>
+                                </DataTemplate>
+                            </ComboBox.ItemTemplate>
+                        </ComboBox>
+                    </Border>
+
+                    <!-- Row 1: Type of view -->
+                    <TextBlock Grid.Row="1" Grid.Column="0" Text="Type of view:" 
+                               FontWeight="SemiBold" FontSize="11.5" Foreground="{StaticResource TextSecondaryBrush}" 
+                               VerticalAlignment="Center" Margin="0,0,0,6"/>
+                    <Border Grid.Row="1" Grid.Column="1" BorderBrush="#CBD5E1" BorderThickness="1" CornerRadius="0" Background="White" Height="26" Margin="0,0,0,6">
+                        <ComboBox ItemsSource="{Binding AvailableViewTypes}"
+                                  SelectedItem="{Binding SelectedSheetRow.SelectedViewType, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                  BorderThickness="0" Background="Transparent"
+                                  VerticalContentAlignment="Center" FontSize="11.5" Padding="6,0">
+                            <ComboBox.ItemTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding Converter={StaticResource EnumDisplayConverter}, ConverterParameter=Compact}" 
+                                               FontSize="11.5" VerticalAlignment="Center"/>
+                                </DataTemplate>
+                            </ComboBox.ItemTemplate>
+                        </ComboBox>
+                    </Border>
+
+                    <!-- Row 2: Scale -->
+                    <TextBlock Grid.Row="2" Grid.Column="0" Text="Scale:" 
+                               FontWeight="SemiBold" FontSize="11.5" Foreground="{StaticResource TextSecondaryBrush}" 
+                               VerticalAlignment="Center"/>
+                    <Border Grid.Row="2" Grid.Column="1" BorderBrush="#CBD5E1" BorderThickness="1" CornerRadius="0" Background="White" Height="26">
+                        <TextBox Text="{Binding SelectedSheetRow.ScaleInputText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                 BorderThickness="0" Background="Transparent"
+                                 VerticalContentAlignment="Center" FontSize="11.5" Padding="6,0"
+                                 ToolTip="Numeric scale value applied to the imported table relative to the origin (e.g., 1, 50, 100)"/>
+                    </Border>
+                </Grid>
+            </StackPanel>
+        </Border>
+
+        <!-- ROW 3: ERROR BANNER & PROGRESS -->
+        <StackPanel Grid.Row="3" Margin="0,6,0,0">
             <Border Background="#FEF2F2" BorderBrush="#FCA5A5" BorderThickness="1" CornerRadius="4" Padding="8,4" Margin="0,0,0,4"
                     Visibility="{Binding HasError, Converter={StaticResource BoolToVis}}">
                 <TextBlock Text="{Binding ErrorMessage}" Foreground="#DC2626" FontSize="11" TextWrapping="Wrap"/>
@@ -797,8 +1014,8 @@
                          Visibility="{Binding IsBusy, Converter={StaticResource BoolToVis}}"/>
         </StackPanel>
 
-        <!-- ROW 3: ACTION FOOTER -->
-        <Border Grid.Row="3" BorderBrush="{StaticResource CardBorderBrush}" BorderThickness="0,1,0,0" Padding="0,8,0,0" Margin="0,8,0,0">
+        <!-- ROW 4: ACTION FOOTER -->
+        <Border Grid.Row="4" BorderBrush="{StaticResource CardBorderBrush}" BorderThickness="0,1,0,0" Padding="0,8,0,0" Margin="0,8,0,0">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto"/>

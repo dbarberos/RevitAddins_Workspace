@@ -36,7 +36,7 @@ public class CmdImportTable : ExternalCommand
 
         try
         {
-            LoggerService.LogInfo("CmdImportTable: Initializing TablePlus Master Dashboard...");
+            LoggerService.LogInfo($"CmdImportTable: Executing command in document '{doc.Title}'...");
 
             // Instantiate decoupled services
             var excelService = new ExcelReaderService();
@@ -48,7 +48,9 @@ public class CmdImportTable : ExternalCommand
             var viewModel = new MainWindowViewModel(doc, uiDoc, registryService, geometryService, excelService, schemaService);
             var view = new MainWindowView(viewModel);
 
+            LoggerService.LogInfo("CmdImportTable: Opening MainWindowView dialog...");
             view.ShowDialog();
+            LoggerService.LogInfo("CmdImportTable: MainWindowView dialog closed.");
         }
         catch (Exception ex)
         {

@@ -53,6 +53,7 @@ public partial class ConfigurationViewModel : ObservableObject
         {
             SelectedSource = Sources[0];
         }
+        LoggerService.LogInfo($"[ConfigurationViewModel] Loaded {items.Count} configured external table source(s).");
     }
 
     [RelayCommand]
@@ -65,13 +66,14 @@ public partial class ConfigurationViewModel : ObservableObject
 
             if (typeWin.ShowDialog() == true)
             {
+                TableSourceItemModel? newModel = null;
                 if (typeVm.SelectedSourceType == ExternalTableSourceType.AutodeskDocs)
                 {
                     var accVm = new AutodeskDocsSourceViewModel();
                     var accWin = new Views.AutodeskDocsSourceWindow { DataContext = accVm, Owner = ownerWindow };
                     if (accWin.ShowDialog() == true)
                     {
-                        var newModel = accVm.ToModel();
+                        newModel = accVm.ToModel();
                         Sources.Add(newModel);
                         SelectedSource = newModel;
                     }
@@ -82,7 +84,7 @@ public partial class ConfigurationViewModel : ObservableObject
                     var dirWin = new Views.DirectorySourceWindow { DataContext = dirVm, Owner = ownerWindow };
                     if (dirWin.ShowDialog() == true)
                     {
-                        var newModel = dirVm.ToModel();
+                        newModel = dirVm.ToModel();
                         Sources.Add(newModel);
                         SelectedSource = newModel;
                     }
@@ -93,7 +95,7 @@ public partial class ConfigurationViewModel : ObservableObject
                     var awsWin = new Views.AwsS3SourceWindow { DataContext = awsVm, Owner = ownerWindow };
                     if (awsWin.ShowDialog() == true)
                     {
-                        var newModel = awsVm.ToModel();
+                        newModel = awsVm.ToModel();
                         Sources.Add(newModel);
                         SelectedSource = newModel;
                     }
@@ -104,10 +106,15 @@ public partial class ConfigurationViewModel : ObservableObject
                     var azureWin = new Views.AzureStorageSourceWindow { DataContext = azureVm, Owner = ownerWindow };
                     if (azureWin.ShowDialog() == true)
                     {
-                        var newModel = azureVm.ToModel();
+                        newModel = azureVm.ToModel();
                         Sources.Add(newModel);
                         SelectedSource = newModel;
                     }
+                }
+
+                if (newModel != null)
+                {
+                    LoggerService.LogInfo($"[ConfigurationViewModel] Added new table source '{newModel.Name}' (Type={newModel.SourceType}). Total sources: {Sources.Count}");
                 }
 
                 TableSourceConfigService.SaveSources(Sources);
@@ -116,6 +123,7 @@ public partial class ConfigurationViewModel : ObservableObject
         catch (Exception ex)
         {
             TelemetryLogger.LogError("Error adding Table source", ex);
+            LoggerService.LogError($"[ConfigurationViewModel] Failed to add table source: {ex.Message}");
         }
     }
 
@@ -187,11 +195,13 @@ public partial class ConfigurationViewModel : ObservableObject
                 }
             }
 
+            LoggerService.LogInfo($"[ConfigurationViewModel] Edited table source '{SelectedSource?.Name}' (ID {SelectedSource?.Id}).");
             TableSourceConfigService.SaveSources(Sources);
         }
         catch (Exception ex)
         {
             TelemetryLogger.LogError("Error editing Table source", ex);
+            LoggerService.LogError($"[ConfigurationViewModel] Failed to edit table source: {ex.Message}");
         }
     }
 
@@ -200,17 +210,19 @@ public partial class ConfigurationViewModel : ObservableObject
     {
         if (SelectedSource == null) return;
 
+        var sourceToRemove = SelectedSource;
         var result = MessageBox.Show(
-            $"Are you sure you want to remove the table source '{SelectedSource.Name}'?",
+            $"Are you sure you want to remove the table source '{sourceToRemove.Name}'?",
             "Remove Table Source",
             MessageBoxButton.YesNo,
             MessageBoxImage.Question);
 
         if (result == MessageBoxResult.Yes)
         {
-            Sources.Remove(SelectedSource);
+            Sources.Remove(sourceToRemove);
             SelectedSource = Sources.Count > 0 ? Sources[0] : null;
             TableSourceConfigService.SaveSources(Sources);
+            LoggerService.LogInfo($"[ConfigurationViewModel] Removed table source '{sourceToRemove.Name}'. Total sources remaining: {Sources.Count}");
         }
     }
 
@@ -235,6 +247,8 @@ public partial class ConfigurationViewModel : ObservableObject
 
         // Save Table Sources
         TableSourceConfigService.SaveSources(Sources);
+
+        LoggerService.LogInfo($"[ConfigurationViewModel] Saved settings: TabOption={selectedOption}, CustomTab='{newSettings.CustomTabName}', ContextualFilter={UseAsContextualFilter}, SourcesCount={Sources.Count}");
 
         // Close window
         window?.Close();

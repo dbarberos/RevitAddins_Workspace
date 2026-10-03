@@ -69,6 +69,18 @@ public static class LoggerService
         WriteToFile(entry);
     }
 
+    public static void LogError(string message)
+    {
+        string sanitizedMsg = TelemetryLogger.SanitizePath(message);
+        string timestamp = DateTime.Now.ToString("HH:mm:ss.fff");
+        string entry = $"[{timestamp}] ERROR: {sanitizedMsg}";
+
+        DispatchLog(entry);
+
+        System.Diagnostics.Debug.WriteLine(entry);
+        WriteToFile(entry);
+    }
+
     public static void LogError(string context, Exception ex)
     {
         string sanitizedContext = TelemetryLogger.SanitizePath(context);
