@@ -45,12 +45,16 @@ public partial class TableBatchSheetItemModel : ObservableObject
     [ObservableProperty]
     private int _selectedScale = 1;
 
+    public bool IsViewTypeEnabled => SelectedImportType is TableImportType.Table or TableImportType.Image;
+
+    public bool IsScaleEnabled => SelectedImportType is TableImportType.Table or TableImportType.Image;
+
     public string ScaleInputText
     {
-        get => SelectedScale.ToString();
+        get => IsScaleEnabled ? SelectedScale.ToString() : "N/A";
         set
         {
-            if (int.TryParse(value, out var parsed) && parsed > 0)
+            if (IsScaleEnabled && int.TryParse(value, out var parsed) && parsed > 0)
             {
                 SelectedScale = parsed;
             }
@@ -67,13 +71,37 @@ public partial class TableBatchSheetItemModel : ObservableObject
     [ObservableProperty]
     private TableImportType _selectedImportType = TableImportType.Table;
 
+    public string OriginHelpText => SelectedImportType switch
+    {
+        TableImportType.KeySchedule => "Key Schedule: Creates a native Revit ViewSchedule with database rows and a reusable parameter pool (TP_Column_XX). Allows multi-sheet splitting.",
+        TableImportType.HeaderSchedule => "Header Grid: Creates a native Revit ViewSchedule using the freeform Header grid with ZERO project parameters. Supports merged cells; not split-paginable.",
+        TableImportType.Table => "Vector Table: Creates 2D lines, text notes, and cell shading in a Legend or Drafting view. Exact Excel fidelity.",
+        TableImportType.Image => "Raster Image: Inserts a high-resolution raster image of the sheet or document.",
+        _ => string.Empty
+    };
+
     partial void OnSelectedImportTypeChanged(TableImportType value)
     {
+        if (value is TableImportType.KeySchedule or TableImportType.HeaderSchedule)
+        {
+            SelectedViewType = TargetViewType.ScheduleView;
+        }
+        else if (SelectedViewType == TargetViewType.ScheduleView)
+        {
+            SelectedViewType = TargetViewType.LegendView;
+        }
+
+        OnPropertyChanged(nameof(IsViewTypeEnabled));
+        OnPropertyChanged(nameof(IsScaleEnabled));
+        OnPropertyChanged(nameof(ScaleInputText));
+        OnPropertyChanged(nameof(OriginHelpText));
         LoggerService.LogInfo($"[TableBatchSheetItemModel] Sheet '{SheetName}' Origin (ImportType) changed to: {value}");
     }
 
     partial void OnSelectedViewTypeChanged(TargetViewType value)
     {
+        OnPropertyChanged(nameof(IsScaleEnabled));
+        OnPropertyChanged(nameof(ScaleInputText));
         LoggerService.LogInfo($"[TableBatchSheetItemModel] Sheet '{SheetName}' Type of view (TargetViewType) changed to: {value}");
     }
 

@@ -802,7 +802,20 @@ public partial class MainWindowViewModel : ObservableObject
                     item.Config.IsAutoSyncEnabled = item.IsAutoSyncEnabled;
                     item.Config.SelectedSheetName = item.SelectedSheetName;
 
-                    _geometryService.UpdateTableInView(_doc, targetView, item.Config, cells, mergedRanges);
+                    if (targetView is ViewSchedule scheduleView && item.Config.ImportType == TableImportType.KeySchedule)
+                    {
+                        var keyService = new KeyScheduleService(_schemaService);
+                        keyService.UpdateKeySchedule(_doc, scheduleView, item.Config, cells);
+                    }
+                    else if (targetView is ViewSchedule scheduleViewHdr && item.Config.ImportType == TableImportType.HeaderSchedule)
+                    {
+                        var headerService = new HeaderScheduleService(_schemaService);
+                        headerService.UpdateHeaderSchedule(_doc, scheduleViewHdr, item.Config, cells, mergedRanges);
+                    }
+                    else
+                    {
+                        _geometryService.UpdateTableInView(_doc, targetView, item.Config, cells, mergedRanges);
+                    }
 
                     item.Status = TableSyncStatus.UpToDate;
                     item.StatusTooltip = $"Synchronized successfully on {DateTime.Now:g}";

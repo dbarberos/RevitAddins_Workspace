@@ -100,7 +100,20 @@ public class Application : ExternalApplication
 #endif
                         if (doc.GetElement(viewId) is View targetView)
                         {
-                            geometryService.UpdateTableInView(doc, targetView, item.Config, cells, merges);
+                            if (targetView is ViewSchedule scheduleView && item.Config.ImportType == TableImportType.KeySchedule)
+                            {
+                                var keyService = new KeyScheduleService(schemaService);
+                                keyService.UpdateKeySchedule(doc, scheduleView, item.Config, cells);
+                            }
+                            else if (targetView is ViewSchedule scheduleViewHdr && item.Config.ImportType == TableImportType.HeaderSchedule)
+                            {
+                                var headerService = new HeaderScheduleService(schemaService);
+                                headerService.UpdateHeaderSchedule(doc, scheduleViewHdr, item.Config, cells, merges);
+                            }
+                            else
+                            {
+                                geometryService.UpdateTableInView(doc, targetView, item.Config, cells, merges);
+                            }
                         }
                     }
                     catch

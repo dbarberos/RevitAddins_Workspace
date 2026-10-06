@@ -943,9 +943,10 @@
                 <!-- Properties Stack -->
                 <Grid IsEnabled="{Binding HasSelectedSheetRow}">
                     <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto"/> <!-- Origin -->
-                        <RowDefinition Height="Auto"/> <!-- Type of view -->
-                        <RowDefinition Height="Auto"/> <!-- Scale -->
+                        <RowDefinition Height="Auto"/> <!-- 0: Origin -->
+                        <RowDefinition Height="Auto"/> <!-- 1: Type of view -->
+                        <RowDefinition Height="Auto"/> <!-- 2: Scale -->
+                        <RowDefinition Height="Auto"/> <!-- 3: Informative Help Badge -->
                     </Grid.RowDefinitions>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="105"/>
@@ -975,9 +976,21 @@
                     <TextBlock Grid.Row="1" Grid.Column="0" Text="Type of view:" 
                                FontWeight="SemiBold" FontSize="11.5" Foreground="{StaticResource TextSecondaryBrush}" 
                                VerticalAlignment="Center" Margin="0,0,0,6"/>
-                    <Border Grid.Row="1" Grid.Column="1" BorderBrush="#CBD5E1" BorderThickness="1" CornerRadius="0" Background="White" Height="26" Margin="0,0,0,6">
+                    <Border Grid.Row="1" Grid.Column="1" BorderBrush="#CBD5E1" BorderThickness="1" CornerRadius="0" Background="White" Height="26" Margin="0,0,0,6"
+                            IsEnabled="{Binding SelectedSheetRow.IsViewTypeEnabled}">
+                        <Border.Style>
+                            <Style TargetType="Border">
+                                <Style.Triggers>
+                                    <Trigger Property="IsEnabled" Value="False">
+                                        <Setter Property="Background" Value="#F1F5F9"/>
+                                        <Setter Property="Opacity" Value="0.75"/>
+                                    </Trigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Border.Style>
                         <ComboBox ItemsSource="{Binding AvailableViewTypes}"
                                   SelectedItem="{Binding SelectedSheetRow.SelectedViewType, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                  IsEnabled="{Binding SelectedSheetRow.IsViewTypeEnabled}"
                                   BorderThickness="0" Background="Transparent"
                                   VerticalContentAlignment="Center" FontSize="11.5" Padding="6,0">
                             <ComboBox.ItemTemplate>
@@ -993,11 +1006,38 @@
                     <TextBlock Grid.Row="2" Grid.Column="0" Text="Scale:" 
                                FontWeight="SemiBold" FontSize="11.5" Foreground="{StaticResource TextSecondaryBrush}" 
                                VerticalAlignment="Center"/>
-                    <Border Grid.Row="2" Grid.Column="1" BorderBrush="#CBD5E1" BorderThickness="1" CornerRadius="0" Background="White" Height="26">
+                    <Border Grid.Row="2" Grid.Column="1" BorderBrush="#CBD5E1" BorderThickness="1" CornerRadius="0" Background="White" Height="26"
+                            IsEnabled="{Binding SelectedSheetRow.IsScaleEnabled}">
+                        <Border.Style>
+                            <Style TargetType="Border">
+                                <Style.Triggers>
+                                    <Trigger Property="IsEnabled" Value="False">
+                                        <Setter Property="Background" Value="#F1F5F9"/>
+                                        <Setter Property="Opacity" Value="0.75"/>
+                                    </Trigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Border.Style>
                         <TextBox Text="{Binding SelectedSheetRow.ScaleInputText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                 IsEnabled="{Binding SelectedSheetRow.IsScaleEnabled}"
                                  BorderThickness="0" Background="Transparent"
                                  VerticalContentAlignment="Center" FontSize="11.5" Padding="6,0"
                                  ToolTip="Numeric scale value applied to the imported table relative to the origin (e.g., 1, 50, 100)"/>
+                    </Border>
+
+                    <!-- Row 3: Informative Help Badge -->
+                    <Border Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="3"
+                            Background="#F8FAFC" BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="0"
+                            Padding="8,6" Margin="0,8,0,2">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="0" Text="ℹ️" FontSize="11" Margin="0,0,6,0" VerticalAlignment="Top"/>
+                            <TextBlock Grid.Column="1" Text="{Binding SelectedSheetRow.OriginHelpText}" 
+                                       FontSize="11" Foreground="#475569" TextWrapping="Wrap" LineHeight="15"/>
+                        </Grid>
                     </Border>
                 </Grid>
             </StackPanel>

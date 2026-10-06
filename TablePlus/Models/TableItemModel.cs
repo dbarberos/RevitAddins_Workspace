@@ -68,6 +68,8 @@ public partial class TableItemModel : ObservableObject
     private ObservableCollection<TableImportType> _availableImportTypes = new()
     {
         TableImportType.Table,
+        TableImportType.KeySchedule,
+        TableImportType.HeaderSchedule,
         TableImportType.Image
     };
 
@@ -84,9 +86,15 @@ public partial class TableItemModel : ObservableObject
     private TableImportConfig _config = new();
 
     /// <summary>
-    /// Badge text representing vector table (TBL) vs raster image (IMG).
+    /// Badge text representing vector table (TBL), key schedule (KEY), header schedule (HDR) or raster image (IMG).
     /// </summary>
-    public string ImportTypeBadge => ImportType == TableImportType.Image ? "IMG" : "TBL";
+    public string ImportTypeBadge => ImportType switch
+    {
+        TableImportType.Image => "IMG",
+        TableImportType.KeySchedule => "KEY",
+        TableImportType.HeaderSchedule => "HDR",
+        _ => "TBL"
+    };
 
     /// <summary>
     /// Human-readable ratio string for display in the DataGrid (e.g. "1:1", "1:20").

@@ -38,12 +38,15 @@ When specific enterprise architecture concepts are needed, locate the following 
   * *Use cases:* ACC / APS Data Management REST integration, OAuth 2.0 PKCE, and decoupled IFamilyProvider pattern.
 * **AWS S3 Cloud Family Provider & Floci Integration:** [aws_s3_family_provider_floci_integration_2026-08-13.md](file:///c:/Users/david.barbero/Documents/DOCUMENTOS/ALTEN/Workbench/RevitAddins_Workspace/RevitAddins_Workspace/.agents/skills/revit-api-enterprise/references/aws_s3_family_provider_floci_integration_2026-08-13.md)
   * *Use cases:* AWS S3 cloud family loading, Floci LocalStack Docker integration, path-style URL addressing, and DPAPI credential security.
+* **Revit Process File Lock & Deployment Guard:** [debugging_revit_process_lock_stale_deploy_2026-10-06.md](file:///b:/REVIT/C%23/RevitAddins_Workspace/.agents/skills/revit-api-enterprise/references/debugging_revit_process_lock_stale_deploy_2026-10-06.md)
+  * *Use cases:* Preventing MSB3026 locked module errors, eliminating stale deployed DLLs, and pre-build process checks.
 
 ---
 
 ## 4. Asset Mapping (Code Blueprints)
 Do not reinvent enterprise architecture. Inject, adapt, or copy the exact implementations located in the assets folder:
 
+* [CheckRevitRunningGuard.ps1](file:///b:/REVIT/C%23/RevitAddins_Workspace/.agents/skills/revit-api-enterprise/assets/CheckRevitRunningGuard.ps1): Pre-compilation PowerShell guard script to detect active Revit processes before build/deploy.
 * [RestApiIntegrator.cs](file:///c:/Users/david.barbero/Documents/DOCUMENTOS/ALTEN/Workbench/RevitAddins_Workspace/RevitAddins_Workspace/.agents/skills/revit-api-enterprise/assets/RestApiIntegrator.cs): Thread-safe HTTP client singleton for communicating with ERPs, PowerBI, or external databases.
 * [VersionCompatibilityBridge.cs](file:///c:/Users/david.barbero/Documents/DOCUMENTOS/ALTEN/Workbench/RevitAddins_Workspace/RevitAddins_Workspace/.agents/skills/revit-api-enterprise/assets/VersionCompatibilityBridge.cs): Utility class utilizing preprocessor directives to safely bridge API breaking changes across Revit years.
 * [DesignAutomationHandler.cs](file:///c:/Users/david.barbero/Documents/DOCUMENTOS/ALTEN/Workbench/RevitAddins_Workspace/RevitAddins_Workspace/.agents/skills/revit-api-enterprise/assets/DesignAutomationHandler.cs): Boilerplate entry point for APS Design Automation, replacing standard `IExternalCommand` UI hooks.

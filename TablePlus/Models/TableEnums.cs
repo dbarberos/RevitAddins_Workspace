@@ -73,14 +73,24 @@ public enum TableSourceType
 }
 
 /// <summary>
-/// Import format type (matches DiRoots TableGen ImportTypes).
+/// Import format type (matches DiRoots TableGen ImportTypes and native schedules).
 /// </summary>
 public enum TableImportType
 {
     /// <summary>
-    /// Editable 2D vector table elements in Revit view.
+    /// Editable 2D vector table elements in Revit view (Drafting or Legend view).
     /// </summary>
     Table,
+
+    /// <summary>
+    /// Native Revit Key Schedule view with database rows and reusable parameter pool.
+    /// </summary>
+    KeySchedule,
+
+    /// <summary>
+    /// Native Revit Schedule view using freeform Header grid with zero project parameters.
+    /// </summary>
+    HeaderSchedule,
 
     /// <summary>
     /// High-resolution raster rendering image inserted into Revit view.

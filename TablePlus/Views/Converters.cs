@@ -256,6 +256,8 @@ public class EnumDisplayConverter : IValueConverter
             TargetViewType.LegendView => isCompact ? "Legend View" : "Legend View (Multi-Sheet Placeable)",
             TargetViewType.ScheduleView => isCompact ? "Schedule View" : "Schedule View (ViewSchedule)",
             TableImportType.Table => isCompact ? "Table" : "Table (Editable Vector Lines & Text)",
+            TableImportType.KeySchedule => isCompact ? "Key Schedule" : "Key Schedule (Native Revit ViewSchedule)",
+            TableImportType.HeaderSchedule => isCompact ? "Header Grid" : "Header Grid (Param-Free Native ViewSchedule)",
             TableImportType.Image => isCompact ? "Image" : "Image (High-Resolution Raster)",
             TablePageOption.AllPages => "All Pages",
             TablePageOption.SelectPages => "Select Pages...",

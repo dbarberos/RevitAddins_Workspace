@@ -61,7 +61,13 @@ public partial class TableImportViewModel : ObservableObject
         AvailableScales = new ObservableCollection<int> { 1, 2, 5, 10, 20, 25, 50, 100, 200, 500 };
         SelectedScale = 1;
 
-        AvailableImportTypes = new ObservableCollection<TableImportType> { TableImportType.Table, TableImportType.Image };
+        AvailableImportTypes = new ObservableCollection<TableImportType>
+        {
+            TableImportType.Table,
+            TableImportType.KeySchedule,
+            TableImportType.HeaderSchedule,
+            TableImportType.Image
+        };
         SelectedImportType = TableImportType.Table;
 
         AvailableDpiValues = new ObservableCollection<int> { 72, 96, 150, 300, 600 };
@@ -1689,12 +1695,27 @@ public partial class TableImportViewModel : ObservableObject
                         IsRelativePath = file.IsRelativePath
                     };
 
-                    var v = _geometryService.GenerateTable(_doc, config, cells, mergedRanges);
+                    View? v = null;
+                    if (sheet.SelectedImportType == TableImportType.KeySchedule)
+                    {
+                        var keyService = new KeyScheduleService(_schemaService);
+                        v = keyService.GenerateKeySchedule(_doc, config, cells);
+                    }
+                    else if (sheet.SelectedImportType == TableImportType.HeaderSchedule)
+                    {
+                        var headerService = new HeaderScheduleService(_schemaService);
+                        v = headerService.GenerateHeaderSchedule(_doc, config, cells, mergedRanges);
+                    }
+                    else
+                    {
+                        v = _geometryService.GenerateTable(_doc, config, cells, mergedRanges);
+                    }
+
                     if (v != null)
                     {
                         CreatedViews.Add(v);
                         CreatedView = v;
-                        LoggerService.LogInfo($"[TableImportViewModel] Created Revit view '{v.Name}' (ID {v.Id}) [{current}/{total}].");
+                        LoggerService.LogInfo($"[TableImportViewModel] Created Revit view '{v.Name}' (ID {v.Id}, Type={sheet.SelectedImportType}) [{current}/{total}].");
                     }
                 }
             }
@@ -1745,12 +1766,28 @@ public partial class TableImportViewModel : ObservableObject
                         ImportType = item.SelectedImportType,
                         IsRelativePath = item.IsRelativePath
                     };
-                    var v = _geometryService.GenerateTable(_doc, config, cells, mergedRanges);
+
+                    View? v = null;
+                    if (item.SelectedImportType == TableImportType.KeySchedule)
+                    {
+                        var keyService = new KeyScheduleService(_schemaService);
+                        v = keyService.GenerateKeySchedule(_doc, config, cells);
+                    }
+                    else if (item.SelectedImportType == TableImportType.HeaderSchedule)
+                    {
+                        var headerService = new HeaderScheduleService(_schemaService);
+                        v = headerService.GenerateHeaderSchedule(_doc, config, cells, mergedRanges);
+                    }
+                    else
+                    {
+                        v = _geometryService.GenerateTable(_doc, config, cells, mergedRanges);
+                    }
+
                     if (v != null)
                     {
                         CreatedViews.Add(v);
                         CreatedView = v;
-                        LoggerService.LogInfo($"[TableImportViewModel] Created Revit view '{v.Name}' (ID {v.Id}) [{current}/{total}].");
+                        LoggerService.LogInfo($"[TableImportViewModel] Created Revit view '{v.Name}' (ID {v.Id}, Type={item.SelectedImportType}) [{current}/{total}].");
                     }
                 }
             }

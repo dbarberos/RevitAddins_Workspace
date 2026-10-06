@@ -71,7 +71,13 @@ public partial class TableBatchImportItemModel : ObservableObject
     private int _selectedScale = 1;
 
     [ObservableProperty]
-    private ObservableCollection<TableImportType> _availableImportTypes = new() { TableImportType.Table, TableImportType.Image };
+    private ObservableCollection<TableImportType> _availableImportTypes = new()
+    {
+        TableImportType.Table,
+        TableImportType.KeySchedule,
+        TableImportType.HeaderSchedule,
+        TableImportType.Image
+    };
 
     [ObservableProperty]
     private TableImportType _selectedImportType = TableImportType.Table;
