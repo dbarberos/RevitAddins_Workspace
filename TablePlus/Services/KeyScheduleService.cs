@@ -38,27 +38,58 @@ public class KeyScheduleService
         }
 
         int headerRowIndex = distinctRows[0];
-        var dataRowIndices = distinctRows.Skip(1).ToList();
+        string? bannerTitle = null;
+        List<int> dataRowIndices;
+
+        if (distinctRows.Count >= 2)
+        {
+            int r0Count = cells.Count(c => c.RowIndex == distinctRows[0] && !string.IsNullOrWhiteSpace(c.FormattedValue));
+            int r1Count = cells.Count(c => c.RowIndex == distinctRows[1] && !string.IsNullOrWhiteSpace(c.FormattedValue));
+
+            // If the first row is a single title cell (e.g. "TUR1") and the next row contains multiple column headers
+            if (r0Count == 1 && r1Count >= 2)
+            {
+                var titleCell = cells.FirstOrDefault(c => c.RowIndex == distinctRows[0] && !string.IsNullOrWhiteSpace(c.FormattedValue));
+                bannerTitle = titleCell?.FormattedValue;
+                headerRowIndex = distinctRows[1];
+                dataRowIndices = distinctRows.Skip(2).ToList();
+            }
+            else
+            {
+                dataRowIndices = distinctRows.Skip(1).ToList();
+            }
+        }
+        else
+        {
+            dataRowIndices = distinctRows.Skip(1).ToList();
+        }
+
+        using var tx = new Transaction(doc, $"TablePlus: Create Key Schedule {config.ViewName}");
+        var failureOpts = tx.GetFailureHandlingOptions();
+        failureOpts.SetFailuresPreprocessor(new WarningSwallower());
+        tx.SetFailureHandlingOptions(failureOpts);
+
+        tx.Start();
 
         // 1. Ensure required reusable column parameters exist and are bound
         int extraColumnsCount = Math.Max(distinctCols.Count - 1, 0);
-        if (extraColumnsCount > 0)
-        {
-            SharedParameterPoolService.EnsureParametersBound(doc, extraColumnsCount);
-        }
+        SharedParameterPoolService.EnsureParametersBound(doc, extraColumnsCount);
 
         // 2. Create the Key Schedule on BuiltInCategory.OST_GenericModel
         var schedule = ViewSchedule.CreateKeySchedule(doc, new ElementId(BuiltInCategory.OST_GenericModel));
         schedule.Name = GetUniqueScheduleName(doc, config.ViewName);
 
-        // 3. Configure column headers
-        ConfigureScheduleColumns(doc, schedule, cells, distinctCols, headerRowIndex);
+        // 3. Configure column headers & sort index
+        ConfigureScheduleColumns(doc, schedule, cells, distinctCols, headerRowIndex, bannerTitle);
 
         // 4. Populate rows with cell data
         PopulateScheduleRows(doc, schedule, cells, distinctCols, dataRowIndices);
 
         // 5. Stamp metadata for tracking and synchronization
         _schemaService.StampTableMetadata(schedule, config, config.SourceFilePath);
+
+        doc.Regenerate();
+        tx.Commit();
 
         LoggerService.LogInfo($"[KeyScheduleService] Successfully generated Key Schedule '{schedule.Name}' ({dataRowIndices.Count} rows, {distinctCols.Count} columns).");
         return schedule;
@@ -77,17 +108,45 @@ public class KeyScheduleService
         if (schedule == null) throw new ArgumentNullException(nameof(schedule));
         if (cells == null || cells.Count == 0) return;
 
+        using var tx = new Transaction(doc, $"TablePlus: Update Key Schedule {config.ViewName}");
+        var failureOpts = tx.GetFailureHandlingOptions();
+        failureOpts.SetFailuresPreprocessor(new WarningSwallower());
+        tx.SetFailureHandlingOptions(failureOpts);
+
+        tx.Start();
+
         var distinctCols = cells.Select(c => c.ColumnIndex).Distinct().OrderBy(c => c).ToList();
         var distinctRows = cells.Select(c => c.RowIndex).Distinct().OrderBy(r => r).ToList();
+
         int headerRowIndex = distinctRows[0];
-        var dataRowIndices = distinctRows.Skip(1).ToList();
+        string? bannerTitle = null;
+        List<int> dataRowIndices;
+
+        if (distinctRows.Count >= 2)
+        {
+            int r0Count = cells.Count(c => c.RowIndex == distinctRows[0] && !string.IsNullOrWhiteSpace(c.FormattedValue));
+            int r1Count = cells.Count(c => c.RowIndex == distinctRows[1] && !string.IsNullOrWhiteSpace(c.FormattedValue));
+
+            if (r0Count == 1 && r1Count >= 2)
+            {
+                var titleCell = cells.FirstOrDefault(c => c.RowIndex == distinctRows[0] && !string.IsNullOrWhiteSpace(c.FormattedValue));
+                bannerTitle = titleCell?.FormattedValue;
+                headerRowIndex = distinctRows[1];
+                dataRowIndices = distinctRows.Skip(2).ToList();
+            }
+            else
+            {
+                dataRowIndices = distinctRows.Skip(1).ToList();
+            }
+        }
+        else
+        {
+            dataRowIndices = distinctRows.Skip(1).ToList();
+        }
 
         // Ensure parameters
         int extraColumnsCount = Math.Max(distinctCols.Count - 1, 0);
-        if (extraColumnsCount > 0)
-        {
-            SharedParameterPoolService.EnsureParametersBound(doc, extraColumnsCount);
-        }
+        SharedParameterPoolService.EnsureParametersBound(doc, extraColumnsCount);
 
         // Delete existing key row elements
         var existingElements = new FilteredElementCollector(doc, schedule.Id)
@@ -100,10 +159,14 @@ public class KeyScheduleService
         }
 
         // Reconfigure columns & rows
-        ConfigureScheduleColumns(doc, schedule, cells, distinctCols, headerRowIndex);
+        ConfigureScheduleColumns(doc, schedule, cells, distinctCols, headerRowIndex, bannerTitle);
         PopulateScheduleRows(doc, schedule, cells, distinctCols, dataRowIndices);
 
         _schemaService.StampTableMetadata(schedule, config, config.SourceFilePath);
+
+        doc.Regenerate();
+        tx.Commit();
+
         LoggerService.LogInfo($"[KeyScheduleService] Successfully updated Key Schedule '{schedule.Name}'.");
     }
 
@@ -112,18 +175,49 @@ public class KeyScheduleService
         ViewSchedule schedule,
         IList<ExcelCellModel> cells,
         List<int> distinctCols,
-        int headerRowIndex)
+        int headerRowIndex,
+        string? bannerTitle = null)
     {
-        // Field 0 in a Key Schedule is the Key Name parameter
-        string col0Text = cells.FirstOrDefault(c => c.RowIndex == headerRowIndex && c.ColumnIndex == distinctCols[0])?.FormattedValue ?? "Key Name";
+        var schedulableFields = schedule.Definition.GetSchedulableFields();
+
+        // 1. Ensure hidden TP_Row_Index field is added and set as primary ascending sort order
+        ScheduleField? rowIndexField = null;
+        for (int f = 0; f < schedule.Definition.GetFieldCount(); f++)
+        {
+            var field = schedule.Definition.GetField(f);
+            if (field.GetName() == SharedParameterPoolService.RowIndexParamName)
+            {
+                rowIndexField = field;
+                break;
+            }
+        }
+
+        if (rowIndexField == null)
+        {
+            var rowIndexSf = schedulableFields.FirstOrDefault(sf => sf.GetName(doc) == SharedParameterPoolService.RowIndexParamName);
+            if (rowIndexSf != null)
+            {
+                rowIndexField = schedule.Definition.AddField(rowIndexSf);
+            }
+        }
+
+        if (rowIndexField != null)
+        {
+            rowIndexField.IsHidden = true;
+            schedule.Definition.ClearSortGroupFields();
+            var sortGroup = new ScheduleSortGroupField(rowIndexField.FieldId, ScheduleSortOrder.Ascending);
+            schedule.Definition.AddSortGroupField(sortGroup);
+        }
+
+        // 2. Field 0 in a Key Schedule is the Key Name parameter
+        string col0Text = cells.FirstOrDefault(c => c.RowIndex == headerRowIndex && c.ColumnIndex == distinctCols[0])?.FormattedValue ?? string.Empty;
         if (schedule.Definition.GetFieldCount() > 0)
         {
             var field0 = schedule.Definition.GetField(0);
-            field0.ColumnHeading = col0Text;
+            field0.ColumnHeading = string.IsNullOrWhiteSpace(col0Text) ? " " : col0Text;
         }
 
-        var schedulableFields = schedule.Definition.GetSchedulableFields();
-
+        // 3. Columns 1..N: TP_Column_XX
         for (int i = 1; i < distinctCols.Count; i++)
         {
             string paramName = SharedParameterPoolService.GetColumnParamName(i);
@@ -150,6 +244,22 @@ public class KeyScheduleService
                     var newField = schedule.Definition.AddField(targetSf);
                     newField.ColumnHeading = heading;
                 }
+            }
+        }
+
+        // 4. If banner title exists, group headers above the columns
+        if (bannerTitle is { Length: > 0 } title && distinctCols.Count > 1)
+        {
+            try
+            {
+                if (schedule.CanGroupHeaders(0, 0, 0, distinctCols.Count - 1))
+                {
+                    schedule.GroupHeaders(0, 0, 0, distinctCols.Count - 1, title.Trim());
+                }
+            }
+            catch (Exception ex)
+            {
+                LoggerService.LogWarning($"[KeyScheduleService] Could not group banner header: {ex.Message}");
             }
         }
     }
@@ -181,6 +291,10 @@ public class KeyScheduleService
             int rowIdx = dataRowIndices[r];
             var keyElem = keyElements[r];
 
+            // Primary sort index: sequential 1-based index (e.g. "000001", "000002"...)
+            var sortParam = keyElem.LookupParameter(SharedParameterPoolService.RowIndexParamName);
+            sortParam?.Set($"{(r + 1):D6}");
+
             // Column 0: Key Name
             string val0 = cells.FirstOrDefault(c => c.RowIndex == rowIdx && c.ColumnIndex == distinctCols[0])?.FormattedValue ?? string.Empty;
             string keyParamName = schedule.Definition.GetField(0).GetName();
@@ -189,7 +303,7 @@ public class KeyScheduleService
 
             try
             {
-                keyElem.Name = val0;
+                keyElem.Name = string.IsNullOrWhiteSpace(val0) ? $"Row {r + 1}" : val0;
             }
             catch
             {

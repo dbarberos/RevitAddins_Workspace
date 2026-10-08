@@ -1,5 +1,6 @@
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
+using TablePlus.Services;
 
 namespace TablePlus.Models;
 
@@ -97,13 +98,42 @@ public partial class TableItemModel : ObservableObject
     };
 
     /// <summary>
-    /// Human-readable ratio string for display in the DataGrid (e.g. "1:1", "1:20").
+    /// Human-readable ratio string for display in the DataGrid (e.g. "1:1", "1:20", "N/A").
     /// </summary>
-    public string FormattedScale => $"1:{ViewScale}";
+    public string FormattedScale => ViewType == TargetViewType.ScheduleView ? "N/A" : $"1:{ViewScale}";
+
+    /// <summary>
+    /// Indicates whether scale selection applies to this view type (Schedule views do not use scale).
+    /// </summary>
+    public bool IsScaleApplicable => ViewType != TargetViewType.ScheduleView;
 
     partial void OnViewScaleChanged(int value)
     {
         OnPropertyChanged(nameof(FormattedScale));
+        LoggerService.LogInfo($"[TableItemModel] Table '{ViewName}' Scale changed to: 1:{value}");
+    }
+
+    partial void OnViewTypeChanged(TargetViewType value)
+    {
+        OnPropertyChanged(nameof(FormattedScale));
+        OnPropertyChanged(nameof(IsScaleApplicable));
+        LoggerService.LogInfo($"[TableItemModel] Table '{ViewName}' ViewType changed to: {value}");
+    }
+
+    partial void OnImportTypeChanged(TableImportType value)
+    {
+        OnPropertyChanged(nameof(ImportTypeBadge));
+        LoggerService.LogInfo($"[TableItemModel] Table '{ViewName}' ImportType changed to: {value}");
+    }
+
+    partial void OnIsSelectedChanged(bool value)
+    {
+        LoggerService.LogInfo($"[TableItemModel] Table '{ViewName}' IsSelected changed to: {value}");
+    }
+
+    partial void OnIsAutoSyncEnabledChanged(bool value)
+    {
+        LoggerService.LogInfo($"[TableItemModel] Table '{ViewName}' IsAutoSyncEnabled changed to: {value}");
     }
 
     /// <summary>

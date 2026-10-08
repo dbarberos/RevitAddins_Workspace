@@ -185,6 +185,13 @@ public class SchemaService : ISchemaService
             _ => TargetViewType.DraftingView
         };
 
+        if (view is ViewSchedule vs)
+        {
+            fallbackConfig.ImportType = vs.Definition.IsKeySchedule
+                ? TableImportType.KeySchedule
+                : TableImportType.HeaderSchedule;
+        }
+
         return fallbackConfig;
     }
 

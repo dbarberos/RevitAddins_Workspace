@@ -111,8 +111,18 @@ public class TableGeometryService : ITableGeometryService
             LoggerService.LogInfo($"[TableGeometryService] Purged {elementsToDelete.Count} obsolete 2D elements from view '{targetView.Name}'.");
         }
 
-        // 2. Update view scale
-        targetView.Scale = Math.Max(config.ViewScale, 1);
+        // 2. Update view scale (only for views that support scaling)
+        if (targetView is not ViewSchedule)
+        {
+            try
+            {
+                targetView.Scale = Math.Max(config.ViewScale, 1);
+            }
+            catch (Exception ex)
+            {
+                LoggerService.LogWarning($"[TableGeometryService] Could not apply scale to view '{targetView.Name}': {ex.Message}");
+            }
+        }
 
         // 3. Re-render table contents
         RenderTableContents(doc, targetView, config, cells, mergedRanges);
@@ -198,30 +208,51 @@ public class TableGeometryService : ITableGeometryService
 
     private static View CreateTargetView(Document doc, TableImportConfig config)
     {
-        ViewFamily targetFamily = config.TargetViewType == TargetViewType.LegendView 
-            ? ViewFamily.Legend 
-            : ViewFamily.Drafting;
-
-        var viewFamilyType = new FilteredElementCollector(doc)
-            .OfClass(typeof(ViewFamilyType))
-            .Cast<ViewFamilyType>()
-            .FirstOrDefault(vft => vft.ViewFamily == targetFamily);
-
-        if (viewFamilyType == null && config.TargetViewType == TargetViewType.LegendView)
+        if (config.TargetViewType == TargetViewType.LegendView)
         {
-            // Fallback to drafting if legend family type not directly resolvable
-            viewFamilyType = new FilteredElementCollector(doc)
-                .OfClass(typeof(ViewFamilyType))
-                .Cast<ViewFamilyType>()
-                .FirstOrDefault(vft => vft.ViewFamily == ViewFamily.Drafting);
+            LoggerService.LogInfo($"[TableGeometryService] Target view is Legend View. Querying existing Legend views in document...");
+            var existingLegend = new FilteredElementCollector(doc)
+                .OfClass(typeof(View))
+                .Cast<View>()
+                .FirstOrDefault(v => v.ViewType == ViewType.Legend && !v.IsTemplate);
+
+            if (existingLegend != null)
+            {
+                try
+                {
+                    LoggerService.LogInfo($"[TableGeometryService] Duplicating existing Legend '{existingLegend.Name}' (ID {existingLegend.Id}) without detailing for table '{config.ViewName}'...");
+                    var newViewId = existingLegend.Duplicate(ViewDuplicateOption.Duplicate);
+                    var newLegend = (View)doc.GetElement(newViewId);
+                    newLegend.Name = GetUniqueViewName(doc, config.ViewName);
+                    newLegend.Scale = Math.Max(config.ViewScale, 1);
+                    LoggerService.LogInfo($"[TableGeometryService] Successfully duplicated Legend View '{newLegend.Name}' (ID {newLegend.Id}).");
+                    return newLegend;
+                }
+                catch (Exception ex)
+                {
+                    LoggerService.LogWarning($"[TableGeometryService] Legend duplication failed: {ex.Message}. Falling back gracefully to Drafting View.");
+                }
+            }
+            else
+            {
+                LoggerService.LogWarning("[TableGeometryService] No existing Legend view found in document to duplicate. Falling back gracefully to Drafting View.");
+            }
         }
 
-        if (viewFamilyType == null)
-            throw new InvalidOperationException("Could not find a valid ViewFamilyType for Drafting/Legend views.");
+        // Drafting View creation (always supported natively via ViewDrafting.Create)
+        var draftingType = new FilteredElementCollector(doc)
+            .OfClass(typeof(ViewFamilyType))
+            .Cast<ViewFamilyType>()
+            .FirstOrDefault(vft => vft.ViewFamily == ViewFamily.Drafting);
 
-        var view = ViewDrafting.Create(doc, viewFamilyType.Id);
+        if (draftingType == null)
+            throw new InvalidOperationException("Could not find a valid ViewFamilyType for Drafting views in the current document.");
+
+        LoggerService.LogInfo($"[TableGeometryService] Creating Drafting View using ViewFamilyType '{draftingType.Name}' (ID {draftingType.Id})...");
+        var view = ViewDrafting.Create(doc, draftingType.Id);
         view.Name = GetUniqueViewName(doc, config.ViewName);
         view.Scale = Math.Max(config.ViewScale, 1);
+        LoggerService.LogInfo($"[TableGeometryService] Successfully created Drafting View '{view.Name}' (ID {view.Id}).");
 
         return view;
     }

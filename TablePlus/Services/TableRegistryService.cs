@@ -73,12 +73,23 @@ public class TableRegistryService : ITableRegistryService
                 else if (ext is ".md" or ".markdown") sourceType = TableSourceType.MarkdownDocument;
             }
 
+            var effectiveImportType = config.ImportType;
+            if (view is ViewSchedule vs)
+            {
+                if (effectiveImportType is not (TableImportType.KeySchedule or TableImportType.HeaderSchedule))
+                {
+                    effectiveImportType = vs.Definition.IsKeySchedule ? TableImportType.KeySchedule : TableImportType.HeaderSchedule;
+                    config.ImportType = effectiveImportType;
+                }
+            }
+
             var item = new TableItemModel
             {
                 ViewId = viewIdVal,
                 ViewName = view.Name,
                 ViewType = config.TargetViewType,
-                ViewScale = config.ViewScale > 0 ? config.ViewScale : (view.Scale > 0 ? view.Scale : 1),
+                ViewScale = config.ViewScale > 0 ? config.ViewScale : (view is ViewSchedule ? 1 : (view.Scale > 0 ? view.Scale : 1)),
+                ImportType = effectiveImportType,
                 SourceFilePath = filePath,
                 SourceFileName = fileName,
                 SelectedSheetName = config.SelectedSheetName,

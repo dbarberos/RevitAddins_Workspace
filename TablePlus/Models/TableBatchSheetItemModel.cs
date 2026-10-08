@@ -34,13 +34,14 @@ public partial class TableBatchSheetItemModel : ObservableObject
         {
             SelectedRegion = AvailableRegions.FirstOrDefault(r => r != SeparatorLine && r != "---") ?? "Entire Worksheet";
         }
+        LoggerService.LogInfo($"[TableBatchSheetItemModel] Sheet '{SheetName}' Region changed to: '{SelectedRegion}'");
     }
 
     [ObservableProperty]
     private string _targetViewName = string.Empty;
 
     [ObservableProperty]
-    private TargetViewType _selectedViewType = TargetViewType.LegendView;
+    private TargetViewType _selectedViewType = TargetViewType.DraftingView;
 
     [ObservableProperty]
     private int _selectedScale = 1;
@@ -88,7 +89,7 @@ public partial class TableBatchSheetItemModel : ObservableObject
         }
         else if (SelectedViewType == TargetViewType.ScheduleView)
         {
-            SelectedViewType = TargetViewType.LegendView;
+            SelectedViewType = TargetViewType.DraftingView;
         }
 
         OnPropertyChanged(nameof(IsViewTypeEnabled));
@@ -111,8 +112,8 @@ public partial class TableBatchSheetItemModel : ObservableObject
         SheetName = sheetName;
         TargetViewName = $"{parentFile.FileNameWithoutExtension}_{sheetName}".Trim('_');
 
-        // Defaults: Table, Legend View, and 1 for table-compatible files; Image, Legend View, and 1 for PDF.
-        SelectedViewType = TargetViewType.LegendView;
+        // Defaults: Table, Drafting View, and 1 for table-compatible files; Image, Drafting View, and 1 for PDF.
+        SelectedViewType = TargetViewType.DraftingView;
         SelectedScale = 1;
         SelectedImportType = parentFile.SourceType == TableSourceType.PdfDocument
             ? TableImportType.Image

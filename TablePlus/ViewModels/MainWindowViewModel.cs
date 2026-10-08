@@ -541,7 +541,7 @@ public partial class MainWindowViewModel : ObservableObject
 #else
                 var viewId = new ElementId((int)item.ViewId);
 #endif
-                if (_doc.GetElement(viewId) is View view && view.Scale != item.ViewScale)
+                if (_doc.GetElement(viewId) is View view && view is not ViewSchedule && view.Scale != item.ViewScale)
                 {
                     try
                     {
@@ -743,6 +743,10 @@ public partial class MainWindowViewModel : ObservableObject
             IsBusy = true;
             ProgressValue = 0;
             LoggerService.LogInfo($"[MainWindowViewModel] SyncSelectedAsync started for {targets.Count} selected table(s)...");
+            foreach (var t in targets)
+            {
+                LoggerService.LogInfo($"[MainWindowViewModel] -> Sync item captured: Table='{t.ViewName}' (ID {t.ViewId}), ViewType={t.ViewType}, ImportType={t.Config.ImportType}, Source='{t.SourceFileName}' (Sheet='{t.SelectedSheetName}', Range='{t.CellRangeAddress}')");
+            }
 
             using var tg = new TransactionGroup(_doc, "TablePlus: Batch Sync Tables");
             tg.Start();
@@ -755,7 +759,7 @@ public partial class MainWindowViewModel : ObservableObject
                 var item = targets[i];
                 BusyStatusMessage = $"Synchronizing table {i + 1} of {targets.Count}: {item.ViewName}...";
                 ProgressValue = (double)(i + 1) / targets.Count * 100.0;
-                LoggerService.LogInfo($"[MainWindowViewModel] Synchronizing table {i + 1}/{targets.Count}: '{item.ViewName}' from '{item.SourceFileName}' (Sheet: '{item.SelectedSheetName}', Region: '{item.CellRangeAddress}')...");
+                LoggerService.LogInfo($"[MainWindowViewModel] Synchronizing table {i + 1}/{targets.Count}: '{item.ViewName}' from '{item.SourceFileName}' (Sheet: '{item.SelectedSheetName}', Region: '{item.CellRangeAddress}', Type={item.ViewType})...");
 
                 try
                 {
@@ -802,18 +806,24 @@ public partial class MainWindowViewModel : ObservableObject
                     item.Config.IsAutoSyncEnabled = item.IsAutoSyncEnabled;
                     item.Config.SelectedSheetName = item.SelectedSheetName;
 
-                    if (targetView is ViewSchedule scheduleView && item.Config.ImportType == TableImportType.KeySchedule)
+                    if (targetView is ViewSchedule scheduleView)
                     {
-                        var keyService = new KeyScheduleService(_schemaService);
-                        keyService.UpdateKeySchedule(_doc, scheduleView, item.Config, cells);
-                    }
-                    else if (targetView is ViewSchedule scheduleViewHdr && item.Config.ImportType == TableImportType.HeaderSchedule)
-                    {
-                        var headerService = new HeaderScheduleService(_schemaService);
-                        headerService.UpdateHeaderSchedule(_doc, scheduleViewHdr, item.Config, cells, mergedRanges);
+                        if (scheduleView.Definition.IsKeySchedule || item.Config.ImportType == TableImportType.KeySchedule)
+                        {
+                            LoggerService.LogInfo($"[MainWindowViewModel] Synchronizing Key Schedule '{scheduleView.Name}' (ID {scheduleView.Id})...");
+                            var keyService = new KeyScheduleService(_schemaService);
+                            keyService.UpdateKeySchedule(_doc, scheduleView, item.Config, cells);
+                        }
+                        else
+                        {
+                            LoggerService.LogInfo($"[MainWindowViewModel] Synchronizing Header Schedule '{scheduleView.Name}' (ID {scheduleView.Id})...");
+                            var headerService = new HeaderScheduleService(_schemaService);
+                            headerService.UpdateHeaderSchedule(_doc, scheduleView, item.Config, cells, mergedRanges);
+                        }
                     }
                     else
                     {
+                        LoggerService.LogInfo($"[MainWindowViewModel] Synchronizing 2D Geometry view '{targetView.Name}' (ID {targetView.Id})...");
                         _geometryService.UpdateTableInView(_doc, targetView, item.Config, cells, mergedRanges);
                     }
 
@@ -878,6 +888,12 @@ public partial class MainWindowViewModel : ObservableObject
         var targets = Tables.Where(t => t.IsSelected).ToList();
         if (targets.Count == 0) return;
 
+        LoggerService.LogInfo($"[MainWindowViewModel] Delete action requested for {targets.Count} selected table(s):");
+        foreach (var t in targets)
+        {
+            LoggerService.LogInfo($"[MainWindowViewModel] -> Table captured for deletion: Name='{t.ViewName}' (ID {t.ViewId}), Source='{t.SourceFileName}' (Sheet='{t.SelectedSheetName}'), ViewType={t.ViewType}, ImportType={t.Config.ImportType}");
+        }
+
         var confirmDialog = new ConfirmTableDeleteWindow(targets);
         var result = confirmDialog.ShowDialog();
         if (result != true)
@@ -936,6 +952,7 @@ public partial class MainWindowViewModel : ObservableObject
     {
         if (item == null) return;
 
+        LoggerService.LogInfo($"[MainWindowViewModel] Sheet selection changed for table '{item.ViewName}': NewSheet='{item.SelectedSheetName}', File='{item.SourceFileName}'");
         item.Config.SelectedSheetName = item.SelectedSheetName;
         item.Status = TableSyncStatus.Modified;
         item.StatusTooltip = $"Worksheet changed to '{item.SelectedSheetName}'. Synchronizing...";
@@ -950,7 +967,7 @@ public partial class MainWindowViewModel : ObservableObject
         {
             IsBusy = true;
             BusyStatusMessage = $"Synchronizing {item.ViewName}...";
-            LoggerService.LogInfo($"[MainWindowViewModel] SyncSingleTableAsync started for table '{item.ViewName}' from '{item.SourceFileName}' (Sheet: '{item.SelectedSheetName}')...");
+            LoggerService.LogInfo($"[MainWindowViewModel] SyncSingleTableAsync started: Table='{item.ViewName}' (ID {item.ViewId}), ViewType={item.ViewType}, ImportType={item.Config.ImportType}, File='{item.SourceFileName}', Sheet='{item.SelectedSheetName}', Region='{item.CellRangeAddress}'");
 
             if (!File.Exists(item.SourceFilePath))
             {
@@ -991,7 +1008,26 @@ public partial class MainWindowViewModel : ObservableObject
             item.Config.IsAutoSyncEnabled = item.IsAutoSyncEnabled;
             item.Config.SelectedSheetName = item.SelectedSheetName;
 
-            _geometryService.UpdateTableInView(_doc, targetView, item.Config, cells, mergedRanges);
+            if (targetView is ViewSchedule schedule)
+            {
+                if (schedule.Definition.IsKeySchedule || item.Config.ImportType == TableImportType.KeySchedule)
+                {
+                    LoggerService.LogInfo($"[MainWindowViewModel] Synchronizing Key Schedule '{schedule.Name}' (ID {schedule.Id})...");
+                    var keyService = new KeyScheduleService(_schemaService);
+                    keyService.UpdateKeySchedule(_doc, schedule, item.Config, cells);
+                }
+                else
+                {
+                    LoggerService.LogInfo($"[MainWindowViewModel] Synchronizing Header Schedule '{schedule.Name}' (ID {schedule.Id})...");
+                    var headerService = new HeaderScheduleService(_schemaService);
+                    headerService.UpdateHeaderSchedule(_doc, schedule, item.Config, cells, mergedRanges);
+                }
+            }
+            else
+            {
+                LoggerService.LogInfo($"[MainWindowViewModel] Synchronizing 2D Geometry view '{targetView.Name}' (ID {targetView.Id})...");
+                _geometryService.UpdateTableInView(_doc, targetView, item.Config, cells, mergedRanges);
+            }
 
             item.Status = TableSyncStatus.UpToDate;
             item.StatusTooltip = $"Synchronized successfully on {DateTime.Now:g}";

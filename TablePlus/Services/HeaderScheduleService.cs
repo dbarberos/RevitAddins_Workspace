@@ -39,19 +39,40 @@ public class HeaderScheduleService
             throw new InvalidOperationException("No grid cells found to build schedule.");
         }
 
+        using var tx = new Transaction(doc, $"TablePlus: Create Header Schedule {config.ViewName}");
+        var failureOpts = tx.GetFailureHandlingOptions();
+        failureOpts.SetFailuresPreprocessor(new WarningSwallower());
+        tx.SetFailureHandlingOptions(failureOpts);
+
+        tx.Start();
+
         // 1. Create standard Schedule on BuiltInCategory.OST_GenericModel
         var schedule = ViewSchedule.CreateSchedule(doc, new ElementId(BuiltInCategory.OST_GenericModel));
         schedule.Name = GetUniqueScheduleName(doc, config.ViewName);
 
-        // 2. Hide body headers so only the custom header grid displays
-        schedule.Definition.ShowTitle = false;
+        // 2. Ensure at least 1 schedulable field exists (hidden) to validate schedule in Revit
+        if (schedule.Definition.GetFieldCount() == 0)
+        {
+            var schedulableFields = schedule.Definition.GetSchedulableFields();
+            if (schedulableFields.Count > 0)
+            {
+                var field = schedule.Definition.AddField(schedulableFields.First());
+                field.IsHidden = true;
+            }
+        }
+
+        // 3. Show Header section (ShowTitle = true) and hide body column headers
+        schedule.Definition.ShowTitle = true;
         schedule.Definition.ShowHeaders = false;
 
-        // 3. Configure the Header section
+        // 4. Configure the Header section grid
         ConfigureHeaderGrid(schedule, cells, mergedRanges, distinctRows, distinctCols);
 
-        // 4. Stamp metadata
+        // 5. Stamp metadata
         _schemaService.StampTableMetadata(schedule, config, config.SourceFilePath);
+
+        doc.Regenerate();
+        tx.Commit();
 
         LoggerService.LogInfo($"[HeaderScheduleService] Successfully generated Header Schedule '{schedule.Name}' ({distinctRows.Count} rows, {distinctCols.Count} columns, 0 parameters).");
         return schedule;
@@ -71,11 +92,35 @@ public class HeaderScheduleService
         if (schedule == null) throw new ArgumentNullException(nameof(schedule));
         if (cells == null || cells.Count == 0) return;
 
+        using var tx = new Transaction(doc, $"TablePlus: Update Header Schedule {config.ViewName}");
+        var failureOpts = tx.GetFailureHandlingOptions();
+        failureOpts.SetFailuresPreprocessor(new WarningSwallower());
+        tx.SetFailureHandlingOptions(failureOpts);
+
+        tx.Start();
+
         var distinctCols = cells.Select(c => c.ColumnIndex).Distinct().OrderBy(c => c).ToList();
         var distinctRows = cells.Select(c => c.RowIndex).Distinct().OrderBy(r => r).ToList();
 
+        // Ensure at least 1 schedulable field exists (hidden)
+        if (schedule.Definition.GetFieldCount() == 0)
+        {
+            var schedulableFields = schedule.Definition.GetSchedulableFields();
+            if (schedulableFields.Count > 0)
+            {
+                var field = schedule.Definition.AddField(schedulableFields.First());
+                field.IsHidden = true;
+            }
+        }
+
+        schedule.Definition.ShowTitle = true;
+        schedule.Definition.ShowHeaders = false;
+
         ConfigureHeaderGrid(schedule, cells, mergedRanges, distinctRows, distinctCols);
         _schemaService.StampTableMetadata(schedule, config, config.SourceFilePath);
+
+        doc.Regenerate();
+        tx.Commit();
 
         LoggerService.LogInfo($"[HeaderScheduleService] Successfully updated Header Schedule '{schedule.Name}'.");
     }
@@ -89,6 +134,7 @@ public class HeaderScheduleService
     {
         var header = schedule.GetTableData().GetSectionData(SectionType.Header);
         if (header == null) return;
+        header.HideSection = false;
 
         int targetCols = distinctCols.Count;
         int targetRows = distinctRows.Count;
@@ -105,6 +151,22 @@ public class HeaderScheduleService
             header.InsertRow(header.NumberOfRows);
         }
 
+        // Ungroup default row 0 title merge if schedule spanned multiple columns
+        if (header.NumberOfColumns > 1)
+        {
+            try
+            {
+                if (schedule.CanUngroupHeaders(0, 0, 0, header.NumberOfColumns - 1))
+                {
+                    schedule.UngroupHeaders(0, 0, 0, header.NumberOfColumns - 1);
+                }
+            }
+            catch (Exception ex)
+            {
+                LoggerService.LogWarning($"[HeaderScheduleService] Ungroup default title header warning: {ex.Message}");
+            }
+        }
+
         // Populate cell texts
         foreach (var cell in cells)
         {
@@ -114,11 +176,12 @@ public class HeaderScheduleService
             {
                 try
                 {
+                    header.SetCellType(r, c, CellType.Text);
                     header.SetCellText(r, c, cell.FormattedValue ?? string.Empty);
                 }
-                catch
+                catch (Exception ex)
                 {
-                    // Ignore cell write locks
+                    LoggerService.LogWarning($"[HeaderScheduleService] Cell ({r}, {c}) text warning: {ex.Message}");
                 }
             }
         }
@@ -143,9 +206,9 @@ public class HeaderScheduleService
                         var mergedCell = new TableMergedCell(rTop, cLeft, rBottom, cRight);
                         header.MergeCells(mergedCell);
                     }
-                    catch
+                    catch (Exception ex)
                     {
-                        // Ignore invalid overlap merges
+                        LoggerService.LogWarning($"[HeaderScheduleService] Merge ({rTop},{cLeft} to {rBottom},{cRight}) warning: {ex.Message}");
                     }
                 }
             }
@@ -166,9 +229,31 @@ public class HeaderScheduleService
                 {
                     header.SetColumnWidth(c, Math.Max(widthMm * MmToFeet, 0.05));
                 }
+                catch (Exception ex)
+                {
+                    LoggerService.LogWarning($"[HeaderScheduleService] Column {c} width warning: {ex.Message}");
+                }
+            }
+        }
+
+        // Apply row heights in feet
+        for (int r = 0; r < distinctRows.Count && r < header.NumberOfRows; r++)
+        {
+            int origRow = distinctRows[r];
+            double heightMm = cells
+                .Where(cell => cell.RowIndex == origRow && cell.HeightMillimeters > 0)
+                .Select(cell => cell.HeightMillimeters)
+                .FirstOrDefault();
+
+            if (heightMm > 0)
+            {
+                try
+                {
+                    header.SetRowHeight(r, Math.Max(heightMm * MmToFeet, 0.015));
+                }
                 catch
                 {
-                    // Ignore width lock
+                    // Ignore row height lock
                 }
             }
         }

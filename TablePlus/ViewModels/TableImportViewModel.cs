@@ -78,7 +78,7 @@ public partial class TableImportViewModel : ObservableObject
         SelectedPages = "1";
 
         AvailableViewTypes = new ObservableCollection<TargetViewType> { TargetViewType.DraftingView, TargetViewType.LegendView, TargetViewType.ScheduleView };
-        SelectedViewType = TargetViewType.LegendView;
+        SelectedViewType = TargetViewType.DraftingView;
 
         AvailableRegionModes = new ObservableCollection<string> { "Entire Worksheet", "Named Range", "Custom Range" };
         SelectedRegionMode = "Entire Worksheet";
@@ -1614,7 +1614,11 @@ public partial class TableImportViewModel : ObservableObject
         int totalLegacy = BatchItems.Count(i => i.IsSelected);
         if (itemsToImport.Count == 0 && totalLegacy == 0) return;
 
-        LoggerService.LogInfo($"[TableImportViewModel] ImportBatchTablesAsync started: {itemsToImport.Count} hierarchical sheet(s), {totalLegacy} legacy item(s) queued for generation.");
+        LoggerService.LogInfo($"[TableImportViewModel] Apply action received: {itemsToImport.Count} hierarchical sheet(s), {totalLegacy} legacy item(s) queued for generation.");
+        foreach (var (f, s) in itemsToImport)
+        {
+            LoggerService.LogInfo($"[TableImportViewModel] -> Action item captured: File='{f.FileName}', Sheet='{s.SheetName}', Origin='{s.SelectedImportType}', ViewType='{s.SelectedViewType}', Scale='1:{s.SelectedScale}', Region='{s.SelectedRegion}', TargetName='{s.TargetViewName}'");
+        }
 
         try
         {

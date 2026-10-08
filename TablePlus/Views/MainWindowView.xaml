@@ -1215,16 +1215,25 @@
                     <DataGridTemplateColumn Header="Scale" Width="75" MinWidth="60" CanUserResize="True" HeaderStyle="{StaticResource CenteredTableHeaderStyle}">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
-                                <ComboBox ItemsSource="{Binding AvailableScales}" 
-                                          SelectedItem="{Binding ViewScale, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                          BorderThickness="0" Background="Transparent" VerticalContentAlignment="Center"
-                                          FontSize="12" Margin="4,0">
-                                    <ComboBox.ItemTemplate>
-                                        <DataTemplate>
-                                            <TextBlock Text="{Binding StringFormat='1:{0}'}"/>
-                                        </DataTemplate>
-                                    </ComboBox.ItemTemplate>
-                                </ComboBox>
+                                <Grid>
+                                    <ComboBox ItemsSource="{Binding AvailableScales}" 
+                                              SelectedItem="{Binding ViewScale, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                              Visibility="{Binding IsScaleApplicable, Converter={StaticResource BoolToVis}}"
+                                              BorderThickness="0" Background="Transparent" VerticalContentAlignment="Center"
+                                              FontSize="12" Margin="4,0">
+                                        <ComboBox.ItemTemplate>
+                                            <DataTemplate>
+                                                <TextBlock Text="{Binding StringFormat='1:{0}'}"/>
+                                            </DataTemplate>
+                                        </ComboBox.ItemTemplate>
+                                    </ComboBox>
+                                    <TextBlock Text="N/A" 
+                                               Foreground="#888888" 
+                                               FontSize="12" 
+                                               HorizontalAlignment="Center" 
+                                               VerticalAlignment="Center"
+                                               Visibility="{Binding IsScaleApplicable, Converter={StaticResource InvBoolToVis}}"/>
+                                </Grid>
                             </DataTemplate>
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
